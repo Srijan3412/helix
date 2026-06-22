@@ -5,7 +5,7 @@ import { getArchitectureLayers } from "../../lib/api/client";
 import LayerNode from "./LayerNode";
 import LayerFileNode from "./LayerFileNode";
 import LayerDetails from "./LayerDetails";
-import { Loader2, Layers, Search, X, Play, Square } from "lucide-react";
+import { Loader2, Layers, Search, X, Play, Square, PlayCircle, Pause } from "lucide-react";
 import { useAnalysisStore } from "../../store/analysis.store";
 
 const NODE_TYPES = {
@@ -137,28 +137,6 @@ export default function LayerView({ result }: { result: any }) {
     setTourIdx(null);   // Stop tour
   };
 
-  // Guided tour effect: Cycle through layers sequence
-  useEffect(() => {
-    if (tourIdx === null) return;
-    
-    const currentKey = LAYER_KEYS[tourIdx];
-    setExpandedLayer(currentKey);
-    setSelectedFile(null); // Clear selected file
-    
-    tourTimerRef.current = setTimeout(() => {
-      setTourIdx(prev => {
-        if (prev === null) return null;
-        const next = prev + 1;
-        if (next >= LAYER_KEYS.length) return null; // Tour finished
-        return next;
-      });
-    }, 2800); // 2.8 seconds per layer
-    
-    return () => {
-      if (tourTimerRef.current) clearTimeout(tourTimerRef.current);
-    };
-  }, [tourIdx]);
-
   const startTour = () => {
     setSearchQuery("");
     setExpandedLayer(null);
@@ -167,6 +145,7 @@ export default function LayerView({ result }: { result: any }) {
   };
   const stopTour = () => {
     setTourIdx(null);
+    setExpandedLayer(null);
   };
 
   // Construct ReactFlow nodes & edges dynamically
@@ -216,7 +195,6 @@ export default function LayerView({ result }: { result: any }) {
         },
       });
 
-      const parentY = currentY;
       currentY += 90; // space below layer card
 
       // If this layer is expanded, place its files vertically below it
@@ -227,50 +205,69 @@ export default function LayerView({ result }: { result: any }) {
           source: `layer-${key}`,
           target: `file-${files[0]}`,
           animated: true,
-          style: { stroke: "#71717a", strokeWidth: 1.5 },
+          style: { 
+            stroke: "hsl(var(--primary, 60 100% 50%))", 
+            strokeWidth: 2.0,
+            opacity: 0.8,
+          },
         });
 
-        files.forEach((file, fileIdx) => {
-          const fileMatch = !hasSearch || file.toLowerCase().includes(searchQuery.trim().toLowerCase());
+        for (let fIdx = 0; fIdx < files.length; fIdx++) {
+          const file = files[fIdx];
+          const fileIsGod = result?.staticAnalysis?.godServices?.some((g: any) => g.file === file);
+          const fileIsDead = result?.staticAnalysis?.deadCode?.some((d: any) => d.file === file);
+
+          let complexity = 0;
+          if (result?.staticAnalysis?.complexity) {
+            const match = result.staticAnalysis.complexity.find((c: any) => c.file === file);
+            if (match) complexity = match.score;
+          }
+
+          // File Node opacity
+          let fileOpacity = opacity;
+          if (hasSearch) {
+            fileOpacity = focusedLayers.has(key) && (searchQuery.trim() === "" || file.toLowerCase().includes(searchQuery.toLowerCase())) ? 1.0 : 0.15;
+          }
+
           flowNodes.push({
             id: `file-${file}`,
             type: "layerFileNode",
             data: {
-              label: file.split(/[\\/]/).pop() || file,
-              isActive: selectedFile === file,
+              file,
+              complexity,
+              isGod: fileIsGod,
+              isDead: fileIsDead,
+              isSelected: selectedFile === file,
             },
             position: { x: xCenter - 85, y: currentY },
             style: { 
               width: 170,
-              opacity: fileMatch ? (isTourActive ? 0.8 : 1.0) : 0.18,
-              transition: "opacity 200ms"
+              opacity: fileOpacity,
+              transition: "opacity 250ms ease, border-color 250ms ease",
             },
           });
 
-          // Connect consecutive file nodes together in a vertical stack
-          if (fileIdx > 0) {
+          // Connect files sequentially
+          if (fIdx > 0) {
             flowEdges.push({
-              id: `edge-file-${files[fileIdx - 1]}-to-${file}`,
-              source: `file-${files[fileIdx - 1]}`,
+              id: `edge-file-${files[fIdx - 1]}-to-${file}`,
+              source: `file-${files[fIdx - 1]}`,
               target: `file-${file}`,
-              animated: true,
-              style: { stroke: "#3f3f46", strokeWidth: 1 },
+              style: { stroke: "#3f3f46", strokeWidth: 1.5, opacity: 0.5 },
             });
           }
 
-          currentY += 50; // offset each file card vertically
-        });
-
-        currentY += 30; // extra padding at the bottom of the list
+          currentY += 60; // vertical spacing between files
+        }
+        currentY += 30; // space after expanded list
       }
 
-      // Connect this layer to the next layer in the sequence
+      // Connect this layer to next layer
       if (idx < LAYER_KEYS.length - 1) {
         const nextKey = LAYER_KEYS[idx + 1];
-        // If expanded, connection flows from the last file in the stack; otherwise, from the layer node itself
-        const sourceNodeId = isExpanded && files.length > 0 ? `file-${files[files.length - 1]}` : `layer-${key}`;
+        // Connect either from the last file (if expanded) or from the layer card itself
+        const sourceNodeId = (isExpanded && files.length > 0) ? `file-${files[files.length - 1]}` : `layer-${key}`;
         
-        // Determine Edge Dimming
         let edgeDimmed = false;
         if (isTourActive) {
           edgeDimmed = !(expandedLayer === key || expandedLayer === nextKey);
@@ -294,7 +291,49 @@ export default function LayerView({ result }: { result: any }) {
     }
 
     return { nodes: flowNodes, edges: flowEdges };
-  }, [layers, expandedLayer, selectedFile, searchQuery, focusedLayers, tourIdx]);
+  }, [layers, expandedLayer, selectedFile, searchQuery, focusedLayers, tourIdx, result]);
+
+  // Guided tour effect: Cycle through layers sequence
+  useEffect(() => {
+    if (tourIdx === null) return;
+    
+    setSelectedFile(null); // Clear selected file
+    
+    const totalSteps = LAYER_KEYS.length * 3;
+    tourTimerRef.current = setInterval(() => {
+      setTourIdx(prev => {
+        if (prev === null) return null;
+        const next = prev + 1;
+        
+        if (next >= totalSteps) {
+          setExpandedLayer(null);
+          return null; // Tour finished
+        }
+
+        const currentKey = LAYER_KEYS[Math.floor(next / 3) % LAYER_KEYS.length];
+        const subStep = next % 3;
+
+        // Expand layer at substep 1
+        if (subStep === 1) {
+          setExpandedLayer(currentKey);
+        }
+
+        // Center on layer
+        if (reactFlowInstance) {
+          const node = nodes.find(n => n.id === `layer-${currentKey}`);
+          if (node) {
+            reactFlowInstance.setCenter(node.position.x + 110, node.position.y + 45, { zoom: 1.25, duration: 600 });
+          }
+        }
+
+        return next;
+      });
+    }, 1200); // 1.2 seconds per step
+    
+    return () => {
+      if (tourTimerRef.current) clearInterval(tourTimerRef.current);
+    };
+  }, [tourIdx, reactFlowInstance, nodes]);
 
   // Center ReactFlow Camera on selected item changes
   useEffect(() => {
@@ -403,28 +442,43 @@ export default function LayerView({ result }: { result: any }) {
         )}
 
         {/* Right Toolbar controls: Guided architecture tour */}
-        <div className="absolute top-3 right-3 z-10">
-          <button
-            type="button"
-            onClick={tourIdx === null ? startTour : stopTour}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-extrabold shadow-lg transition-all duration-300 border ${
-              tourIdx === null
-                ? "bg-primary text-background border-primary hover:bg-primary/95"
-                : "bg-red-650 text-white border-red-700 hover:bg-red-700"
-            }`}
-          >
-            {tourIdx === null ? (
-              <>
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Tour Tiers</span>
-              </>
-            ) : (
-              <>
-                <Square className="w-3.5 h-3.5 fill-current" />
-                <span>Stop Tour</span>
-              </>
+        <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
+          <div className="bg-zinc-900/90 border border-border/60 rounded-xl p-3 shadow-lg backdrop-blur-md">
+            <button
+              type="button"
+              onClick={tourIdx === null ? startTour : stopTour}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-all w-full ${
+                tourIdx !== null
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                  : "bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30"
+              }`}
+            >
+              {tourIdx !== null ? (
+                <>
+                  <Pause className="w-4 h-4 animate-pulse" />
+                  Stop Tour
+                </>
+              ) : (
+                <>
+                  <PlayCircle className="w-4 h-4" />
+                  Start Tour
+                </>
+              )}
+            </button>
+            {tourIdx !== null && (
+              <div className="mt-2 flex items-center gap-2 w-48">
+                <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 transition-all"
+                    style={{ width: `${(tourIdx / (LAYER_KEYS.length * 3)) * 100}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-zinc-400 font-mono">
+                  {Math.min(tourIdx + 1, LAYER_KEYS.length * 3)}/{LAYER_KEYS.length * 3}
+                </span>
+              </div>
             )}
-          </button>
+          </div>
         </div>
 
         <ReactFlow
@@ -453,51 +507,7 @@ export default function LayerView({ result }: { result: any }) {
           </div>
         )}
 
-        {/* Tour Status Overlay */}
-        {tourIdx !== null && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-80 sm:w-96 bg-zinc-950/90 border border-primary/50 rounded-2xl p-4 shadow-2xl backdrop-blur-md text-left flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center justify-between border-b border-border/40 pb-2">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-primary">Architecture Tour</span>
-              </div>
-              <span className="text-[9px] font-extrabold text-zinc-500">
-                STEP {tourIdx + 1} OF {LAYER_KEYS.length}
-              </span>
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-zinc-150">{LAYER_LABELS[LAYER_KEYS[tourIdx]]} Tier</h4>
-              <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
-                Reviewing the {LAYER_LABELS[LAYER_KEYS[tourIdx]].toLowerCase()} layer containing {layers[LAYER_KEYS[tourIdx]]?.length || 0} component file(s).
-              </p>
-            </div>
-            <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-border/20">
-              <button
-                type="button"
-                onClick={() => setTourIdx(prev => (prev !== null && prev > 0 ? prev - 1 : prev))}
-                disabled={tourIdx === 0}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/60 bg-zinc-900/50 hover:bg-zinc-800 text-[9.5px] font-bold text-zinc-350 disabled:opacity-30 disabled:pointer-events-none transition"
-              >
-                <span>Prev</span>
-              </button>
-              <button
-                type="button"
-                onClick={stopTour}
-                className="px-2.5 py-1.5 rounded-lg border border-red-700 bg-red-950/20 text-red-400 text-[9.5px] font-bold hover:bg-red-900/30 transition"
-              >
-                Exit Tour
-              </button>
-              <button
-                type="button"
-                onClick={() => setTourIdx(prev => (prev !== null && prev < LAYER_KEYS.length - 1 ? prev + 1 : prev))}
-                disabled={tourIdx === LAYER_KEYS.length - 1}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/60 bg-zinc-900/50 hover:bg-zinc-800 text-[9.5px] font-bold text-zinc-350 disabled:opacity-30 disabled:pointer-events-none transition"
-              >
-                <span>Next</span>
-              </button>
-            </div>
-          </div>
-        )}
+
       </div>
 
       {/* Inspector Details Sidebar */}

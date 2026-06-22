@@ -48,6 +48,8 @@ export default function SubwayMap({
   const [focusDepth, setFocusDepth] = useState<number>(1);
   const [tourActive, setTourActive] = useState<boolean>(false);
   const [tourStepIndex, setTourStepIndex] = useState<number>(0);
+  const [tourPlaying, setTourPlaying] = useState<boolean>(false);
+  const tourPlaybackTimerRef = useRef<any>(null);
   const [healthOverlayActive, setHealthOverlayActive] = useState<boolean>(false);
   const [impactHighlightActive, setImpactHighlightActive] = useState<boolean>(false);
 
@@ -208,6 +210,52 @@ export default function SubwayMap({
     }
   }, [selectedStationId, reactFlowInstance, layout, journeyActive]);
 
+  // Onboarding architecture tour autoplay effect
+  useEffect(() => {
+    if (!tourActive || !tourPlaying) {
+      if (tourPlaybackTimerRef.current) {
+        clearInterval(tourPlaybackTimerRef.current);
+        tourPlaybackTimerRef.current = null;
+      }
+      return;
+    }
+
+    tourPlaybackTimerRef.current = setInterval(() => {
+      setTourStepIndex((prev) => {
+        const next = prev + 1;
+        if (next >= tourSteps.length) {
+          setTourPlaying(false);
+          setTourActive(false);
+          return 0;
+        }
+
+        const targetFile = tourSteps[next].file;
+        const nodeId = getTourNodeIdForFile(targetFile);
+        if (nodeId) {
+          setSelectedStationId(nodeId);
+          const pos = layout?.nodes.find((n: any) => n.id === nodeId)?.position;
+          if (pos && reactFlowInstance) {
+            reactFlowInstance.setCenter(pos.x + 85, pos.y + 30, { zoom: 1.25, duration: 800 });
+          }
+        }
+        return next;
+      });
+    }, 1800);
+
+    return () => {
+      if (tourPlaybackTimerRef.current) {
+        clearInterval(tourPlaybackTimerRef.current);
+      }
+    };
+  }, [tourActive, tourPlaying, tourSteps, layout, reactFlowInstance]);
+
+  // Clean up tour timer on unmount
+  useEffect(() => {
+    return () => {
+      if (tourPlaybackTimerRef.current) clearInterval(tourPlaybackTimerRef.current);
+    };
+  }, []);
+
   // Clear impact highlighting when closing detail
   const handleCloseDetail = () => {
     setSelectedStationId(null);
@@ -241,6 +289,7 @@ export default function SubwayMap({
 
   const startTour = () => {
     setTourActive(true);
+    setTourPlaying(true);
     setTourStepIndex(0);
     setHoveredRoute(null);
     setFocusQuery("");
@@ -992,7 +1041,7 @@ export default function SubwayMap({
         </ReactFlow>
 
         {tourActive && tourSteps.length > 0 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-80 sm:w-96 bg-zinc-950/90 border border-primary/50 rounded-2xl p-4 shadow-2xl backdrop-blur-md text-left">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-80 sm:w-96 bg-zinc-950/90 border border-primary/50 rounded-2xl p-4 shadow-2xl backdrop-blur-md text-left flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center justify-between pb-2 border-b border-border/40">
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
@@ -1001,6 +1050,7 @@ export default function SubwayMap({
               <button
                 onClick={() => {
                   setTourActive(false);
+                  setTourPlaying(false);
                   handleCloseDetail();
                 }}
                 className="p-1 rounded-lg hover:bg-zinc-900 text-zinc-500 hover:text-white transition"
@@ -1009,43 +1059,66 @@ export default function SubwayMap({
               </button>
             </div>
 
-            <div className="mt-2.5 space-y-1.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[9px] font-extrabold text-zinc-500 shrink-0">
-                  STEP {tourStepIndex + 1} OF {tourSteps.length}
-                </span>
-                <span className="text-[9px] font-mono text-zinc-400 truncate max-w-[200px]" title={tourSteps[tourStepIndex].file}>
-                  {tourSteps[tourStepIndex].filename}
-                </span>
-              </div>
-
-              <div className="text-xs font-bold text-zinc-150">
-                {tourSteps[tourStepIndex].role}
-              </div>
-
-              <p className="text-[10px] text-zinc-450 leading-relaxed font-normal">
-                {tourSteps[tourStepIndex].reason}
-              </p>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-[9px] font-extrabold text-zinc-500 uppercase tracking-widest">
+                Step {tourStepIndex + 1} of {tourSteps.length}
+              </span>
+              <span className="text-[9.5px] font-mono text-zinc-400 truncate max-w-[200px]" title={tourSteps[tourStepIndex].file}>
+                {tourSteps[tourStepIndex].filename}
+              </span>
             </div>
 
-            <div className="mt-4 flex items-center justify-between">
+            <div className="text-xs font-bold text-zinc-150 mt-1">
+              {tourSteps[tourStepIndex].role}
+            </div>
+
+            <p className="text-[10px] text-zinc-450 leading-relaxed font-normal">
+              {tourSteps[tourStepIndex].reason}
+            </p>
+
+            {/* Progress Bar & Playback Controls */}
+            <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-border/20">
               <button
-                onClick={() => handleTourStepChange(tourStepIndex - 1)}
-                disabled={tourStepIndex === 0}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/60 bg-zinc-900/50 hover:bg-zinc-800 text-[9.5px] font-bold text-zinc-350 disabled:opacity-30 disabled:pointer-events-none transition"
+                type="button"
+                onClick={() => setTourPlaying(!tourPlaying)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-[9px] font-extrabold uppercase tracking-wider transition ${
+                  tourPlaying
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                    : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                }`}
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Prev</span>
+                {tourPlaying ? "Pause" : "Play"}
               </button>
 
-              <button
-                onClick={() => handleTourStepChange(tourStepIndex + 1)}
-                disabled={tourStepIndex === tourSteps.length - 1}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/60 bg-zinc-900/50 hover:bg-zinc-800 text-[9.5px] font-bold text-zinc-350 disabled:opacity-30 disabled:pointer-events-none transition"
-              >
-                <span>Next</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${((tourStepIndex + 1) / tourSteps.length) * 100}%` }}
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    setTourPlaying(false);
+                    handleTourStepChange(tourStepIndex - 1);
+                  }}
+                  disabled={tourStepIndex === 0}
+                  className="p-1.5 rounded-lg border border-border/60 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-350 disabled:opacity-30 disabled:pointer-events-none transition"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setTourPlaying(false);
+                    handleTourStepChange(tourStepIndex + 1);
+                  }}
+                  disabled={tourStepIndex === tourSteps.length - 1}
+                  className="p-1.5 rounded-lg border border-border/60 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-350 disabled:opacity-30 disabled:pointer-events-none transition"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         )}

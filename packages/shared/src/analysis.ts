@@ -100,6 +100,8 @@ export interface FrameworkMetadata {
   packageManager: string;
   language: string;
   monorepo: boolean;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
 }
 
 export interface EntryPointInfo {

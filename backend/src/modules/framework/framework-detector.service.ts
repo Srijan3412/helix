@@ -137,6 +137,8 @@ export class FrameworkDetectorService {
       packageManager,
       language: langResult.primaryLanguage,
       monorepo,
+      dependencies: parsedPkg.dependencies,
+      devDependencies: parsedPkg.devDependencies,
     };
 
     logger.info(

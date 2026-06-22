@@ -18,7 +18,7 @@ import {
 import LayerView from "./LayerView";
 import FileGraph from "./FileGraph";
 import RouteGraph from "./RouteGraph";
-import DependencyGraph from "./DependencyGraph";
+import PackageGraph from "./PackageGraph";
 import ExecutionTrace from "./ExecutionTrace";
 import MetroMap from "./MetroMap/MetroMap";
 import SubwayMap from "./SubwayMap/SubwayMap";
@@ -29,7 +29,7 @@ const TABS: { id: ArchMode; label: string; icon: React.ReactNode }[] = [
   { id: "layer",      label: "Layered View",       icon: <Layers size={16} /> },
   { id: "file",       label: "File Graph",          icon: <Network size={16} /> },
   { id: "route",      label: "Route Graph",         icon: <Route size={16} /> },
-  { id: "dependency", label: "Dependency Graph",    icon: <Package size={16} /> },
+  { id: "dependency", label: "Package Dependencies",icon: <Package size={16} /> },
   { id: "trace",      label: "Execution Trace",     icon: <GitBranch size={16} /> },
   { id: "metro",      label: "Metro Map",           icon: <Map size={16} /> },
   { id: "subway",     label: "Subway Map",          icon: <Train size={16} /> },
@@ -233,7 +233,7 @@ export default function ArchitectureViewer({
               {activeMode === "layer" && <LayerView result={result} />}
               {activeMode === "file" && <FileGraph result={result} />}
               {activeMode === "route" && <RouteGraph result={result} />}
-              {activeMode === "dependency" && <DependencyGraph result={result} />}
+              {activeMode === "dependency" && <PackageGraph result={result} />}
               {activeMode === "trace" && (
                 <ExecutionTrace
                   result={result}
