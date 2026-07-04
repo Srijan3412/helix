@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "dev:worker": "tsx watch src/worker.ts",
+    "dev": "tsx watch --exclude storage src/server.ts",
+    "dev:worker": "tsx watch --exclude storage src/worker.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "worker": "node dist/worker.js",

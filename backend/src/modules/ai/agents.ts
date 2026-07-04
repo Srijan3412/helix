@@ -59,7 +59,7 @@ export class CodeSpecialistAgent {
     `;
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       return result.response.text().trim();
     } catch (err: any) {
@@ -111,7 +111,7 @@ export class GraphSpecialistAgent {
     `;
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       return result.response.text().trim();
     } catch (err: any) {
@@ -160,7 +160,7 @@ export class DbSpecialistAgent {
     `;
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       return result.response.text().trim();
     } catch (err: any) {
@@ -218,7 +218,7 @@ Set GEMINI_API_KEY in the backend .env for personalized AI-powered onboarding re
     }
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const prompt = `
         You are an expert Developer Onboarding Agent. Answer the developer's question using the onboarding guide below.
         
@@ -284,7 +284,7 @@ export class AgentOrchestrator {
       try {
         logs.push("[Orchestrator] Invoking LLM routing model to parse question intent...");
         const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-flash",
           generationConfig: { responseMimeType: "application/json" }
         });
 
@@ -389,7 +389,7 @@ export class AgentOrchestrator {
       if (genAI) {
         try {
           logs.push("[Orchestrator] Invoking LLM Synthesizer to consolidate agent findings...");
-          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
           const prompt = `
             You are the router orchestrator. Combine the findings from your specialist agents into a single, cohesive developer response.
             

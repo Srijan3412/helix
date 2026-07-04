@@ -64,6 +64,27 @@ export async function setJobRepoPath(jobId: string, repoPath: string): Promise<v
   await redisConnection.set(`job:${jobId}:repoPath`, repoPath);
 }
 
+export interface JobMetadata {
+  repoName: string;
+  repoPath: string;
+  totalFiles: number;
+  totalRoutes: number;
+}
+
+export async function getJobMetadata(jobId: string): Promise<JobMetadata | null> {
+  const data = await redisConnection.get(`job:${jobId}:metadata`);
+  if (!data) return null;
+  try {
+    return JSON.parse(data) as JobMetadata;
+  } catch {
+    return null;
+  }
+}
+
+export async function setJobMetadata(jobId: string, metadata: JobMetadata): Promise<void> {
+  await redisConnection.set(`job:${jobId}:metadata`, JSON.stringify(metadata));
+}
+
 const COMMON_ENTRY_FILES = new Set([
   "src/server.ts", "src/app.ts", "src/index.ts", "src/main.ts",
   "server.ts", "app.ts", "index.ts", "server.js", "app.js", "index.js",
@@ -78,6 +99,13 @@ export async function runAnalysisJob(jobData: AnalysisJobData, updateProgress?: 
 
     // Cache the repository absolute path in Redis for AI Q&A access
     await setJobRepoPath(jobId, repoPath);
+
+    await setJobMetadata(jobId, {
+      repoName,
+      repoPath,
+      totalFiles: 0,
+      totalRoutes: 0,
+    });
 
     const targetDir = source === "zip" ? path.dirname(repoPath) : repoPath;
 
@@ -430,6 +458,12 @@ export async function runAnalysisJob(jobData: AnalysisJobData, updateProgress?: 
       // Step 9: Store cached results and complete status
       await setJobResult(jobId, analysisResult);
       await setJobGraph(jobId, repoGraph);
+      await setJobMetadata(jobId, {
+        repoName: analysisResult.tree?.name || repoName,
+        repoPath,
+        totalFiles: analysisResult.overview?.totalFiles || 0,
+        totalRoutes: analysisResult.overview?.totalRoutes || 0,
+      });
       await setJobStatus(jobId, "completed");
       await prog(100);
 
@@ -446,7 +480,7 @@ export async function runAnalysisJob(jobData: AnalysisJobData, updateProgress?: 
 let _worker: any = null;
 
 export function startAnalysisWorker(): void {
-  connectionReady.then(() => {
+  connectionReady.then((conn) => {
     if (isInMemoryMode) {
       logger.info("⚙️  BullMQ Worker skipped (in-memory mode – jobs run inline)");
       return;
@@ -457,7 +491,7 @@ export function startAnalysisWorker(): void {
       async (job: Job<AnalysisJobData>) =>
         runAnalysisJob(job.data, (n) => job.updateProgress(n)),
       {
-        connection: redisConnection as any,
+        connection: conn as any,
         concurrency: 2,
       }
     );

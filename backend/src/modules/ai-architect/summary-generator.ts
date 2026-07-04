@@ -57,7 +57,7 @@ export class SummaryGenerator {
     if (genAI) {
       try {
         logger.info("🤖 [AI Architect] Calling Gemini to generate architecture summary...");
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const prompt = PromptBuilder.buildArchitectSummaryPrompt(ctx);
         const geminiResult = await model.generateContent(prompt);
         markdownSummary = geminiResult.response.text().trim();

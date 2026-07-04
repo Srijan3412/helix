@@ -360,7 +360,7 @@ export default function Home() {
     queryKey: ["status", currentJobId],
     queryFn: () => getAnalysisStatus(currentJobId!),
     enabled: !!currentJobId && status !== "completed" && status !== "failed",
-    refetchInterval: 5000, // Reduced from 1.5s to 5s to prevent 429 rate limit issues
+    refetchInterval: 2000, // Speed up status updates now that rate limit has been raised
   });
   useEffect(() => { if (statusData?.status) setStatus(statusData.status); }, [statusData, setStatus]);
 

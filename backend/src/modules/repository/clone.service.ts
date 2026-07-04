@@ -1,10 +1,12 @@
 import { simpleGit } from "simple-git";
 import { logger } from "../../core/logger/index.js";
+import fs from "fs/promises";
 
 export class CloneService {
   static async clone(repoUrl: string, destinationPath: string): Promise<void> {
     logger.info({ repoUrl, destinationPath }, "📥 Starting repository clone process");
     try {
+      await fs.mkdir(destinationPath, { recursive: true });
       const git = simpleGit();
       await git.clone(repoUrl, destinationPath, [
         "--depth", "1", // Shallow clone for speed and efficiency

@@ -27,14 +27,41 @@ export class StorageService {
 
   static async createWorkspace(repoId: string): Promise<string> {
     const workspacePath = this.getWorkspacePath(repoId);
-    await fs.mkdir(workspacePath, { recursive: true });
-    logger.info({ repoId, workspacePath }, "📁 Created isolated repository workspace");
+    logger.info({ workspacePath }, "Calling fs.mkdir...");
+    try {
+      await fs.mkdir(workspacePath, { recursive: true });
+      logger.info({ repoId, workspacePath }, "📁 Created isolated repository workspace");
+    } catch (mkdirErr) {
+      logger.error({ repoId, workspacePath, mkdirErr }, "❌ fs.mkdir failed");
+      throw mkdirErr;
+    }
     return workspacePath;
+  }
+
+  static async deleteFolder(folderPath: string): Promise<void> {
+    if (process.platform === "win32") {
+      const { exec } = await import("child_process");
+      await new Promise<void>((resolve) => {
+        exec(`cmd.exe /c "rmdir /s /q \\"${folderPath}\\""`, async (err) => {
+          if (err) {
+            // Fallback to fs.rm if rmdir failed
+            try {
+              await fs.rm(folderPath, { recursive: true, force: true });
+            } catch {
+              // Ignore failure
+            }
+          }
+          resolve();
+        });
+      });
+    } else {
+      await fs.rm(folderPath, { recursive: true, force: true }).catch(() => {});
+    }
   }
 
   static async deleteWorkspace(repoId: string): Promise<void> {
     const workspacePath = this.getWorkspacePath(repoId);
-    await fs.rm(workspacePath, { recursive: true, force: true });
+    await this.deleteFolder(workspacePath);
     logger.info({ repoId, workspacePath }, "🗑️ Cleaned up repository workspace");
   }
 
@@ -69,7 +96,7 @@ export class StorageService {
 
           if (ageMs > maxAgeMs) {
             logger.info({ folderPath, ageDays: (ageMs / (24 * 60 * 60 * 1000)).toFixed(1) }, "🗑️ Found stale workspace; deleting");
-            await fs.rm(folderPath, { recursive: true, force: true });
+            await this.deleteFolder(folderPath);
             deletedCount++;
           }
         }

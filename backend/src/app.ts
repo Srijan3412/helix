@@ -23,9 +23,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     methods: ["GET", "POST", "OPTIONS"],
   });
 
-  // Enable Rate Limiting (10 requests per minute)
+  // Enable Rate Limiting (150 requests per minute to allow status polling without 429)
   await app.register(rateLimit, {
-    max: 10,
+    max: 150,
     timeWindow: "1 minute",
   });
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
 import { analysisQueue, redisConnection, isInMemoryMode } from "../jobs/analysis.queue.js";
-import { getJobStatus, getJobResult, getJobGraph, getJobRepoPath, runAnalysisJob } from "../jobs/analysis.worker.js";
+import { getJobStatus, getJobResult, getJobGraph, getJobRepoPath, runAnalysisJob, setJobRepoPath, setJobMetadata, getJobMetadata } from "../jobs/analysis.worker.js";
 import { StorageService } from "../modules/upload/storage.service.js";
 import { UploadFailedError, JobNotFoundError } from "../core/errors/index.js";
 import { logger } from "../core/logger/index.js";
@@ -30,8 +30,10 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
    * Enqueue a new analysis job for a GitHub URL, uploaded ZIP file, or local path.
    */
   fastify.post("/api/analyze", async (request, reply) => {
+    logger.info("📩 Received POST /api/analyze request");
     // Check if multipart request (ZIP file) or JSON request (GitHub URL or Local Path)
     const contentType = request.headers["content-type"] || "";
+    logger.info({ contentType }, "Request content type parsed");
     
     let repoId = Math.random().toString(36).substring(2, 11);
     let jobId = Math.random().toString(36).substring(2, 11);
@@ -110,20 +112,32 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         const urlParts = gitUrl.split("/");
         repoName = urlParts[urlParts.length - 1] || "github-repo";
         source = "github";
-        // Create path representation
-        repoPath = await StorageService.createWorkspace(repoId);
+        logger.info({ repoId }, "Resolving workspace path...");
+        repoPath = StorageService.getWorkspacePath(repoId);
+        logger.info({ repoPath }, "Workspace path resolved");
       }
     }
 
-    // Queue background task via BullMQ or run inline (in-memory fallback mode)
+    logger.info("Queuing background task...");
+    
+    // Initialize repository path and metadata so they are immediately available to the jobs list query
+    await setJobRepoPath(jobId, repoPath);
+    await setJobMetadata(jobId, {
+      repoName,
+      repoPath,
+      totalFiles: 0,
+      totalRoutes: 0,
+    });
+
     if (isInMemoryMode) {
-      // In dev mode without Redis: run job inline in background (non-blocking)
+      logger.info("Running in in-memory fallback mode...");
       await redisConnectionSetStatus(jobId, "uploaded");
       setImmediate(() => {
         runAnalysisJob({ jobId, repoId, repoName, source, repoPath, url: gitUrl })
           .catch((err) => logger.error({ jobId, err }, "❌ Inline job failed"));
       });
     } else {
+      logger.info("Adding job to analysisQueue...");
       await analysisQueue.add(jobId, {
         jobId,
         repoId,
@@ -132,7 +146,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         repoPath,
         url: gitUrl,
       });
-      // Set initial job status
+      logger.info("Job added to analysisQueue, setting status in Redis...");
       await redisConnectionSetStatus(jobId, "uploaded");
     }
 
@@ -511,18 +525,30 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       const jobId = key.split(":")[1];
       const status = await redisConnection.get(key);
       const repoPath = await redisConnection.get(`job:${jobId}:repoPath`);
-      const resultData = await redisConnection.get(`job:${jobId}:result`);
+      
       let repoName = "Unknown";
       let totalFiles = 0;
       let totalRoutes = 0;
-      if (resultData) {
-        try {
-          const res = JSON.parse(resultData);
-          repoName = res.tree?.name || res.overview?.repoName || repoName;
-          totalFiles = res.overview?.totalFiles || 0;
-          totalRoutes = res.overview?.totalRoutes || 0;
-        } catch {}
+
+      // Try to fetch optimized metadata first
+      const metadata = await getJobMetadata(jobId);
+      if (metadata) {
+        repoName = metadata.repoName || repoName;
+        totalFiles = metadata.totalFiles || 0;
+        totalRoutes = metadata.totalRoutes || 0;
+      } else {
+        // Fallback for older jobs to prevent breaking compatibility
+        const resultData = await redisConnection.get(`job:${jobId}:result`);
+        if (resultData) {
+          try {
+            const res = JSON.parse(resultData);
+            repoName = res.tree?.name || res.overview?.repoName || repoName;
+            totalFiles = res.overview?.totalFiles || 0;
+            totalRoutes = res.overview?.totalRoutes || 0;
+          } catch {}
+        }
       }
+
       jobs.push({
         jobId,
         status,
