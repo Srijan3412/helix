@@ -2,11 +2,18 @@ import { buildApp } from "./app.js";
 import { config } from "./core/config/index.js";
 import { logger } from "./core/logger/index.js";
 import { redisConnection, connectionReady } from "./jobs/analysis.queue.js";
+import { startAnalysisWorker, analysisWorker } from "./jobs/analysis.worker.js";
+import { startCleanupWorker } from "./jobs/cleanup.worker.js";
 
 async function start() {
   try {
     // Wait for Redis (or fallback mock) to be ready before building the app
     await connectionReady;
+
+    // Start background analysis queue worker and storage cleanup worker
+    startAnalysisWorker();
+    startCleanupWorker();
+    logger.info("⚙️ Background queue workers initialized alongside the server.");
 
     const app = await buildApp();
 
@@ -21,10 +28,13 @@ async function start() {
       // Close Fastify server
       await app.close();
 
+      // Close queue workers
+      await analysisWorker.close();
+
       // Close redis connections
       await redisConnection.quit();
 
-      logger.info("👋 Server process terminated.");
+      logger.info("👋 Server and worker processes terminated cleanly.");
       process.exit(0);
     };
 
