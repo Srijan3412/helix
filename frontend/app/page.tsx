@@ -45,6 +45,8 @@ import ProgressTracker from "../components/ingestion/ProgressTracker";
 import OverviewAnalytics from "../components/diagnostics/OverviewAnalytics";
 import AuthDetector from "../components/diagnostics/AuthDetector";
 import LanguageBreakdown from "../components/diagnostics/LanguageBreakdown";
+import { SubscriptionPanel } from "../components/subscription/SubscriptionPanel";
+import { useSubscription } from "../components/subscription/SubscriptionProvider";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -181,6 +183,7 @@ function buildExecutionTrace(route: RouteNode, result: any) {
 // ─── Main Component ─────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const { recordUsage } = useSubscription();
   const { currentJobId, status, result, setJob, setStatus, setResult, reset } = useAnalysisStore();
 
   // ── Ingestion Error State ──
@@ -372,8 +375,9 @@ export default function Home() {
   useEffect(() => { if (resultData) setResult(resultData); }, [resultData, setResult]);
 
   const handleFileDrop = (file: File) => {
-    if (file.name.endsWith(".zip")) fileMutation.mutate(file);
-    else setErrorMessage("Please upload a valid .zip compressed archive");
+    if (!file.name.endsWith(".zip")) setErrorMessage("Please upload a valid .zip compressed archive");
+    else if (!recordUsage("repositories")) setErrorMessage("Your repository analysis limit has been reached. Open your plan to upgrade.");
+    else fileMutation.mutate(file);
   };
 
   const isPending = urlMutation.isPending || fileMutation.isPending || localMutation.isPending;
@@ -534,6 +538,7 @@ export default function Home() {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute top-10 right-10 w-[200px] h-[200px] bg-emerald-500/5 rounded-full blur-[60px] pointer-events-none" />
         <div className="text-center mb-16 z-10">
+          <div className="mb-6 flex justify-center"><SubscriptionPanel /></div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/50 backdrop-blur-md mb-6 hover:border-primary/20 transition duration-300">
             <Terminal className="w-4 h-4 text-primary" />
             <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Repository Intelligence Platform</span>
@@ -548,9 +553,9 @@ export default function Home() {
         </div>
         <div className="w-full max-w-3xl z-10 mb-16">
           <IngestionControl
-            onSubmitGithub={(url) => urlMutation.mutate(url)}
-            onSubmitZip={(file) => fileMutation.mutate(file)}
-            onSubmitLocal={(path) => localMutation.mutate(path)}
+            onSubmitGithub={(url) => { if (!recordUsage("repositories")) setErrorMessage("Your repository analysis limit has been reached. Open your plan to upgrade."); else urlMutation.mutate(url); }}
+            onSubmitZip={(file) => handleFileDrop(file)}
+            onSubmitLocal={(path) => { if (!recordUsage("repositories")) setErrorMessage("Your repository analysis limit has been reached. Open your plan to upgrade."); else localMutation.mutate(path); }}
             isLoading={isPending}
             error={errorMessage}
           />
