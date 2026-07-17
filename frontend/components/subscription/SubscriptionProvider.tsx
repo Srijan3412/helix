@@ -16,16 +16,15 @@ type SubscriptionContextValue = SubscriptionState & {
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<SubscriptionState>(initialState);
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => {
+  const [state, setState] = useState<SubscriptionState>(() => {
+    if (typeof window === "undefined") return initialState;
     try {
       const saved = window.localStorage.getItem(storageKey);
-      if (saved) setState(JSON.parse(saved) as SubscriptionState);
+      return saved ? JSON.parse(saved) as SubscriptionState : initialState;
     } catch { window.localStorage.removeItem(storageKey); }
-    setHydrated(true);
-  }, []);
-  useEffect(() => { if (hydrated) window.localStorage.setItem(storageKey, JSON.stringify(state)); }, [hydrated, state]);
+    return initialState;
+  });
+  useEffect(() => { window.localStorage.setItem(storageKey, JSON.stringify(state)); }, [state]);
 
   const value = useMemo<SubscriptionContextValue>(() => {
     const trialDaysLeft = daysLeft(state.trialStartedAt);
