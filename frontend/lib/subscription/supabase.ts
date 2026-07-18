@@ -15,9 +15,42 @@ const isConfigured = !!(supabaseUrl && supabaseAnonKey);
  */
 function createMockClient(): SupabaseClient {
   const noop = new Proxy(
-    {},
+    (() => {}) as any,
     {
-      get(_target, _prop) {
+      get(_target, prop) {
+        if (prop === 'auth') {
+          return {
+            getSession: () => Promise.resolve({ data: { session: null } }),
+            onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
+            signUp: () => Promise.resolve({ data: { user: null }, error: null }),
+            signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
+            signOut: () => Promise.resolve({ error: null }),
+          };
+        }
+        if (prop === 'from') {
+          return () => ({
+            select: () => ({
+              eq: () => ({
+                order: () => ({
+                  limit: () => ({
+                    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+                  }),
+                  maybeSingle: () => Promise.resolve({ data: null, error: null }),
+                }),
+                maybeSingle: () => Promise.resolve({ data: null, error: null }),
+              }),
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: () => Promise.resolve({ data: null, error: null }),
+                }),
+              }),
+            }),
+            insert: () => Promise.resolve({ error: null }),
+            update: () => ({
+              eq: () => Promise.resolve({ error: null }),
+            }),
+          });
+        }
         return noop;
       },
       apply(_target, _thisArg, _args) {
@@ -25,38 +58,6 @@ function createMockClient(): SupabaseClient {
       },
     },
   ) as any;
-
-  // Override specific properties that SubscriptionContext actually awaits
-  noop.auth = {
-    getSession: () => Promise.resolve({ data: { session: null } }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
-    signUp: () => Promise.resolve({ data: { user: null }, error: null }),
-    signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
-    signOut: () => Promise.resolve({ error: null }),
-  };
-
-  noop.from = () => ({
-    select: () => ({
-      eq: () => ({
-        order: () => ({
-          limit: () => ({
-            maybeSingle: () => Promise.resolve({ data: null, error: null }),
-          }),
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-        maybeSingle: () => Promise.resolve({ data: null, error: null }),
-      }),
-      order: () => ({
-        limit: () => ({
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
-    }),
-    insert: () => Promise.resolve({ error: null }),
-    update: () => ({
-      eq: () => Promise.resolve({ error: null }),
-    }),
-  });
 
   return noop;
 }
