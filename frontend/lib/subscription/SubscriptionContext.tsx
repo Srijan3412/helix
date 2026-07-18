@@ -35,7 +35,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = useCallback(async (userId: string) => {
     const { data: existing } = await supabase
-      .from('profiles')
+      .from('helix_profiles')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
@@ -44,7 +44,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const loadSubscription = useCallback(async (userId: string) => {
     const { data } = await supabase
-      .from('subscriptions')
+      .from('helix_subscriptions')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -55,7 +55,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const loadUsage = useCallback(async (userId: string) => {
     const { data } = await supabase
-      .from('usage_records')
+      .from('helix_usage_records')
       .select('*')
       .eq('user_id', userId)
       .order('period_start', { ascending: false })
@@ -66,7 +66,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const loadPayments = useCallback(async (userId: string) => {
     const { data } = await supabase
-      .from('payments')
+      .from('helix_payments')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -118,7 +118,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     if (error) return { error: error.message };
 
     if (data.user) {
-      await supabase.from('profiles').insert({
+      await supabase.from('helix_profiles').insert({
         id: data.user.id,
         email,
         role: 'trial',
@@ -127,7 +127,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         subscription_status: 'trialing',
       });
-      await supabase.from('usage_records').insert({
+      await supabase.from('helix_usage_records').insert({
         user_id: data.user.id,
         period_start: new Date().toISOString(),
       });
@@ -160,7 +160,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     update[field as string] = (usage[field] as number) + amount;
 
     const { error } = await supabase
-      .from('usage_records')
+      .from('helix_usage_records')
       .update(update)
       .eq('id', usage.id);
 
@@ -185,7 +185,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     const config = PLAN_CONFIG[plan];
 
     const { error: profileError } = await supabase
-      .from('profiles')
+      .from('helix_profiles')
       .update({
         plan,
         role: plan === 'enterprise' ? 'org_admin' : 'professional',
@@ -195,7 +195,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     if (profileError) return { error: profileError.message };
 
     if (plan !== 'trial') {
-      const { error: subError } = await supabase.from('subscriptions').insert({
+      const { error: subError } = await supabase.from('helix_subscriptions').insert({
         user_id: session.user.id,
         plan,
         status: 'active',
@@ -207,7 +207,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       });
       if (subError) return { error: subError.message };
 
-      const { error: payError } = await supabase.from('payments').insert({
+      const { error: payError } = await supabase.from('helix_payments').insert({
         user_id: session.user.id,
         invoice_id: `INV-${Date.now()}`,
         amount_cents: (config.price ?? 0) * 100,
@@ -231,13 +231,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     if (!session?.user?.id || !subscription) return { error: 'No subscription found' };
 
     const { error: subError } = await supabase
-      .from('subscriptions')
+      .from('helix_subscriptions')
       .update({ status: 'canceled', cancel_at: new Date().toISOString() })
       .eq('id', subscription.id);
     if (subError) return { error: subError.message };
 
     const { error: profileError } = await supabase
-      .from('profiles')
+      .from('helix_profiles')
       .update({ plan: 'trial', role: 'trial', subscription_status: 'canceled' })
       .eq('id', session.user.id);
     if (profileError) return { error: profileError.message };
