@@ -263,14 +263,14 @@ export default function SubwayMap({
     setImpactHighlightActive(false);
   };
 
-  const getTourNodeIdForFile = (filePath: string) => {
+  function getTourNodeIdForFile(filePath: string) {
     const match = layout?.nodes.find((n: any) => {
       const parts = n.id.split(":");
       const stationIdClean = parts.slice(2).join(":");
       return stationIdClean === filePath;
     });
     return match ? match.id : null;
-  };
+  }
 
   const handleTourStepChange = (newIndex: number) => {
     if (newIndex < 0 || newIndex >= tourSteps.length) return;
@@ -562,9 +562,9 @@ export default function SubwayMap({
       const edgeId = rawEdge.id;
       const isTransferEdge = edgeId.startsWith("subway-transfer:");
       
-      let stroke = rawEdge.style?.stroke || "#71717a";
-      let opacity = rawEdge.style?.opacity || 0.8;
-      let strokeWidth = rawEdge.style?.strokeWidth || 4;
+      const stroke = rawEdge.style?.stroke || "#71717a";
+      const opacity = rawEdge.style?.opacity || 0.8;
+      const strokeWidth = rawEdge.style?.strokeWidth || 4;
 
       const hasHighlight = hoveredFeature !== null || selectedFeature !== null;
       const activeFeatureId = selectedFeature || hoveredFeature;
