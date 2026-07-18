@@ -27,9 +27,20 @@ import {
   Sparkles, ChevronDown, ChevronUp, Loader2, Bot,
   Heart, AlertTriangle, Zap, Eye, Search, X, Play,
   Shield, Database, GitBranch, Activity, FileText, ArrowRight,
-  GitCompare
+  GitCompare, CreditCard, Lock, User, LogOut
 } from "lucide-react";
 import "@xyflow/react/dist/style.css";
+
+import LandingPage from "../components/subscription/LandingPage";
+import AuthPage from "../components/subscription/AuthPage";
+import PaymentPage from "../components/subscription/PaymentPage";
+import BillingPage from "../components/subscription/BillingPage";
+import UpgradeModal from "../components/subscription/UpgradeModal";
+import UsageLimitModal from "../components/subscription/UsageLimitModal";
+import TokenCounter from "../components/subscription/TokenCounter";
+import TrialBanner from "../components/subscription/TrialBanner";
+import { useSubscription } from "../lib/subscription/SubscriptionContext";
+import { PLAN_CONFIG } from "../lib/subscription/subscription";
 
 import LayerView from "../components/architecture/LayerView";
 import FileGraph from "../components/architecture/FileGraph";
@@ -48,7 +59,7 @@ import LanguageBreakdown from "../components/diagnostics/LanguageBreakdown";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type ResultTab = "overview" | "arch" | "routes" | "db" | "health" | "impact" | "compare" | "env" | "ai-architect" | "onboarding";
+type ResultTab = "overview" | "arch" | "routes" | "db" | "health" | "impact" | "compare" | "env" | "ai-architect" | "onboarding" | "billing";
 type ArchViewMode = "layer" | "file" | "route" | "dependency" | "trace" | "metro" | "subway";
 
 // ─── Health Score Calculator ───────────────────────────────────────────────────
@@ -182,6 +193,13 @@ function buildExecutionTrace(route: RouteNode, result: any) {
 
 export default function Home() {
   const { currentJobId, status, result, setJob, setStatus, setResult, reset } = useAnalysisStore();
+
+  // ── Subscription and Auth States ──
+  const { session, profile, usage, canUse, recordUsage, signOut, loading: subLoading } = useSubscription();
+  const [view, setView] = useState<'dashboard' | 'auth' | 'payment'>('dashboard');
+  const [paymentPlan, setPaymentPlan] = useState<'professional' | 'enterprise'>('professional');
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showLimit, setShowLimit] = useState<{ open: boolean; title?: string; message?: string }>({ open: false });
 
   // ── Ingestion Error State ──
   const [errorMessage, setErrorMessage] = useState("");
@@ -330,17 +348,32 @@ export default function Home() {
   // ── Mutations ──
   const urlMutation = useMutation({
     mutationFn: submitGithubUrl,
-    onSuccess: (data) => { setJob(data.jobId, "uploaded"); setErrorMessage(""); },
+    onSuccess: (data) => {
+      setJob(data.jobId, "uploaded");
+      setErrorMessage("");
+      recordUsage('repositories_analyzed');
+      recordUsage('tokens_used', 100);
+    },
     onError: (error: Error) => setErrorMessage(error.message || "Failed to submit repository URL"),
   });
   const fileMutation = useMutation({
     mutationFn: submitZipFile,
-    onSuccess: (data) => { setJob(data.jobId, "uploaded"); setErrorMessage(""); },
+    onSuccess: (data) => {
+      setJob(data.jobId, "uploaded");
+      setErrorMessage("");
+      recordUsage('repositories_analyzed');
+      recordUsage('tokens_used', 100);
+    },
     onError: (error: Error) => setErrorMessage(error.message || "Failed to upload ZIP file"),
   });
   const localMutation = useMutation({
     mutationFn: submitLocalPath,
-    onSuccess: (data) => { setJob(data.jobId, "uploaded"); setErrorMessage(""); },
+    onSuccess: (data) => {
+      setJob(data.jobId, "uploaded");
+      setErrorMessage("");
+      recordUsage('repositories_analyzed');
+      recordUsage('tokens_used', 100);
+    },
     onError: (error: Error) => setErrorMessage(error.message || "Failed to submit local path"),
   });
   const chatMutation = useMutation({
@@ -355,6 +388,35 @@ export default function Home() {
       setChatHistory((prev) => [...prev, errMsg]);
     },
   });
+
+  const handleSendChatMessage = () => {
+    if (!chatMessage.trim()) return;
+
+    const currentChats = usage?.ai_chats ?? 0;
+    if (!canUse('aiChats', currentChats)) {
+      setShowLimit({
+        open: true,
+        title: 'AI Credits Exhausted',
+        message: 'You have used all your AI chat credits. Upgrade to Professional for unlimited AI.',
+      });
+      return;
+    }
+
+    const userMsg: ChatMessage = {
+      id: Math.random().toString(36).substring(2, 11),
+      role: "user",
+      content: chatMessage,
+      timestamp: new Date().toISOString(),
+    };
+
+    setChatHistory((prev) => [...prev, userMsg]);
+    const msg = chatMessage;
+    setChatMessage("");
+    
+    chatMutation.mutate({ jobId: currentJobId!, message: msg });
+    recordUsage('ai_chats');
+    recordUsage('tokens_used', 10);
+  };
 
   const { data: statusData } = useQuery({
     queryKey: ["status", currentJobId],
@@ -407,6 +469,7 @@ export default function Home() {
     { id: "env",          label: "Environment",   icon: <Settings className="w-3.5 h-3.5" />,      show: !!(result?.envVars?.length) },
     { id: "ai-architect", label: "AI Architect",  icon: <Sparkles className="w-3.5 h-3.5" />,      show: !!(result?.aiSummary) },
     { id: "onboarding",   label: "Onboarding",    icon: <Terminal className="w-3.5 h-3.5" />,      show: !!(result?.onboarding) },
+    { id: "billing",      label: "Billing",       icon: <CreditCard className="w-3.5 h-3.5" />,    show: true },
   ];
 
   // ─── Execution Trace Panel ────────────────────────────────────────────────────
@@ -523,6 +586,46 @@ export default function Home() {
     );
   };
 
+  // ─── AUTH & SUBSCRIPTION INTERCEPT ───
+  if (subLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="text-zinc-500 text-xs animate-pulse font-mono">Loading subscription...</div>
+      </div>
+    );
+  }
+
+  if (!session || !profile) {
+    if (view === 'auth') {
+      return <AuthPage />;
+    }
+    return (
+      <LandingPage
+        onGetStarted={() => setView('auth')}
+        onSelectPlan={(plan) => {
+          if (plan === 'trial') {
+            setView('auth');
+          } else {
+            setPaymentPlan(plan as 'professional' | 'enterprise');
+            setView('auth');
+          }
+        }}
+      />
+    );
+  }
+
+  if (view === 'payment') {
+    return (
+      <PaymentPage
+        preselectedPlan={paymentPlan}
+        onBack={() => setView('dashboard')}
+      />
+    );
+  }
+
+  const plan = PLAN_CONFIG[profile.plan];
+  const isTrial = profile.plan === 'trial';
+
   // ─── MAIN RETURN ──────────────────────────────────────────────────────────────
 
   const visibleTabs = resultTabs.filter(t => t.show);
@@ -548,13 +651,56 @@ export default function Home() {
         </div>
         <div className="w-full max-w-3xl z-10 mb-16">
           <IngestionControl
-            onSubmitGithub={(url) => urlMutation.mutate(url)}
-            onSubmitZip={(file) => fileMutation.mutate(file)}
-            onSubmitLocal={(path) => localMutation.mutate(path)}
+            onSubmitGithub={(url) => {
+              const currentRepos = usage?.repositories_analyzed ?? 0;
+              if (!canUse('repositories', currentRepos)) {
+                setShowLimit({
+                  open: true,
+                  title: 'Repository Limit Reached',
+                  message: `You have already analyzed ${plan.limits.repositories} repositories on the Free Trial. Upgrade to Professional for unlimited repositories.`,
+                });
+                return;
+              }
+              urlMutation.mutate(url);
+            }}
+            onSubmitZip={(file) => {
+              const currentRepos = usage?.repositories_analyzed ?? 0;
+              if (!canUse('repositories', currentRepos)) {
+                setShowLimit({
+                  open: true,
+                  title: 'Repository Limit Reached',
+                  message: `You have already analyzed ${plan.limits.repositories} repositories on the Free Trial. Upgrade to Professional for unlimited repositories.`,
+                });
+                return;
+              }
+              fileMutation.mutate(file);
+            }}
+            onSubmitLocal={(path) => {
+              const currentRepos = usage?.repositories_analyzed ?? 0;
+              if (!canUse('repositories', currentRepos)) {
+                setShowLimit({
+                  open: true,
+                  title: 'Repository Limit Reached',
+                  message: `You have already analyzed ${plan.limits.repositories} repositories on the Free Trial. Upgrade to Professional for unlimited repositories.`,
+                });
+                return;
+              }
+              localMutation.mutate(path);
+            }}
             isLoading={isPending}
             error={errorMessage}
           />
         </div>
+
+        {/* Modals for uncompleted job state */}
+        <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+        <UsageLimitModal
+          open={showLimit.open}
+          onClose={() => setShowLimit({ open: false })}
+          onUpgrade={() => { setShowLimit({ open: false }); setShowUpgrade(true); }}
+          title={showLimit.title}
+          message={showLimit.message}
+        />
       </main>
     );
   }
@@ -668,6 +814,11 @@ export default function Home() {
               </motion.button>
             );
           })}
+          {sidebarExpanded && (
+            <div className="mt-4 px-2">
+              <TokenCounter />
+            </div>
+          )}
         </nav>
 
         {/* Reset Button */}
@@ -695,10 +846,35 @@ export default function Home() {
           </button>
         </div>
 
+        {/* User Profile / Sign Out */}
+        <div className="p-2 border-t border-border/20 relative">
+          <button
+            onClick={() => signOut()}
+            className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-zinc-600 hover:text-red-400 hover:bg-red-950/20 transition-all text-xs cursor-pointer ${
+              !sidebarExpanded ? "justify-center" : ""
+            }`}
+            title="Sign Out"
+          >
+            <LogOut size={14} className="shrink-0" />
+            <AnimatePresence>
+              {sidebarExpanded && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="font-semibold truncate"
+                >
+                  Sign Out ({profile.email})
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        </div>
+
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="p-3 border-t border-border/20 text-zinc-600 hover:text-white transition-colors flex items-center justify-center"
+          className="p-3 border-t border-border/20 text-zinc-600 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
         >
           <motion.div animate={{ rotate: sidebarExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
             <ChevronDown size={16} className="-rotate-90" />
@@ -708,6 +884,7 @@ export default function Home() {
 
       {/* ── Main Content ──────────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden bg-zinc-950">
+        <TrialBanner onUpgrade={() => setShowUpgrade(true)} />
         <AnimatePresence mode="wait">
           <motion.div
             key={activeResultTab}
@@ -1203,8 +1380,126 @@ export default function Home() {
               </div>
             )}
 
+            {/* ─── BILLING TAB ─── */}
+            {activeResultTab === "billing" && (
+              <BillingPage />
+            )}
+
           </motion.div>
         </AnimatePresence>
+
+        {/* AI Chat Floating Widget */}
+        {result && (
+          <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+            <AnimatePresence>
+              {isChatOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                  className="w-80 md:w-96 h-[480px] bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4"
+                >
+                  {/* Header */}
+                  <div className="p-4 bg-zinc-800 border-b border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4 text-primary" />
+                      <div>
+                        <span className="text-xs font-bold text-white block">AI Architect Assistant</span>
+                        <span className="text-[10px] text-zinc-500">Q&A on {result.tree?.name || "codebase"}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setIsChatOpen(false)} className="p-1 rounded hover:bg-white/5 text-zinc-400 hover:text-white transition cursor-pointer">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Message list */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+                    {chatHistory.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6 my-auto">
+                        <Sparkles className="w-8 h-8 text-zinc-700 mb-2 animate-pulse" />
+                        <p className="text-xs font-bold text-white mb-1">Ask anything about this codebase</p>
+                        <p className="text-[10px] text-zinc-500 max-w-[200px]">
+                          Get code explanations, detect architectural patterns, or scan for vulnerabilities.
+                        </p>
+                      </div>
+                    ) : (
+                      chatHistory.map((msg, i) => {
+                        const isUser = msg.role === "user";
+                        return (
+                          <div key={msg.id || i} className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
+                            <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                              isUser ? "bg-primary text-neutral-950 font-medium rounded-tr-none" : "bg-zinc-800 text-zinc-200 border border-white/5 rounded-tl-none"
+                            }`}>
+                              <p className="whitespace-pre-wrap">{msg.content}</p>
+                            </div>
+                            
+                            {/* Agent logs */}
+                            {!isUser && msg.agentLogs && msg.agentLogs.length > 0 && (
+                              <div className="mt-1 w-full max-w-[85%]">
+                                <button
+                                  onClick={() => setExpandedAgentLogs(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))}
+                                  className="text-[9px] text-primary hover:underline flex items-center gap-1 font-mono cursor-pointer"
+                                >
+                                  {expandedAgentLogs[msg.id] ? "▼ Hide thoughts" : "▶ Show thoughts"}
+                                </button>
+                                {expandedAgentLogs[msg.id] && (
+                                  <div className="mt-1 p-2 rounded bg-zinc-950 border border-white/5 font-mono text-[9px] text-zinc-500 space-y-0.5 max-h-24 overflow-y-auto">
+                                    {msg.agentLogs.map((log, idx) => <div key={idx}>{log}</div>)}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                    {chatMutation.isPending && (
+                      <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-mono pl-1">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking...
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Input */}
+                  <div className="p-3 bg-zinc-850 border-t border-white/5 flex gap-2">
+                    <input
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSendChatMessage(); }}
+                      placeholder="Ask a question..."
+                      className="flex-1 px-3 py-1.5 bg-zinc-900 border border-white/5 rounded-xl text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-primary/40 transition"
+                    />
+                    <button
+                      onClick={handleSendChatMessage}
+                      disabled={chatMutation.isPending || !chatMessage.trim()}
+                      className="p-1.5 rounded-xl bg-primary text-neutral-950 hover:bg-primary-400 disabled:opacity-50 transition cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-emerald-400 text-neutral-950 flex items-center justify-center shadow-2xl hover:scale-105 transition cursor-pointer"
+            >
+              {isChatOpen ? <X className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
+            </button>
+          </div>
+        )}
+
+        {/* Modals for dashboard view */}
+        <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+        <UsageLimitModal
+          open={showLimit.open}
+          onClose={() => setShowLimit({ open: false })}
+          onUpgrade={() => { setShowLimit({ open: false }); setShowUpgrade(true); }}
+          title={showLimit.title}
+          message={showLimit.message}
+        />
       </main>
     </div>
   );
