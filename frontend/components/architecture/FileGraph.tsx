@@ -19,7 +19,7 @@ function getFocusedNodes(result: any, focusQuery: string, depth: number = 2): Se
 
   const visited = new Set<string>(seeds);
   let frontier = [...seeds];
-
+  
   const fileMap = new Map<string, FileNode>(files.map((f: FileNode) => [f.path, f]));
 
   for (let d = 0; d < depth; d++) {

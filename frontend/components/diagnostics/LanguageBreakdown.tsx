@@ -9,16 +9,16 @@ interface LanguageBreakdownProps {
 }
 
 const languageColors: Record<string, { bg: string; bar: string; text: string }> = {
-  TypeScript: { bg: "bg-blue-500/10", bar: "bg-blue-500", text: "text-blue-400" },
-  JavaScript: { bg: "bg-amber-500/10", bar: "bg-amber-500", text: "text-amber-400" },
-  Python: { bg: "bg-green-500/10", bar: "bg-green-500", text: "text-green-400" },
-  Go: { bg: "bg-cyan-500/10", bar: "bg-cyan-500", text: "text-cyan-400" },
-  Rust: { bg: "bg-orange-500/10", bar: "bg-orange-500", text: "text-orange-400" },
-  Java: { bg: "bg-red-500/10", bar: "bg-red-500", text: "text-red-400" },
-  CSS: { bg: "bg-purple-500/10", bar: "bg-purple-500", text: "text-purple-400" },
-  HTML: { bg: "bg-pink-500/10", bar: "bg-pink-500", text: "text-pink-400" },
-  JSON: { bg: "bg-zinc-500/10", bar: "bg-zinc-500", text: "text-zinc-450" },
-  Markdown: { bg: "bg-zinc-650/10", bar: "bg-zinc-600", text: "text-zinc-400" }
+  "TypeScript": { bg: "bg-blue-500/10", bar: "bg-blue-500", text: "text-blue-400" },
+  "JavaScript": { bg: "bg-amber-500/10", bar: "bg-amber-500", text: "text-amber-400" },
+  "Python": { bg: "bg-green-500/10", bar: "bg-green-500", text: "text-green-400" },
+  "Go": { bg: "bg-cyan-500/10", bar: "bg-cyan-500", text: "text-cyan-400" },
+  "Rust": { bg: "bg-orange-500/10", bar: "bg-orange-500", text: "text-orange-400" },
+  "Java": { bg: "bg-red-500/10", bar: "bg-red-500", text: "text-red-400" },
+  "CSS": { bg: "bg-purple-500/10", bar: "bg-purple-500", text: "text-purple-400" },
+  "HTML": { bg: "bg-pink-500/10", bar: "bg-pink-500", text: "text-pink-400" },
+  "JSON": { bg: "bg-zinc-500/10", bar: "bg-zinc-500", text: "text-zinc-400" },
+  "Markdown": { bg: "bg-zinc-600/10", bar: "bg-zinc-600", text: "text-zinc-400" }
 };
 
 export default function LanguageBreakdown({ languages, totalLines: customTotalLines, entryPoints }: LanguageBreakdownProps) {
@@ -28,7 +28,7 @@ export default function LanguageBreakdown({ languages, totalLines: customTotalLi
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-      {/* Language Breakdown Graph */}
+      {/* Language Breakdown Graph - from daadd-main with projectAnalyser styling */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -74,14 +74,14 @@ export default function LanguageBreakdown({ languages, totalLines: customTotalLi
           })}
         </div>
 
-        {/* Total Lines */}
+        {/* Total Lines - from daadd-main */}
         <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-between">
           <span className="text-muted-foreground text-xs font-medium">Total Lines of Code</span>
           <span className="text-lg font-extrabold text-white">{totalLines.toLocaleString()}</span>
         </div>
       </motion.div>
 
-      {/* Core Entrypoints */}
+      {/* Core Entrypoints - from daadd-main with projectAnalyser styling */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

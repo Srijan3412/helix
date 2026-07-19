@@ -71,7 +71,7 @@ export default function ProgressTracker({
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div className="glass-card rounded-2xl p-6 shadow-2xl">
-        {/* Header */}
+        {/* Header - from daadd-main with projectAnalyser styling */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="font-bold text-white text-lg">Analysis Pipeline</h3>
@@ -90,7 +90,7 @@ export default function ProgressTracker({
           )}
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - from daadd-main with Progress component */}
         <div className="mb-8">
           <div className="flex justify-between text-xs mb-2">
             <span className="text-muted-foreground uppercase tracking-widest font-semibold">Progress</span>
@@ -99,7 +99,7 @@ export default function ProgressTracker({
           <Progress value={progress} showText={false} />
         </div>
 
-        {/* Stages List */}
+        {/* Stages List - from daadd-main with projectAnalyser styling */}
         <div className="space-y-3 relative">
           {stages.map((stage, index) => {
             const stageStatus = getStageStatus(stage.id);
@@ -149,7 +149,7 @@ export default function ProgressTracker({
           })}
         </div>
 
-        {/* Ingestion Checklist */}
+        {/* Ingestion Checklist - from daadd-main */}
         {status === "scanning" && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -169,7 +169,7 @@ export default function ProgressTracker({
           </motion.div>
         )}
 
-        {/* Error Display */}
+        {/* Error Display - from daadd-main */}
         {isFailed && error && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}

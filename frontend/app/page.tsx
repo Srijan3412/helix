@@ -22,12 +22,14 @@ import { Progress } from "../components/ui/progress";
 import { Input } from "../components/ui/input";
 import { FileDropzone } from "../components/ui/dropzone";
 import {
-  Github, Binary, Network, Settings, FolderGit, Folder,
+  Github, Binary, Network, Settings, FolderGit, Folder, Upload,
   CheckCircle2, Terminal, Layers, MessageSquare, Send,
   Sparkles, ChevronDown, ChevronUp, Loader2, Bot,
   Heart, AlertTriangle, Zap, Eye, Search, X, Play,
   Shield, Database, GitBranch, Activity, FileText, ArrowRight,
-  GitCompare, CreditCard, Lock, User, LogOut
+  GitCompare, CreditCard, Lock, User, LogOut,
+  // ADD THESE:
+  Code2, BarChart3
 } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 
@@ -482,7 +484,7 @@ export default function Home() {
       route:      "bg-blue-950/60 border-blue-500/70 text-blue-300",
       middleware: "bg-orange-950/60 border-orange-500/70 text-orange-300",
       controller: "bg-amber-950/60 border-amber-500/70 text-amber-300",
-      service:    "bg-primary/10 border-primary/60 text-primary",
+      service:    "bg-emerald-950/60 border-emerald-500/70 text-emerald-300",
       repository: "bg-purple-950/60 border-purple-500/70 text-purple-300",
       entity:     "bg-cyan-950/60 border-cyan-500/70 text-cyan-300",
       database:   "bg-red-950/60 border-red-500/70 text-red-300",
@@ -504,7 +506,7 @@ export default function Home() {
             >
               <Play className="w-3 h-3" /> Play
             </button>
-            <button onClick={() => { setTraceRoute(null); setTraceAnimStep(-1); }} className="p-1 rounded-lg hover:bg-zinc-800 text-muted-foreground hover:text-white transition">
+            <button onClick={() => { setTraceRoute(null); setTraceAnimStep(-1); }} className="p-1 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-white transition">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -558,7 +560,7 @@ export default function Home() {
               <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-800/40">
                 <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Auth Protected</div>
                 <div className="flex flex-wrap gap-1">
-                  {traceRoute.middleware!.map(m => <Badge key={m} variant="success" className="text-[9px]">{m}</Badge>)}
+                  {traceRoute.middleware!.map(m => <Badge variant="primary" className="text-[9px]">{m}</Badge>)}
                 </div>
               </div>
             ) : (
@@ -742,129 +744,168 @@ export default function Home() {
         initial={false}
         animate={{ width: sidebarExpanded ? 220 : 64 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="bg-gradient-to-b from-zinc-900 to-zinc-950 flex flex-col shadow-2xl z-20 relative border-r border-border/30 shrink-0"
+        className="h-screen bg-gradient-to-b from-zinc-900 to-zinc-950 flex flex-col shadow-2xl z-20 relative border-r border-white/5 shrink-0"
       >
-        {/* Logo */}
-        <div className="p-3 border-b border-border/30">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center shadow-lg shrink-0">
-              <Layers size={18} className="text-background" />
-            </div>
-            <AnimatePresence>
-              {sidebarExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="min-w-0 overflow-hidden"
-                >
-                  <h1 className="font-bold text-white text-sm truncate">Archaeologist</h1>
-                  <p className="text-[10px] text-zinc-500 truncate">Repository Intelligence</p>
-                </motion.div>
+        {/* Logo - Premium */}
+        <div className="flex h-16 items-center gap-2 border-b border-white/5 px-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
+            <Code2 className="h-4 w-4 text-white" />
+          </div>
+          <AnimatePresence>
+            {sidebarExpanded && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="min-w-0 overflow-hidden"
+              >
+                <span className="text-lg font-semibold text-white">RepoInsight</span>
+                <span className="ml-2 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/40">v2.0</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 space-y-6 overflow-y-auto p-4">
+          {/* Section: Analysis */}
+          <div>
+            {sidebarExpanded && (
+              <div className="mb-2 px-3 text-[10px] font-medium uppercase tracking-wider text-white/30">
+                Analysis
+              </div>
+            )}
+            <motion.button
+              onClick={() => reset()}
+              whileHover={{ x: sidebarExpanded ? 3 : 0 }}
+              title={!sidebarExpanded ? "Upload Repository" : undefined}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${
+                !currentJobId
+                  ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
+                  : "text-white/50 hover:bg-white/5 hover:text-white/80"
+              } ${!sidebarExpanded ? "justify-center" : ""}`}
+            >
+              <div className={`rounded-md p-1.5 ${
+                !currentJobId ? "bg-blue-500/20 text-blue-400" : "text-white/30"
+              }`}>
+                <Upload className="h-4 w-4" />
+              </div>
+              <AnimatePresence>
+                {sidebarExpanded && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    className="flex-1 text-left"
+                  >
+                    Upload Repository
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              {sidebarExpanded && status && status !== "completed" && status !== "failed" && (
+                <span className="text-[10px] text-blue-400">{getProgressValue()}%</span>
               )}
-            </AnimatePresence>
+            </motion.button>
+          </div>
+
+          {/* Section: Results */}
+          <div>
+            {sidebarExpanded && (
+              <div className="mb-2 px-3 text-[10px] font-medium uppercase tracking-wider text-white/30">
+                Results
+              </div>
+            )}
+            {visibleTabs.map((tab) => {
+              const isActive = activeResultTab === tab.id;
+              const icons = {
+                overview: CheckCircle2,
+                arch: Layers,
+                routes: Network,
+                db: Database,
+                health: Heart,
+                impact: Zap,
+                compare: GitCompare,
+                env: Settings,
+                "ai-architect": Sparkles,
+                onboarding: Terminal,
+                billing: CreditCard,
+              };
+              const Icon = icons[tab.id as keyof typeof icons] || Layers;
+              
+              return (
+                <motion.button
+                  key={tab.id}
+                  onClick={() => setActiveResultTab(tab.id)}
+                  whileHover={{ x: sidebarExpanded ? 3 : 0 }}
+                  title={!sidebarExpanded ? tab.label : undefined}
+                  className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${
+                    isActive
+                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
+                      : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                  } ${!sidebarExpanded ? "justify-center" : ""}`}
+                >
+                  <div className={`rounded-md p-1.5 ${
+                    isActive ? "bg-blue-500/20 text-blue-400" : "text-white/30"
+                  }`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <AnimatePresence>
+                    {sidebarExpanded && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        className="flex-1 text-left"
+                      >
+                        {tab.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  {sidebarExpanded && tab.id === "overview" && result && (
+                    <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                  )}
+                </motion.button>
+              );
+            })}
+            
+            {/* Token Counter */}
+            {sidebarExpanded && (
+              <div className="mt-4 px-2">
+                <TokenCounter />
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {/* Repository Info - Premium */}
+        <div className="border-t border-white/5 p-4">
+          <div className="rounded-lg bg-white/5 px-3 py-2">
+            <div className="text-[10px] text-white/40">Repository</div>
+            <div className="truncate text-sm text-white/80">
+              {result?.tree?.name || 'No repository loaded'}
+            </div>
           </div>
         </div>
 
-        {/* Job Info */}
-        <AnimatePresence>
-          {sidebarExpanded && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-3 py-2 border-b border-border/20 overflow-hidden"
-            >
-              <p className="text-[9px] text-zinc-600 uppercase tracking-widest font-bold">Active Job</p>
-              <p className="text-[10px] font-mono text-zinc-400 truncate mt-0.5">{currentJobId}</p>
-              <Badge variant={getStatusVariant() as any} className="mt-1 text-[9px]">{status}</Badge>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Nav Items */}
-        <nav className="flex-1 p-2 overflow-y-auto space-y-0.5">
-          {visibleTabs.map((tab) => {
-            const isActive = activeResultTab === tab.id;
-            return (
-              <motion.button
-                key={tab.id}
-                onClick={() => setActiveResultTab(tab.id)}
-                whileHover={{ x: sidebarExpanded ? 3 : 0 }}
-                title={!sidebarExpanded ? tab.label : undefined}
-                className={`w-full flex items-center gap-2.5 px-2 py-2.5 rounded-xl transition-all ${
-                  isActive
-                    ? "bg-primary/10 text-primary border border-primary/20"
-                    : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60"
-                } ${!sidebarExpanded ? "justify-center" : ""}`}
-              >
-                <span className="shrink-0 w-4 h-4 flex items-center justify-center">{tab.icon}</span>
-                <AnimatePresence>
-                  {sidebarExpanded && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -8 }}
-                      className="text-xs font-semibold tracking-wide truncate text-left flex-1"
-                    >
-                      {tab.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
-          {sidebarExpanded && (
-            <div className="mt-4 px-2">
-              <TokenCounter />
-            </div>
-          )}
-        </nav>
-
-        {/* Reset Button */}
-        <div className="p-2 border-t border-border/20">
-          <button
-            onClick={() => { reset(); }}
-            className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-zinc-600 hover:text-red-400 hover:bg-red-950/20 transition-all text-xs ${
-              !sidebarExpanded ? "justify-center" : ""
-            }`}
-            title="New Analysis"
-          >
-            <X size={14} className="shrink-0" />
-            <AnimatePresence>
-              {sidebarExpanded && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="font-semibold"
-                >
-                  New Analysis
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </button>
-        </div>
-
-        {/* User Profile / Sign Out */}
-        <div className="p-2 border-t border-border/20 relative">
+        {/* Sign Out */}
+        <div className="border-t border-white/5 p-2">
           <button
             onClick={() => signOut()}
-            className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-zinc-600 hover:text-red-400 hover:bg-red-950/20 transition-all text-xs cursor-pointer ${
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${
               !sidebarExpanded ? "justify-center" : ""
             }`}
             title="Sign Out"
           >
-            <LogOut size={14} className="shrink-0" />
+            <LogOut className="h-4 w-4" />
             <AnimatePresence>
               {sidebarExpanded && (
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="font-semibold truncate"
+                  className="flex-1 text-left"
                 >
-                  Sign Out ({profile.email})
+                  Sign Out
                 </motion.span>
               )}
             </AnimatePresence>
@@ -874,16 +915,16 @@ export default function Home() {
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="p-3 border-t border-border/20 text-zinc-600 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+          className="flex h-12 items-center justify-center border-t border-white/5 text-white/30 transition-colors hover:text-white/60"
         >
           <motion.div animate={{ rotate: sidebarExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown size={16} className="-rotate-90" />
+            <ChevronDown className="h-4 w-4" />
           </motion.div>
         </button>
       </motion.aside>
 
       {/* ── Main Content ──────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-zinc-950">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#0a0a0f]">
         <TrialBanner onUpgrade={() => setShowUpgrade(true)} />
         <AnimatePresence mode="wait">
           <motion.div
@@ -891,7 +932,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.15 }}
             className="min-h-full p-6"
           >
 
@@ -899,9 +940,9 @@ export default function Home() {
             {activeResultTab === "overview" && (
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">Active Analysis</p>
-                  <h2 className="text-2xl font-bold text-white mt-1">Repository Intelligence</h2>
-                  <p className="text-sm text-zinc-500">Comprehensive analysis and metadata diagnostics</p>
+                  <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Active Analysis</p>
+                  <h2 className="text-3xl font-bold text-white mt-1">Repository Intelligence</h2>
+                  <p className="text-sm text-white/40">Comprehensive analysis and metadata diagnostics</p>
                 </div>
                 <OverviewAnalytics
                   overview={result.overview}
@@ -947,11 +988,11 @@ export default function Home() {
 
             {/* ─── ROUTES TAB ─── */}
             {activeResultTab === "routes" && (
-              <div className="space-y-4 text-left max-w-5xl mx-auto">
-                <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">Route Analysis</p>
-                  <h2 className="text-2xl font-bold text-white mt-1">API Endpoints</h2>
-                </div>
+            <div className="space-y-4 text-left max-w-5xl mx-auto">
+              <div className="mb-6">
+                <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Route Analysis</p>
+                <h2 className="text-3xl font-bold text-white mt-1">API Endpoints</h2>
+              </div>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -986,7 +1027,7 @@ export default function Home() {
                         PATCH: "bg-orange-950/40 text-orange-400 border-orange-800/60",
                         DELETE: "bg-red-950/40 text-red-400 border-red-800/60",
                       };
-                      const mc = methodColors[route.method.toUpperCase()] ?? "bg-zinc-800/40 text-zinc-400 border-zinc-700/60";
+                      const mc = methodColors[route.method.toUpperCase()] ?? "bg-white/10/40 text-zinc-400 border-zinc-700/60";
                       const isTraced = traceRoute?.path === route.path && traceRoute?.method === route.method;
 
                       return (
@@ -1047,7 +1088,7 @@ export default function Home() {
                           <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px]">Active Operations:</span>
                           <div className="flex gap-2 mt-1">
                             {(entity.operations ?? []).map((op: string) => (
-                              <span key={op} className="px-2 py-0.5 bg-zinc-800 rounded text-zinc-300 capitalize font-mono">{op}</span>
+                              <span key={op} className="px-2 py-0.5 bg-white/10 rounded text-zinc-300 capitalize font-mono">{op}</span>
                             ))}
                           </div>
                         </div>
@@ -1274,7 +1315,7 @@ export default function Home() {
                             <div className="text-[10px] text-zinc-400">
                               <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block mb-1">Used By:</span>
                               <div className="flex flex-wrap gap-1">
-                                {envVar.usedBy.map((f: string, i: number) => <code key={i} className="text-[9px] font-mono text-zinc-400 bg-zinc-800/60 px-1.5 py-0.5 rounded truncate max-w-[120px]">{f.split(/[\\/]/).pop()}</code>)}
+                                {envVar.usedBy.map((f: string, i: number) => <code key={i} className="text-[9px] font-mono text-zinc-400 hover:bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{f.split(/[\\/]/).pop()}</code>)}
                               </div>
                             </div>
                           )}
@@ -1282,7 +1323,7 @@ export default function Home() {
                             <div className="text-[10px] text-zinc-400 mt-2">
                               <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block mb-1">Declared In Files:</span>
                               <div className="flex flex-wrap gap-1">
-                                {envVar.files.map((f: string, i: number) => <code key={i} className="text-[9px] font-mono text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded truncate max-w-[120px]">{f.split(/[\\/]/).pop()}</code>)}
+                                {envVar.files.map((f: string, i: number) => <code key={i} className="text-[9px] font-mono text-zinc-500 hover:bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]">{f.split(/[\\/]/).pop()}</code>)}
                               </div>
                             </div>
                           )}
@@ -1359,7 +1400,7 @@ export default function Home() {
                       <div className="flex items-center gap-3">
                         <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">{idx + 1}</div>
                         <span className="text-sm font-semibold text-white flex-1">{step.label}</span>
-                        <div className="text-[10px] text-zinc-500 font-mono bg-zinc-800/80 px-2 py-0.5 rounded capitalize">{step.category}</div>
+                        <div className="text-[10px] text-zinc-500 font-mono bg-white/10/80 px-2 py-0.5 rounded capitalize">{step.category}</div>
                         {openOnboardingStep === idx ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
                       </div>
                       {openOnboardingStep === idx && (
@@ -1400,7 +1441,7 @@ export default function Home() {
                   className="w-80 md:w-96 h-[480px] bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4"
                 >
                   {/* Header */}
-                  <div className="p-4 bg-zinc-800 border-b border-white/5 flex items-center justify-between">
+                  <div className="p-4 bg-white/10 border-b border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Bot className="w-4 h-4 text-primary" />
                       <div>
@@ -1429,7 +1470,7 @@ export default function Home() {
                         return (
                           <div key={msg.id || i} className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
                             <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
-                              isUser ? "bg-primary text-neutral-950 font-medium rounded-tr-none" : "bg-zinc-800 text-zinc-200 border border-white/5 rounded-tl-none"
+                              isUser ? "bg-primary text-neutral-950 font-medium rounded-tr-none" : "bg-white/10 text-zinc-200 border border-white/5 rounded-tl-none"
                             }`}>
                               <p className="whitespace-pre-wrap">{msg.content}</p>
                             </div>

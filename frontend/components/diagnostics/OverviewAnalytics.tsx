@@ -45,7 +45,7 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
 
   return (
     <div className="space-y-6 text-left">
-      {/* Key Metrics Grid */}
+      {/* Key Metrics Grid - from daadd-main with projectAnalyser styling */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((value, index) => {
           const Icon = statIcons[index];
@@ -75,7 +75,7 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
         })}
       </div>
 
-      {/* Auto-Stack Badging */}
+      {/* Auto-Stack Badging - from daadd-main */}
       {frameworkMetadata && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -89,7 +89,7 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Language */}
+            {/* Primary Language - from daadd-main */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                 <Braces className="text-blue-400" size={18} />
@@ -100,7 +100,7 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
               </div>
             </div>
 
-            {/* Runtime */}
+            {/* Runtime - from daadd-main */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                 <Server className="text-emerald-400" size={18} />
@@ -111,7 +111,7 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
               </div>
             </div>
 
-            {/* Package Manager */}
+            {/* Package Manager - from daadd-main */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                 <Terminal className="text-amber-400" size={18} />
@@ -123,7 +123,7 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
             </div>
           </div>
 
-          {/* Frameworks */}
+          {/* Frameworks - from daadd-main with Badge component */}
           {frameworkMetadata.frameworks && frameworkMetadata.frameworks.length > 0 && (
             <div className="mt-6 pt-5 border-t border-border/50">
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">Detected Frameworks</div>

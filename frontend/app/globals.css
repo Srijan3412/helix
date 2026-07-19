@@ -1,5 +1,16 @@
+/* ========================================
+   REACTFLOW STYLES - MUST BE FIRST
+   ======================================== */
+@import '@xyflow/react/dist/style.css';
+
+/* ========================================
+   TAILWIND v4 IMPORTS
+   ======================================== */
 @import "tailwindcss";
 
+/* ========================================
+   THEME VARIABLES (from 2nd file)
+   ======================================== */
 :root {
   --background: #09090b;
   --foreground: #f4f4f5;
@@ -25,6 +36,9 @@
   --font-sans: var(--font-inter), sans-serif;
 }
 
+/* ========================================
+   BASE STYLES (from 2nd file)
+   ======================================== */
 html, body {
   background-color: var(--background);
   color: var(--foreground);
@@ -33,7 +47,30 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Glassmorphism card utility */
+/* ========================================
+   CUSTOM SCROLLBAR (from 1st file - adapted for dark theme)
+   ======================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* ========================================
+   GLASSMORPHISM UTILITIES (from 2nd file)
+   ======================================== */
 .glass-card {
   background: rgba(24, 24, 27, 0.7);
   backdrop-filter: blur(12px);
@@ -48,7 +85,23 @@ html, body {
   box-shadow: 0 12px 40px 0 rgba(16, 185, 129, 0.08);
 }
 
-/* Animated Dash Edge Flow effect */
+/* ========================================
+   REACTFLOW CUSTOMIZATIONS (from 1st file - adapted for dark theme)
+   ======================================== */
+.react-flow__node {
+  cursor: pointer !important;
+  transition: transform 0.2s ease;
+}
+
+.react-flow__node:hover {
+  transform: scale(1.02);
+}
+
+.react-flow__edge-path {
+  stroke-linecap: round;
+}
+
+/* Animated edge flow (from 2nd file) */
 .animated-path .react-flow__edge-path {
   stroke-dasharray: 10, 10;
   animation: flow-dash 1.2s linear infinite !important;
@@ -58,4 +111,230 @@ html, body {
   to {
     stroke-dashoffset: -20;
   }
+}
+
+/* MiniMap - dark theme adaptation */
+.react-flow__minimap {
+  background: #18181b !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  border: 1px solid #27272a;
+}
+
+.react-flow__minimap .react-flow__minimap-mask {
+  fill: rgba(16, 185, 129, 0.1) !important;
+}
+
+.react-flow__minimap .react-flow__minimap-node {
+  fill: #10b981 !important;
+  stroke: #059669 !important;
+}
+
+/* Controls - dark theme adaptation */
+.react-flow__controls {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #27272a;
+}
+
+.react-flow__controls-button {
+  border: none !important;
+  background: #18181b !important;
+  border-bottom: 1px solid #27272a !important;
+  color: #f4f4f5 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #27272a !important;
+}
+
+.react-flow__controls-button svg {
+  fill: #f4f4f5 !important;
+}
+
+/* Background pattern - dark theme */
+.react-flow__background {
+  opacity: 0.3;
+}
+
+.react-flow__background .react-flow__background-pattern {
+  stroke: #27272a !important;
+}
+
+/* ========================================
+   UTILITY CLASSES (from 1st file)
+   ======================================== */
+/* Line clamp */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Gradient text */
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Pulse animation for active stations */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+/* ========================================
+   DARK THEME SPECIFIC UTILITIES (from 2nd file)
+   ======================================== */
+/* Gradient backgrounds for active sidebar items */
+.bg-gradient-to-r.from-primary\/20.to-emerald-500\/20 {
+  background: linear-gradient(to right, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.15));
+}
+
+/* Section label text */
+.text-white\/30 {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Hover transitions */
+.hover\:bg-zinc-800\/60:hover {
+  background-color: rgba(24, 24, 27, 0.6);
+}
+
+/* ========================================
+   ADDITIONAL DARK THEME UTILITIES
+   ======================================== */
+/* Glass effect for sidebar */
+.glass {
+  background: rgba(9, 9, 11, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(39, 39, 42, 0.5);
+}
+
+/* Border utilities */
+.border-white\/5 {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Text utilities */
+.text-white\/40 {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.text-white\/50 {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.text-white\/60 {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.text-white\/70 {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.text-white\/80 {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.text-white\/90 {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Background utilities for dark theme */
+.bg-zinc-800\/50 {
+  background-color: rgba(24, 24, 27, 0.5);
+}
+
+.bg-zinc-800\/60 {
+  background-color: rgba(24, 24, 27, 0.6);
+}
+
+.bg-zinc-800\/80 {
+  background-color: rgba(24, 24, 27, 0.8);
+}
+
+.bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Button hover states */
+.hover\:bg-white\/5:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.hover\:bg-white\/10:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Text hover states */
+.hover\:text-white\/80:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Active gradient for navigation items */
+.bg-gradient-to-r.from-blue-500\/20.to-purple-500\/20 {
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+}
+
+/* Icon backgrounds */
+.bg-blue-500\/20 {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.text-blue-400 {
+  color: #60a5fa;
+}
+
+/* Success indicators */
+.text-green-400 {
+  color: #34d399;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }

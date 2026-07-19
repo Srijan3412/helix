@@ -17,15 +17,18 @@ interface AuthDetectorProps {
 }
 
 const authBadges: Record<string, { icon: typeof Shield; color: string; bgColor: string; border: string }> = {
-  JWT: { icon: Key, color: "text-amber-400", bgColor: "bg-amber-500/10", border: "border-amber-500/20" },
+  "JWT": { icon: Key, color: "text-amber-400", bgColor: "bg-amber-500/10", border: "border-amber-500/20" },
   "OAuth 2.0": { icon: Lock, color: "text-blue-400", bgColor: "bg-blue-500/10", border: "border-blue-500/20" },
-  Supabase: { icon: Shield, color: "text-emerald-400", bgColor: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  "Supabase": { icon: Shield, color: "text-emerald-400", bgColor: "bg-emerald-500/10", border: "border-emerald-500/20" },
   "Supabase Auth": { icon: Shield, color: "text-emerald-400", bgColor: "bg-emerald-500/10", border: "border-emerald-500/20" },
-  Firebase: { icon: ShieldCheck, color: "text-orange-400", bgColor: "bg-orange-500/10", border: "border-orange-500/20" },
+  "Firebase": { icon: ShieldCheck, color: "text-orange-400", bgColor: "bg-orange-500/10", border: "border-orange-500/20" },
   "Firebase Auth": { icon: ShieldCheck, color: "text-orange-400", bgColor: "bg-orange-500/10", border: "border-orange-500/20" },
-  Clerk: { icon: ShieldCheck, color: "text-purple-400", bgColor: "bg-purple-500/10", border: "border-purple-500/20" },
+  "Clerk": { icon: ShieldCheck, color: "text-purple-400", bgColor: "bg-purple-500/10", border: "border-purple-500/20" },
+  "NextAuth.js": { icon: ShieldCheck, color: "text-emerald-400", bgColor: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  "Auth0": { icon: ShieldCheck, color: "text-blue-400", bgColor: "bg-blue-500/10", border: "border-blue-500/20" },
   "Session-based": { icon: Lock, color: "text-zinc-400", bgColor: "bg-zinc-800/40", border: "border-zinc-700/30" },
-  None: { icon: AlertTriangle, color: "text-red-400", bgColor: "bg-red-500/10", border: "border-red-500/20" }
+  "None detected": { icon: AlertTriangle, color: "text-red-400", bgColor: "bg-red-500/10", border: "border-red-500/20" },
+  "None": { icon: AlertTriangle, color: "text-red-400", bgColor: "bg-red-500/10", border: "border-red-500/20" }
 };
 
 export default function AuthDetector({ authType, evidence }: AuthDetectorProps) {
@@ -78,31 +81,33 @@ export default function AuthDetector({ authType, evidence }: AuthDetectorProps) 
             Confidence: <span className="text-primary font-bold">{confidence}%</span>
           </p>
 
-          {/* Evidence Panel */}
-          <div className="bg-zinc-950/40 rounded-lg p-4 border border-zinc-800/60">
-            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-              <FileCode size={12} className="text-primary" />
-              Evidence Found
-            </h4>
-            <div className="space-y-2">
-              {evidence.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -5 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="flex items-start gap-2 text-xs"
-                >
-                  {item.includes("route") || item.includes("endpoint") ? (
-                    <Route size={14} className="text-primary flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
-                  )}
-                  <span className="text-zinc-350">{item}</span>
-                </motion.div>
-              ))}
+          {/* Evidence Panel - from daadd-main with projectAnalyser styling */}
+          {evidence.length > 0 && (
+            <div className="bg-zinc-950/40 rounded-lg p-4 border border-zinc-800/60">
+              <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                <FileCode size={12} className="text-primary" />
+                Evidence Found
+              </h4>
+              <div className="space-y-2">
+                {evidence.map((item, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-start gap-2 text-xs"
+                  >
+                    {item.includes("route") || item.includes("endpoint") ? (
+                      <Route size={14} className="text-primary flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                    )}
+                    <span className="text-zinc-400">{item}</span>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </motion.div>

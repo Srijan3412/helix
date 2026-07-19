@@ -7,6 +7,9 @@ import FeatureLegend from "./FeatureLegend";
 import FeatureDetails from "./FeatureDetails";
 import { Loader2, HelpCircle, Download, Play, Square, Globe, Shield, Settings, Zap, Box, Server } from "lucide-react";
 import { FeatureFlow } from "@shared/types";
+import { motion, AnimatePresence } from "framer-motion";
+import { MapPin, Info, X } from 'lucide-react';
+
 
 interface MetroMapProps {
   result: any;
@@ -14,6 +17,70 @@ interface MetroMapProps {
   onSetImpactFile?: (file: string) => void;
   onSelectTraceRouteId?: (routeId: string) => void;
 }
+
+// ============================================================
+// Station Inspector - from daadd-main
+// ============================================================
+interface StationInspectorProps {
+  station: string | null;
+  feature: FeatureFlow | null;
+  onClose: () => void;
+}
+
+const StationInspector = ({ station, feature, onClose }: StationInspectorProps) => {
+  if (!station || !feature) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      className="absolute right-4 top-4 w-80 bg-zinc-900 rounded-xl shadow-2xl p-6 z-20 border border-border/60"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-lg text-white flex items-center gap-2">
+          <MapPin size={18} style={{ color: feature.color }} />
+          Station Details
+        </h3>
+        <button onClick={onClose} className="text-zinc-400 hover:text-white transition">
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <div className="text-xs text-zinc-500 uppercase tracking-wide">File</div>
+          <div className="font-mono text-sm text-zinc-200 truncate">{station}</div>
+        </div>
+
+        <div>
+          <div className="text-xs text-zinc-500 uppercase tracking-wide">Feature</div>
+          <div className="flex items-center gap-2 mt-1">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: feature.color }}
+            />
+            <span className="text-sm text-zinc-300">{feature.name}</span>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Routes</div>
+          <div className="flex flex-wrap gap-2">
+            {(feature.routes || []).map(route => (
+              <span
+                key={route}
+                className="px-2 py-1 bg-zinc-800 rounded text-xs font-mono text-zinc-400"
+              >
+                {route}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 export default function MetroMap({
   result,
@@ -34,7 +101,9 @@ export default function MetroMap({
   const [journeyFeatureId, setJourneyFeatureId] = useState<string | null>(null);
   const [journeyNodeId, setJourneyNodeId] = useState<string | null>(null);
   const journeyTimerRef = useRef<any>(null);
-  
+  // Station Inspector state - from daadd-main
+  const [inspectorStation, setInspectorStation] = useState<string | null>(null);
+  const [inspectorFeature, setInspectorFeature] = useState<FeatureFlow | null>(null);
   // ReactFlow instance reference for panning
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
@@ -291,7 +360,9 @@ export default function MetroMap({
               <div
                 onClick={() => {
                   setSelectedStationId(station.id);
-                  setSelectedFeature(null); // Deselect feature details when clicking node
+                  setInspectorStation(station.raw || station.label);
+                  setInspectorFeature(feature);
+                  setSelectedFeature(null);
                 }}
                 className={`p-3 rounded-xl border text-center min-w-[170px] bg-zinc-950/90 backdrop-blur-md transition-all duration-300 ${
                   isSelectedNode
@@ -616,6 +687,21 @@ export default function MetroMap({
         <div className={`absolute top-3 right-3 bottom-3 z-20 w-80 sm:w-96 transition-all duration-300 transform ${
           activeDetailsScope ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
         }`}>
+
+          {/* Station Inspector - from daadd-main */}
+          <AnimatePresence>
+            {inspectorStation && inspectorFeature && (
+              <StationInspector
+                station={inspectorStation}
+                feature={inspectorFeature}
+                onClose={() => {
+                  setInspectorStation(null);
+                  setInspectorFeature(null);
+                }}
+              />
+            )}
+          </AnimatePresence>
+
           {activeDetailsScope && (
             <FeatureDetails
               stationId={selectedStationId}

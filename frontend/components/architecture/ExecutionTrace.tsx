@@ -1,14 +1,17 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { getExecutionTraces, getFileContent } from "../../lib/api/client";
 import { useAnalysisStore } from "../../store/analysis.store";
 import LayerDetails from "./LayerDetails";
 import { ReactFlow, Background, Controls } from "@xyflow/react";
-import { 
-  Loader2, Search, X, Zap, Network, ArrowDown, Shield, 
-  Database, Settings, Code, AlertCircle, Sparkles, Key, Eye, HelpCircle
-} from "lucide-react";
+import {
+  Play, Pause, SkipBack, SkipForward, ChevronRight,
+  Info, Key, CheckCircle2, AlertTriangle, Route,
+  FileCode, ChevronLeft, Loader2, Search, X, Zap, 
+  Network, ArrowDown, Shield, Database, Settings, 
+  Code, AlertCircle, Sparkles, Eye, HelpCircle
+} from 'lucide-react';
 import { Badge } from "../ui/badge";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
@@ -20,7 +23,7 @@ const CATEGORY_STYLES: Record<string, { label: string; border: string; bg: strin
   helper:     { label: "Helper",     border: "border-blue-500/70",   bg: "bg-blue-950/20",   text: "text-blue-300",   icon: Shield },
   repository: { label: "Repository", border: "border-emerald-500/70",bg: "bg-emerald-950/20",text: "text-emerald-300",icon: Network },
   database:   { label: "Database",   border: "border-rose-500/70",   bg: "bg-rose-950/20",   text: "text-rose-300",   icon: Database },
-  middleware: { label: "Middleware", border: "border-orange-500/70", bg: "bg-orange-950/20", text: "text-orange-305", icon: Shield },
+  middleware: { label: "Middleware", border: "border-orange-500/70", bg: "bg-orange-950/20", text: "text-orange-300", icon: Shield },
 };
 
 interface ExecutionTraceProps {
@@ -40,6 +43,182 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
       setSelectedRouteId(initialRouteId);
     }
   }, [initialRouteId]);
+
+  // Add this COMPONENT before the ExecutionTrace component
+
+interface InspectorSidebarProps {
+  selectedStep: any;
+  trace: any;
+  onClose: () => void;
+}
+
+function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProps) {
+  if (!selectedStep && !trace) return null;
+
+  // Auth status detection
+  const getAuthAlert = () => {
+    if (selectedStep?.type !== 'route') return null;
+    const hasAuth = trace?.steps.some((s: any) => s.type === 'middleware' && s.name.toLowerCase().includes('auth'));
+    if (hasAuth) {
+      return { status: 'protected', message: 'Route has auth middleware protection' };
+    }
+    return { status: 'unprotected', message: 'Route lacks authentication middleware' };
+  };
+
+  const getEnvAccessors = () => {
+    if (!selectedStep) return [];
+    if (selectedStep.envVars) return selectedStep.envVars;
+    if (selectedStep.type === 'service' && selectedStep.name.toLowerCase().includes('auth')) {
+      return ['JWT_SECRET', 'TOKEN_EXPIRY'];
+    }
+    return [];
+  };
+
+  const getDbEntities = () => {
+    if (!selectedStep) return [];
+    if (selectedStep.type === 'repository' || selectedStep.type === 'database') {
+      if (selectedStep.entities) return selectedStep.entities;
+      return ['users', 'sessions'];
+    }
+    return [];
+  };
+
+  const authAlert = getAuthAlert();
+  const envVars = getEnvAccessors();
+  const dbEntities = getDbEntities();
+  const style = CATEGORY_STYLES[selectedStep?.type || 'helper'];
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        className="w-72 bg-zinc-900/95 backdrop-blur-xl border-l border-border/70 h-full overflow-y-auto shrink-0"
+      >
+        <div className="p-4 border-b border-border/50 flex items-center justify-between">
+          <h3 className="font-bold text-white flex items-center gap-2 text-xs">
+            <Info size={14} className="text-primary" />
+            Step Inspector
+          </h3>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white transition">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {selectedStep ? (
+            <>
+              {/* Module Details */}
+              <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileCode size={14} className="text-zinc-400" />
+                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Module</span>
+                </div>
+                <div className="font-mono text-white text-sm">{selectedStep.name}</div>
+                <div className={`text-[10px] mt-1 ${style?.text || 'text-zinc-400'} capitalize`}>
+                  {selectedStep.type}
+                </div>
+                {selectedStep.file && (
+                  <div className="text-[10px] text-zinc-500 mt-1 font-mono truncate">{selectedStep.file}</div>
+                )}
+              </div>
+
+              {/* Auth Alert */}
+              {authAlert && (
+                <div className={`rounded-xl p-4 border ${
+                  authAlert.status === 'protected'
+                    ? 'bg-emerald-950/30 border-emerald-500/40'
+                    : 'bg-amber-950/30 border-amber-500/40'
+                }`}>
+                  <div className="flex items-start gap-2">
+                    {authAlert.status === 'protected' ? (
+                      <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <div className={`text-xs font-medium ${
+                        authAlert.status === 'protected' ? 'text-emerald-300' : 'text-amber-300'
+                      }`}>
+                        {authAlert.status === 'protected' ? 'Protected' : 'Security Warning'}
+                      </div>
+                      <div className={`text-[10px] mt-0.5 ${
+                        authAlert.status === 'protected' ? 'text-emerald-400/80' : 'text-amber-400/80'
+                      }`}>
+                        {authAlert.message}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Environment Variables */}
+              {envVars.length > 0 && (
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Key size={14} className="text-amber-400" />
+                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Env Secrets</span>
+                  </div>
+                  <div className="space-y-1">
+                    {envVars.map((env: string, i: number) => (
+                      <div key={i} className="font-mono text-[10px] text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded">
+                        {env}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* DB Entities */}
+              {dbEntities.length > 0 && (
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Database size={14} className="text-rose-400" />
+                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">DB Entities</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {dbEntities.map((entity: string, i: number) => (
+                      <span key={i} className="px-2 py-1 bg-rose-500/10 border border-rose-500/30 rounded text-[10px] text-rose-300 font-mono">
+                        {entity}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : trace ? (
+            <>
+              {/* Trace Summary */}
+              <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <Route size={14} className="text-blue-400" />
+                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Trace Summary</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] text-zinc-500">Confidence</div>
+                    <div className="text-lg font-bold text-emerald-400">{trace.confidence}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-500">Complexity</div>
+                    <div className="text-lg font-bold text-amber-400">Σ {trace.metrics?.complexity || 42}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-500">DB Access</div>
+                    <div className="text-lg font-bold text-blue-400">{trace.reachability ? 'Yes' : 'No'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-500">Auth Strategy</div>
+                    <div className="text-lg font-bold text-purple-400">{trace.authType || 'None'}</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </motion.div>
+    );
+  }
   
   // View mode toggle: timeline vs node-link graph
   const [viewMode, setViewMode] = useState<"timeline" | "graph">("timeline");
@@ -49,6 +228,12 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
   const [selectedFileLayer, setSelectedFileLayer] = useState<string>("");
   const [previewFile, setPreviewFile] = useState<string | null>(null);
 
+  // Add after your existing states (around line 45)
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const [showInspector, setShowInspector] = useState(false);
+  const [selectedStep, setSelectedStep] = useState<any>(null);
+  
   // Fetch execution traces from API
   const { data, isLoading } = useQuery({
     queryKey: ["executionTraces", currentJobId],
@@ -64,6 +249,7 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
   });
 
   const traces = useMemo(() => data?.traces || [], [data]);
+
 
   // Find currently selected trace
   const activeTrace = useMemo(() => {
@@ -104,6 +290,44 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
     setSelectedRouteId(routeId);
     setSelectedFile(null); // Clear inspector
   };
+
+  // Add after handleRouteSelect function
+
+// Playback controls from daadd-main
+const handlePlay = useCallback(() => {
+  if (!activeTrace) return;
+  setIsPlaying(true);
+  setActiveStep(0);
+
+  let step = 0;
+  const maxSteps = activeTrace.steps.length;
+
+  const interval = setInterval(() => {
+    step++;
+    if (step >= maxSteps) {
+      clearInterval(interval);
+      setIsPlaying(false);
+      return;
+    }
+    setActiveStep(step);
+  }, 800);
+
+  return () => clearInterval(interval);
+}, [activeTrace]);
+
+const handleStep = useCallback((direction: 'prev' | 'next') => {
+    if (!activeTrace) return;
+    setActiveStep(prev => {
+      if (direction === 'prev') return Math.max(0, prev - 1);
+      return Math.min(activeTrace.steps.length - 1, prev + 1);
+    });
+    // Update selected step for inspector
+    const stepIndex = direction === 'prev' ? activeStep - 1 : activeStep + 1;
+    if (activeTrace?.steps[stepIndex]) {
+      setSelectedStep(activeTrace.steps[stepIndex]);
+      setShowInspector(true);
+    }
+  }, [activeTrace, activeStep]);
 
   // Convert execution trace steps to ReactFlow graph representation
   const { rfNodes, rfEdges } = useMemo(() => {
@@ -225,7 +449,7 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
               );
             })
           ) : (
-            <div className="text-center py-8 text-zinc-650 text-[10px] italic">No matching routes found</div>
+            <div className="text-center py-8 text-zinc-500 text-[10px] italic">No matching routes found</div>
           )}
         </div>
       </div>
@@ -234,7 +458,7 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
       <div className="lg:col-span-2 flex flex-col bg-zinc-950/60 border border-border/60 rounded-2xl p-4 overflow-hidden relative">
         {activeTrace ? (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Trace Title & Controls */}
+            {/* Trace Title & Controls - REPLACE with this */}
             <div className="flex items-center justify-between pb-3 border-b border-border/50 mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <Zap className="w-4 h-4 text-primary shrink-0 animate-pulse" />
@@ -243,19 +467,47 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
                 </h4>
               </div>
               
-              {/* Toggle view mode */}
-              <div className="flex bg-zinc-900/80 p-0.5 rounded-lg border border-border/50 gap-0.5 shrink-0 scale-90">
-                {(["timeline", "graph"] as const).map(mode => (
-                  <button
-                    key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`px-2 py-1 rounded text-[8.5px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                      viewMode === mode ? "bg-primary text-background" : "text-muted-foreground hover:text-white"
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 shrink-0">
+                {/* NEW: Playback Controls from daadd-main */}
+                <button
+                  onClick={() => handleStep('prev')}
+                  disabled={activeStep === 0}
+                  className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  <SkipBack size={14} />
+                </button>
+                <button
+                  onClick={isPlaying ? () => setIsPlaying(false) : handlePlay}
+                  className={`p-2 rounded-xl transition ${
+                    isPlaying
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                      : 'bg-primary text-background hover:bg-primary/90'
+                  }`}
+                >
+                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                </button>
+                <button
+                  onClick={() => handleStep('next')}
+                  disabled={activeStep === (activeTrace?.steps.length || 0) - 1}
+                  className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  <SkipForward size={14} />
+                </button>
+                
+                {/* Toggle view mode */}
+                <div className="flex bg-zinc-900/80 p-0.5 rounded-lg border border-border/50 gap-0.5 ml-2">
+                  {(["timeline", "graph"] as const).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => setViewMode(mode)}
+                      className={`px-2 py-1 rounded text-[8.5px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                        viewMode === mode ? "bg-primary text-background" : "text-muted-foreground hover:text-white"
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -304,64 +556,82 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
             {/* Interactive Timeline vs ReactFlow Canvas */}
             <div className="flex-1 min-h-0 overflow-y-auto mb-3">
               {viewMode === "timeline" ? (
-                <div className="space-y-0.5 flex flex-col items-center py-2">
-                  {activeTrace.steps.map((step, index) => {
-                    const style = CATEGORY_STYLES[step.type] || CATEGORY_STYLES.helper;
-                    const Icon = style.icon;
-                    const hasFile = !!getFileNodeForName(step.name);
+              <div className="space-y-0.5 flex flex-col items-center py-2">
+                {activeTrace.steps.map((step, index) => {
+                  const style = CATEGORY_STYLES[step.type] || CATEGORY_STYLES.helper;
+                  const Icon = style.icon;
+                  const hasFile = !!getFileNodeForName(step.name);
+                  const isActive = activeStep === index;
+                  const isVisible = isPlaying ? index <= activeStep : true;
 
-                    return (
-                      <React.Fragment key={index}>
-                        <motion.div
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.12, duration: 0.25 }}
-                          className="w-full max-w-sm"
+                  return (
+                    <React.Fragment key={index}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ 
+                          opacity: isVisible ? 1 : 0.3,
+                          y: 0,
+                          scale: isActive ? 1.02 : 1
+                        }}
+                        transition={{ delay: index * 0.12, duration: 0.25 }}
+                        className="w-full max-w-sm"
+                      >
+                        <div
+                          onClick={() => {
+                            if (hasFile) handleNodeClick(step.name);
+                            setActiveStep(index);
+                            setSelectedStep(step);
+                            setShowInspector(true);
+                          }}
+                          className={`p-2.5 rounded-xl border flex items-center justify-between transition-all duration-200 ${
+                            isActive
+                              ? 'bg-primary/10 border-primary/40 shadow-lg'
+                              : hasFile 
+                                ? 'cursor-pointer hover:scale-[1.02] bg-zinc-900/40 hover:bg-zinc-900/60 border-border/60 hover:border-primary/40 shadow-sm' 
+                                : 'cursor-default bg-zinc-950/30 border-border/30 opacity-70'
+                          }`}
                         >
-                          <div
-                            onClick={() => hasFile && handleNodeClick(step.name)}
-                            className={`p-2.5 rounded-xl border flex items-center justify-between transition-all duration-200 ${
-                              hasFile 
-                                ? "cursor-pointer hover:scale-[1.02] bg-zinc-900/40 hover:bg-zinc-900/60 border-border/60 hover:border-primary/40 shadow-sm" 
-                                : "cursor-default bg-zinc-950/30 border-border/30 opacity-70"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 ${style.text} ${style.bg} ${style.border}`}>
-                                <Icon className="w-3 h-3" />
-                              </div>
-                              <div className="min-w-0 text-left">
-                                <span className={`text-[7.5px] font-bold uppercase tracking-wider block opacity-70 ${style.text}`}>
-                                  {style.label}
-                                </span>
-                                <span className="text-[11px] font-mono font-bold text-zinc-200 truncate block">
-                                  {step.name}
-                                </span>
-                              </div>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 ${
+                              isActive ? 'bg-primary/20 border-primary/60' : `${style.text} ${style.bg} ${style.border}`
+                            }`}>
+                              <Icon className={`w-3 h-3 ${isActive ? 'text-primary' : ''}`} />
                             </div>
-                            {hasFile && (
-                              <Badge variant="secondary" className="text-[8px] tracking-wide shrink-0 font-bold">
-                                INSPECT
-                              </Badge>
-                            )}
+                            <div className="min-w-0 text-left">
+                              <span className={`text-[7.5px] font-bold uppercase tracking-wider block opacity-70 ${isActive ? 'text-primary' : style.text}`}>
+                                {style.label}
+                              </span>
+                              <span className="text-[11px] font-mono font-bold text-zinc-200 truncate block">
+                                {step.name}
+                              </span>
+                            </div>
                           </div>
+                          {isActive && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                          )}
+                          {hasFile && !isActive && (
+                            <Badge variant="secondary" className="text-[8px] tracking-wide shrink-0 font-bold">
+                              INSPECT
+                            </Badge>
+                          )}
+                        </div>
+                      </motion.div>
+                      
+                      {index < activeTrace.steps.length - 1 && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: isVisible ? 1 : 0.3 }}
+                          transition={{ delay: index * 0.12 + 0.06 }}
+                          className="py-1 shrink-0"
+                        >
+                          <ArrowDown className={`w-3.5 h-3.5 ${isActive ? 'text-primary/60' : 'text-zinc-700'}`} />
                         </motion.div>
-                        
-                        {index < activeTrace.steps.length - 1 && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: index * 0.12 + 0.06 }}
-                            className="py-1 shrink-0"
-                          >
-                            <ArrowDown className="w-3.5 h-3.5 text-zinc-700" />
-                          </motion.div>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-              ) : (
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            )  : (
                 <div className="w-full h-full rounded-xl border border-border/40 bg-zinc-950/60 overflow-hidden relative">
                   <ReactFlow
                     nodes={rfNodes}
@@ -464,6 +734,30 @@ export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, i
           </div>
         )}
       </div>
+
+      {/* Inspector Sidebar - Add this after the main content */}
+      <AnimatePresence>
+        {showInspector && activeTrace && (
+          <InspectorSidebar
+            selectedStep={selectedStep}
+            trace={activeTrace}
+            onClose={() => setShowInspector(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Toggle Inspector Button */}
+      {activeTrace && !showInspector && (
+        <button
+          onClick={() => {
+            setShowInspector(true);
+            setSelectedStep(activeTrace.steps[activeStep] || activeTrace.steps[0]);
+          }}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-zinc-800 rounded-xl border border-zinc-600 text-zinc-400 hover:text-white transition-all"
+        >
+          <ChevronRight size={18} />
+        </button>
+      )}
 
       {/* 4. Code Preview Drawer Overlay */}
       {previewFile && (

@@ -1,12 +1,59 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ReactFlow, Background, Controls, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
 import { getArchitectureLayers } from "../../lib/api/client";
 import LayerNode from "./LayerNode";
 import LayerFileNode from "./LayerFileNode";
 import LayerDetails from "./LayerDetails";
-import { Loader2, Layers, Search, X, Play, Square, PlayCircle, Pause } from "lucide-react";
 import { useAnalysisStore } from "../../store/analysis.store";
+import { 
+  Route, Settings, Cog, Database, Layers, Play, PlayCircle, 
+  Pause, SkipForward, X, Loader2, Search 
+} from 'lucide-react';
+
+// BFS for focused subgraph - from daadd-main
+function getFocusedNodes(
+  nodes: any[],
+  edges: any[],
+  searchTerm: string,
+  depth: number = 2
+): Set<string> {
+  const matched = new Set<string>();
+  const lowerSearch = searchTerm.toLowerCase();
+
+  // Find initial matches
+  nodes.forEach(node => {
+    if (node.data?.label?.toLowerCase().includes(lowerSearch)) {
+      matched.add(node.id);
+    }
+  });
+
+  if (matched.size === 0) return matched;
+
+  // BFS expansion
+  const visited = new Set(matched);
+  const queue = Array.from(matched).map(id => ({ id, dist: 0 }));
+
+  while (queue.length > 0) {
+    const { id, dist } = queue.shift()!;
+    if (dist >= depth) continue;
+
+    edges.forEach(edge => {
+      if (edge.source === id && !visited.has(edge.target)) {
+        visited.add(edge.target);
+        matched.add(edge.target);
+        queue.push({ id: edge.target, dist: dist + 1 });
+      }
+      if (edge.target === id && !visited.has(edge.source)) {
+        visited.add(edge.source);
+        matched.add(edge.source);
+        queue.push({ id: edge.source, dist: dist + 1 });
+      }
+    });
+  }
+
+  return matched;
+}
 
 const NODE_TYPES = {
   layerNode: LayerNode,
@@ -32,6 +79,15 @@ const LAYER_COLORS: Record<string, string> = {
   database: "#ef4444",     // rose
 };
 
+const LAYER_ICONS: Record<string, any> = {
+  routes: Route,
+  controllers: Settings,
+  services: Cog,
+  repositories: Database,
+  models: Database,
+  database: Database
+};
+
 export default function LayerView({ result }: { result: any }) {
   const { currentJobId } = useAnalysisStore();
   const [expandedLayer, setExpandedLayer] = useState<string | null>(null);
@@ -43,6 +99,7 @@ export default function LayerView({ result }: { result: any }) {
   const [tourIdx, setTourIdx] = useState<number | null>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const tourTimerRef = useRef<any>(null);
+  const [focusedNodes, setFocusedNodes] = useState<Set<string>>(new Set());
 
   // Fetch categorized layers from backend
   const { data: layersData, isLoading } = useQuery({
@@ -107,6 +164,8 @@ export default function LayerView({ result }: { result: any }) {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
     
+
+
     const hits: { layer: string; path: string; filename: string }[] = [];
     LAYER_KEYS.forEach((key) => {
       const files = layers[key] || [];
@@ -120,8 +179,8 @@ export default function LayerView({ result }: { result: any }) {
     return hits.slice(0, 8); // Cap at 8 hits
   }, [searchQuery, layers]);
 
-  // Layers that contain any search hits
-  const focusedLayers = useMemo(() => {
+  // Use a different name to avoid conflict with state
+  const searchFocusedLayers = useMemo(() => {
     const set = new Set<string>();
     searchHits.forEach(hit => set.add(hit.layer));
     return set;
@@ -172,8 +231,10 @@ export default function LayerView({ result }: { result: any }) {
         isNodeActive = expandedLayer === key;
         opacity = isNodeActive ? 1.0 : 0.18;
       } else if (hasSearch) {
-        isNodeActive = focusedLayers.has(key);
-        opacity = isNodeActive ? 1.0 : 0.18;
+        // ✅ FIX: Use full node ID and fallback check
+        const isFocused = focusedNodes.size === 0 || focusedNodes.has(`layer-${key}`);
+        opacity = isFocused ? 1.0 : 0.18;
+        isNodeActive = isFocused;
       }
 
       // Add the Layer node
@@ -225,8 +286,9 @@ export default function LayerView({ result }: { result: any }) {
 
           // File Node opacity
           let fileOpacity = opacity;
-          if (hasSearch) {
-            fileOpacity = focusedLayers.has(key) && (searchQuery.trim() === "" || file.toLowerCase().includes(searchQuery.toLowerCase())) ? 1.0 : 0.15;
+          if (hasSearch && focusedNodes.size > 0) {
+            // ✅ FIX: Use full node ID
+            fileOpacity = focusedNodes.has(`file-${file}`) ? 1.0 : 0.18;
           }
 
           flowNodes.push({
@@ -272,9 +334,11 @@ export default function LayerView({ result }: { result: any }) {
         if (isTourActive) {
           edgeDimmed = !(expandedLayer === key || expandedLayer === nextKey);
         } else if (hasSearch) {
-          edgeDimmed = !(focusedLayers.has(key) && focusedLayers.has(nextKey));
+            const sourceFocused = focusedNodes.size === 0 || focusedNodes.has(sourceNodeId);
+            const targetFocused = focusedNodes.size === 0 || focusedNodes.has(`layer-${nextKey}`);
+        
+          edgeDimmed = !(sourceFocused && targetFocused);
         }
-
         flowEdges.push({
           id: `edge-layer-${key}-to-${nextKey}`,
           source: sourceNodeId,
@@ -291,13 +355,28 @@ export default function LayerView({ result }: { result: any }) {
     }
 
     return { nodes: flowNodes, edges: flowEdges };
-  }, [layers, expandedLayer, selectedFile, searchQuery, focusedLayers, tourIdx, result]);
+  }, [layers, expandedLayer, selectedFile, searchQuery, focusedNodes, tourIdx, result]);
 
   // Guided tour effect: Cycle through layers sequence
+  // 🆕 Effect 1: Update focusedNodes when search changes (BFS from daadd-main)
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFocusedNodes(new Set());
+      return;
+    }
+
+    const allNodes = nodes;
+    const allEdges = edges;
+    const focused = getFocusedNodes(allNodes, allEdges, searchQuery, 2);
+    setFocusedNodes(focused);
+  }, [searchQuery, nodes, edges]);
+
+  // Center ReactFlow Camera on selected item changes
+  // Effect 2: Guided tour effect
   useEffect(() => {
     if (tourIdx === null) return;
     
-    setSelectedFile(null); // Clear selected file
+    setSelectedFile(null);
     
     const totalSteps = LAYER_KEYS.length * 3;
     tourTimerRef.current = setInterval(() => {
@@ -307,18 +386,16 @@ export default function LayerView({ result }: { result: any }) {
         
         if (next >= totalSteps) {
           setExpandedLayer(null);
-          return null; // Tour finished
+          return null;
         }
 
         const currentKey = LAYER_KEYS[Math.floor(next / 3) % LAYER_KEYS.length];
         const subStep = next % 3;
 
-        // Expand layer at substep 1
         if (subStep === 1) {
           setExpandedLayer(currentKey);
         }
 
-        // Center on layer
         if (reactFlowInstance) {
           const node = nodes.find(n => n.id === `layer-${currentKey}`);
           if (node) {
@@ -328,14 +405,14 @@ export default function LayerView({ result }: { result: any }) {
 
         return next;
       });
-    }, 1200); // 1.2 seconds per step
+    }, 1200);
     
     return () => {
       if (tourTimerRef.current) clearInterval(tourTimerRef.current);
     };
   }, [tourIdx, reactFlowInstance, nodes]);
 
-  // Center ReactFlow Camera on selected item changes
+  // 🆕 Effect 3: Center ReactFlow Camera on selected item changes
   useEffect(() => {
     if (reactFlowInstance) {
       if (selectedFile) {

@@ -95,7 +95,7 @@ export default function IngestionControl({
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
-      {/* Tab Header */}
+      {/* Tab Header - daadd-main styling with projectAnalyser structure */}
       <div className="flex justify-center bg-zinc-900/60 p-1.5 rounded-2xl border border-border/60 max-w-md mx-auto backdrop-blur-md">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -118,7 +118,7 @@ export default function IngestionControl({
         })}
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content - from daadd-main with projectAnalyser components */}
       <div className="glass-card rounded-2xl p-6 shadow-2xl">
         <AnimatePresence mode="wait">
           {/* GitHub Tab */}
@@ -164,7 +164,7 @@ export default function IngestionControl({
             </motion.div>
           )}
 
-          {/* ZIP Tab */}
+          {/* ZIP Tab - from daadd-main with FileDropzone */}
           {activeTab === "zip" && (
             <motion.div
               key="zip"
@@ -197,7 +197,7 @@ export default function IngestionControl({
             </motion.div>
           )}
 
-          {/* Local Tab */}
+          {/* Local Tab - from daadd-main */}
           {activeTab === "local" && (
             <motion.div
               key="local"
@@ -240,7 +240,7 @@ export default function IngestionControl({
           )}
         </AnimatePresence>
 
-        {/* Error Display */}
+        {/* Error Display - from daadd-main */}
         {error && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
