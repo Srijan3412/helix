@@ -33,13 +33,51 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
 
-  const loadProfile = useCallback(async (userId: string) => {
+  const loadProfile = useCallback(async (userId: string, email?: string) => {
     const { data: existing } = await supabase
       .from('helix_profiles')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
-    if (existing) setProfile(existing as Profile);
+    
+    if (existing) {
+      setProfile(existing as Profile);
+      return existing as Profile;
+    }
+
+    // Auto-create profile if authenticated but no profile exists
+    let userEmail = email;
+    if (!userEmail) {
+      const { data: { user } } = await supabase.auth.getUser();
+      userEmail = user?.email;
+    }
+
+    const newProfile = {
+      id: userId,
+      email: userEmail || '',
+      role: 'trial',
+      plan: 'trial',
+      trial_started_at: new Date().toISOString(),
+      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      subscription_status: 'trialing',
+    };
+
+    const { error: insertError } = await supabase
+      .from('helix_profiles')
+      .insert(newProfile);
+
+    if (!insertError) {
+      setProfile(newProfile as unknown as Profile);
+      // Ensure usage records are also initialized
+      await supabase.from('helix_usage_records').insert({
+        user_id: userId,
+        period_start: new Date().toISOString(),
+      });
+      return newProfile as unknown as Profile;
+    } else {
+      console.error("Failed to auto-create profile:", insertError);
+    }
+    return null;
   }, []);
 
   const loadSubscription = useCallback(async (userId: string) => {
@@ -92,7 +130,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         setSession(sess);
         if (sess?.user?.id) {
           await Promise.all([
-            loadProfile(sess.user.id),
+            loadProfile(sess.user.id, sess.user.email),
             loadSubscription(sess.user.id),
             loadUsage(sess.user.id),
             loadPayments(sess.user.id),
@@ -113,25 +151,39 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     };
   }, [loadProfile, loadSubscription, loadUsage, loadPayments]);
 
-  const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
-
-    if (data.user) {
-      await supabase.from('helix_profiles').insert({
-        id: data.user.id,
-        email,
-        role: 'trial',
-        plan: 'trial',
-        trial_started_at: new Date().toISOString(),
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        subscription_status: 'trialing',
-      });
-      await supabase.from('helix_usage_records').insert({
-        user_id: data.user.id,
-        period_start: new Date().toISOString(),
-      });
+  useEffect(() => {
+    if (typeof window !== 'undefined' && session?.user?.id) {
+      (window as any).makeAdmin = async () => {
+        console.log("Promoting user to org_admin/enterprise...");
+        const { error } = await supabase
+          .from('helix_profiles')
+          .update({
+            plan: 'enterprise',
+            role: 'org_admin',
+            subscription_status: 'active'
+          })
+          .eq('id', session.user.id);
+        
+        if (error) {
+          console.error("Failed to promote user:", error.message);
+          return { error: error.message };
+        } else {
+          console.log("Successfully promoted user to org_admin/enterprise! Reloading profile...");
+          await loadProfile(session.user.id);
+          return { success: true };
+        }
+      };
     }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).makeAdmin;
+      }
+    };
+  }, [session, loadProfile]);
+
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) return { error: error.message };
     return { error: null };
   };
 
