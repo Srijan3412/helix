@@ -18,9 +18,13 @@ function createMockClient(): SupabaseClient {
     (() => {}) as any,
     {
       get(_target, prop) {
+        if (prop === 'then' || prop === 'toJSON' || typeof prop === 'symbol') {
+          return undefined;
+        }
         if (prop === 'auth') {
           return {
             getSession: () => Promise.resolve({ data: { session: null } }),
+            getUser: () => Promise.resolve({ data: { user: null }, error: null }),
             onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
             signUp: () => Promise.resolve({ data: { user: null }, error: null }),
             signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
@@ -120,19 +124,29 @@ const getAuth = () => {
   return {
     getSession: () => {
       if (mockSession) return Promise.resolve({ data: { session: mockSession }, error: null });
-      return realAuth.getSession();
+      if (realAuth && realAuth.getSession) return realAuth.getSession();
+      return Promise.resolve({ data: { session: null }, error: null });
     },
     getUser: () => {
       if (mockSession) return Promise.resolve({ data: { user: mockSession.user }, error: null });
-      return realAuth.getUser();
+      if (realAuth && realAuth.getUser) return realAuth.getUser();
+      return Promise.resolve({ data: { user: null }, error: null });
     },
     onAuthStateChange: (callback: any) => {
       authListeners.add(callback);
-      const { data: { subscription } } = realAuth.onAuthStateChange((event: string, session: any) => {
-        if (!mockSession) {
-          callback(event, session);
+      let subscription: any = null;
+      if (realAuth && realAuth.onAuthStateChange) {
+        try {
+          const res = realAuth.onAuthStateChange((event: string, session: any) => {
+            if (!mockSession) {
+              callback(event, session);
+            }
+          });
+          subscription = res?.data?.subscription || res?.subscription;
+        } catch (e) {
+          console.error(e);
         }
-      });
+      }
       if (mockSession) {
         setTimeout(() => callback('INITIAL_SESSION', mockSession), 0);
       }
@@ -141,7 +155,9 @@ const getAuth = () => {
           subscription: {
             unsubscribe: () => {
               authListeners.delete(callback);
-              subscription.unsubscribe();
+              if (subscription && typeof subscription.unsubscribe === 'function') {
+                subscription.unsubscribe();
+              }
             },
           },
         },
@@ -175,7 +191,10 @@ const getAuth = () => {
         });
         return { data: { user: session.user, session }, error: null };
       }
-      return realAuth.signInWithPassword(credentials);
+      if (realAuth && realAuth.signInWithPassword) {
+        return realAuth.signInWithPassword(credentials);
+      }
+      return Promise.resolve({ data: { user: null, session: null }, error: new Error('Auth not available') });
     },
     signOut: async () => {
       if (mockSession) {
@@ -189,7 +208,10 @@ const getAuth = () => {
         });
         return { error: null };
       }
-      return realAuth.signOut();
+      if (realAuth && realAuth.signOut) {
+        return realAuth.signOut();
+      }
+      return Promise.resolve({ error: null });
     },
   };
 };
@@ -269,6 +291,9 @@ const getFrom = (table: string) => {
 
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop) {
+    if (prop === 'then' || prop === 'toJSON' || typeof prop === 'symbol') {
+      return undefined;
+    }
     if (prop === 'auth') {
       return getAuth();
     }
