@@ -33,14 +33,7 @@ export default function RootLayout({
                   <a href="mailto:srijanbajpai1447@gmail.com" className="hover:text-primary transition">srijanbajpai1447@gmail.com</a>
                 </p>
               </div>
-              <a
-                href="https://digitalheroesco.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider bg-zinc-900 border border-border/60 text-zinc-350 hover:border-zinc-500 hover:text-white hover:bg-zinc-850/60 shadow-sm transition"
-              >
-                Built for Digital Heroes
-              </a>
+              
             </footer>
           </div>
         </Providers>

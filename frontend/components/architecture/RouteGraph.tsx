@@ -285,11 +285,22 @@ function RouteGraphInternal({ result }: { result: any }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Sync state if initial elements change
+  // Sync state if initial elements change (safely guarded)
   React.useEffect(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+    const currentIds = nodes.map(n => n.id).join(',');
+    const initialIds = initialNodes.map(n => n.id).join(',');
+    if (nodes.length !== initialNodes.length || currentIds !== initialIds) {
+      setNodes(initialNodes);
+    }
+  }, [initialNodes, nodes, setNodes]);
+
+  React.useEffect(() => {
+    const currentEdgeIds = edges.map(e => e.id).join(',');
+    const initialEdgeIds = initialEdges.map(e => e.id).join(',');
+    if (edges.length !== initialEdges.length || currentEdgeIds !== initialEdgeIds) {
+      setEdges(initialEdges);
+    }
+  }, [initialEdges, edges, setEdges]);
 
   return (
     <div className="h-full w-full relative bg-zinc-950">
