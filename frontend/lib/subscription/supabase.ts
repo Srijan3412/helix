@@ -168,7 +168,7 @@ const getAuth = () => {
         const session = {
           access_token: 'mock-admin-access-token',
           token_type: 'bearer',
-          expires_in: 3600,
+          expires_in: 31536000,
           refresh_token: 'mock-admin-refresh-token',
           user: {
             id: ADMIN_USER_ID,

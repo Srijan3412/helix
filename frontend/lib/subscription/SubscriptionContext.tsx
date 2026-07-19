@@ -25,13 +25,113 @@ interface SubscriptionContextValue {
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<any>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [usage, setUsage] = useState<UsageRecord | null>(null);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('sb-session-cache');
+        return saved ? JSON.parse(saved) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('sb-profile-cache');
+        return saved ? JSON.parse(saved) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [subscription, setSubscription] = useState<Subscription | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('sb-subscription-cache');
+        return saved ? JSON.parse(saved) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [usage, setUsage] = useState<UsageRecord | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('sb-usage-cache');
+        return saved ? JSON.parse(saved) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [payments, setPayments] = useState<Payment[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('sb-payments-cache');
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hasSession = !!localStorage.getItem('sb-session-cache');
+      const hasProfile = !!localStorage.getItem('sb-profile-cache');
+      return !(hasSession && hasProfile);
+    }
+    return true;
+  });
+
   const mounted = useRef(true);
+
+  const saveToCache = (key: string, val: any) => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (val) {
+          localStorage.setItem(key, JSON.stringify(val));
+        } else {
+          localStorage.removeItem(key);
+        }
+      } catch (e) {}
+    }
+  };
+
+  const updateSession = useCallback((sess: any) => {
+    setSession(sess);
+    saveToCache('sb-session-cache', sess);
+  }, []);
+
+  const updateProfile = useCallback((prof: Profile | null) => {
+    setProfile(prof);
+    saveToCache('sb-profile-cache', prof);
+  }, []);
+
+  const updateSubscription = useCallback((sub: Subscription | null) => {
+    setSubscription(sub);
+    saveToCache('sb-subscription-cache', sub);
+  }, []);
+
+  const updateUsage = useCallback((usg: UsageRecord | null) => {
+    setUsage(usg);
+    saveToCache('sb-usage-cache', usg);
+  }, []);
+
+  const updatePayments = useCallback((pays: Payment[]) => {
+    setPayments(pays);
+    saveToCache('sb-payments-cache', pays);
+  }, []);
 
   const loadProfile = useCallback(async (userId: string, email?: string) => {
     const { data: existing } = await supabase
@@ -41,7 +141,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
     
     if (existing) {
-      setProfile(existing as Profile);
+      updateProfile(existing as Profile);
       return existing as Profile;
     }
 
@@ -67,7 +167,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .insert(newProfile);
 
     if (!insertError) {
-      setProfile(newProfile as unknown as Profile);
+      updateProfile(newProfile as unknown as Profile);
       // Ensure usage records are also initialized
       await supabase.from('helix_usage_records').insert({
         user_id: userId,
@@ -88,7 +188,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    setSubscription(data as Subscription | null);
+    updateSubscription(data as Subscription | null);
   }, []);
 
   const loadUsage = useCallback(async (userId: string) => {
@@ -99,7 +199,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .order('period_start', { ascending: false })
       .limit(1)
       .maybeSingle();
-    setUsage(data as UsageRecord | null);
+    updateUsage(data as UsageRecord | null);
   }, []);
 
   const loadPayments = useCallback(async (userId: string) => {
@@ -108,7 +208,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    setPayments((data as Payment[]) || []);
+    updatePayments((data as Payment[]) || []);
   }, []);
 
   const refreshUsage = useCallback(async () => {
@@ -120,14 +220,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted.current) return;
-      setSession(session);
+      updateSession(session);
       if (!session) setLoading(false);
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, sess) => {
       (async () => {
         if (!mounted.current) return;
-        setSession(sess);
+        updateSession(sess);
         if (sess?.user?.id) {
           await Promise.all([
             loadProfile(sess.user.id, sess.user.email),
@@ -136,10 +236,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             loadPayments(sess.user.id),
           ]);
         } else {
-          setProfile(null);
-          setSubscription(null);
-          setUsage(null);
-          setPayments([]);
+          updateProfile(null);
+          updateSubscription(null);
+          updateUsage(null);
+          updatePayments([]);
         }
         if (mounted.current) setLoading(false);
       })();
@@ -194,10 +294,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setProfile(null);
-    setSubscription(null);
-    setUsage(null);
-    setPayments([]);
+    updateSession(null);
+    updateProfile(null);
+    updateSubscription(null);
+    updateUsage(null);
+    updatePayments([]);
   };
 
   const recordUsage = async (field: keyof UsageRecord, amount = 1): Promise<boolean> => {
@@ -217,7 +318,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .eq('id', usage.id);
 
     if (!error) {
-      setUsage({ ...usage, ...update } as UsageRecord);
+      updateUsage({ ...usage, ...update } as UsageRecord);
       return true;
     }
     return false;
