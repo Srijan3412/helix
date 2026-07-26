@@ -101,7 +101,7 @@ function PackageGraphInternal({ result }: { result: any }) {
   const packageNodes = useMemo(() => {
     const deps = result?.metadata?.frameworkMetadata?.dependencies || {};
     const devDeps = result?.metadata?.frameworkMetadata?.devDependencies || {};
-    
+
     const prodList = Object.entries(deps).map(([name, ver]) => ({
       id: name,
       name,
@@ -140,7 +140,8 @@ function PackageGraphInternal({ result }: { result: any }) {
   const { initialNodes, initialEdges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
-    
+    const seenNodeIds = new Set<string>(); // ✅ Add this
+
     const filteredPackages = showDevDeps
       ? packageNodes
       : packageNodes.filter((p: { type: string }) => p.type === 'dependency');
@@ -150,26 +151,34 @@ function PackageGraphInternal({ result }: { result: any }) {
     const startY = 400;
 
     filteredPackages.forEach((pkg, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = 80 + col * 220;
-      const y = startY + row * 120;
+      const packageId = pkg.id;
 
-      // Count files using this package
-      const usedByFiles = fileNodes.filter((f: { imports: string[] }) => f.imports.includes(pkg.id)).length;
+      // ✅ Add duplicate check
+      if (!seenNodeIds.has(packageId)) {
+        seenNodeIds.add(packageId);
 
-      nodes.push({
-        id: pkg.id,
-        type: 'packageNode',
-        position: { x, y },
-        data: {
-          name: pkg.name,
-          version: pkg.version,
-          type: pkg.type,
-          usedByFiles
-        }
-      });
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = 80 + col * 220;
+        const y = startY + row * 120;
+
+        // Count files using this package
+        const usedByFiles = fileNodes.filter((f: { imports: string[] }) => f.imports.includes(pkg.id)).length;
+
+        nodes.push({
+          id: packageId,
+          type: 'packageNode',
+          position: { x, y },
+          data: {
+            name: pkg.name,
+            version: pkg.version,
+            type: pkg.type,
+            usedByFiles
+          }
+        });
+      }
     });
+
 
     // Add top importing files
     const topImporterY = 80;
@@ -215,7 +224,7 @@ function PackageGraphInternal({ result }: { result: any }) {
   const lastSyncedNodeIds = useRef<string>("");
   const lastSyncedEdgeIds = useRef<string>("");
 
-  useEffect(() => {
+  React.useEffect(() => {
     const newIds = initialNodes.map(n => n.id).join(',');
     if (newIds !== lastSyncedNodeIds.current) {
       lastSyncedNodeIds.current = newIds;
@@ -223,13 +232,14 @@ function PackageGraphInternal({ result }: { result: any }) {
     }
   }, [initialNodes, setNodes]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const newIds = initialEdges.map(e => e.id).join(',');
     if (newIds !== lastSyncedEdgeIds.current) {
       lastSyncedEdgeIds.current = newIds;
       setEdges(initialEdges);
     }
   }, [initialEdges, setEdges]);
+
 
   const depCount = packageNodes.filter(p => p.type === 'dependency').length;
   const devDepCount = packageNodes.filter(p => p.type === 'devDependency').length;

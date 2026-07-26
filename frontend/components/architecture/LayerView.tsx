@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ReactFlow, Background, Controls, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
 import { getArchitectureLayers } from "../../lib/api/client";
@@ -6,9 +6,9 @@ import LayerNode from "./LayerNode";
 import LayerFileNode from "./LayerFileNode";
 import LayerDetails from "./LayerDetails";
 import { useAnalysisStore } from "../../store/analysis.store";
-import { 
-  Route, Settings, Cog, Database, Layers, Play, PlayCircle, 
-  Pause, SkipForward, X, Loader2, Search 
+import {
+  Route, Settings, Cog, Database, Layers, Play, PlayCircle,
+  Pause, SkipForward, X, Loader2, Search
 } from 'lucide-react';
 
 // BFS for focused subgraph - from daadd-main
@@ -113,7 +113,7 @@ export default function LayerView({ result }: { result: any }) {
     if (layersData?.layers) {
       return layersData.layers;
     }
-    
+
     // Fallback logic
     const files = result?.files || [];
     const dbInfo = result?.metadata?.databaseInfo;
@@ -163,7 +163,7 @@ export default function LayerView({ result }: { result: any }) {
   const searchHits = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
-    
+
 
 
     const hits: { layer: string; path: string; filename: string }[] = [];
@@ -190,7 +190,7 @@ export default function LayerView({ result }: { result: any }) {
   const jumpTo = (layer: string, file: string) => {
     setExpandedLayer(layer);
     setSelectedFile(file);
-    
+
     setSelectedFileLayer(LAYER_LABELS[layer] || "Services");
     setSearchQuery(""); // Clear search query to restore opacity
     setTourIdx(null);   // Stop tour
@@ -211,6 +211,7 @@ export default function LayerView({ result }: { result: any }) {
   const { nodes, edges } = useMemo(() => {
     const flowNodes: ReactFlowNode[] = [];
     const flowEdges: ReactFlowEdge[] = [];
+    const seenNodeIds = new Set<string>();
 
     const hasSearch = searchQuery.trim().length > 0;
     const isTourActive = tourIdx !== null;
@@ -223,6 +224,7 @@ export default function LayerView({ result }: { result: any }) {
       const label = LAYER_LABELS[key];
       const files = layers[key] || [];
       const isExpanded = expandedLayer === key;
+
 
       // Determine Opacity / Dimmed status
       let opacity = 1.0;
@@ -237,26 +239,30 @@ export default function LayerView({ result }: { result: any }) {
         isNodeActive = isFocused;
       }
 
-      // Add the Layer node
-      flowNodes.push({
-        id: `layer-${key}`,
-        type: "layerNode",
-        data: {
-          label,
-          count: files.length,
-          isExpanded,
-          key,
-        },
-        position: { x: xCenter - 110, y: currentY },
-        style: { 
-          width: 220,
-          opacity,
-          transition: "opacity 250ms ease, transform 250ms ease",
-          transform: isTourActive && isNodeActive ? "scale(1.04)" : "scale(1)",
-        },
-      });
+      const layerId = `layer-${key}`;
+      if (!seenNodeIds.has(layerId)) {
+        seenNodeIds.add(layerId);
+        flowNodes.push({
+          id: layerId,
+          type: "layerNode",
+          data: {
+            label,
+            count: files.length,
+            isExpanded,
+            key,
+          },
+          position: { x: xCenter - 110, y: currentY },
+          style: {
+            width: 220,
+            opacity,
+            transition: "opacity 250ms ease, transform 250ms ease",
+            transform: isTourActive && isNodeActive ? "scale(1.04)" : "scale(1)",
+          },
+        });
+      }
 
       currentY += 90; // space below layer card
+
 
       // If this layer is expanded, place its files vertically below it
       if (isExpanded && files.length > 0) {
@@ -266,12 +272,17 @@ export default function LayerView({ result }: { result: any }) {
           source: `layer-${key}`,
           target: `file-${files[0]}`,
           animated: true,
-          style: { 
-            stroke: "hsl(var(--primary, 60 100% 50%))", 
+          style: {
+            stroke: "hsl(var(--primary, 60 100% 50%))",
             strokeWidth: 2.0,
             opacity: 0.8,
           },
         });
+
+        // Add the Layer node
+
+
+
 
         for (let fIdx = 0; fIdx < files.length; fIdx++) {
           const file = files[fIdx];
@@ -291,23 +302,32 @@ export default function LayerView({ result }: { result: any }) {
             fileOpacity = focusedNodes.has(`file-${file}`) ? 1.0 : 0.18;
           }
 
-          flowNodes.push({
-            id: `file-${file}`,
-            type: "layerFileNode",
-            data: {
-              file,
-              complexity,
-              isGod: fileIsGod,
-              isDead: fileIsDead,
-              isSelected: selectedFile === file,
-            },
-            position: { x: xCenter - 85, y: currentY },
-            style: { 
-              width: 170,
-              opacity: fileOpacity,
-              transition: "opacity 250ms ease, border-color 250ms ease",
-            },
-          });
+          const fileId = `file-${file}`;
+          if (!seenNodeIds.has(fileId)) {
+            seenNodeIds.add(fileId);
+
+            flowNodes.push({
+              id: fileId,
+              type: "layerFileNode",
+              data: {
+                file,
+                complexity,
+                isGod: fileIsGod,
+                isDead: fileIsDead,
+                isSelected: selectedFile === file,
+              },
+              position: { x: xCenter - 85, y: currentY },
+              style: {
+                width: 170,
+                opacity: fileOpacity,
+                transition: "opacity 250ms ease, border-color 250ms ease",
+              },
+            });
+          }
+
+
+
+
 
           // Connect files sequentially
           if (fIdx > 0) {
@@ -329,14 +349,14 @@ export default function LayerView({ result }: { result: any }) {
         const nextKey = LAYER_KEYS[idx + 1];
         // Connect either from the last file (if expanded) or from the layer card itself
         const sourceNodeId = (isExpanded && files.length > 0) ? `file-${files[files.length - 1]}` : `layer-${key}`;
-        
+
         let edgeDimmed = false;
         if (isTourActive) {
           edgeDimmed = !(expandedLayer === key || expandedLayer === nextKey);
         } else if (hasSearch) {
-            const sourceFocused = focusedNodes.size === 0 || focusedNodes.has(sourceNodeId);
-            const targetFocused = focusedNodes.size === 0 || focusedNodes.has(`layer-${nextKey}`);
-        
+          const sourceFocused = focusedNodes.size === 0 || focusedNodes.has(sourceNodeId);
+          const targetFocused = focusedNodes.size === 0 || focusedNodes.has(`layer-${nextKey}`);
+
           edgeDimmed = !(sourceFocused && targetFocused);
         }
         flowEdges.push({
@@ -344,8 +364,8 @@ export default function LayerView({ result }: { result: any }) {
           source: sourceNodeId,
           target: `layer-${nextKey}`,
           animated: !edgeDimmed,
-          style: { 
-            stroke: edgeDimmed ? "#3f3f46" : "hsl(var(--primary, 60 100% 50%))", 
+          style: {
+            stroke: edgeDimmed ? "#3f3f46" : "hsl(var(--primary, 60 100% 50%))",
             strokeWidth: edgeDimmed ? 1.5 : 2.5,
             opacity: edgeDimmed ? 0.15 : 1.0,
             transition: "opacity 250ms, stroke-width 250ms",
@@ -357,6 +377,14 @@ export default function LayerView({ result }: { result: any }) {
     return { nodes: flowNodes, edges: flowEdges };
   }, [layers, expandedLayer, selectedFile, searchQuery, focusedNodes, tourIdx, result]);
 
+  // Update refs to latest nodes/edges on every render to prevent loops
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  });
+
   // Guided tour effect: Cycle through layers sequence
   // 🆕 Effect 1: Update focusedNodes when search changes (BFS from daadd-main)
   useEffect(() => {
@@ -365,27 +393,37 @@ export default function LayerView({ result }: { result: any }) {
       return;
     }
 
-    const allNodes = nodes;
-    const allEdges = edges;
-    const focused = getFocusedNodes(allNodes, allEdges, searchQuery, 2);
+    const focused = getFocusedNodes(nodesRef.current, edgesRef.current, searchQuery, 2);
     setFocusedNodes(focused);
-  }, [searchQuery, nodes, edges]);
+  }, [searchQuery]); // ✅ REMOVED 'nodes' and 'edges'
 
   // Center ReactFlow Camera on selected item changes
   // Effect 2: Guided tour effect
   useEffect(() => {
-    if (tourIdx === null) return;
-    
+    if (tourIdx === null) {
+      // Clean up any existing timer when tour is stopped
+      if (tourTimerRef.current) {
+        clearInterval(tourTimerRef.current);
+        tourTimerRef.current = null;
+      }
+      return;
+    }
+
     setSelectedFile(null);
-    
+
     const totalSteps = LAYER_KEYS.length * 3;
     tourTimerRef.current = setInterval(() => {
       setTourIdx(prev => {
         if (prev === null) return null;
         const next = prev + 1;
-        
+
         if (next >= totalSteps) {
           setExpandedLayer(null);
+          // Clear timer when tour completes
+          if (tourTimerRef.current) {
+            clearInterval(tourTimerRef.current);
+            tourTimerRef.current = null;
+          }
           return null;
         }
 
@@ -406,9 +444,12 @@ export default function LayerView({ result }: { result: any }) {
         return next;
       });
     }, 1200);
-    
+
     return () => {
-      if (tourTimerRef.current) clearInterval(tourTimerRef.current);
+      if (tourTimerRef.current) {
+        clearInterval(tourTimerRef.current);
+        tourTimerRef.current = null;
+      }
     };
   }, [tourIdx, reactFlowInstance, nodes]);
 
@@ -438,7 +479,7 @@ export default function LayerView({ result }: { result: any }) {
     } else if (node.id.startsWith("file-")) {
       const filePath = node.id.replace("file-", "");
       setSelectedFile(filePath);
-      
+
       // Figure out which layer this file belongs to
       for (const key of LAYER_KEYS) {
         if ((layers[key] || []).includes(filePath)) {
@@ -463,7 +504,7 @@ export default function LayerView({ result }: { result: any }) {
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[550px] text-left">
       {/* Canvas */}
       <div className="lg:col-span-3 rounded-2xl border border-border/60 bg-zinc-950/60 overflow-hidden relative">
-        
+
         {/* Left Toolbar controls: Quick search */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-2.5 py-1.5 shadow-lg backdrop-blur-md">
           <Search className="w-3.5 h-3.5 text-zinc-550 mr-1 shrink-0" />
@@ -524,11 +565,10 @@ export default function LayerView({ result }: { result: any }) {
             <button
               type="button"
               onClick={tourIdx === null ? startTour : stopTour}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-all w-full ${
-                tourIdx !== null
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                  : "bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30"
-              }`}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-all w-full ${tourIdx !== null
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                : "bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30"
+                }`}
             >
               {tourIdx !== null ? (
                 <>
@@ -575,7 +615,7 @@ export default function LayerView({ result }: { result: any }) {
           <Background color="#27272a" gap={20} />
           <Controls />
         </ReactFlow>
-        
+
         {/* Float Hint */}
         {tourIdx === null && !searchQuery && (
           <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-lg bg-zinc-900/80 border border-border/60 text-[9.5px] font-semibold text-zinc-400 pointer-events-none flex items-center gap-1.5">

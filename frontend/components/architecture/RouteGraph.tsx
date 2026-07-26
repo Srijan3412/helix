@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   Node,
@@ -159,6 +159,7 @@ function RouteGraphInternal({ result }: { result: any }) {
 
     const nodes: Node[] = [];
     const edges: Edge[] = [];
+    const seenNodeIds = new Set<string>(); // ✅ Add this
     const controllerY = 550;
 
     // Group routes by controller
@@ -170,47 +171,59 @@ function RouteGraphInternal({ result }: { result: any }) {
     // Add controller nodes
     const controllers = Array.from(controllerCount.keys());
     controllers.forEach((controller, i) => {
-      const x = 100 + i * 250;
-      nodes.push({
-        id: controller,
-        type: 'controllerNode',
-        position: { x, y: controllerY },
-        data: {
-          name: controller,
-          routeCount: controllerCount.get(controller) || 0
-        }
-      });
+      const controllerId = controller;
+
+      // ✅ Add duplicate check
+      if (!seenNodeIds.has(controllerId)) {
+        seenNodeIds.add(controllerId);
+        const x = 100 + i * 250;
+        nodes.push({
+          id: controllerId,
+          type: 'controllerNode',
+          position: { x, y: controllerY },
+          data: {
+            name: controller,
+            routeCount: controllerCount.get(controller) || 0
+          }
+        });
+      }
     });
 
     // Add route nodes
     filteredRoutes.forEach((route: any, i: number) => {
-      const controllerIdx = controllers.indexOf(route.controller);
-      const x = 100 + controllerIdx * 250;
-      const y = 50 + (i % 4) * 110;
+      const routeId = route.id;
 
-      nodes.push({
-        id: route.id,
-        type: 'routeNode',
-        position: { x, y },
-        data: {
-          method: route.method,
-          path: route.path,
-          controller: route.controller,
-          hasAuth: route.hasAuth,
-          accessesDB: route.accessesDB,
-          middleware: route.middleware
-        }
-      });
+      // ✅ Add duplicate check
+      if (!seenNodeIds.has(routeId)) {
+        seenNodeIds.add(routeId);
+        const controllerIdx = controllers.indexOf(route.controller);
+        const x = 100 + controllerIdx * 250;
+        const y = 50 + (i % 4) * 110;
 
-      // Connect to controller
-      edges.push({
-        id: `${route.id}-${route.controller}`,
-        source: route.id,
-        target: route.controller,
-        type: 'smoothstep',
-        style: { stroke: '#7c3aed', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#7c3aed' }
-      });
+        nodes.push({
+          id: routeId,
+          type: 'routeNode',
+          position: { x, y },
+          data: {
+            method: route.method,
+            path: route.path,
+            controller: route.controller,
+            hasAuth: route.hasAuth,
+            accessesDB: route.accessesDB,
+            middleware: route.middleware
+          }
+        });
+
+        // Connect to controller
+        edges.push({
+          id: `${routeId}-${route.controller}`,
+          source: routeId,
+          target: route.controller,
+          type: 'smoothstep',
+          style: { stroke: '#7c3aed', strokeWidth: 2 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#7c3aed' }
+        });
+      }
     });
 
     return { initialNodes: nodes, initialEdges: edges };
@@ -219,24 +232,13 @@ function RouteGraphInternal({ result }: { result: any }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // useRef synchronization guards to block the rendering-loop crash (Error #185)
-  const lastSyncedNodeIds = useRef<string>("");
-  const lastSyncedEdgeIds = useRef<string>("");
-
-  useEffect(() => {
-    const newIds = initialNodes.map(n => n.id).join(',');
-    if (newIds !== lastSyncedNodeIds.current) {
-      lastSyncedNodeIds.current = newIds;
-      setNodes(initialNodes);
-    }
+  // Simple sync - only triggers when memoized data changes
+  React.useEffect(() => {
+    setNodes(initialNodes);
   }, [initialNodes, setNodes]);
 
-  useEffect(() => {
-    const newIds = initialEdges.map(e => e.id).join(',');
-    if (newIds !== lastSyncedEdgeIds.current) {
-      lastSyncedEdgeIds.current = newIds;
-      setEdges(initialEdges);
-    }
+  React.useEffect(() => {
+    setEdges(initialEdges);
   }, [initialEdges, setEdges]);
 
   return (
@@ -258,11 +260,10 @@ function RouteGraphInternal({ result }: { result: any }) {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                filter === f
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filter === f
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
