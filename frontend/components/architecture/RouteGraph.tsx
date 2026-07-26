@@ -304,14 +304,21 @@ function RouteGraphInternal({ result }: { result: any }) {
 
 
   // Sync state if initial elements change (safely guarded)
-  // Simple sync - only triggers when memoized data changes
   React.useEffect(() => {
-    setNodes(initialNodes);
-  }, [initialNodes, setNodes]);
+    const currentIds = nodes.map(n => n.id).join(',');
+    const initialIds = initialNodes.map(n => n.id).join(',');
+    if (nodes.length !== initialNodes.length || currentIds !== initialIds) {
+      setNodes(initialNodes);
+    }
+  }, [initialNodes, nodes, setNodes]);
 
   React.useEffect(() => {
-    setEdges(initialEdges);
-  }, [initialEdges, setEdges]);
+    const currentEdgeIds = edges.map(e => e.id).join(',');
+    const initialEdgeIds = initialEdges.map(e => e.id).join(',');
+    if (edges.length !== initialEdges.length || currentEdgeIds !== initialEdgeIds) {
+      setEdges(initialEdges);
+    }
+  }, [initialEdges, edges, setEdges]);
 
 
   return (
