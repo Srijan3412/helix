@@ -12,14 +12,6 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   ALLOWED_ORIGINS: z.string().optional(),
   FRONTEND_URL: z.string().url().optional(),
-}).refine((data) => {
-  if (data.NODE_ENV === "production" && !data.GEMINI_API_KEY) {
-    return false;
-  }
-  return true;
-}, {
-  message: "GEMINI_API_KEY is required in production environment",
-  path: ["GEMINI_API_KEY"],
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -27,6 +19,10 @@ const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
   console.error("❌ Invalid environment variables configuration:", JSON.stringify(parsed.error.format(), null, 2));
   process.exit(1);
+}
+
+if (parsed.data.NODE_ENV === "production" && !parsed.data.GEMINI_API_KEY) {
+  console.warn("⚠️ Warning: GEMINI_API_KEY is not set in production. AI features will run in fallback/mock mode.");
 }
 
 export const config = parsed.data;
