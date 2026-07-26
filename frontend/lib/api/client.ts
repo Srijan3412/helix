@@ -1,5 +1,10 @@
 import { QueryClient } from "@tanstack/react-query";
-import { AnalysisResult, ChatMessage, AiArchitectSummary, OnboardingGuide, ImpactAnalysis, StaticAnalysisReport, ArchitectureDiff, ExecutionTrace, FeatureFlow, RepositorySubway } from "@shared/types";
+import { 
+  AnalysisResult, ChatMessage, AiArchitectSummary, OnboardingGuide, 
+  ImpactAnalysis, StaticAnalysisReport, ArchitectureDiff, ExecutionTrace, 
+  FeatureFlow, RepositorySubway 
+} from "@shared/types";
+import { supabase } from "../subscription/supabase";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -12,12 +17,28 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Helper to get auth headers with JWT token
+async function getAuthHeaders(headers: Record<string, string> = {}): Promise<Record<string, string>> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      return {
+        ...headers,
+        "Authorization": `Bearer ${session.access_token}`,
+      };
+    }
+  } catch (e) {
+    console.error("Failed to get auth session for API request", e);
+  }
+  return headers;
+}
+
 export async function submitGithubUrl(url: string): Promise<{ jobId: string }> {
   const response = await fetch(`${API_BASE_URL}/api/analyze`, {
     method: "POST",
-    headers: {
+    headers: await getAuthHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({ url }),
   });
 
@@ -35,6 +56,7 @@ export async function submitZipFile(file: File): Promise<{ jobId: string }> {
 
   const response = await fetch(`${API_BASE_URL}/api/analyze`, {
     method: "POST",
+    headers: await getAuthHeaders(),
     body: formData,
   });
 
@@ -47,7 +69,9 @@ export async function submitZipFile(file: File): Promise<{ jobId: string }> {
 }
 
 export async function getAnalysisStatus(jobId: string): Promise<{ status: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/status`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/status`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch job status");
   }
@@ -55,7 +79,9 @@ export async function getAnalysisStatus(jobId: string): Promise<{ status: string
 }
 
 export async function getAnalysisResults(jobId: string): Promise<AnalysisResult> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/results`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/results`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch analysis results");
   }
@@ -65,9 +91,9 @@ export async function getAnalysisResults(jobId: string): Promise<AnalysisResult>
 export async function submitLocalPath(path: string): Promise<{ jobId: string }> {
   const response = await fetch(`${API_BASE_URL}/api/analyze`, {
     method: "POST",
-    headers: {
+    headers: await getAuthHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({ path, source: "local" }),
   });
 
@@ -82,9 +108,9 @@ export async function submitLocalPath(path: string): Promise<{ jobId: string }> 
 export async function submitChatMessage(jobId: string, message: string): Promise<{ message: ChatMessage }> {
   const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/chat`, {
     method: "POST",
-    headers: {
+    headers: await getAuthHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({ message }),
   });
 
@@ -97,7 +123,9 @@ export async function submitChatMessage(jobId: string, message: string): Promise
 }
 
 export async function getAiSummary(jobId: string): Promise<{ aiSummary: AiArchitectSummary | null }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/ai-summary`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/ai-summary`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch AI architecture summary");
   }
@@ -105,7 +133,9 @@ export async function getAiSummary(jobId: string): Promise<{ aiSummary: AiArchit
 }
 
 export async function getOnboardingGuide(jobId: string): Promise<{ onboarding: OnboardingGuide | null }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/onboarding`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/onboarding`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch onboarding guide");
   }
@@ -113,7 +143,9 @@ export async function getOnboardingGuide(jobId: string): Promise<{ onboarding: O
 }
 
 export async function getImpactAnalysis(jobId: string, file: string): Promise<{ impact: ImpactAnalysis; timeline: any[] }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/impact?file=${encodeURIComponent(file)}`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/impact?file=${encodeURIComponent(file)}`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch impact analysis");
   }
@@ -121,7 +153,9 @@ export async function getImpactAnalysis(jobId: string, file: string): Promise<{ 
 }
 
 export async function getStaticAnalysis(jobId: string): Promise<StaticAnalysisReport> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/static`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/static`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch static analysis report");
   }
@@ -129,7 +163,9 @@ export async function getStaticAnalysis(jobId: string): Promise<StaticAnalysisRe
 }
 
 export async function getRepositoryTimeline(jobId: string): Promise<{ timeline: any[] }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/timeline`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/timeline`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch repository timeline");
   }
@@ -137,7 +173,9 @@ export async function getRepositoryTimeline(jobId: string): Promise<{ timeline: 
 }
 
 export async function getJobsList(): Promise<{ jobs: any[] }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/jobs`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/jobs`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch jobs list");
   }
@@ -145,7 +183,9 @@ export async function getJobsList(): Promise<{ jobs: any[] }> {
 }
 
 export async function getArchitectureDiff(jobId: string, compareJobId: string): Promise<ArchitectureDiff> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/compare/${compareJobId}`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/compare/${compareJobId}`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || errorData.message || "Failed to compare architecture runs");
@@ -154,7 +194,9 @@ export async function getArchitectureDiff(jobId: string, compareJobId: string): 
 }
 
 export async function getArchitectureLayers(jobId: string): Promise<{ layers: Record<string, string[]> }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/architecture`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/architecture`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch architecture layers");
   }
@@ -162,7 +204,9 @@ export async function getArchitectureLayers(jobId: string): Promise<{ layers: Re
 }
 
 export async function getExecutionTraces(jobId: string): Promise<{ traces: ExecutionTrace[] }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/traces`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/traces`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch execution traces");
   }
@@ -170,7 +214,9 @@ export async function getExecutionTraces(jobId: string): Promise<{ traces: Execu
 }
 
 export async function getFileContent(jobId: string, filePath: string): Promise<{ content: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/file?path=${encodeURIComponent(filePath)}`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/file?path=${encodeURIComponent(filePath)}`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch file contents");
   }
@@ -178,7 +224,9 @@ export async function getFileContent(jobId: string, filePath: string): Promise<{
 }
 
 export async function getFeaturesMap(jobId: string): Promise<{ features: FeatureFlow[] }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/features`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/features`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch features map");
   }
@@ -186,11 +234,11 @@ export async function getFeaturesMap(jobId: string): Promise<{ features: Feature
 }
 
 export async function getSubwayMap(jobId: string): Promise<{ subway: RepositorySubway; layout: { nodes: any[]; edges: any[] } }> {
-  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/subway`);
+  const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/subway`, {
+    headers: await getAuthHeaders(),
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch subway map");
   }
   return response.json();
 }
-
-

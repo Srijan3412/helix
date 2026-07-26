@@ -15,6 +15,7 @@ import { ArchitectureDiffService } from "../modules/architecture/architecture-di
 import { LayerDetectorService } from "../modules/architecture/layer-detector.service.js";
 import { TraceBuilderService } from "../modules/execution-trace/trace-builder.service.js";
 import { FeatureBuilderService } from "../modules/feature-map/feature-builder.service.js";
+import { requireAuth } from "../core/auth/auth.middleware.js";
 
 const AnalyzeRequestSchema = z.object({
   url: z.string().url({ message: "Invalid GitHub repository URL" }).optional(),
@@ -23,6 +24,9 @@ const AnalyzeRequestSchema = z.object({
 });
 
 export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+  // Register authentication hook to protect all API endpoints
+  fastify.addHook("preHandler", requireAuth);
+  
   // Register multipart support context if needed (handled in app.ts, but standard Fastify practice)
   
   /**

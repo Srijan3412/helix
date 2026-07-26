@@ -74,6 +74,7 @@ function getClient(): SupabaseClient {
       client = createClient(supabaseUrl!, supabaseAnonKey!, {
         auth: {
           persistSession: true,
+          storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
           autoRefreshToken: true,
         },
       });
@@ -93,7 +94,7 @@ const ADMIN_USER_ID = 'mock-admin-uuid-1111-2222-3333-444444444444';
 let mockSession: any = null;
 if (typeof window !== 'undefined') {
   try {
-    const saved = localStorage.getItem('sb-mock-admin-session');
+    const saved = sessionStorage.getItem('sb-mock-admin-session');
     if (saved) {
       mockSession = JSON.parse(saved);
     }
@@ -107,9 +108,9 @@ function setMockSession(session: any) {
   if (typeof window !== 'undefined') {
     try {
       if (session) {
-        localStorage.setItem('sb-mock-admin-session', JSON.stringify(session));
+        sessionStorage.setItem('sb-mock-admin-session', JSON.stringify(session));
       } else {
-        localStorage.removeItem('sb-mock-admin-session');
+        sessionStorage.removeItem('sb-mock-admin-session');
       }
     } catch (e) {
       console.error(e);
