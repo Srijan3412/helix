@@ -28,7 +28,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<any>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('sb-session-cache');
+        const saved = sessionStorage.getItem('sb-session-cache');
         return saved ? JSON.parse(saved) : null;
       } catch (e) {
         return null;
@@ -40,7 +40,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('sb-profile-cache');
+        const saved = sessionStorage.getItem('sb-profile-cache');
         return saved ? JSON.parse(saved) : null;
       } catch (e) {
         return null;
@@ -52,7 +52,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [subscription, setSubscription] = useState<Subscription | null>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('sb-subscription-cache');
+        const saved = sessionStorage.getItem('sb-subscription-cache');
         return saved ? JSON.parse(saved) : null;
       } catch (e) {
         return null;
@@ -64,7 +64,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [usage, setUsage] = useState<UsageRecord | null>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('sb-usage-cache');
+        const saved = sessionStorage.getItem('sb-usage-cache');
         return saved ? JSON.parse(saved) : null;
       } catch (e) {
         return null;
@@ -76,7 +76,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [payments, setPayments] = useState<Payment[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('sb-payments-cache');
+        const saved = sessionStorage.getItem('sb-payments-cache');
         return saved ? JSON.parse(saved) : [];
       } catch (e) {
         return [];
@@ -87,8 +87,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const [loading, setLoading] = useState(() => {
     if (typeof window !== 'undefined') {
-      const hasSession = !!localStorage.getItem('sb-session-cache');
-      const hasProfile = !!localStorage.getItem('sb-profile-cache');
+      const hasSession = !!sessionStorage.getItem('sb-session-cache');
+      const hasProfile = !!sessionStorage.getItem('sb-profile-cache');
       return !(hasSession && hasProfile);
     }
     return true;
@@ -100,9 +100,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined') {
       try {
         if (val) {
-          localStorage.setItem(key, JSON.stringify(val));
+          sessionStorage.setItem(key, JSON.stringify(val));
         } else {
-          localStorage.removeItem(key);
+          sessionStorage.removeItem(key);
         }
       } catch (e) {}
     }
