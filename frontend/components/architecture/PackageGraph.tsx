@@ -52,9 +52,8 @@ function PackageGraphNode({ data }: { data: any }) {
         <span className="text-[9px] text-zinc-450 font-semibold uppercase tracking-wider">
           <span className={isDev ? "text-zinc-400" : "text-blue-400 font-bold"}>{data.usedByFiles}</span> {data.usedByFiles === 1 ? "file" : "files"}
         </span>
-        <span className={`text-[8.5px] font-extrabold uppercase tracking-widest px-1 py-0.5 rounded ${
-          isDev ? "bg-zinc-850/60 text-zinc-450 border border-zinc-800" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-        }`}>
+        <span className={`text-[8.5px] font-extrabold uppercase tracking-widest px-1 py-0.5 rounded ${isDev ? "bg-zinc-850/60 text-zinc-450 border border-zinc-800" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+          }`}>
           {isDev ? "dev" : "prod"}
         </span>
       </div>
@@ -141,11 +140,12 @@ function PackageGraphInternal({ result }: { result: any }) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     const nodesList: Node[] = [];
     const edgesList: Edge[] = [];
+    const seenNodeIds = new Set<string>();
 
     // 1. Gather all external imports used by files
     const allExternalImports = new Set<string>();
     const fileNodesData = result?.files || [];
-    
+
     fileNodesData.forEach((f: any) => {
       f.externalImports?.forEach((imp: string) => {
         allExternalImports.add(imp);
@@ -166,10 +166,9 @@ function PackageGraphInternal({ result }: { result: any }) {
         version = devDependencies[pkgName];
         type = "devDependency";
       } else {
-        // Look up package names in package.json metadata case-insensitively or just fallback to dependency
+        // Look up package names in package.json metadata case-insensitively
         const foundDep = Object.keys(dependencies).find(k => k.toLowerCase() === pkgName.toLowerCase());
         const foundDevDep = Object.keys(devDependencies).find(k => k.toLowerCase() === pkgName.toLowerCase());
-        
         if (foundDep) {
           version = dependencies[foundDep];
           type = "dependency";
@@ -178,47 +177,54 @@ function PackageGraphInternal({ result }: { result: any }) {
           type = "devDependency";
         }
       }
-
-      // Filter devDependencies if toggle is off
-      if (type === "devDependency" && !showDevDeps) {
-        return;
-      }
-
       packages.push({ name: pkgName, version, type });
     });
 
-    // Filter packages by search query if applicable
+
     const filteredPackages = packages.filter(pkg => {
-      if (!searchQuery.trim()) return true;
-      return pkg.name.toLowerCase().includes(searchQuery.toLowerCase());
+      if (pkg.type === "devDependency" && !showDevDeps) {
+        return false;
+      }
+      // Filter by search query
+      if (searchQuery.trim()) {
+        return pkg.name.toLowerCase().includes(searchQuery.toLowerCase());
+      }
+      return true;
     });
 
     const activePkgNames = new Set(filteredPackages.map(p => p.name));
 
     // 3. Create Package Nodes
     filteredPackages.forEach((pkg) => {
-      // Count files using this package
-      const usedByFiles = fileNodesData.filter((f: any) => 
-        (f.externalImports || []).some((imp: string) => imp.toLowerCase() === pkg.name.toLowerCase())
-      ).length;
+      const packageId = `pkg:${pkg.name}`;
 
-      nodesList.push({
-        id: `pkg:${pkg.name}`,
-        type: "packageNode",
-        position: { x: 0, y: 0 },
-        data: {
-          name: pkg.name,
-          version: pkg.version,
-          type: pkg.type,
-          usedByFiles
-        }
-      });
+      // ✅ Add duplicate check
+      if (!seenNodeIds.has(packageId)) {
+        seenNodeIds.add(packageId);
+
+        // Count files using this package
+        const usedByFiles = fileNodesData.filter((f: any) =>
+          (f.externalImports || []).some((imp: string) => imp.toLowerCase() === pkg.name.toLowerCase())
+        ).length;
+
+        nodesList.push({
+          id: packageId,
+          type: "packageNode",
+          position: { x: 0, y: 0 },
+          data: {
+            name: pkg.name,
+            version: pkg.version,
+            type: pkg.type,
+            usedByFiles
+          }
+        });
+      }
     });
 
     // 4. Create File Nodes (Only top 10 files using filtered packages to prevent clutter)
     const filesWithImports = fileNodesData
       .map((f: any) => {
-        const activeImports = (f.externalImports || []).filter((imp: string) => 
+        const activeImports = (f.externalImports || []).filter((imp: string) =>
           activePkgNames.has(imp) || Object.keys(dependencies).some(k => k.toLowerCase() === imp.toLowerCase() && activePkgNames.has(k))
         );
         return {
@@ -233,16 +239,23 @@ function PackageGraphInternal({ result }: { result: any }) {
     const displayFiles = filesWithImports.slice(0, 10);
 
     displayFiles.forEach((file: any) => {
-      const filename = file.path.split(/[\\/]/).pop() || file.path;
-      nodesList.push({
-        id: `file:${file.path}`,
-        type: "fileNode",
-        position: { x: 0, y: 0 },
-        data: {
-          name: filename,
-          importCount: file.activeImports.length
-        }
-      });
+      const fileId = `file:${file.path}`;
+
+      // ✅ Add duplicate check
+      if (!seenNodeIds.has(fileId)) {
+        seenNodeIds.add(fileId);
+
+        const filename = file.path.split(/[\\/]/).pop() || file.path;
+        nodesList.push({
+          id: fileId,
+          type: "fileNode",
+          position: { x: 0, y: 0 },
+          data: {
+            name: filename,
+            importCount: file.activeImports.length
+          }
+        });
+      }
 
       // 5. Connect files to packages
       file.activeImports.forEach((importName: string) => {
@@ -274,21 +287,14 @@ function PackageGraphInternal({ result }: { result: any }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   // Sync state if initial elements change (safely guarded)
+  // Simple sync - only triggers when memoized data changes
   React.useEffect(() => {
-    const currentIds = nodes.map(n => n.id).join(',');
-    const initialIds = initialNodes.map(n => n.id).join(',');
-    if (nodes.length !== initialNodes.length || currentIds !== initialIds) {
-      setNodes(initialNodes);
-    }
-  }, [initialNodes, nodes, setNodes]);
+    setNodes(initialNodes);
+  }, [initialNodes, setNodes]);
 
   React.useEffect(() => {
-    const currentEdgeIds = edges.map(e => e.id).join(',');
-    const initialEdgeIds = initialEdges.map(e => e.id).join(',');
-    if (edges.length !== initialEdges.length || currentEdgeIds !== initialEdgeIds) {
-      setEdges(initialEdges);
-    }
-  }, [initialEdges, edges, setEdges]);
+    setEdges(initialEdges);
+  }, [initialEdges, setEdges]);
 
   // Compute counts
   const prodDepCount = Object.keys(dependencies).length;

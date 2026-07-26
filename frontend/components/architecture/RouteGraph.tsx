@@ -157,6 +157,10 @@ function RouteGraphInternal({ result }: { result: any }) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     const nodesList: Node[] = [];
     const edgesList: Edge[] = [];
+    const seenNodeIds = new Set<string>();
+
+    // Create Controller Nodes
+
 
     // Group routes by controller
     const controllerMap = new Map<string, RouteNode[]>();
@@ -171,17 +175,24 @@ function RouteGraphInternal({ result }: { result: any }) {
     // Create Controller Nodes
     controllerMap.forEach((controllerRoutes, controllerPath) => {
       const controllerName = getBasename(controllerPath);
-      nodesList.push({
-        id: `controller:${controllerPath}`,
-        type: "controllerNode",
-        position: { x: 0, y: 0 },
-        data: {
-          name: controllerName,
-          routeCount: controllerRoutes.length
-        }
-      });
+      const controllerId = `controller:${controllerPath}`;
+
+      // ✅ Add this check:
+      if (!seenNodeIds.has(controllerId)) {
+        seenNodeIds.add(controllerId);
+        nodesList.push({
+          id: controllerId,
+          type: "controllerNode",
+          position: { x: 0, y: 0 },
+          data: {
+            name: controllerName,
+            routeCount: controllerRoutes.length
+          }
+        });
+      }
     });
 
+    // Create Route Nodes and Connect to Controllers
     // Create Route Nodes and Connect to Controllers
     routes.forEach((r: RouteNode, index: number) => {
       const routeId = `route:${r.method}:${r.path}`;
@@ -199,20 +210,24 @@ function RouteGraphInternal({ result }: { result: any }) {
         (f: any) => f.route === r.path && f.method.toUpperCase() === r.method.toUpperCase()
       );
 
-      nodesList.push({
-        id: routeId,
-        type: "routeNode",
-        position: { x: 0, y: 0 },
-        data: {
-          method: r.method,
-          path: r.path,
-          file: controllerPath,
-          hasAuth,
-          accessesDB
-        }
-      });
+      // ✅ Add this check:
+      if (!seenNodeIds.has(routeId)) {
+        seenNodeIds.add(routeId);
+        nodesList.push({
+          id: routeId,
+          type: "routeNode",
+          position: { x: 0, y: 0 },
+          data: {
+            method: r.method,
+            path: r.path,
+            file: controllerPath,
+            hasAuth,
+            accessesDB
+          }
+        });
+      }
 
-      // Connect route to controller
+      // Connect route to controller (still create edge even if route is duplicate)
       edgesList.push({
         id: `edge:${routeId}-to-controller:${controllerPath}`,
         source: routeId,
@@ -222,6 +237,7 @@ function RouteGraphInternal({ result }: { result: any }) {
         markerEnd: { type: MarkerType.ArrowClosed, color: "#a855f7" }
       });
     });
+
 
     // Filter nodes and edges based on user filters
     const filteredRoutes = routes.filter((r: RouteNode) => {
@@ -247,6 +263,7 @@ function RouteGraphInternal({ result }: { result: any }) {
       return true;
     });
 
+
     const activeRouteIds = new Set(filteredRoutes.map((r: RouteNode) => `route:${r.method}:${r.path}`));
     const activeControllerPaths = new Set(filteredRoutes.map((r: RouteNode) => r.file || "UnknownController.ts"));
 
@@ -261,6 +278,7 @@ function RouteGraphInternal({ result }: { result: any }) {
       return true;
     });
 
+
     // Recalculate route count for active controller nodes
     displayNodes.forEach(node => {
       if (node.type === "controllerNode") {
@@ -273,34 +291,28 @@ function RouteGraphInternal({ result }: { result: any }) {
     const displayEdges = edgesList.filter((edge) => {
       return activeRouteIds.has(edge.source) && activeControllerPaths.has(edge.target.replace("controller:", ""));
     });
-
-    // Layout layout elements with dagre
     if (displayNodes.length > 0) {
       return getLayoutedElements(displayNodes, displayEdges);
     }
 
     return { nodes: [], edges: [] };
-  }, [routes, filter, searchQuery, result]);
+  }, [routes, filter, searchQuery, result]); // ← CLOSING BRACKET HERE
+
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+
   // Sync state if initial elements change (safely guarded)
+  // Simple sync - only triggers when memoized data changes
   React.useEffect(() => {
-    const currentIds = nodes.map(n => n.id).join(',');
-    const initialIds = initialNodes.map(n => n.id).join(',');
-    if (nodes.length !== initialNodes.length || currentIds !== initialIds) {
-      setNodes(initialNodes);
-    }
-  }, [initialNodes, nodes, setNodes]);
+    setNodes(initialNodes);
+  }, [initialNodes, setNodes]);
 
   React.useEffect(() => {
-    const currentEdgeIds = edges.map(e => e.id).join(',');
-    const initialEdgeIds = initialEdges.map(e => e.id).join(',');
-    if (edges.length !== initialEdges.length || currentEdgeIds !== initialEdgeIds) {
-      setEdges(initialEdges);
-    }
-  }, [initialEdges, edges, setEdges]);
+    setEdges(initialEdges);
+  }, [initialEdges, setEdges]);
+
 
   return (
     <div className="h-full w-full relative bg-zinc-950">
@@ -343,11 +355,10 @@ function RouteGraphInternal({ result }: { result: any }) {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-lg text-[9.5px] font-extrabold uppercase tracking-wider transition-all ${
-                filter === f
-                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
-                  : "text-zinc-450 hover:text-zinc-200 hover:bg-zinc-800/40"
-              }`}
+              className={`px-3 py-1 rounded-lg text-[9.5px] font-extrabold uppercase tracking-wider transition-all ${filter === f
+                ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                : "text-zinc-450 hover:text-zinc-200 hover:bg-zinc-800/40"
+                }`}
             >
               {f}
             </button>
