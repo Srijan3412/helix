@@ -267,6 +267,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   };
 
   const recordUsage = async (field: keyof UsageRecord, amount = 1): Promise<boolean> => {
+    // Admin does not consume or record tokens/usage limits
+    if (profile?.role === 'org_admin' || profile?.email === 'admin@projectanalyser.com') {
+      return true;
+    }
     if (!session?.user?.id || !usage) return false;
     const numericFields: Array<keyof UsageRecord> = [
       'repositories_analyzed', 'ai_chats', 'architecture_graphs',
@@ -291,6 +295,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const canUse = (feature: keyof typeof PLAN_CONFIG.professional.limits, currentUsage?: number): boolean => {
     if (!profile) return false;
+    // Admin can use everything as much as they want
+    if (profile.role === 'org_admin' || profile.email === 'admin@projectanalyser.com') {
+      return true;
+    }
     const config = PLAN_CONFIG[profile.plan];
     const limit = config.limits[feature];
     if (limit === Infinity) return true;

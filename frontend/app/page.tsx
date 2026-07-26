@@ -772,7 +772,7 @@ export default function Home() {
                 exit={{ opacity: 0, x: -10 }}
                 className="min-w-0 overflow-hidden"
               >
-                <span className="text-lg font-semibold text-white">RepoInsight</span>
+                <span className="text-lg font-semibold text-white">Helix</span>
                 <span className="ml-2 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/40">v2.0</span>
               </motion.div>
             )}
@@ -882,7 +882,7 @@ export default function Home() {
             })}
             
             {/* Token Counter */}
-            {sidebarExpanded && (
+            {sidebarExpanded && profile?.role !== 'org_admin' && profile?.email !== 'admin@projectanalyser.com' && (
               <div className="mt-4 px-2">
                 <TokenCounter />
               </div>
