@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Node,
@@ -14,73 +14,75 @@ import {
   Handle,
   Position,
   ReactFlowProvider
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import dagre from "dagre";
-import { Package, FileCode, Search, X } from "lucide-react";
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { Package, FileCode } from 'lucide-react';
 
-// Package type style configurations
-const packageStyles = {
-  dependency: { bg: "bg-blue-500/10 text-blue-400 border-blue-500/40", text: "text-blue-400" },
-  devDependency: { bg: "bg-zinc-800/40 text-zinc-400 border-zinc-700/60", text: "text-zinc-400" }
+interface PackageNodeProps {
+  data: {
+    name: string;
+    version: string;
+    type: 'dependency' | 'devDependency';
+    usedByFiles: number;
+  };
+}
+
+const packageTypeStyles = {
+  dependency: { bg: 'bg-blue-500/10', border: 'border-blue-500/50', text: 'text-blue-400', icon: Package },
+  devDependency: { bg: 'bg-slate-500/10', border: 'border-slate-500/50', text: 'text-slate-400', icon: Package }
 };
 
-// Custom Package Node Component
-function PackageGraphNode({ data }: { data: any }) {
-  const isDev = data.type === "devDependency";
-  const style = isDev ? packageStyles.devDependency : packageStyles.dependency;
+function PackageGraphNode({ data }: PackageNodeProps) {
+  const style = packageTypeStyles[data.type] || packageTypeStyles.dependency;
+  const Icon = style.icon;
 
   return (
-    <div className={`relative bg-zinc-900 border border-zinc-700/80 rounded-xl shadow-lg p-3.5 min-w-[170px] text-left`}>
-      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-zinc-650" />
+    <div className={`relative ${style.bg} border-2 ${style.border} rounded-xl shadow-lg p-3 min-w-[140px] text-left`}>
+      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-slate-500" />
 
-      <div className="flex items-center gap-2.5">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-zinc-950 border border-zinc-800/80 shrink-0`}>
-          <Package size={15} className={style.text || (isDev ? "text-zinc-450" : "text-blue-400")} />
+      <div className="flex items-center gap-2">
+        <div className={`w-8 h-8 rounded-lg ${style.bg} flex items-center justify-center`}>
+          <Icon size={16} className={style.text} />
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-mono text-[10.5px] text-zinc-100 truncate font-bold" title={data.name}>
-            {data.name}
-          </div>
-          <div className="text-[9px] text-zinc-450 mt-0.5 font-bold">
-            v{data.version || "latest"}
-          </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-mono text-xs text-white truncate">{data.name}</div>
+          <div className="text-[10px] text-slate-500">v{data.version}</div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-800/80">
-        <span className="text-[9px] text-zinc-450 font-semibold uppercase tracking-wider">
-          <span className={isDev ? "text-zinc-400" : "text-blue-400 font-bold"}>{data.usedByFiles}</span> {data.usedByFiles === 1 ? "file" : "files"}
+      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-700/50">
+        <span className="text-[10px] text-slate-400">
+          <span className={style.text}>{data.usedByFiles}</span> files
         </span>
-        <span className={`text-[8.5px] font-extrabold uppercase tracking-widest px-1 py-0.5 rounded ${isDev ? "bg-zinc-850/60 text-zinc-450 border border-zinc-800" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-          }`}>
-          {isDev ? "dev" : "prod"}
+        <span className={`ml-auto text-[10px] ${style.text}`}>
+          {data.type === 'dependency' ? 'prod' : 'dev'}
         </span>
       </div>
 
-      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-zinc-650" />
+      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-slate-500" />
     </div>
   );
 }
 
-// Custom Importing File Node Component
-function ImportingFileNode({ data }: { data: any }) {
+interface FileNodeProps {
+  data: {
+    name: string;
+    importCount: number;
+  };
+}
+
+function ImportingFileNode({ data }: FileNodeProps) {
   return (
-    <div className="relative bg-zinc-950 border border-zinc-700/80 rounded-xl shadow-lg p-3 min-w-[150px] text-left">
-      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-zinc-650" />
-      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-zinc-650" />
+    <div className="relative bg-slate-800 border border-slate-600 rounded-lg p-2 min-w-[120px] text-left">
+      <Handle type="source" position={Position.Top} className="!w-2 !h-2 !bg-slate-500" />
 
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded bg-zinc-800 flex items-center justify-center border border-zinc-700/40 shrink-0">
-          <FileCode size={13} className="text-zinc-400" />
+        <div className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center">
+          <FileCode size={12} className="text-slate-400" />
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-mono text-[10px] text-zinc-200 truncate font-bold" title={data.name}>
-            {data.name}
-          </div>
-          <div className="text-[8.5px] text-zinc-450 font-bold uppercase tracking-wider mt-0.5">
-            {data.importCount} {data.importCount === 1 ? "import" : "imports"}
-          </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-mono text-[10px] text-slate-300 truncate">{data.name}</div>
+          <div className="text-[10px] text-slate-500">{data.importCount} imports</div>
         </div>
       </div>
     </div>
@@ -92,209 +94,128 @@ const nodeTypes = {
   fileNode: ImportingFileNode
 };
 
-// Dagre Layout function for PackageGraph
-const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: "TB", nodesep: 50, ranksep: 90 });
-
-  nodes.forEach((node) => {
-    const width = node.type === "packageNode" ? 170 : 150;
-    const height = node.type === "packageNode" ? 85 : 55;
-    dagreGraph.setNode(node.id, { width, height });
-  });
-
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-
-  const layoutedNodes = nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    const width = node.type === "packageNode" ? 170 : 150;
-    const height = node.type === "packageNode" ? 85 : 55;
-    return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - width / 2,
-        y: nodeWithPosition.y - height / 2,
-      },
-    };
-  });
-
-  return { nodes: layoutedNodes, edges };
-};
-
 function PackageGraphInternal({ result }: { result: any }) {
   const [showDevDeps, setShowDevDeps] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
 
-  // Extracted packages metadata
-  const { dependencies, devDependencies } = useMemo(() => {
+  // Map package metadata from scan results dynamically
+  const packageNodes = useMemo(() => {
     const deps = result?.metadata?.frameworkMetadata?.dependencies || {};
     const devDeps = result?.metadata?.frameworkMetadata?.devDependencies || {};
-    return { dependencies: deps, devDependencies: devDeps };
+    
+    const prodList = Object.entries(deps).map(([name, ver]) => ({
+      id: name,
+      name,
+      version: String(ver),
+      type: 'dependency' as const,
+      usedBy: [] as string[]
+    }));
+
+    const devList = Object.entries(devDeps).map(([name, ver]) => ({
+      id: name,
+      name,
+      version: String(ver),
+      type: 'devDependency' as const,
+      usedBy: [] as string[]
+    }));
+
+    return [...prodList, ...devList];
   }, [result]);
 
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
-    const nodesList: Node[] = [];
-    const edgesList: Edge[] = [];
-    const seenNodeIds = new Set<string>();
-
-    // 1. Gather all external imports used by files
-    const allExternalImports = new Set<string>();
-    const fileNodesData = result?.files || [];
-
-    fileNodesData.forEach((f: any) => {
-      f.externalImports?.forEach((imp: string) => {
-        allExternalImports.add(imp);
-      });
-    });
-
-    // 2. Identify and construct package list
-    const packages: { name: string; version: string; type: "dependency" | "devDependency" }[] = [];
-    allExternalImports.forEach((pkgName) => {
-      // Find package type and version
-      let type: "dependency" | "devDependency" = "dependency";
-      let version = "latest";
-
-      if (dependencies[pkgName]) {
-        version = dependencies[pkgName];
-        type = "dependency";
-      } else if (devDependencies[pkgName]) {
-        version = devDependencies[pkgName];
-        type = "devDependency";
-      } else {
-        // Look up package names in package.json metadata case-insensitively
-        const foundDep = Object.keys(dependencies).find(k => k.toLowerCase() === pkgName.toLowerCase());
-        const foundDevDep = Object.keys(devDependencies).find(k => k.toLowerCase() === pkgName.toLowerCase());
-        if (foundDep) {
-          version = dependencies[foundDep];
-          type = "dependency";
-        } else if (foundDevDep) {
-          version = devDependencies[foundDevDep];
-          type = "devDependency";
-        }
-      }
-      packages.push({ name: pkgName, version, type });
-    });
-
-
-    const filteredPackages = packages.filter(pkg => {
-      if (pkg.type === "devDependency" && !showDevDeps) {
-        return false;
-      }
-      // Filter by search query
-      if (searchQuery.trim()) {
-        return pkg.name.toLowerCase().includes(searchQuery.toLowerCase());
-      }
-      return true;
-    });
-
-    const activePkgNames = new Set(filteredPackages.map(p => p.name));
-
-    // 3. Create Package Nodes
-    filteredPackages.forEach((pkg) => {
-      const packageId = `pkg:${pkg.name}`;
-
-      // ✅ Add duplicate check
-      if (!seenNodeIds.has(packageId)) {
-        seenNodeIds.add(packageId);
-
-        // Count files using this package
-        const usedByFiles = fileNodesData.filter((f: any) =>
-          (f.externalImports || []).some((imp: string) => imp.toLowerCase() === pkg.name.toLowerCase())
-        ).length;
-
-        nodesList.push({
-          id: packageId,
-          type: "packageNode",
-          position: { x: 0, y: 0 },
-          data: {
-            name: pkg.name,
-            version: pkg.version,
-            type: pkg.type,
-            usedByFiles
-          }
-        });
-      }
-    });
-
-    // 4. Create File Nodes (Only top 10 files using filtered packages to prevent clutter)
-    const filesWithImports = fileNodesData
+  // Map file structures and their parsed imports dynamically
+  const fileNodes = useMemo(() => {
+    const files = result?.files || [];
+    return files
+      .filter((f: any) => !f.path.startsWith("ROUTE:") && !f.path.startsWith("ENV:") && !f.path.startsWith("DB:"))
       .map((f: any) => {
-        const activeImports = (f.externalImports || []).filter((imp: string) =>
-          activePkgNames.has(imp) || Object.keys(dependencies).some(k => k.toLowerCase() === imp.toLowerCase() && activePkgNames.has(k))
-        );
+        // Track which dependencies this file actually imports
+        const imports = f.externalImports || [];
         return {
-          ...f,
-          activeImports
+          id: f.path,
+          name: f.path.split(/[\\/]/).pop() || f.path,
+          imports
         };
-      })
-      .filter((f: any) => f.activeImports.length > 0)
-      .sort((a: any, b: any) => b.activeImports.length - a.activeImports.length);
+      });
+  }, [result]);
 
-    // Limit to top 10 files to keep graph readable
-    const displayFiles = filesWithImports.slice(0, 10);
+  const { initialNodes, initialEdges } = useMemo(() => {
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+    
+    const filteredPackages = showDevDeps
+      ? packageNodes
+      : packageNodes.filter((p: { type: string }) => p.type === 'dependency');
 
-    displayFiles.forEach((file: any) => {
-      const fileId = `file:${file.path}`;
+    // Position packages in a grid
+    const cols = 4;
+    const startY = 400;
 
-      // ✅ Add duplicate check
-      if (!seenNodeIds.has(fileId)) {
-        seenNodeIds.add(fileId);
+    filteredPackages.forEach((pkg, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = 80 + col * 220;
+      const y = startY + row * 120;
 
-        const filename = file.path.split(/[\\/]/).pop() || file.path;
-        nodesList.push({
-          id: fileId,
-          type: "fileNode",
-          position: { x: 0, y: 0 },
-          data: {
-            name: filename,
-            importCount: file.activeImports.length
-          }
-        });
-      }
+      // Count files using this package
+      const usedByFiles = fileNodes.filter((f: { imports: string[] }) => f.imports.includes(pkg.id)).length;
 
-      // 5. Connect files to packages
-      file.activeImports.forEach((importName: string) => {
-        // Resolve exact casing of package id
-        let exactPkgName = importName;
-        const matched = filteredPackages.find(p => p.name.toLowerCase() === importName.toLowerCase());
-        if (matched) exactPkgName = matched.name;
-
-        edgesList.push({
-          id: `edge:${file.path}-to-pkg:${exactPkgName}`,
-          source: `file:${file.path}`,
-          target: `pkg:${exactPkgName}`,
-          type: "smoothstep",
-          style: { stroke: "#4b5563", strokeWidth: 1.5 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: "#4b5563" }
-        });
+      nodes.push({
+        id: pkg.id,
+        type: 'packageNode',
+        position: { x, y },
+        data: {
+          name: pkg.name,
+          version: pkg.version,
+          type: pkg.type,
+          usedByFiles
+        }
       });
     });
 
-    // Layout layout elements with dagre
-    if (nodesList.length > 0) {
-      return getLayoutedElements(nodesList, edgesList);
-    }
+    // Add top importing files
+    const topImporterY = 80;
+    const topImporters = fileNodes
+      .filter((f: { imports: string[] }) => f.imports.length > 0)
+      .sort((a: { imports: string[] }, b: { imports: string[] }) => b.imports.length - a.imports.length)
+      .slice(0, 8);
 
-    return { nodes: [], edges: [] };
-  }, [dependencies, devDependencies, showDevDeps, searchQuery, result]);
+    topImporters.forEach((file: { id: string; name: string; imports: string[] }, i: number) => {
+      const x = 50 + i * 180;
+      nodes.push({
+        id: `file-${file.id}`,
+        type: 'fileNode',
+        position: { x, y: topImporterY },
+        data: {
+          name: file.name,
+          importCount: file.imports.length
+        }
+      });
+
+      // Connect to packages
+      file.imports.forEach((importId: string) => {
+        if (filteredPackages.some(p => p.id === importId)) {
+          edges.push({
+            id: `file-${file.id}-${importId}`,
+            source: `file-${file.id}`,
+            target: importId,
+            type: 'smoothstep',
+            style: { stroke: '#475569', strokeWidth: 1 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#475569' }
+          });
+        }
+      });
+    });
+
+    return { initialNodes: nodes, initialEdges: edges };
+  }, [showDevDeps, packageNodes, fileNodes]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Track the last IDs we synced so we only call setNodes/setEdges when
-  // the *content* of the layouted data genuinely changes.
-  // IMPORTANT: nodes/edges must NOT be in these dependency arrays —
-  // including them causes the effect to re-fire after every setNodes call,
-  // creating an infinite render loop (React Error #185).
-  const lastSyncedNodeIds = React.useRef<string>("");
-  const lastSyncedEdgeIds = React.useRef<string>("");
+  // useRef synchronization guards to block the rendering-loop crash (Error #185)
+  const lastSyncedNodeIds = useRef<string>("");
+  const lastSyncedEdgeIds = useRef<string>("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     const newIds = initialNodes.map(n => n.id).join(',');
     if (newIds !== lastSyncedNodeIds.current) {
       lastSyncedNodeIds.current = newIds;
@@ -302,7 +223,7 @@ function PackageGraphInternal({ result }: { result: any }) {
     }
   }, [initialNodes, setNodes]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const newIds = initialEdges.map(e => e.id).join(',');
     if (newIds !== lastSyncedEdgeIds.current) {
       lastSyncedEdgeIds.current = newIds;
@@ -310,110 +231,64 @@ function PackageGraphInternal({ result }: { result: any }) {
     }
   }, [initialEdges, setEdges]);
 
-  // Compute counts
-  const prodDepCount = Object.keys(dependencies).length;
-  const devDepCount = Object.keys(devDependencies).length;
+  const depCount = packageNodes.filter(p => p.type === 'dependency').length;
+  const devDepCount = packageNodes.filter(p => p.type === 'devDependency').length;
 
   return (
-    <div className="h-full w-full relative bg-zinc-950">
-      {/* Header Info */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 bg-zinc-900/90 border border-border/60 rounded-xl p-3 shadow-lg backdrop-blur-md">
-        <h2 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5">
-          <Package className="text-blue-400 w-4 h-4" />
+    <div className="h-full w-full relative">
+      {/* Header */}
+      <div className="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-xl rounded-xl shadow-lg p-4 border border-slate-800">
+        <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+          <Package className="text-blue-400" />
           Package Dependencies
         </h2>
-        <p className="text-[10px] text-zinc-450 font-semibold uppercase tracking-wider">
-          {prodDepCount} production + {devDepCount} dev dependencies
+        <p className="text-sm text-slate-400">
+          {depCount} production + {devDepCount} dev dependencies
         </p>
       </div>
 
-      {/* Controls: Search and Toggle */}
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-        {/* Search */}
-        <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-border/60 rounded-xl px-2.5 py-1.5 shadow-lg backdrop-blur-md">
-          <Search className="w-3.5 h-3.5 text-zinc-500 mr-1 shrink-0" />
-          <input
-            type="text"
-            placeholder="Search package name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent text-[10px] text-zinc-200 placeholder-zinc-550 focus:outline-none w-48 sm:w-56 font-medium"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="text-zinc-500 hover:text-white ml-1 shrink-0"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-
-        {/* Toggle devDependencies */}
-        <div className="bg-zinc-900/90 border border-border/60 rounded-xl px-3 py-2 shadow-lg backdrop-blur-md flex items-center gap-2">
+      {/* Toggle */}
+      <div className="absolute top-4 right-4 z-10 bg-slate-900/90 backdrop-blur-xl rounded-xl shadow-lg p-3 border border-slate-800">
+        <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
-            id="showDevDeps"
             checked={showDevDeps}
             onChange={(e) => setShowDevDeps(e.target.checked)}
-            className="w-3.5 h-3.5 rounded bg-zinc-950 border-zinc-700/80 text-blue-500 focus:ring-blue-500 cursor-pointer"
+            className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500"
           />
-          <label htmlFor="showDevDeps" className="text-[10px] text-zinc-300 font-bold uppercase tracking-wider cursor-pointer">
-            Show devDependencies
-          </label>
-        </div>
+          <span className="text-sm text-slate-300">Show devDependencies</span>
+        </label>
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-10 bg-zinc-900/90 border border-border/60 rounded-xl shadow-lg p-3.5 backdrop-blur-md">
-        <div className="text-[8.5px] font-bold text-zinc-450 uppercase tracking-widest mb-2 border-b border-zinc-800 pb-1">Package Types</div>
-        <div className="flex flex-col gap-1.5">
+      <div className="absolute bottom-4 left-4 z-10 bg-slate-900/90 backdrop-blur-xl rounded-xl shadow-lg p-4 border border-slate-800">
+        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Package Types</div>
+        <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-blue-500/10 border border-blue-500/30" />
-            <span className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider">Production</span>
+            <div className="w-3 h-3 rounded bg-blue-500/20 border border-blue-500/50" />
+            <span className="text-xs text-blue-400">Production</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-zinc-800 border border-zinc-700" />
-            <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Development</span>
+            <div className="w-3 h-3 rounded bg-slate-500/20 border border-slate-500/50" />
+            <span className="text-xs text-slate-400">Development</span>
           </div>
         </div>
       </div>
 
-      {/* Canvas */}
-      {nodes.length > 0 ? (
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-          fitView
-          minZoom={0.2}
-          maxZoom={1.5}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Controls />
-          <MiniMap
-            style={{
-              backgroundColor: "rgba(9, 9, 11, 0.95)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "0.75rem",
-            }}
-            nodeColor={(node) => {
-              if (node.type === "fileNode") return "#71717a";
-              return (node.data as any).type === "devDependency" ? "#3f3f46" : "#3b82f6";
-            }}
-            maskColor="rgba(0, 0, 0, 0.6)"
-          />
-          <Background color="#222" gap={20} />
-        </ReactFlow>
-      ) : (
-        <div className="h-full flex flex-col items-center justify-center text-center p-6 text-zinc-550">
-          <Package className="w-12 h-12 text-zinc-700 mb-2 animate-pulse" />
-          <h4 className="text-xs font-bold text-zinc-300">No packages mapped</h4>
-          <p className="text-[10px] text-zinc-550 max-w-xs mt-1">Make sure you have analyzed a Node.js project with external imports.</p>
-        </div>
-      )}
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+        fitView
+        minZoom={0.2}
+        maxZoom={1.5}
+      >
+        <Controls />
+        <MiniMap nodeStrokeWidth={3} zoomable pannable />
+        <Background gap={20} size={1} />
+      </ReactFlow>
     </div>
   );
 }
