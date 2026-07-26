@@ -286,22 +286,29 @@ function PackageGraphInternal({ result }: { result: any }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Sync state if initial elements change (safely guarded)
-  React.useEffect(() => {
-    const currentIds = nodes.map(n => n.id).join(',');
-    const initialIds = initialNodes.map(n => n.id).join(',');
-    if (nodes.length !== initialNodes.length || currentIds !== initialIds) {
-      setNodes(initialNodes);
-    }
-  }, [initialNodes, nodes, setNodes]);
+  // Track the last IDs we synced so we only call setNodes/setEdges when
+  // the *content* of the layouted data genuinely changes.
+  // IMPORTANT: nodes/edges must NOT be in these dependency arrays —
+  // including them causes the effect to re-fire after every setNodes call,
+  // creating an infinite render loop (React Error #185).
+  const lastSyncedNodeIds = React.useRef<string>("");
+  const lastSyncedEdgeIds = React.useRef<string>("");
 
   React.useEffect(() => {
-    const currentEdgeIds = edges.map(e => e.id).join(',');
-    const initialEdgeIds = initialEdges.map(e => e.id).join(',');
-    if (edges.length !== initialEdges.length || currentEdgeIds !== initialEdgeIds) {
+    const newIds = initialNodes.map(n => n.id).join(',');
+    if (newIds !== lastSyncedNodeIds.current) {
+      lastSyncedNodeIds.current = newIds;
+      setNodes(initialNodes);
+    }
+  }, [initialNodes, setNodes]);
+
+  React.useEffect(() => {
+    const newIds = initialEdges.map(e => e.id).join(',');
+    if (newIds !== lastSyncedEdgeIds.current) {
+      lastSyncedEdgeIds.current = newIds;
       setEdges(initialEdges);
     }
-  }, [initialEdges, edges, setEdges]);
+  }, [initialEdges, setEdges]);
 
   // Compute counts
   const prodDepCount = Object.keys(dependencies).length;
