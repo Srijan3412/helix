@@ -428,12 +428,25 @@ export default function Home() {
   });
   useEffect(() => { if (statusData?.status) setStatus(statusData.status); }, [statusData, setStatus]);
 
+  const lastSyncedResultJobId = useRef<string | null>(null);
+
   const { data: resultData } = useQuery({
     queryKey: ["results", currentJobId],
     queryFn: () => getAnalysisResults(currentJobId!),
     enabled: !!currentJobId && status === "completed",
+    staleTime: Infinity,  // Analysis results never go stale — prevents background re-fetches that create new object references
+    gcTime: Infinity,     // Keep the result in cache indefinitely
   });
-  useEffect(() => { if (resultData) setResult(resultData); }, [resultData, setResult]);
+  useEffect(() => {
+    // Only call setResult when we have new data for a different job ID.
+    // Guarding this prevents React Query background re-fetches from
+    // creating a cascade: new resultData ref → setResult → result prop changes
+    // → useMemo recomputes initialNodes → setNodes fires → infinite loop.
+    if (resultData && currentJobId !== lastSyncedResultJobId.current) {
+      lastSyncedResultJobId.current = currentJobId ?? null;
+      setResult(resultData);
+    }
+  }, [resultData, setResult, currentJobId]);
 
   const handleFileDrop = (file: File) => {
     if (file.name.endsWith(".zip")) fileMutation.mutate(file);
