@@ -38,6 +38,11 @@ class InMemoryRedis {
 async function initConnection(): Promise<Redis> {
   const isProd = config.NODE_ENV === "production";
 
+  if (config.IN_MEMORY) {
+    logger.info("⚠️ IN_MEMORY mode explicitly enabled. Skipping Redis connection.");
+    return new InMemoryRedis() as unknown as Redis;
+  }
+
   const probe = new Redis(config.REDIS_URL, {
     maxRetriesPerRequest: null,
     enableOfflineQueue: isProd,

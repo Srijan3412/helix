@@ -7,7 +7,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --ignore dist --ignore node_modules src/server.ts",
     "start": "node dist/server.js"
   },
   "dependencies": {
