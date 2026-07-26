@@ -25,74 +25,39 @@ interface SubscriptionContextValue {
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<any>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem('sb-session-cache');
-        return saved ? JSON.parse(saved) : null;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+  const [session, setSession] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [usage, setUsage] = useState<UsageRecord | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [profile, setProfile] = useState<Profile | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem('sb-profile-cache');
-        return saved ? JSON.parse(saved) : null;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+  // Load from sessionStorage only after mount (client-side only)
+  // This avoids hydration mismatch (Error #418) since server and client start with identical state
+  useEffect(() => {
+    try {
+      const savedSession = sessionStorage.getItem('sb-session-cache');
+      if (savedSession) setSession(JSON.parse(savedSession));
 
-  const [subscription, setSubscription] = useState<Subscription | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem('sb-subscription-cache');
-        return saved ? JSON.parse(saved) : null;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+      const savedProfile = sessionStorage.getItem('sb-profile-cache');
+      if (savedProfile) setProfile(JSON.parse(savedProfile));
 
-  const [usage, setUsage] = useState<UsageRecord | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem('sb-usage-cache');
-        return saved ? JSON.parse(saved) : null;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+      const savedSub = sessionStorage.getItem('sb-subscription-cache');
+      if (savedSub) setSubscription(JSON.parse(savedSub));
 
-  const [payments, setPayments] = useState<Payment[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem('sb-payments-cache');
-        return saved ? JSON.parse(saved) : [];
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  });
+      const savedUsage = sessionStorage.getItem('sb-usage-cache');
+      if (savedUsage) setUsage(JSON.parse(savedUsage));
 
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const hasSession = !!sessionStorage.getItem('sb-session-cache');
-      const hasProfile = !!sessionStorage.getItem('sb-profile-cache');
-      return !(hasSession && hasProfile);
+      const savedPayments = sessionStorage.getItem('sb-payments-cache');
+      if (savedPayments) setPayments(JSON.parse(savedPayments));
+
+      if (savedSession && savedProfile) {
+        setLoading(false); // Fast path: Hydrate instantly if cache is present
+      }
+    } catch (e) {
+      console.error("Cache hydration error:", e);
     }
-    return true;
-  });
+  }, []);
 
   const mounted = useRef(true);
 
