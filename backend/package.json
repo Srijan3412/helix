@@ -4,12 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --exclude storage src/server.ts",
-    "dev:worker": "tsx watch --exclude storage src/worker.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "worker": "node dist/worker.js",
-    "typecheck": "tsc --noEmit"
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
     "@babel/parser": "^7.29.7",
@@ -32,6 +30,7 @@
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
     "@types/node": "^20.14.9",
+    "concurrently": "^10.0.3",
     "ioredis-mock": "^8.13.1",
     "pino-pretty": "^11.2.1",
     "tsx": "^4.15.7"
