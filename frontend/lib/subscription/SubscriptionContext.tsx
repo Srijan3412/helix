@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef, ty
 import { supabase } from './supabase';
 import type { Profile, Subscription, UsageRecord, Payment, Plan } from './subscription';
 import { PLAN_CONFIG, daysLeft, isTrialActive } from './subscription';
+import { invalidateAuthCache } from '../api/client';
 
 interface SubscriptionContextValue {
   session: any;
@@ -69,7 +70,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         } else {
           sessionStorage.removeItem(key);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -104,7 +105,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('id', userId)
       .maybeSingle();
-    
+
     if (existing) {
       updateProfile(existing as Profile);
       return existing as Profile;
@@ -228,7 +229,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             subscription_status: 'active'
           })
           .eq('id', session.user.id);
-        
+
         if (error) {
           console.error("Failed to promote user:", error.message);
           return { error: error.message };
@@ -259,6 +260,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    invalidateAuthCache();
     updateSession(null);
     updateProfile(null);
     updateSubscription(null);

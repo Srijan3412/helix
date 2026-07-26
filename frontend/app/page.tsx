@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import { useAnalysisStore } from "../store/analysis.store";
 import {
   submitGithubUrl, submitZipFile, submitLocalPath,
@@ -31,33 +32,46 @@ import {
   // ADD THESE:
   Code2, BarChart3
 } from "lucide-react";
-import "@xyflow/react/dist/style.css";
 
-import LandingPage from "../components/subscription/LandingPage";
-import AuthPage from "../components/subscription/AuthPage";
-import PaymentPage from "../components/subscription/PaymentPage";
-import BillingPage from "../components/subscription/BillingPage";
-import UpgradeModal from "../components/subscription/UpgradeModal";
-import UsageLimitModal from "../components/subscription/UsageLimitModal";
-import TokenCounter from "../components/subscription/TokenCounter";
-import TrialBanner from "../components/subscription/TrialBanner";
+// ─── Dynamic Imports (Code Splitting) ───────────────────────────────────────
+// Heavy components are loaded on-demand only when needed, dramatically
+// reducing the initial bundle size. The @xyflow/react graph library (~500KB)
+// is only loaded when the user visits the Architecture tab.
+//
+// NOTE: The following architecture components were previously imported at the
+// top level but were NEVER directly used in this file — they were only used
+// inside ArchitectureViewer.tsx:
+//   LayerView, FileGraph, RouteGraph, DependencyGraph,
+//   ExecutionTrace, MetroMap, SubwayMap
+// Removing these unused imports eliminates their entire dependency tree
+// (including @xyflow/react) from the initial bundle.
+
+const LandingPage = dynamic(() => import("../components/subscription/LandingPage"), { ssr: false });
+const AuthPage = dynamic(() => import("../components/subscription/AuthPage"), { ssr: false });
+const PaymentPage = dynamic(() => import("../components/subscription/PaymentPage"), { ssr: false });
+const BillingPage = dynamic(() => import("../components/subscription/BillingPage"), { ssr: false });
+const UpgradeModal = dynamic(() => import("../components/subscription/UpgradeModal"), { ssr: false });
+const UsageLimitModal = dynamic(() => import("../components/subscription/UsageLimitModal"), { ssr: false });
+const TokenCounter = dynamic(() => import("../components/subscription/TokenCounter"), { ssr: false });
+const TrialBanner = dynamic(() => import("../components/subscription/TrialBanner"), { ssr: false });
+
+const ArchitectureViewer = dynamic(() => import("../components/architecture/ArchitectureViewer"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full text-zinc-500 text-xs font-mono">
+      Loading architecture viewer…
+    </div>
+  ),
+});
+
+const IngestionControl = dynamic(() => import("../components/ingestion/IngestionControl"), { ssr: false });
+const ProgressTracker = dynamic(() => import("../components/ingestion/ProgressTracker"), { ssr: false });
+const OverviewAnalytics = dynamic(() => import("../components/diagnostics/OverviewAnalytics"), { ssr: false });
+const AuthDetector = dynamic(() => import("../components/diagnostics/AuthDetector"), { ssr: false });
+const LanguageBreakdown = dynamic(() => import("../components/diagnostics/LanguageBreakdown"), { ssr: false });
+
 import { useSubscription } from "../lib/subscription/SubscriptionContext";
 import { PLAN_CONFIG } from "../lib/subscription/subscription";
-
-import LayerView from "../components/architecture/LayerView";
-import FileGraph from "../components/architecture/FileGraph";
-import RouteGraph from "../components/architecture/RouteGraph";
-import DependencyGraph from "../components/architecture/DependencyGraph";
-import ExecutionTrace from "../components/architecture/ExecutionTrace";
-import MetroMap from "../components/architecture/MetroMap/MetroMap";
-import SubwayMap from "../components/architecture/SubwayMap/SubwayMap";
-import ArchitectureViewer from "../components/architecture/ArchitectureViewer";
-
-import IngestionControl from "../components/ingestion/IngestionControl";
-import ProgressTracker from "../components/ingestion/ProgressTracker";
-import OverviewAnalytics from "../components/diagnostics/OverviewAnalytics";
-import AuthDetector from "../components/diagnostics/AuthDetector";
-import LanguageBreakdown from "../components/diagnostics/LanguageBreakdown";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -122,7 +136,7 @@ function detectAuth(result: any) {
   }
 
   const authRoutes = routes.filter((r: RouteNode) => /auth|login|logout|token|refresh|oauth/i.test(r.path));
-  if (authRoutes.length > 0) evidence.push(`${authRoutes.length} auth-related routes (${authRoutes.map(r => r.path).slice(0,3).join(", ")})`);
+  if (authRoutes.length > 0) evidence.push(`${authRoutes.length} auth-related routes (${authRoutes.map(r => r.path).slice(0, 3).join(", ")})`);
 
   const protectedRoutes = routes.filter((r: RouteNode) => (r.middleware?.length ?? 0) > 0);
   if (protectedRoutes.length > 0) evidence.push(`${protectedRoutes.length} routes have middleware protection`);
@@ -233,7 +247,10 @@ export default function Home() {
   const { data: jobsListData } = useQuery({
     queryKey: ["jobsList"],
     queryFn: getJobsList,
-    refetchInterval: 30000, // Reduced from 5s to 30s to prevent 429 rate limit issues
+    // Only poll when the Compare tab is active — avoids unnecessary API calls
+    // when the user is working in other tabs
+    enabled: activeResultTab === "compare",
+    refetchInterval: activeResultTab === "compare" ? 30000 : false,
   });
   const { data: compareData, isLoading: isCompareLoading } = useQuery({
     queryKey: ["compareJobs", currentJobId, compareJobId],
@@ -286,7 +303,7 @@ export default function Home() {
     const complexityList = staticAnalysisReport?.complexity || [];
     const godServicesList = staticAnalysisReport?.godServices || [];
     const deadFileList = staticAnalysisReport?.deadCode || [];
-    
+
     const risks = files.filter((f: any) => {
       const pathLower = f.path.toLowerCase();
       return !pathLower.startsWith("route:") && !pathLower.startsWith("env:") && !pathLower.startsWith("db:") && !pathLower.startsWith("entity:") && !pathLower.includes(".config") && !pathLower.includes(".test");
@@ -294,13 +311,13 @@ export default function Home() {
       const comp = complexityList.find((c: any) => c.file === file.path);
       const god = godServicesList.find((g: any) => g.file === file.path);
       const isDead = deadFileList.some((d: any) => d.file === file.path);
-      
+
       let threatScore = 0;
       if (comp) threatScore += comp.score * 2.5;
       else if (file.lineCount) threatScore += Math.min(25, file.lineCount / 20);
 
       if (god) threatScore += (god.methods || 0) * 2 + (god.exportedFunctions || 0) * 0.5;
-      
+
       if (file.lineCount > 1000) threatScore += 25;
       else if (file.lineCount > 500) threatScore += 12;
 
@@ -414,7 +431,7 @@ export default function Home() {
     setChatHistory((prev) => [...prev, userMsg]);
     const msg = chatMessage;
     setChatMessage("");
-    
+
     chatMutation.mutate({ jobId: currentJobId!, message: msg });
     recordUsage('ai_chats');
     recordUsage('tokens_used', 10);
@@ -474,17 +491,17 @@ export default function Home() {
   // ─── Render Tabs ──────────────────────────────────────────────────────────────
 
   const resultTabs: { id: ResultTab; label: string; icon: React.ReactNode; show: boolean }[] = [
-    { id: "overview",     label: "Overview",      icon: <CheckCircle2 className="w-3.5 h-3.5" />,  show: true },
-    { id: "arch",         label: "Architecture",  icon: <Layers className="w-3.5 h-3.5" />,        show: !!(result?.architecture?.graph) },
-    { id: "routes",       label: "Routes",        icon: <Network className="w-3.5 h-3.5" />,       show: !!(result?.routes?.length) },
-    { id: "db",           label: "Database",      icon: <Database className="w-3.5 h-3.5" />,      show: !!(result?.metadata?.databaseInfo?.entities?.length || result?.metadata?.databaseInfo?.orm) },
-    { id: "health",       label: "Health",        icon: <Heart className="w-3.5 h-3.5" />,         show: !!(result?.graph?.metrics) },
-    { id: "impact",       label: "Impact Analysis", icon: <Zap className="w-3.5 h-3.5" />,         show: !!(result?.graph?.metrics) },
-    { id: "compare",      label: "Compare",       icon: <GitCompare className="w-3.5 h-3.5" />,    show: true },
-    { id: "env",          label: "Environment",   icon: <Settings className="w-3.5 h-3.5" />,      show: !!(result?.envVars?.length) },
-    { id: "ai-architect", label: "AI Architect",  icon: <Sparkles className="w-3.5 h-3.5" />,      show: !!(result?.aiSummary) },
-    { id: "onboarding",   label: "Onboarding",    icon: <Terminal className="w-3.5 h-3.5" />,      show: !!(result?.onboarding) },
-    { id: "billing",      label: "Billing",       icon: <CreditCard className="w-3.5 h-3.5" />,    show: true },
+    { id: "overview", label: "Overview", icon: <CheckCircle2 className="w-3.5 h-3.5" />, show: true },
+    { id: "arch", label: "Architecture", icon: <Layers className="w-3.5 h-3.5" />, show: !!(result?.architecture?.graph) },
+    { id: "routes", label: "Routes", icon: <Network className="w-3.5 h-3.5" />, show: !!(result?.routes?.length) },
+    { id: "db", label: "Database", icon: <Database className="w-3.5 h-3.5" />, show: !!(result?.metadata?.databaseInfo?.entities?.length || result?.metadata?.databaseInfo?.orm) },
+    { id: "health", label: "Health", icon: <Heart className="w-3.5 h-3.5" />, show: !!(result?.graph?.metrics) },
+    { id: "impact", label: "Impact Analysis", icon: <Zap className="w-3.5 h-3.5" />, show: !!(result?.graph?.metrics) },
+    { id: "compare", label: "Compare", icon: <GitCompare className="w-3.5 h-3.5" />, show: true },
+    { id: "env", label: "Environment", icon: <Settings className="w-3.5 h-3.5" />, show: !!(result?.envVars?.length) },
+    { id: "ai-architect", label: "AI Architect", icon: <Sparkles className="w-3.5 h-3.5" />, show: !!(result?.aiSummary) },
+    { id: "onboarding", label: "Onboarding", icon: <Terminal className="w-3.5 h-3.5" />, show: !!(result?.onboarding) },
+    { id: "billing", label: "Billing", icon: <CreditCard className="w-3.5 h-3.5" />, show: true },
   ];
 
   // ─── Execution Trace Panel ────────────────────────────────────────────────────
@@ -494,13 +511,13 @@ export default function Home() {
     const { steps, envUsed } = buildExecutionTrace(traceRoute, result);
 
     const typeStyles: Record<string, string> = {
-      route:      "bg-blue-950/60 border-blue-500/70 text-blue-300",
+      route: "bg-blue-950/60 border-blue-500/70 text-blue-300",
       middleware: "bg-orange-950/60 border-orange-500/70 text-orange-300",
       controller: "bg-amber-950/60 border-amber-500/70 text-amber-300",
-      service:    "bg-emerald-950/60 border-emerald-500/70 text-emerald-300",
+      service: "bg-emerald-950/60 border-emerald-500/70 text-emerald-300",
       repository: "bg-purple-950/60 border-purple-500/70 text-purple-300",
-      entity:     "bg-cyan-950/60 border-cyan-500/70 text-cyan-300",
-      database:   "bg-red-950/60 border-red-500/70 text-red-300",
+      entity: "bg-cyan-950/60 border-cyan-500/70 text-cyan-300",
+      database: "bg-red-950/60 border-red-500/70 text-red-300",
     };
 
     return (
@@ -792,15 +809,13 @@ export default function Home() {
               onClick={() => reset()}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Upload Repository" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${
-                !currentJobId
-                  ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
-                  : "text-white/50 hover:bg-white/5 hover:text-white/80"
-              } ${!sidebarExpanded ? "justify-center" : ""}`}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${!currentJobId
+                ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
+                : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                } ${!sidebarExpanded ? "justify-center" : ""}`}
             >
-              <div className={`rounded-md p-1.5 ${
-                !currentJobId ? "bg-blue-500/20 text-blue-400" : "text-white/30"
-              }`}>
+              <div className={`rounded-md p-1.5 ${!currentJobId ? "bg-blue-500/20 text-blue-400" : "text-white/30"
+                }`}>
                 <Upload className="h-4 w-4" />
               </div>
               <AnimatePresence>
@@ -844,22 +859,20 @@ export default function Home() {
                 billing: CreditCard,
               };
               const Icon = icons[tab.id as keyof typeof icons] || Layers;
-              
+
               return (
                 <motion.button
                   key={tab.id}
                   onClick={() => setActiveResultTab(tab.id)}
                   whileHover={{ x: sidebarExpanded ? 3 : 0 }}
                   title={!sidebarExpanded ? tab.label : undefined}
-                  className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${
-                    isActive
-                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/80"
-                  } ${!sidebarExpanded ? "justify-center" : ""}`}
+                  className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${isActive
+                    ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
+                    : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                    } ${!sidebarExpanded ? "justify-center" : ""}`}
                 >
-                  <div className={`rounded-md p-1.5 ${
-                    isActive ? "bg-blue-500/20 text-blue-400" : "text-white/30"
-                  }`}>
+                  <div className={`rounded-md p-1.5 ${isActive ? "bg-blue-500/20 text-blue-400" : "text-white/30"
+                    }`}>
                     <Icon className="h-4 w-4" />
                   </div>
                   <AnimatePresence>
@@ -880,7 +893,7 @@ export default function Home() {
                 </motion.button>
               );
             })}
-            
+
             {/* Token Counter */}
             {sidebarExpanded && profile?.role !== 'org_admin' && profile?.email !== 'admin@projectanalyser.com' && (
               <div className="mt-4 px-2">
@@ -904,9 +917,8 @@ export default function Home() {
         <div className="border-t border-white/5 p-2">
           <button
             onClick={() => signOut()}
-            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${
-              !sidebarExpanded ? "justify-center" : ""
-            }`}
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+              }`}
             title="Sign Out"
           >
             <LogOut className="h-4 w-4" />
@@ -962,11 +974,11 @@ export default function Home() {
                   frameworkMetadata={
                     result.metadata?.frameworkMetadata
                       ? {
-                          language: result.metadata.frameworkMetadata.language,
-                          runtime: result.metadata.frameworkMetadata.runtime,
-                          packageManager: result.metadata.frameworkMetadata.packageManager,
-                          frameworks: result.metadata.frameworkMetadata.frameworks
-                        }
+                        language: result.metadata.frameworkMetadata.language,
+                        runtime: result.metadata.frameworkMetadata.runtime,
+                        packageManager: result.metadata.frameworkMetadata.packageManager,
+                        frameworks: result.metadata.frameworkMetadata.frameworks
+                      }
                       : undefined
                   }
                 />
@@ -1001,11 +1013,11 @@ export default function Home() {
 
             {/* ─── ROUTES TAB ─── */}
             {activeResultTab === "routes" && (
-            <div className="space-y-4 text-left max-w-5xl mx-auto">
-              <div className="mb-6">
-                <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Route Analysis</p>
-                <h2 className="text-3xl font-bold text-white mt-1">API Endpoints</h2>
-              </div>
+              <div className="space-y-4 text-left max-w-5xl mx-auto">
+                <div className="mb-6">
+                  <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Route Analysis</p>
+                  <h2 className="text-3xl font-bold text-white mt-1">API Endpoints</h2>
+                </div>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -1046,9 +1058,8 @@ export default function Home() {
                       return (
                         <div key={`${route.method}-${route.path}-${idx}`}
                           onClick={() => setTraceRoute(isTraced ? null : route)}
-                          className={`flex items-start gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all group ${
-                            isTraced ? "bg-primary/10 border-primary/40" : "bg-zinc-900/60 border-border/40 hover:border-zinc-600/60"
-                          }`}
+                          className={`flex items-start gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all group ${isTraced ? "bg-primary/10 border-primary/40" : "bg-zinc-900/60 border-border/40 hover:border-zinc-600/60"
+                            }`}
                         >
                           <span className={`text-[10px] font-bold font-mono px-2 py-1 rounded-lg border shrink-0 ${mc}`}>{route.method}</span>
                           <div className="min-w-0 flex-1">
@@ -1085,9 +1096,8 @@ export default function Home() {
                   {(result.metadata?.databaseInfo?.entities ?? []).map((entity: EntityOperation, idx: number) => (
                     <div key={idx}
                       onClick={() => setSelectedEntity(selectedEntity?.entity === entity.entity ? null : entity)}
-                      className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                        selectedEntity?.entity === entity.entity ? "bg-primary/10 border-primary/40" : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
-                      }`}
+                      className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedEntity?.entity === entity.entity ? "bg-primary/10 border-primary/40" : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
+                        }`}
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <Database className="w-4 h-4 text-primary shrink-0" />
@@ -1154,7 +1164,7 @@ export default function Home() {
                         <div className="space-y-2">
                           {staticAnalysisReport.cycles.slice(0, 5).map((c: any, i: number) => (
                             <div key={i} className="flex items-start gap-2 text-[10px]">
-                              <span className="text-zinc-600 font-bold mt-0.5">{i+1}.</span>
+                              <span className="text-zinc-600 font-bold mt-0.5">{i + 1}.</span>
                               <code className="text-amber-300/80 font-mono">{Array.isArray(c) ? c.join(' → ') : c}</code>
                             </div>
                           ))}
@@ -1197,9 +1207,8 @@ export default function Home() {
                 {impactSearch && (
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {(result.files ?? []).filter((f: any) => !f.path.startsWith("ROUTE:") && !f.path.startsWith("ENV:") && !f.path.startsWith("DB:") && !f.path.startsWith("ENTITY:") && f.path.toLowerCase().includes(impactSearch.toLowerCase())).slice(0, 12).map((f: any, i: number) => (
-                      <button key={i} onClick={() => setSelectedImpactFile(f.path)} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-mono transition-all ${
-                        selectedImpactFile === f.path ? "bg-primary/10 border border-primary/30 text-primary" : "bg-zinc-900/60 border border-border/40 text-zinc-400 hover:border-zinc-600"
-                      }`}>{f.path}</button>
+                      <button key={i} onClick={() => setSelectedImpactFile(f.path)} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-mono transition-all ${selectedImpactFile === f.path ? "bg-primary/10 border border-primary/30 text-primary" : "bg-zinc-900/60 border border-border/40 text-zinc-400 hover:border-zinc-600"
+                        }`}>{f.path}</button>
                     ))}
                   </div>
                 )}
@@ -1270,11 +1279,10 @@ export default function Home() {
                             <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-zinc-800/60 last:border-0">
                               <span className="font-mono text-zinc-300 truncate max-w-[70%]">{file.path}</span>
                               <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${
-                                  file.status === "added" ? "bg-emerald-500/10 text-emerald-400" :
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${file.status === "added" ? "bg-emerald-500/10 text-emerald-400" :
                                   file.status === "removed" ? "bg-red-500/10 text-red-400" :
-                                  "bg-amber-500/10 text-amber-400"
-                                }`}>{file.status}</span>
+                                    "bg-amber-500/10 text-amber-400"
+                                  }`}>{file.status}</span>
                                 {file.linesDiff !== 0 && (
                                   <span className={`font-mono text-[10px] ${file.linesDiff > 0 ? "text-emerald-400" : "text-red-400"}`}>
                                     {file.linesDiff > 0 ? `+${file.linesDiff}` : file.linesDiff} lines
@@ -1311,9 +1319,8 @@ export default function Home() {
                   {(result.envVars ?? []).filter((e: EnvironmentVariable) => !envSearch || e.name.toLowerCase().includes(envSearch.toLowerCase())).map((envVar: EnvironmentVariable, idx: number) => (
                     <div key={idx}
                       onClick={() => setSelectedEnvVar(selectedEnvVar?.name === envVar.name ? null : envVar)}
-                      className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                        selectedEnvVar?.name === envVar.name ? "bg-primary/10 border-primary/40" : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
-                      }`}
+                      className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedEnvVar?.name === envVar.name ? "bg-primary/10 border-primary/40" : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
+                        }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <Settings className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -1482,12 +1489,11 @@ export default function Home() {
                         const isUser = msg.role === "user";
                         return (
                           <div key={msg.id || i} className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
-                            <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
-                              isUser ? "bg-primary text-neutral-950 font-medium rounded-tr-none" : "bg-white/10 text-zinc-200 border border-white/5 rounded-tl-none"
-                            }`}>
+                            <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${isUser ? "bg-primary text-neutral-950 font-medium rounded-tr-none" : "bg-white/10 text-zinc-200 border border-white/5 rounded-tl-none"
+                              }`}>
                               <p className="whitespace-pre-wrap">{msg.content}</p>
                             </div>
-                            
+
                             {/* Agent logs */}
                             {!isUser && msg.agentLogs && msg.agentLogs.length > 0 && (
                               <div className="mt-1 w-full max-w-[85%]">

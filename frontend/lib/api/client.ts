@@ -1,8 +1,8 @@
 import { QueryClient } from "@tanstack/react-query";
-import { 
-  AnalysisResult, ChatMessage, AiArchitectSummary, OnboardingGuide, 
-  ImpactAnalysis, StaticAnalysisReport, ArchitectureDiff, ExecutionTrace, 
-  FeatureFlow, RepositorySubway 
+import {
+  AnalysisResult, ChatMessage, AiArchitectSummary, OnboardingGuide,
+  ImpactAnalysis, StaticAnalysisReport, ArchitectureDiff, ExecutionTrace,
+  FeatureFlow, RepositorySubway
 } from "@shared/types";
 import { supabase } from "../subscription/supabase";
 
@@ -13,15 +13,40 @@ export const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
+      // Cache data for 5 minutes by default — prevents unnecessary refetches
+      // when switching tabs or navigating back
+      staleTime: 5 * 60 * 1000,
+      // Keep cached data for 10 minutes after components unmount
+      gcTime: 10 * 60 * 1000,
     },
   },
 });
 
-// Helper to get auth headers with JWT token
+// ─── Auth Session Cache ─────────────────────────────────────────────────────
+// Cache the session token so we don't call supabase.auth.getSession() on
+// every single API request. The session is refreshed automatically by
+// Supabase's autoRefreshToken, and we invalidate the cache on auth changes.
+let cachedSession: { access_token: string } | null = null;
+let cachedToken: string | null = null;
+
+/**
+ * Get auth headers with cached JWT token.
+ * Falls back to fetching from Supabase if cache is empty.
+ */
 async function getAuthHeaders(headers: Record<string, string> = {}): Promise<Record<string, string>> {
+  // Fast path: use cached token if available
+  if (cachedToken) {
+    return {
+      ...headers,
+      "Authorization": `Bearer ${cachedToken}`,
+    };
+  }
+
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.access_token) {
+      cachedSession = session;
+      cachedToken = session.access_token;
       return {
         ...headers,
         "Authorization": `Bearer ${session.access_token}`,
@@ -32,6 +57,17 @@ async function getAuthHeaders(headers: Record<string, string> = {}): Promise<Rec
   }
   return headers;
 }
+
+/**
+ * Invalidate the cached session token.
+ * Call this when the user signs out or the session changes.
+ */
+export function invalidateAuthCache() {
+  cachedSession = null;
+  cachedToken = null;
+}
+
+// ─── API Functions ──────────────────────────────────────────────────────────
 
 export async function submitGithubUrl(url: string): Promise<{ jobId: string }> {
   const response = await fetch(`${API_BASE_URL}/api/analyze`, {
