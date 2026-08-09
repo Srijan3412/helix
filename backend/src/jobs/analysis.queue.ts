@@ -12,6 +12,7 @@ export interface AnalysisJobData {
   source: "github" | "zip" | "local";
   repoPath: string;
   url?: string;
+  userId?: string;
 }
 
 // ─── In-memory store (used as Redis fallback) ────────────────────────────────

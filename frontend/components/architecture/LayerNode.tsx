@@ -64,7 +64,7 @@ export default function LayerNode({ data }: { data: any }) {
           {confidence > 0 && (
             <div className="flex flex-col">
               <span className="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Confidence</span>
-              <span className="text-[11px] font-bold text-zinc-200">{Math.round(confidence * 100)}%</span>
+              <span className="text-[11px] font-bold text-zinc-200">{confidence < 1 ? Math.round(confidence * 100) : Math.round(confidence)}%</span>
             </div>
           )}
         </div>

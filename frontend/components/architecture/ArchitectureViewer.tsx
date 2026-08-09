@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getArchitectureLayers } from "../../lib/api/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Layers,
@@ -37,6 +39,7 @@ const TABS: { id: ArchMode; label: string; icon: React.ReactNode }[] = [
 
 interface ArchitectureViewerProps {
   result: any;
+  currentJobId: string;
   onSwitchTab?: (tab: any) => void;
   onSetImpactFile?: (file: string) => void;
   onSelectTraceRouteId?: (routeId: string) => void;
@@ -44,17 +47,25 @@ interface ArchitectureViewerProps {
 
 export default function ArchitectureViewer({
   result,
+  currentJobId,
   onSwitchTab,
   onSetImpactFile,
   onSelectTraceRouteId,
 }: ArchitectureViewerProps) {
   const [activeMode, setActiveMode] = useState<ArchMode>("layer");
 
+  // Fetch categorized layers and pre-generated graph from backend
+  const { data: architectureData } = useQuery({
+    queryKey: ["architecture", currentJobId],
+    queryFn: () => getArchitectureLayers(currentJobId),
+    enabled: !!currentJobId,
+  });
+
   // Derive sidebar info from result
   const features: { name: string; color: string; fileCount: number; health: number; confidence: number }[] =
     React.useMemo(() => {
       if (activeMode === "layer") {
-        const layers = result?.architecture?.layers || [];
+        const layers = architectureData?.layers || [];
         if (layers.length > 0) {
           const layerColors: Record<string, string> = {
             routes: "#6366f1",
@@ -124,7 +135,7 @@ export default function ArchitectureViewer({
         confidence: 0,
         isLayer: false,
       }));
-    }, [result, activeMode]);
+    }, [result, activeMode, architectureData]);
 
   const totalFiles = result?.overview?.totalFiles || result?.files?.length || 0;
   const totalRoutes = result?.overview?.totalRoutes || result?.routes?.length || 0;

@@ -17,6 +17,7 @@
     "@fastify/rate-limit": "9.1.0",
     "@google/generative-ai": "^0.24.1",
     "@shared/types": "*",
+    "@supabase/supabase-js": "^2.112.2",
     "adm-zip": "^0.5.17",
     "bullmq": "^5.8.5",
     "dotenv": "^16.4.5",

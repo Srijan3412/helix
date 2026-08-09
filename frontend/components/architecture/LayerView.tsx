@@ -120,7 +120,7 @@ export default function LayerView({ result }: { result: any }) {
   // Fetch categorized layers and pre-generated graph from backend
   const { data: architectureData, isLoading } = useQuery({
     queryKey: ["architecture", currentJobId],
-    queryFn: () => fetch(`/api/analyze/${currentJobId}/architecture`).then(r => r.json()),
+    queryFn: () => getArchitectureLayers(currentJobId!),
     enabled: !!currentJobId,
   });
 
@@ -168,7 +168,7 @@ export default function LayerView({ result }: { result: any }) {
         database: []
       };
 
-      preGeneratedGraph.nodes.forEach((node: any) => {
+      (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
         const layerMap: Record<string, string> = {
           route: 'routes',
           controller: 'controllers',
@@ -289,6 +289,83 @@ export default function LayerView({ result }: { result: any }) {
 
   // Construct ReactFlow nodes & edges dynamically
   const { nodes, edges } = useMemo(() => {
+    if (preGeneratedGraph) {
+      const layerOrder = ["Routes", "Controllers", "Services", "Repositories", "Database"];
+      const nodesByLayer: Record<string, any[]> = {};
+      layerOrder.forEach(l => nodesByLayer[l] = []);
+
+      (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
+        // Map backend layer names to capitalized layer names
+        let layerName = node.layer || "Services";
+        // Standardize naming
+        if (layerName.toLowerCase() === "routes") layerName = "Routes";
+        else if (layerName.toLowerCase() === "controllers") layerName = "Controllers";
+        else if (layerName.toLowerCase() === "services") layerName = "Services";
+        else if (layerName.toLowerCase() === "repositories") layerName = "Repositories";
+        else if (layerName.toLowerCase() === "models") layerName = "Models";
+        else if (layerName.toLowerCase() === "database") layerName = "Database";
+        else if (layerName.toLowerCase() === "middleware") layerName = "Middleware";
+        else if (layerName.toLowerCase() === "config") layerName = "Config";
+        else if (layerName.toLowerCase() === "tests") layerName = "Tests";
+        else if (layerName.toLowerCase() === "utils") layerName = "Utils";
+
+        if (!nodesByLayer[layerName]) {
+          nodesByLayer[layerName] = [];
+        }
+        nodesByLayer[layerName].push(node);
+      });
+
+      const actualLayers = layerOrder.filter(l => nodesByLayer[l]?.length > 0 || l === "Services");
+
+      const mappedNodes = (preGeneratedGraph?.nodes ?? []).map((node: any) => {
+        let layerName = node.layer || "Services";
+        if (layerName.toLowerCase() === "routes") layerName = "Routes";
+        else if (layerName.toLowerCase() === "controllers") layerName = "Controllers";
+        else if (layerName.toLowerCase() === "services") layerName = "Services";
+        else if (layerName.toLowerCase() === "repositories") layerName = "Repositories";
+        else if (layerName.toLowerCase() === "models") layerName = "Models";
+        else if (layerName.toLowerCase() === "database") layerName = "Database";
+
+        const colIdx = actualLayers.indexOf(layerName) >= 0 ? actualLayers.indexOf(layerName) : 1;
+        const rowIdx = (nodesByLayer[layerName] || []).indexOf(node);
+
+        const x = 50 + colIdx * 250;
+        const y = 80 + rowIdx * 90;
+
+        return {
+          ...node,
+          type: 'layerFileNode',
+          position: { x, y },
+          data: {
+            ...node.data,
+            file: node.id || node.file || "",
+            label: node.label || node.id || "",
+            complexity: node.data?.complexity || 0,
+            isGod: node.data?.isGod || false,
+            isDead: node.data?.isDead || false,
+            isSelected: selectedFile === node.id,
+          },
+          style: {
+            ...node.style,
+            opacity: 1.0,
+            width: 170,
+          }
+        };
+      });
+
+      const mappedEdges = (preGeneratedGraph?.edges ?? []).map((edge: any) => ({
+        ...edge,
+        animated: edge.animated !== undefined ? edge.animated : true,
+        style: edge.style || {
+          stroke: "hsl(var(--primary, 60 100% 50%))",
+          strokeWidth: 2.0,
+          opacity: 0.8
+        },
+      }));
+
+      return { nodes: mappedNodes, edges: mappedEdges };
+    }
+
     const flowNodes: ReactFlowNode[] = [];
     const flowEdges: ReactFlowEdge[] = [];
     const seenNodeIds = new Set<string>();
@@ -522,7 +599,7 @@ export default function LayerView({ result }: { result: any }) {
         }
 
         if (reactFlowInstance) {
-          const node = nodes.find(n => n.id === `layer-${currentKey}`);
+          const node = nodes.find((n: any) => n.id === `layer-${currentKey}`);
           if (node) {
             reactFlowInstance.setCenter(node.position.x + 110, node.position.y + 45, { zoom: 1.25, duration: 600 });
           }
@@ -544,12 +621,12 @@ export default function LayerView({ result }: { result: any }) {
   useEffect(() => {
     if (reactFlowInstance) {
       if (selectedFile) {
-        const node = nodes.find(n => n.id === `file-${selectedFile}`);
+        const node = nodes.find((n: any) => n.id === `file-${selectedFile}`);
         if (node) {
           reactFlowInstance.setCenter(node.position.x + 85, node.position.y + 25, { zoom: 1.2, duration: 800 });
         }
       } else if (expandedLayer) {
-        const node = nodes.find(n => n.id === `layer-${expandedLayer}`);
+        const node = nodes.find((n: any) => n.id === `layer-${expandedLayer}`);
         if (node) {
           reactFlowInstance.setCenter(node.position.x + 110, node.position.y + 45, { zoom: 1.1, duration: 800 });
         }

@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import {
   AnalysisResult, ChatMessage, AiArchitectSummary, OnboardingGuide,
   ImpactAnalysis, StaticAnalysisReport, ArchitectureDiff, ExecutionTrace,
-  FeatureFlow, RepositorySubway
+  FeatureFlow, RepositorySubway, ScanSession, ScanSnapshot, DiffReport
 } from "@shared/types";
 import { supabase } from "../subscription/supabase";
 
@@ -229,7 +229,7 @@ export async function getArchitectureDiff(jobId: string, compareJobId: string): 
   return response.json();
 }
 
-export async function getArchitectureLayers(jobId: string): Promise<{ layers: Record<string, string[]> }> {
+export async function getArchitectureLayers(jobId: string): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/api/analyze/${jobId}/architecture`, {
     headers: await getAuthHeaders(),
   });
@@ -277,4 +277,52 @@ export async function getSubwayMap(jobId: string): Promise<{ subway: RepositoryS
     throw new Error("Failed to fetch subway map");
   }
   return response.json();
+}
+
+// ─── Scan History & Comparison Functions ───
+
+export async function getScanHistory(userId: string): Promise<ScanSession[]> {
+  const response = await fetch(`${API_BASE_URL}/api/scan-history/${userId}`, {
+    headers: await getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Failed to fetch scan history");
+  const result = await response.json();
+  return result.data;
+}
+
+export async function getScanSession(jobId: string): Promise<ScanSession | null> {
+  const response = await fetch(`${API_BASE_URL}/api/scan-history/session/${jobId}`, {
+    headers: await getAuthHeaders(),
+  });
+  if (!response.ok) return null;
+  const result = await response.json();
+  return result.data;
+}
+
+export async function getScanSnapshot(sessionId: string): Promise<ScanSnapshot | null> {
+  const response = await fetch(`${API_BASE_URL}/api/scan-history/${sessionId}/snapshot`, {
+    headers: await getAuthHeaders(),
+  });
+  if (!response.ok) return null;
+  const result = await response.json();
+  return result.data;
+}
+
+export async function compareScans(baselineSessionId: string, compareSessionId: string): Promise<DiffReport> {
+  const response = await fetch(`${API_BASE_URL}/api/scan-history/compare`, {
+    method: "POST",
+    headers: await getAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ baselineSessionId, compareSessionId }),
+  });
+  if (!response.ok) throw new Error("Failed to compare scans");
+  const result = await response.json();
+  return result.data;
+}
+
+export async function deleteScan(sessionId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/scan-history/${sessionId}`, {
+    method: "DELETE",
+    headers: await getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Failed to delete scan");
 }

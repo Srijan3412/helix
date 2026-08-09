@@ -17,6 +17,7 @@ import { ArchitectureGeneratorService } from "../modules/architecture/architectu
 import { TraceBuilderService } from "../modules/execution-trace/trace-builder.service.js";
 import { FeatureBuilderService } from "../modules/feature-map/feature-builder.service.js";
 import { requireAuth } from "../core/auth/auth.middleware.js";
+import { ScanHistoryService } from "../modules/analysis/scan-history.service.js";
 
 const AnalyzeRequestSchema = z.object({
   url: z.string().url({ message: "Invalid GitHub repository URL" }).optional(),
@@ -138,7 +139,15 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       logger.info("Running in in-memory fallback mode...");
       await redisConnectionSetStatus(jobId, "uploaded");
       setImmediate(() => {
-        runAnalysisJob({ jobId, repoId, repoName, source, repoPath, url: gitUrl })
+        runAnalysisJob({
+          jobId,
+          repoId,
+          repoName,
+          source,
+          repoPath,
+          url: gitUrl,
+          userId: request.user?.id || "anonymous",
+        })
           .catch((err) => logger.error({ jobId, err }, "❌ Inline job failed"));
       });
     } else {
@@ -150,6 +159,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         source,
         repoPath,
         url: gitUrl,
+        userId: request.user?.id || "anonymous",
       });
       logger.info("Job added to analysisQueue, setting status in Redis...");
       await redisConnectionSetStatus(jobId, "uploaded");
@@ -178,8 +188,20 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
    */
   fastify.get<{ Params: { jobId: string } }>("/api/analyze/:jobId/results", async (request, reply) => {
     const { jobId } = request.params;
-    const status = await getJobStatus(jobId);
     
+    // Try Redis first (recent scans)
+    const results = await getJobResult(jobId);
+    if (results) {
+      return results;
+    }
+
+    // Fallback to Supabase database (older or archived scans)
+    const dbResult = await ScanHistoryService.getFullAnalysisResult(jobId);
+    if (dbResult) {
+      return dbResult;
+    }
+
+    const status = await getJobStatus(jobId);
     if (status === "unknown") {
       throw new JobNotFoundError(jobId);
     }
@@ -189,13 +211,8 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       return { error: "Analysis results not ready yet", status };
     }
 
-    const results = await getJobResult(jobId);
-    if (!results) {
-      reply.code(500);
-      return { error: "Failed to retrieve analysis results" };
-    }
-
-    return results;
+    reply.code(500);
+    return { error: "Failed to retrieve analysis results" };
   });
 
   /**
@@ -648,6 +665,127 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       }
     }
   );
+
+  // ============================================================
+  // Scan History Routes
+  // ============================================================
+
+  // GET /api/scan-history/:userId - Get user's scan history
+  fastify.get('/api/scan-history/:userId', async (request, reply) => {
+    try {
+      const { userId } = request.params as { userId: string };
+      const history = await ScanHistoryService.getScanHistory(userId);
+      return reply.send({ success: true, data: history });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        success: false, 
+        error: 'Failed to fetch scan history' 
+      });
+    }
+  });
+
+  // GET /api/scan-history/session/:jobId - Get scan session by job ID
+  fastify.get('/api/scan-history/session/:jobId', async (request, reply) => {
+    try {
+      const { jobId } = request.params as { jobId: string };
+      const session = await ScanHistoryService.getScanSessionByJobId(jobId);
+      if (!session) {
+        return reply.status(404).send({ 
+          success: false, 
+          error: 'Scan session not found' 
+        });
+      }
+      return reply.send({ success: true, data: session });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        success: false, 
+        error: 'Failed to fetch scan session' 
+      });
+    }
+  });
+
+  // GET /api/scan-history/:sessionId/snapshot - Get scan snapshot
+  fastify.get('/api/scan-history/:sessionId/snapshot', async (request, reply) => {
+    try {
+      const { sessionId } = request.params as { sessionId: string };
+      const snapshot = await ScanHistoryService.getScanSnapshot(sessionId);
+      if (!snapshot) {
+        return reply.status(404).send({ 
+          success: false, 
+          error: 'Scan snapshot not found' 
+        });
+      }
+      return reply.send({ success: true, data: snapshot });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        success: false, 
+        error: 'Failed to fetch scan snapshot' 
+      });
+    }
+  });
+
+  // POST /api/scan-history/compare - Compare two scans
+  fastify.post('/api/scan-history/compare', async (request, reply) => {
+    try {
+      const { baselineSessionId, compareSessionId } = request.body as {
+        baselineSessionId: string;
+        compareSessionId: string;
+      };
+      
+      if (!baselineSessionId || !compareSessionId) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Both baselineSessionId and compareSessionId are required'
+        });
+      }
+      
+      const diffReport = await ScanHistoryService.compareScans(
+        baselineSessionId,
+        compareSessionId
+      );
+      
+      return reply.send({ success: true, data: diffReport });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        success: false, 
+        error: 'Failed to compare scans' 
+      });
+    }
+  });
+
+  // DELETE /api/scan-history/:sessionId - Delete a scan
+  fastify.delete('/api/scan-history/:sessionId', async (request, reply) => {
+    try {
+      const { sessionId } = request.params as { sessionId: string };
+      await ScanHistoryService.deleteScan(sessionId);
+      return reply.send({ success: true, message: 'Scan deleted successfully' });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        success: false, 
+        error: 'Failed to delete scan' 
+      });
+    }
+  });
+
+  // GET /api/scan-history/stats/:userId - Get user statistics
+  fastify.get('/api/scan-history/stats/:userId', async (request, reply) => {
+    try {
+      const { userId } = request.params as { userId: string };
+      const stats = await ScanHistoryService.getUserStats(userId);
+      return reply.send({ success: true, data: stats });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        success: false, 
+        error: 'Failed to fetch user stats' 
+      });
+    }
+  });
 
   /**
    * GET /api/analyze/:jobId/traces

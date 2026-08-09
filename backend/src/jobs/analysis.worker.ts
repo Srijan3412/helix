@@ -18,6 +18,7 @@ import { PackageAnalyzer } from "../modules/framework/package-analyzer.js";
 import { EntryPointDetectorService } from "../modules/entry-point/entry-point-detector.service.js";
 import { RouteDetectorService } from "../modules/routes/route-detector.service.js";
 import { OpenApiExporter } from "../modules/routes/openapi-exporter.js";
+import { ScanHistoryService } from "../modules/analysis/scan-history.service.js";
 import { EnvironmentAnalyzerService } from "../modules/environment/environment-analyzer.service.js";
 import { DatabaseDetectorService } from "../modules/database/database-detector.service.js";
 import { DatabaseFlowService } from "../modules/database/database-flow.service.js";
@@ -466,6 +467,14 @@ export async function runAnalysisJob(jobData: AnalysisJobData, updateProgress?: 
       });
       await setJobStatus(jobId, "completed");
       await prog(100);
+
+      // Save scan to history
+      try {
+        const userId = jobData.userId || "anonymous";
+        await ScanHistoryService.saveScan(userId, jobId, analysisResult);
+      } catch (historyErr) {
+        logger.error({ jobId, err: historyErr }, "⚠️ Failed to save scan to history");
+      }
 
       logger.info({ jobId, stage: "completed", repoId }, "✅ Ingestion pipeline completed successfully");
       return analysisResult;

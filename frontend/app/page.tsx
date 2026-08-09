@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
@@ -29,8 +30,7 @@ import {
   Heart, AlertTriangle, Zap, Eye, Search, X, Play,
   Shield, Database, GitBranch, Activity, FileText, ArrowRight,
   GitCompare, CreditCard, Lock, User, LogOut,
-  // ADD THESE:
-  Code2, BarChart3
+  Code2, BarChart3, History
 } from "lucide-react";
 
 // ─── Dynamic Imports (Code Splitting) ───────────────────────────────────────
@@ -208,7 +208,19 @@ function buildExecutionTrace(route: RouteNode, result: any) {
 // ─── Main Component ─────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const router = useRouter();
   const { currentJobId, status, result, setJob, setStatus, setResult, reset } = useAnalysisStore();
+
+  // Load job from sessionStorage if set by Scan History page
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedJobId = sessionStorage.getItem("active-job-id");
+      if (storedJobId) {
+        setJob(storedJobId, "completed");
+        sessionStorage.removeItem("active-job-id");
+      }
+    }
+  }, [setJob]);
 
   // ── Subscription and Auth States ──
   const { session, profile, usage, canUse, recordUsage, signOut, loading: subLoading } = useSubscription();
@@ -836,6 +848,39 @@ export default function Home() {
             </motion.button>
           </div>
 
+          {/* Section: History */}
+          <div className="mt-4">
+            {sidebarExpanded && (
+              <div className="mb-2 px-3 text-[10px] font-medium uppercase tracking-wider text-white/30">
+                History
+              </div>
+            )}
+            <motion.button
+              onClick={() => router.push("/scan-history")}
+              whileHover={{ x: sidebarExpanded ? 3 : 0 }}
+              title={!sidebarExpanded ? "Scan History" : undefined}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${
+                !sidebarExpanded ? "justify-center" : ""
+              }`}
+            >
+              <div className="rounded-md p-1.5 text-white/30">
+                <History className="h-4 w-4" />
+              </div>
+              <AnimatePresence>
+                {sidebarExpanded && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    className="flex-1 text-left"
+                  >
+                    Scan History
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
+
           {/* Section: Results */}
           <div>
             {sidebarExpanded && (
@@ -1001,6 +1046,7 @@ export default function Home() {
               <div className="w-full" style={{ height: "calc(100vh - 48px)" }}>
                 <ArchitectureViewer
                   result={result}
+                  currentJobId={currentJobId!}
                   onSwitchTab={setActiveResultTab}
                   onSetImpactFile={setSelectedImpactFile}
                   onSelectTraceRouteId={(routeId) => {

@@ -5,8 +5,9 @@ import { FileCode } from "lucide-react";
 export default function LayerFileNode({ data }: { data: any }) {
   const { file, complexity, isGod, isDead, isSelected } = data;
 
-  // Extract filename from full path
-  const filename = file.split(/[\\/]/).pop() || file;
+  // Extract filename from full path safely
+  const fileString = file || data.label || "";
+  const filename = fileString.split(/[\\/]/).pop() || fileString;
 
   // Get file extension for icon color
   const ext = filename.split('.').pop()?.toLowerCase();
@@ -25,7 +26,7 @@ export default function LayerFileNode({ data }: { data: any }) {
               'text-zinc-500'
           }`} />
         <div className="flex flex-col min-w-0">
-          <span className="text-[10.5px] font-mono font-bold truncate max-w-[130px]" title={file}>
+          <span className="text-[10.5px] font-mono font-bold truncate max-w-[130px]" title={fileString}>
             {filename}
           </span>
           {complexity > 0 && (

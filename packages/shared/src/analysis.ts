@@ -432,3 +432,75 @@ export interface RepositorySubway {
   lines: SubwayLine[];
   transfers: string[];
 }
+
+// ─── Scan History & Comparison Types ───
+
+export interface ScanSession {
+  id: string;
+  userId: string;
+  jobId: string;
+  repoName: string;
+  repoPath: string;
+  totalFiles: number;
+  totalRoutes: number;
+  healthScore: number;
+  status: string;
+  scannedAt: string;
+  metadata: any;
+}
+
+export interface ScanSnapshot {
+  id: string;
+  sessionId: string;
+  architecture: ArchitectureMetadata;
+  graph: ReactFlowGraph;
+  staticAnalysis: any;
+  files: FileNode[];
+  routes: RouteNode[];
+  dependencies: DependencyEdge[];
+  createdAt: string;
+}
+
+export interface DiffReport {
+  baseline: {
+    id: string;
+    userId: string;
+    jobId: string;
+    repoName: string;
+    repoPath: string;
+    totalFiles: number;
+    totalRoutes: number;
+    healthScore: number;
+    status: string;
+    scannedAt: string;
+    metadata: any;
+  };
+  compare: {
+    id: string;
+    userId: string;
+    jobId: string;
+    repoName: string;
+    repoPath: string;
+    totalFiles: number;
+    totalRoutes: number;
+    healthScore: number;
+    status: string;
+    scannedAt: string;
+    metadata: any;
+  };
+  changes: {
+    files: { added: string[]; removed: string[]; modified: string[] };
+    routes: { added: string[]; removed: string[]; modified: string[] };
+    layers: { added: string[]; removed: string[]; modified: string[] };
+    healthScore: { baseline: number; compare: number; diff: number };
+    totalFiles: { baseline: number; compare: number; diff: number };
+  };
+}
+
+export interface UserScanStats {
+  totalScans: number;
+  averageHealth: number;
+  totalFiles: number;
+  totalRoutes: number;
+  lastScan: ScanSession | null;
+}
