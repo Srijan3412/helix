@@ -149,7 +149,7 @@ export class ArchitectureGeneratorService {
     }
 
     return {
-      layers,
+      layers: [], // Layers are calculated by LayerDetectorService.calculateLayerMetrics()
       graph: {
         nodes: flowNodes,
         edges: flowEdges,

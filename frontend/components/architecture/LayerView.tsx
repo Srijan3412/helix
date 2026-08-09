@@ -129,6 +129,31 @@ export default function LayerView({ result }: { result: any }) {
 
   // Local fallback classifier if backend query is not resolved yet or empty
   const layers = useMemo(() => {
+    // ✅ Convert backend array format to frontend Record format
+    if (layersData && Array.isArray(layersData)) {
+      const converted: Record<string, string[]> = {
+        routes: [],
+        controllers: [],
+        services: [],
+        repositories: [],
+        models: [],
+        middleware: [],
+        config: [],
+        tests: [],
+        utils: [],
+        database: []
+      };
+
+      layersData.forEach((layer: any) => {
+        const layerName = layer.name?.toLowerCase() || '';
+        if (converted.hasOwnProperty(layerName)) {
+          converted[layerName] = layer.files || [];
+        }
+      });
+
+      return converted;
+    }
+
     if (preGeneratedGraph) {
       const graphLayers: Record<string, string[]> = {
         routes: [],
@@ -160,10 +185,6 @@ export default function LayerView({ result }: { result: any }) {
       });
 
       return graphLayers;
-    }
-
-    if (layersData) {
-      return layersData;
     }
 
     const files = result?.files || [];
@@ -298,6 +319,11 @@ export default function LayerView({ result }: { result: any }) {
         isNodeActive = isFocused;
       }
 
+      // Get layer metrics from backend data
+      const layerMetrics = layersData?.find((l: any) => l.name?.toLowerCase() === key);
+      const health = layerMetrics?.health || 0;
+      const confidence = layerMetrics?.confidence || 0;
+
       const layerId = `layer-${key}`;
       if (!seenNodeIds.has(layerId)) {
         seenNodeIds.add(layerId);
@@ -309,6 +335,8 @@ export default function LayerView({ result }: { result: any }) {
             count: files.length,
             isExpanded,
             key,
+            health,
+            confidence,
           },
           position: { x: xCenter - 110, y: currentY },
           style: {

@@ -30,13 +30,13 @@ const LAYER_THEMES: Record<string, { bg: string; border: string; text: string; a
 };
 
 export default function LayerNode({ data }: { data: any }) {
-  const { label, count, isExpanded } = data;
+  const { label, count, isExpanded, health, confidence } = data;
   const theme = LAYER_THEMES[label] || LAYER_THEMES.Services;
 
   return (
     <div className={`p-4 rounded-2xl border bg-zinc-900/90 backdrop-blur-md transition-all duration-300 shadow-xl min-w-[220px] ${theme.border}`}>
       <Handle type="target" position={Position.Top} className="opacity-0" />
-      
+
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className={`p-1.5 rounded-lg ${theme.bg} ${theme.text}`}>
@@ -47,11 +47,28 @@ export default function LayerNode({ data }: { data: any }) {
             <span className="text-[10px] text-muted-foreground">{count} files</span>
           </div>
         </div>
-        
+
         <Badge className={`text-[9px] uppercase tracking-wider font-bold shrink-0 ${isExpanded ? "bg-primary text-background" : "bg-zinc-800 text-zinc-400"}`}>
           {isExpanded ? "Expanded" : "View"}
         </Badge>
       </div>
+
+      {(health > 0 || confidence > 0) && (
+        <div className="flex gap-3 mt-3 pt-3 border-t border-zinc-800/50">
+          {health > 0 && (
+            <div className="flex flex-col">
+              <span className="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Health</span>
+              <span className="text-[11px] font-bold text-zinc-200">{health}/100</span>
+            </div>
+          )}
+          {confidence > 0 && (
+            <div className="flex flex-col">
+              <span className="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Confidence</span>
+              <span className="text-[11px] font-bold text-zinc-200">{Math.round(confidence * 100)}%</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <Handle type="source" position={Position.Bottom} className="opacity-0" />
     </div>

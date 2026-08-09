@@ -37,7 +37,7 @@ export class SummaryGenerator {
       packageManager: r.packageManager,
     };
 
-    const lifecycle = a.layers.length > 0 ? a.layers.map(l => typeof l === 'string' ? l : l.name) : ["Route", "Controller", "Service", "Repository", "Database"];
+    const lifecycle = a.layers.length > 0 ? a.layers : ["Route", "Controller", "Service", "Repository", "Database"];
 
     const keyModules: AiArchitectSummary["keyModules"] = a.keyModules.map((m) => ({
       file: m.file,
@@ -112,7 +112,7 @@ export class SummaryGenerator {
     a: ReturnType<typeof ContextBuilder.buildArchitectureContext>,
     stack: AiArchitectSummary["stack"],
     lifecycle: string[],
-    keyModules: AiArchitectSummary["keyModules"]
+    keyModules: Array<{ file: string; role: string; importance: number }>
   ): string {
     const lifecycleArrows = lifecycle.join("\n↓\n");
     const entityList = r.entities.map((e) => `- **${e}**`).join("\n") || "- *(no entities detected)*";
@@ -159,8 +159,8 @@ ${execText}
 ## 🔐 Authentication
 
 ${r.authentication !== "None detected"
-  ? `This application uses **${r.authentication}** to secure protected routes. Tokens are typically validated via middleware before reaching controller handlers.`
-  : "No authentication patterns were detected in this repository."}
+        ? `This application uses **${r.authentication}** to secure protected routes. Tokens are typically validated via middleware before reaching controller handlers.`
+        : "No authentication patterns were detected in this repository."}
 
 ---
 
