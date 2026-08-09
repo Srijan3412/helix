@@ -1,13 +1,18 @@
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
 import { Badge } from "../ui/badge";
-import { Shield, Network, Terminal, Layers, Database } from "lucide-react";
+import { Shield, Network, Terminal, Layers, Database, Settings, CheckCircle, Wrench } from "lucide-react";
 
 const LAYER_ICONS: Record<string, React.ReactNode> = {
   Routes: <Network className="w-4.5 h-4.5" />,
   Controllers: <Terminal className="w-4.5 h-4.5" />,
   Services: <Layers className="w-4.5 h-4.5" />,
   Repositories: <Shield className="w-4.5 h-4.5" />,
+  Models: <Layers className="w-4.5 h-4.5" />,
+  Middleware: <Shield className="w-4.5 h-4.5" />,
+  Config: <Settings className="w-4.5 h-4.5" />,
+  Tests: <CheckCircle className="w-4.5 h-4.5" />,
+  Utils: <Wrench className="w-4.5 h-4.5" />,
   Database: <Database className="w-4.5 h-4.5" />,
 };
 
@@ -16,6 +21,11 @@ const LAYER_THEMES: Record<string, { bg: string; border: string; text: string; a
   Controllers: { bg: "bg-purple-950/40", border: "border-purple-500/50", text: "text-purple-300", accent: "purple" },
   Services: { bg: "bg-amber-950/40", border: "border-amber-500/50", text: "text-amber-300", accent: "amber" },
   Repositories: { bg: "bg-emerald-950/40", border: "border-emerald-500/50", text: "text-emerald-300", accent: "emerald" },
+  Models: { bg: "bg-teal-950/40", border: "border-teal-500/50", text: "text-teal-300", accent: "teal" },
+  Middleware: { bg: "bg-indigo-950/40", border: "border-indigo-500/50", text: "text-indigo-300", accent: "indigo" },
+  Config: { bg: "bg-slate-950/40", border: "border-slate-500/50", text: "text-slate-300", accent: "slate" },
+  Tests: { bg: "bg-lime-950/40", border: "border-lime-500/50", text: "text-lime-300", accent: "lime" },
+  Utils: { bg: "bg-cyan-950/40", border: "border-cyan-500/50", text: "text-cyan-300", accent: "cyan" },
   Database: { bg: "bg-rose-950/40", border: "border-rose-500/50", text: "text-rose-300", accent: "rose" },
 };
 

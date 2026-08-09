@@ -53,16 +53,57 @@ export default function ArchitectureViewer({
   // Derive sidebar info from result
   const features: { name: string; color: string; fileCount: number; health: number; confidence: number }[] =
     React.useMemo(() => {
-      const raw = result?.architecture?.features || result?.features || [];
-      if (raw.length > 0) return raw.map((f: any) => ({
-        name: f.name || f.id,
-        color: f.color || "#10b981",
-        fileCount: f.files?.length || f.fileCount || 0,
-        health: f.health ?? 80,
-        confidence: f.confidence ?? 0.5,
-      }));
+      if (activeMode === "layer") {
+        const layers = result?.architecture?.layers || [];
+        if (layers.length > 0) {
+          const layerColors: Record<string, string> = {
+            routes: "#6366f1",
+            controllers: "#8b5cf6",
+            services: "#3b82f6",
+            repositories: "#06b6d4",
+            models: "#10b981",
+            database: "#f59e0b",
+            middleware: "#f472b6",
+            config: "#8b5cf6",
+            tests: "#34d399",
+            utils: "#f97316"
+          };
 
-      // Fallback: derive from file paths
+          return layers.map((layer: any) => ({
+            name: typeof layer === 'string' ? layer : layer.name || layer.id,
+            color: layerColors[typeof layer === 'string' ? layer.toLowerCase() : (layer.name?.toLowerCase() || '')] || "#10b981",
+            fileCount: typeof layer === 'string' ? 0 : layer.files?.length || layer.fileCount || 0,
+            health: typeof layer === 'string' ? 0 : layer.health ?? 0,
+            confidence: typeof layer === 'string' ? 0 : layer.confidence ?? 0,
+            isLayer: true,
+          }));
+        }
+      }
+
+      const raw = result?.architecture?.features || result?.features || [];
+      if (raw.length > 0) {
+        return raw.map((f: any) => ({
+          name: f.name || f.id,
+          color: f.color || "#10b981",
+          fileCount: f.files?.length || f.fileCount || 0,
+          health: f.health ?? 0,
+          confidence: f.confidence ?? 0,
+          isLayer: false,
+        }));
+      }
+
+      if (activeMode === "layer") {
+        const defaultLayers = ["Routes", "Controllers", "Services", "Repositories", "Models", "Middleware", "Config", "Tests", "Utils", "Database"];
+        return defaultLayers.map(name => ({
+          name,
+          color: "#10b981",
+          fileCount: 0,
+          health: 0,
+          confidence: 0,
+          isLayer: true,
+        }));
+      }
+
       const files: any[] = result?.files || [];
       const groups: Record<string, string[]> = {};
       for (const f of files) {
@@ -74,15 +115,16 @@ export default function ArchitectureViewer({
         groups[domain].push(path);
       }
 
-      const palette = ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#06b6d4","#ec4899","#f97316"];
+      const palette = ["#10b981", "#3b82f6", "#f59e0b", "#a855f7", "#ef4444", "#06b6d4", "#ec4899", "#f97316"];
       return Object.entries(groups).slice(0, 8).map(([name, fs], i) => ({
         name,
         color: palette[i % palette.length],
         fileCount: fs.length,
         health: Math.max(10, 100 - fs.length * 2),
-        confidence: 0.5 + Math.random() * 0.4,
+        confidence: 0,
+        isLayer: false,
       }));
-    }, [result]);
+    }, [result, activeMode]);
 
   const totalFiles = result?.overview?.totalFiles || result?.files?.length || 0;
   const totalRoutes = result?.overview?.totalRoutes || result?.routes?.length || 0;

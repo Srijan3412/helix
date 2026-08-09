@@ -37,7 +37,7 @@ export class SummaryGenerator {
       packageManager: r.packageManager,
     };
 
-    const lifecycle = a.layers.length > 0 ? a.layers : ["Route", "Controller", "Service", "Repository", "Database"];
+    const lifecycle = a.layers.length > 0 ? a.layers.map(l => typeof l === 'string' ? l : l.name) : ["Route", "Controller", "Service", "Repository", "Database"];
 
     const keyModules: AiArchitectSummary["keyModules"] = a.keyModules.map((m) => ({
       file: m.file,

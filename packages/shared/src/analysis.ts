@@ -178,7 +178,13 @@ export interface ReactFlowGraph {
 }
 
 export interface ArchitectureMetadata {
-  layers: string[];
+  layers: Array<{
+    name: string;
+    files: string[];
+    health?: number;
+    confidence?: number;
+    color?: string;
+  }>;
   graph: ReactFlowGraph;
 }
 

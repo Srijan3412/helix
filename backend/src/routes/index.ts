@@ -13,6 +13,7 @@ import { GraphValidatorService } from "../modules/graph/graph-validator.service.
 import { ImpactAnalysisService } from "../modules/impact/impact-analysis.service.js";
 import { ArchitectureDiffService } from "../modules/architecture/architecture-diff.service.js";
 import { LayerDetectorService } from "../modules/architecture/layer-detector.service.js";
+import { ArchitectureGeneratorService } from "../modules/architecture/architecture-generator.service.js";
 import { TraceBuilderService } from "../modules/execution-trace/trace-builder.service.js";
 import { FeatureBuilderService } from "../modules/feature-map/feature-builder.service.js";
 import { requireAuth } from "../core/auth/auth.middleware.js";
@@ -614,8 +615,37 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         reply.code(550);
         return { error: "Failed to retrieve analysis results" };
       }
-      const layers = LayerDetectorService.detect(result);
-      return { layers };
+      try {
+        const [layers, graph] = await Promise.all([
+          LayerDetectorService.detect(result),
+          ArchitectureGeneratorService.generate(
+            result.files,
+            result.dependencies,
+            result.routes,
+            result.metadata?.databaseInfo
+          )
+        ]);
+
+        const layerArray = LayerDetectorService.calculateLayerMetrics(layers, result);
+
+        return {
+          layers: layerArray,
+          graph,
+          metadata: {
+            totalFiles: result.files?.length || 0,
+            totalLayers: layerArray.filter(l => l.files.length > 0).length,
+            layerDetails: layerArray.map(l => ({
+              layer: l.name,
+              fileCount: l.files.length,
+              health: l.health,
+              confidence: l.confidence
+            }))
+          }
+        };
+      } catch (error: any) {
+        reply.code(500);
+        return { error: `Failed to analyze architecture: ${error.message}` };
+      }
     }
   );
 

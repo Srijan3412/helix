@@ -78,7 +78,7 @@ export class ContextBuilder {
    */
   static buildArchitectureContext(result: AnalysisResult): ArchitectureContext {
     const arch = result.architecture;
-    const layers = arch?.layers || ["Routes", "Services", "Database"];
+    const layers = arch?.layers?.map(l => typeof l === 'string' ? l : l.name) || ["Routes", "Services", "Database"];
 
     // Top execution examples from DB flows
     const executionExamples: ExecutionExample[] = (result.metadata?.databaseInfo?.flows || [])

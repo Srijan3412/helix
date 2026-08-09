@@ -8,7 +8,7 @@ import LayerDetails from "./LayerDetails";
 import { useAnalysisStore } from "../../store/analysis.store";
 import {
   Route, Settings, Cog, Database, Layers, Play, PlayCircle,
-  Pause, SkipForward, X, Loader2, Search
+  Pause, SkipForward, X, Loader2, Search, Shield, CheckCircle, Wrench
 } from 'lucide-react';
 
 // BFS for focused subgraph - from daadd-main
@@ -60,13 +60,17 @@ const NODE_TYPES = {
   layerFileNode: LayerFileNode,
 };
 
-const LAYER_KEYS = ["routes", "controllers", "services", "repositories", "models", "database"];
+const LAYER_KEYS = ["routes", "controllers", "services", "repositories", "models", "middleware", "config", "tests", "utils", "database"];
 const LAYER_LABELS: Record<string, string> = {
   routes: "Routes",
   controllers: "Controllers",
   services: "Services",
   repositories: "Repositories",
   models: "Models",
+  middleware: "Middleware",
+  config: "Config",
+  tests: "Tests",
+  utils: "Utils",
   database: "Database",
 };
 
@@ -76,6 +80,10 @@ const LAYER_COLORS: Record<string, string> = {
   services: "#f97316",     // amber
   repositories: "#22c55e", // emerald
   models: "#eab308",       // yellow
+  middleware: "#f472b6",   // pink
+  config: "#8b5cf6",       // violet
+  tests: "#34d399",        // emerald
+  utils: "#f97316",        // orange
   database: "#ef4444",     // rose
 };
 
@@ -85,6 +93,10 @@ const LAYER_ICONS: Record<string, any> = {
   services: Cog,
   repositories: Database,
   models: Database,
+  middleware: Shield,
+  config: Settings,
+  tests: CheckCircle,
+  utils: Wrench,
   database: Database
 };
 
@@ -93,28 +105,67 @@ export default function LayerView({ result }: { result: any }) {
   const [expandedLayer, setExpandedLayer] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [selectedFileLayer, setSelectedFileLayer] = useState<string>("");
-
-  // Search & Tour State
+  const [showRenameDialog, setShowRenameDialog] = useState<{ layer: string; currentName: string } | null>(null);
+  const [layerOverrides, setLayerOverrides] = useState<Record<string, string>>({});
+  const [fileOverrides, setFileOverrides] = useState<Record<string, string>>({});
+  const [visibleFiles, setVisibleFiles] = useState<Record<string, number>>({});
+  const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
+  const FILES_PER_PAGE = 20;
   const [searchQuery, setSearchQuery] = useState("");
   const [tourIdx, setTourIdx] = useState<number | null>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const tourTimerRef = useRef<any>(null);
   const [focusedNodes, setFocusedNodes] = useState<Set<string>>(new Set());
 
-  // Fetch categorized layers from backend
-  const { data: layersData, isLoading } = useQuery({
-    queryKey: ["archLayers", currentJobId],
-    queryFn: () => getArchitectureLayers(currentJobId!),
+  // Fetch categorized layers and pre-generated graph from backend
+  const { data: architectureData, isLoading } = useQuery({
+    queryKey: ["architecture", currentJobId],
+    queryFn: () => fetch(`/api/analyze/${currentJobId}/architecture`).then(r => r.json()),
     enabled: !!currentJobId,
   });
 
+  const layersData = architectureData?.layers || null;
+  const preGeneratedGraph = architectureData?.graph || null;
+
   // Local fallback classifier if backend query is not resolved yet or empty
   const layers = useMemo(() => {
-    if (layersData?.layers) {
-      return layersData.layers;
+    if (preGeneratedGraph) {
+      const graphLayers: Record<string, string[]> = {
+        routes: [],
+        controllers: [],
+        services: [],
+        repositories: [],
+        models: [],
+        middleware: [],
+        config: [],
+        tests: [],
+        utils: [],
+        database: []
+      };
+
+      preGeneratedGraph.nodes.forEach((node: any) => {
+        const layerMap: Record<string, string> = {
+          route: 'routes',
+          controller: 'controllers',
+          service: 'services',
+          repository: 'repositories',
+          model: 'models',
+          database: 'database',
+          file: 'services'
+        };
+        const layerKey = layerMap[node.type] || node.type.toLowerCase();
+        if (graphLayers[layerKey]) {
+          graphLayers[layerKey].push(node.id);
+        }
+      });
+
+      return graphLayers;
     }
 
-    // Fallback logic
+    if (layersData) {
+      return layersData;
+    }
+
     const files = result?.files || [];
     const dbInfo = result?.metadata?.databaseInfo;
     const classified: Record<string, string[]> = {
@@ -123,6 +174,10 @@ export default function LayerView({ result }: { result: any }) {
       services: [],
       repositories: [],
       models: [],
+      middleware: [],
+      config: [],
+      tests: [],
+      utils: [],
       database: []
     };
 
@@ -132,6 +187,10 @@ export default function LayerView({ result }: { result: any }) {
       { key: "services", regex: /(^|\/)(services?|usecases?|use-cases|domain|business)(\/|$)/i },
       { key: "repositories", regex: /(^|\/)(repositor(y|ies)|dao|daos)(\/|$)/i },
       { key: "models", regex: /(^|\/)(models?|entities|schemas?|types)(\/|$)/i },
+      { key: "middleware", regex: /(^|\/)(middleware)(\/|$)/i },
+      { key: "config", regex: /(^|\/)(config|configuration)(\/|$)/i },
+      { key: "tests", regex: /(^|\/)(tests?|__tests__)(\/|$)|\.(test|spec)\.[tj]sx?$/i },
+      { key: "utils", regex: /(^|\/)(utils?|utility|helpers?)(\/|$)/i },
     ];
 
     for (const f of files) {
@@ -157,7 +216,7 @@ export default function LayerView({ result }: { result: any }) {
     }
 
     return classified;
-  }, [layersData, result]);
+  }, [preGeneratedGraph, layersData, result]);
 
   // Search & Focus matching logic
   const searchHits = useMemo(() => {
