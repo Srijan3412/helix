@@ -647,7 +647,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
 
         return {
           layers: layerArray,
-          graph,
+          graph: graph.graph,
           metadata: {
             totalFiles: result.files?.length || 0,
             totalLayers: layerArray.filter(l => l.files.length > 0).length,

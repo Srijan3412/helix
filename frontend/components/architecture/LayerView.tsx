@@ -102,6 +102,14 @@ const LAYER_ICONS: Record<string, any> = {
 
 export default function LayerView({ result }: { result: any }) {
   const { currentJobId } = useAnalysisStore();
+
+  // ✅ ADD CONSOLE LOG #7
+  console.log('🔄 [LAYERED VIEW] Component mounted/updated:', {
+    currentJobId,
+    hasResult: !!result,
+    resultKeys: result ? Object.keys(result) : []
+  });
+
   const [expandedLayer, setExpandedLayer] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [selectedFileLayer, setSelectedFileLayer] = useState<string>("");
@@ -124,13 +132,41 @@ export default function LayerView({ result }: { result: any }) {
     enabled: !!currentJobId,
   });
 
+  // ✅ ADD CONSOLE LOG #8
+  console.log('📡 [LAYERED VIEW] Query state:', {
+    isLoading,
+    hasArchitectureData: !!architectureData,
+    architectureDataKeys: architectureData ? Object.keys(architectureData) : []
+  });
+
   const layersData = architectureData?.layers || null;
   const preGeneratedGraph = architectureData?.graph || null;
 
+  // ✅ ADD CONSOLE LOG #9
+  console.log('🔎 [LAYERED VIEW] Data extraction:', {
+    layersData: layersData ? (Array.isArray(layersData) ? `Array[${layersData.length}]` : typeof layersData) : null,
+    layersDataSample: layersData && Array.isArray(layersData) ? layersData.slice(0, 2) : null,
+    preGeneratedGraph: preGeneratedGraph ? {
+      hasNodes: !!preGeneratedGraph.nodes,
+      nodesCount: preGeneratedGraph.nodes?.length || 0,
+      hasEdges: !!preGeneratedGraph.edges,
+      edgesCount: preGeneratedGraph.edges?.length || 0
+    } : null
+  });
+
   // Local fallback classifier if backend query is not resolved yet or empty
   const layers = useMemo(() => {
+    // ✅ ADD CONSOLE LOG #10
+    console.log('📋 [LAYERED VIEW] layers useMemo inputs:', {
+      layersDataType: layersData ? (Array.isArray(layersData) ? 'array' : typeof layersData) : 'null',
+      layersDataLength: layersData?.length || 0,
+      hasPreGeneratedGraph: !!preGeneratedGraph,
+      graphNodesCount: preGeneratedGraph?.nodes?.length || 0
+    });
+
     // ✅ Convert backend array format to frontend Record format
     if (layersData && Array.isArray(layersData)) {
+      console.log('✅ [LAYERED VIEW] Using layersData (array format)');
       const converted: Record<string, string[]> = {
         routes: [],
         controllers: [],
@@ -289,50 +325,123 @@ export default function LayerView({ result }: { result: any }) {
 
   // Construct ReactFlow nodes & edges dynamically
   const { nodes, edges } = useMemo(() => {
+    // ✅ ADD CONSOLE LOG #11
+    console.log('📐 [LAYERED VIEW] Node/Edge generation inputs:', {
+      hasPreGeneratedGraph: !!preGeneratedGraph,
+      graphNodesCount: preGeneratedGraph?.nodes?.length || 0,
+      graphEdgesCount: preGeneratedGraph?.edges?.length || 0,
+      layersKeys: Object.keys(layers),
+      totalFiles: Object.values(layers).reduce((acc, arr) => acc + arr.length, 0)
+    });
+
     if (preGeneratedGraph) {
-      const layerOrder = ["Routes", "Controllers", "Services", "Repositories", "Database"];
+      console.log('✅ [LAYERED VIEW] Using pre-generated graph');
+
+      // ✅ ADD CONSOLE LOG #12 - Inside the preGeneratedGraph block
+      const layerOrder = ["Routes", "Controllers", "Services", "Repositories", "Models", "Database"];
+      console.log('📋 [LAYERED VIEW] Layer order:', layerOrder);
+
       const nodesByLayer: Record<string, any[]> = {};
       layerOrder.forEach(l => nodesByLayer[l] = []);
 
-      (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
-        // Map backend layer names to capitalized layer names
-        let layerName = node.layer || "Services";
-        // Standardize naming
-        if (layerName.toLowerCase() === "routes") layerName = "Routes";
-        else if (layerName.toLowerCase() === "controllers") layerName = "Controllers";
-        else if (layerName.toLowerCase() === "services") layerName = "Services";
-        else if (layerName.toLowerCase() === "repositories") layerName = "Repositories";
-        else if (layerName.toLowerCase() === "models") layerName = "Models";
-        else if (layerName.toLowerCase() === "database") layerName = "Database";
-        else if (layerName.toLowerCase() === "middleware") layerName = "Middleware";
-        else if (layerName.toLowerCase() === "config") layerName = "Config";
-        else if (layerName.toLowerCase() === "tests") layerName = "Tests";
-        else if (layerName.toLowerCase() === "utils") layerName = "Utils";
+      const layerMap: Record<string, string> = {
+        'routes': 'Routes',
+        'controllers': 'Controllers',
+        'services': 'Services',
+        'repositories': 'Repositories',
+        'models': 'Models',
+        'middleware': 'Middleware',
+        'config': 'Config',
+        'tests': 'Tests',
+        'utils': 'Utils',
+        'database': 'Database'
+      };
 
+      (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
+        let rawLayer = node.layer || "Services";
+        const layerName = layerMap[rawLayer.toLowerCase()] || rawLayer;
         if (!nodesByLayer[layerName]) {
           nodesByLayer[layerName] = [];
         }
         nodesByLayer[layerName].push(node);
       });
 
-      const actualLayers = layerOrder.filter(l => nodesByLayer[l]?.length > 0 || l === "Services");
+      console.log('📊 [LAYERED VIEW] Nodes by layer:', Object.keys(nodesByLayer).map(key => ({
+        layer: key,
+        count: nodesByLayer[key]?.length || 0
+      })));
 
-      const mappedNodes = (preGeneratedGraph?.nodes ?? []).map((node: any) => {
-        let layerName = node.layer || "Services";
-        if (layerName.toLowerCase() === "routes") layerName = "Routes";
-        else if (layerName.toLowerCase() === "controllers") layerName = "Controllers";
-        else if (layerName.toLowerCase() === "services") layerName = "Services";
-        else if (layerName.toLowerCase() === "repositories") layerName = "Repositories";
-        else if (layerName.toLowerCase() === "models") layerName = "Models";
-        else if (layerName.toLowerCase() === "database") layerName = "Database";
+      const actualLayers = layerOrder.filter(l => nodesByLayer[l]?.length > 0);
+      console.log('✅ [LAYERED VIEW] Actual layers with nodes:', actualLayers);
+      const mappedNodes: any[] = [];
+      const mappedEdges = (preGeneratedGraph?.edges ?? []).map((edge: any) => ({
+        ...edge,
+        animated: edge.animated !== undefined ? edge.animated : true,
+        style: edge.style || {
+          stroke: "hsl(var(--primary, 60 100% 50%))",
+          strokeWidth: 2.0,
+          opacity: 0.8
+        },
+      }));
 
-        const colIdx = actualLayers.indexOf(layerName) >= 0 ? actualLayers.indexOf(layerName) : 1;
+      // Generate Column Headers
+      actualLayers.forEach((layerName) => {
+        const key = layerName.toLowerCase();
+        const colIdx = actualLayers.indexOf(layerName);
+        const filesInLayer = nodesByLayer[layerName] || [];
+
+        // Get layer metrics from backend data if available
+        const layerMetrics = layersData?.find((l: any) => l.name?.toLowerCase() === key);
+        const health = layerMetrics?.health || 80;
+        const confidence = layerMetrics?.confidence || 90;
+
+        mappedNodes.push({
+          id: `layer-${key}`,
+          type: "layerNode",
+          data: {
+            label: layerName,
+            count: filesInLayer.length,
+            isExpanded: true,
+            key,
+            health,
+            confidence,
+          },
+          position: { x: 50 + colIdx * 250 - 25, y: 20 },
+          style: {
+            width: 220,
+            opacity: 1.0,
+            transition: "opacity 250ms ease, transform 250ms ease",
+          },
+        });
+
+        // Connect header to the first file in the column
+        if (filesInLayer.length > 0) {
+          mappedEdges.push({
+            id: `edge-header-to-first-${key}`,
+            source: `layer-${key}`,
+            target: filesInLayer[0].id,
+            animated: true,
+            style: {
+              stroke: "hsl(var(--primary, 60 100% 50%))",
+              strokeWidth: 2.0,
+              opacity: 0.8,
+            },
+          });
+        }
+      });
+
+      // Map File Nodes
+      (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
+        let rawLayer = node.layer || "Services";
+        const layerName = layerMap[rawLayer.toLowerCase()] || rawLayer;
+        const colIdx = actualLayers.indexOf(layerName);
+        if (colIdx === -1) return; // Skip nodes not in layer order
+
         const rowIdx = (nodesByLayer[layerName] || []).indexOf(node);
-
         const x = 50 + colIdx * 250;
-        const y = 80 + rowIdx * 90;
+        const y = 130 + rowIdx * 90; // shifted down to start below headers
 
-        return {
+        mappedNodes.push({
           ...node,
           type: 'layerFileNode',
           position: { x, y },
@@ -350,22 +459,17 @@ export default function LayerView({ result }: { result: any }) {
             opacity: 1.0,
             width: 170,
           }
-        };
+        });
       });
 
-      const mappedEdges = (preGeneratedGraph?.edges ?? []).map((edge: any) => ({
-        ...edge,
-        animated: edge.animated !== undefined ? edge.animated : true,
-        style: edge.style || {
-          stroke: "hsl(var(--primary, 60 100% 50%))",
-          strokeWidth: 2.0,
-          opacity: 0.8
-        },
-      }));
-
+      console.log('🎯 [LAYERED VIEW] Generated nodes:', mappedNodes.length, 'edges:', mappedEdges.length);
+      if (mappedNodes.length === 0) {
+        console.warn('⚠️ [LAYERED VIEW] No nodes generated from preGeneratedGraph!');
+      }
       return { nodes: mappedNodes, edges: mappedEdges };
     }
 
+    console.log('⚠️ [LAYERED VIEW] Falling back to manual node generation');
     const flowNodes: ReactFlowNode[] = [];
     const flowEdges: ReactFlowEdge[] = [];
     const seenNodeIds = new Set<string>();
@@ -444,6 +548,7 @@ export default function LayerView({ result }: { result: any }) {
         });
 
         // Add the Layer node
+
 
 
 
@@ -538,8 +643,26 @@ export default function LayerView({ result }: { result: any }) {
       }
     }
 
+    console.log('🎯 [LAYERED VIEW] Manual flow nodes/edges generated:', flowNodes.length, flowEdges.length);
     return { nodes: flowNodes, edges: flowEdges };
   }, [layers, expandedLayer, selectedFile, searchQuery, focusedNodes, tourIdx, result]);
+
+  // ✅ ADD CONSOLE LOG #13 - After nodes/edges useMemo
+  console.log('🎨 [LAYERED VIEW] Final nodes/edges:', {
+    nodesCount: nodes.length,
+    edgesCount: edges.length,
+    firstNode: nodes.length > 0 ? {
+      id: nodes[0].id,
+      type: nodes[0].type,
+      position: nodes[0].position,
+      data: nodes[0].data
+    } : null
+  });
+
+  // ✅ ADD CONSOLE LOG #14 - Check if any nodes exist
+  if (nodes.length === 0) {
+    console.warn('⚠️ [LAYERED VIEW] No nodes generated! Check data sources.');
+  }
 
   // Update refs to latest nodes/edges on every render to prevent loops
   const nodesRef = useRef(nodes);
@@ -599,9 +722,26 @@ export default function LayerView({ result }: { result: any }) {
         }
 
         if (reactFlowInstance) {
-          const node = nodes.find((n: any) => n.id === `layer-${currentKey}`);
+          let node = nodes.find((n: any) => n.id === `layer-${currentKey}`);
+
+          // If no header, try to find first file in that layer
+          if (!node) {
+            const layerFiles = nodes.filter((n: any) =>
+              n.id.startsWith(`file-`) &&
+              n.data?.layer?.toLowerCase() === currentKey
+            );
+            if (layerFiles.length > 0) {
+              node = layerFiles[0];
+            }
+          }
+
           if (node) {
-            reactFlowInstance.setCenter(node.position.x + 110, node.position.y + 45, { zoom: 1.25, duration: 600 });
+            const nodeWidth = node.style?.width || 220;
+            reactFlowInstance.setCenter(
+              node.position.x + nodeWidth / 2,
+              node.position.y + 45,
+              { zoom: 1.25, duration: 600 }
+            );
           }
         }
 
