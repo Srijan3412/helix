@@ -2,54 +2,130 @@ import React from "react";
 import { Handle, Position } from "@xyflow/react";
 import { FileCode } from "lucide-react";
 
-export default function LayerFileNode({ data }: { data: any }) {
-  const { file, complexity, isGod, isDead, isSelected } = data;
+interface LayerFileNodeProps {
+  data: {
+    file: string;
+    label: string;
+    method?: string;
+    path?: string;
+    reqPerSecond?: number;
+    loc?: number;
+    dependencies?: number;
+    rating?: string;
+    isTopFile?: boolean;
+    isSelected?: boolean;
+    isGod?: boolean;
+    isDead?: boolean;
+    complexity?: number;
+  };
+}
 
-  // Extract filename from full path safely
-  const fileString = file || data.label || "";
+export default function LayerFileNode({ data }: LayerFileNodeProps) {
+  const {
+    file,
+    label,
+    method,
+    path,
+    reqPerSecond,
+    loc,
+    dependencies,
+    rating,
+    isTopFile,
+    isSelected,
+    isGod,
+    isDead
+  } = data;
+
+  const fileString = file || label || "";
   const filename = fileString.split(/[\\/]/).pop() || fileString;
-
-  // Get file extension for icon color
   const ext = filename.split('.').pop()?.toLowerCase();
   const isTypeScript = ext === 'ts' || ext === 'tsx';
   const isJavaScript = ext === 'js' || ext === 'jsx';
 
+  const getMethodColor = (method?: string) => {
+    if (!method) return 'text-zinc-400';
+    switch(method.toUpperCase()) {
+      case 'GET': return 'text-emerald-400';
+      case 'POST': return 'text-blue-400';
+      case 'PUT': return 'text-amber-400';
+      case 'DELETE': return 'text-rose-400';
+      default: return 'text-zinc-400';
+    }
+  };
+
+  const getStatusIcon = () => {
+    if (isGod) return '🔥';
+    if (isDead) return '💀';
+    return '';
+  };
+
   return (
-    <div className={`p-2.5 rounded-xl border bg-zinc-950/80 backdrop-blur-md transition-all duration-200 shadow-md min-w-[170px] ${isSelected
-        ? "border-primary text-primary bg-primary/5 shadow-primary/20"
-        : "border-border/60 text-zinc-300 hover:border-zinc-400"
-      }`}>
+    <div className={`
+      px-3 py-2.5 rounded-xl border transition-all duration-200 cursor-pointer
+      ${isSelected
+        ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
+        : 'border-border/60 bg-zinc-950/80 hover:bg-zinc-800/80 hover:border-zinc-400'
+      }
+      ${isTopFile ? 'border-l-4 border-l-primary' : ''}
+      min-w-[200px]
+    `}>
       <Handle type="target" position={Position.Top} className="opacity-0" />
-      <div className="flex items-center gap-2 text-left">
-        <FileCode className={`w-3.5 h-3.5 shrink-0 ${isTypeScript ? 'text-blue-400' :
-            isJavaScript ? 'text-yellow-400' :
-              'text-zinc-500'
-          }`} />
-        <div className="flex flex-col min-w-0">
-          <span className="text-[10.5px] font-mono font-bold truncate max-w-[130px]" title={fileString}>
+      
+      {/* File Name with Status Icon */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <FileCode className={`w-3.5 h-3.5 shrink-0 ${isTypeScript ? 'text-blue-400' :
+              isJavaScript ? 'text-yellow-400' :
+                'text-zinc-500'
+            }`} />
+          <span className="text-[10.5px] font-mono font-bold truncate max-w-[120px]" title={fileString}>
             {filename}
           </span>
-          {complexity > 0 && (
-            <span className="text-[8px] text-zinc-500">
-              Complexity: {complexity}
-            </span>
+          {getStatusIcon() && (
+            <span className="text-[10px]">{getStatusIcon()}</span>
           )}
         </div>
+        {isTopFile && (
+          <span className="text-[8px] font-bold text-primary uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded">
+            Top
+          </span>
+        )}
       </div>
-      {(isGod || isDead) && (
-        <div className="flex gap-1 mt-1.5">
-          {isGod && (
-            <span className="text-[7px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wider">
-              God
-            </span>
-          )}
-          {isDead && (
-            <span className="text-[7px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 font-bold uppercase tracking-wider">
-              Dead
-            </span>
-          )}
+
+      {/* Route Details */}
+      {method && path && (
+        <div className="flex items-center gap-2 mt-1">
+          <span className={`text-[9px] font-bold ${getMethodColor(method)}`}>
+            {method.toUpperCase()}
+          </span>
+          <span className="text-[9px] text-zinc-500 truncate">{path}</span>
         </div>
       )}
+
+      {/* Metrics Row */}
+      <div className="flex items-center gap-3 mt-1.5 text-[9px] text-zinc-500">
+        {loc !== undefined && (
+          <span className="flex items-center gap-0.5">
+            📄 {loc} LOC
+          </span>
+        )}
+        {dependencies !== undefined && (
+          <span className="flex items-center gap-0.5">
+            🔗 {dependencies} deps
+          </span>
+        )}
+        {reqPerSecond !== undefined && (
+          <span className="flex items-center gap-0.5">
+            ⚡ {reqPerSecond} req/s
+          </span>
+        )}
+        {rating && (
+          <span className="flex items-center gap-0.5 text-amber-400">
+            ⭐ {rating}
+          </span>
+        )}
+      </div>
+
       <Handle type="source" position={Position.Bottom} className="opacity-0" />
     </div>
   );

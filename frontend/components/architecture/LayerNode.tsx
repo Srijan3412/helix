@@ -30,43 +30,95 @@ const LAYER_THEMES: Record<string, { bg: string; border: string; text: string; a
 };
 
 export default function LayerNode({ data }: { data: any }) {
-  const { label, count, isExpanded, health, confidence } = data;
+  const { label, count, isExpanded, health, confidence, hasMore, visibleCount, totalFiles, onShowMore } = data;
   const theme = LAYER_THEMES[label] || LAYER_THEMES.Services;
 
   return (
-    <div className={`p-4 rounded-2xl border bg-zinc-900/90 backdrop-blur-md transition-all duration-300 shadow-xl min-w-[220px] ${theme.border}`}>
+    <div className={`p-4 rounded-2xl border bg-zinc-900/90 backdrop-blur-md transition-all duration-300 shadow-xl min-w-[260px] ${theme.border}`}>
       <Handle type="target" position={Position.Top} className="opacity-0" />
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className={`p-1.5 rounded-lg ${theme.bg} ${theme.text}`}>
-            {LAYER_ICONS[label] || <Layers className="w-4 h-4" />}
+      {/* Header: Layer Name + File Count */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-xl ${theme.bg} ${theme.text}`}>
+            {LAYER_ICONS[label] || <Layers className="w-5 h-5" />}
           </div>
-          <div className="text-left">
-            <h4 className="text-xs font-bold text-zinc-100">{label}</h4>
-            <span className="text-[10px] text-muted-foreground">{count} files</span>
+          <div>
+            <h4 className="text-sm font-bold text-white tracking-wide">{label}</h4>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] text-zinc-400">📄 {count} files</span>
+              <span className="text-[10px] text-zinc-600">•</span>
+              <span className="text-[10px] text-zinc-400">📊 Top {visibleCount || count} shown</span>
+            </div>
           </div>
         </div>
-
-        <Badge className={`text-[9px] uppercase tracking-wider font-bold shrink-0 ${isExpanded ? "bg-primary text-background" : "bg-zinc-800 text-zinc-400"}`}>
+        <Badge className={`text-[9px] uppercase tracking-wider font-bold shrink-0 ${
+          isExpanded ? "bg-primary text-background" : "bg-zinc-800 text-zinc-400"
+        }`}>
           {isExpanded ? "Expanded" : "View"}
         </Badge>
       </div>
 
-      {(health > 0 || confidence > 0) && (
-        <div className="flex gap-3 mt-3 pt-3 border-t border-zinc-800/50">
-          {health > 0 && (
-            <div className="flex flex-col">
-              <span className="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Health</span>
-              <span className="text-[11px] font-bold text-zinc-200">{health}/100</span>
+      {/* Health & Confidence Section */}
+      {(health !== undefined || confidence !== undefined) && (
+        <div className="mt-3 space-y-1.5">
+          {health !== undefined && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-zinc-400 w-12">HEALTH</span>
+              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    health > 70 ? 'bg-emerald-400' :
+                    health > 40 ? 'bg-amber-400' :
+                    'bg-rose-400'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(0, health))}%` }}
+                />
+              </div>
+              <span className={`text-[10px] font-bold w-12 text-right ${
+                health > 70 ? 'text-emerald-400' :
+                health > 40 ? 'text-amber-400' :
+                'text-rose-400'
+              }`}>
+                {Math.round(health)}%
+              </span>
             </div>
           )}
-          {confidence > 0 && (
-            <div className="flex flex-col">
-              <span className="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Confidence</span>
-              <span className="text-[11px] font-bold text-zinc-200">{confidence < 1 ? Math.round(confidence * 100) : Math.round(confidence)}%</span>
+          {confidence !== undefined && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-zinc-400 w-12">CONF</span>
+              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(0, confidence))}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-bold text-primary w-12 text-right">
+                {Math.round(confidence)}%
+              </span>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Divider */}
+      <div className="mt-3 border-t border-border/30" />
+
+      {/* Show More Button */}
+      {hasMore && totalFiles > 0 && (
+        <div className="mt-3">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onShowMore?.();
+            }}
+            className="w-full text-[10px] text-primary hover:text-primary/80 font-medium flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-primary/5 hover:bg-primary/10 transition"
+          >
+            📂 View {Math.min(totalFiles - (visibleCount || 5), 5)} More Files
+            <span className="text-[8px] text-zinc-500">
+              ({totalFiles - (visibleCount || 5)} remaining)
+            </span>
+          </button>
         </div>
       )}
 
