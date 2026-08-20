@@ -137,7 +137,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
           </div>
           <div className="flex flex-wrap gap-1.5 justify-end">
             {godInfo && (
-              <Badge variant="destructive" className="text-[9px] font-bold">🔥 God Service</Badge>
+              <Badge variant="error" className="text-[9px] font-bold">🔥 God Service</Badge>
             )}
             {isDead && (
               <Badge variant="secondary" className="text-[9px] bg-zinc-700 text-white font-bold">💀 Dead Code</Badge>
