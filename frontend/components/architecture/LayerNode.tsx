@@ -52,9 +52,8 @@ export default function LayerNode({ data }: { data: any }) {
             </div>
           </div>
         </div>
-        <Badge className={`text-[9px] uppercase tracking-wider font-bold shrink-0 ${
-          isExpanded ? "bg-primary text-background" : "bg-zinc-800 text-zinc-400"
-        }`}>
+        <Badge className={`text-[9px] uppercase tracking-wider font-bold shrink-0 ${isExpanded ? "bg-primary text-background" : "bg-zinc-800 text-zinc-400"
+          }`}>
           {isExpanded ? "Expanded" : "View"}
         </Badge>
       </div>
@@ -67,19 +66,17 @@ export default function LayerNode({ data }: { data: any }) {
               <span className="text-[10px] text-zinc-400 w-12">HEALTH</span>
               <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-500 ${
-                    health > 70 ? 'bg-emerald-400' :
-                    health > 40 ? 'bg-amber-400' :
-                    'bg-rose-400'
-                  }`}
+                  className={`h-full transition-all duration-500 ${health > 70 ? 'bg-emerald-400' :
+                      health > 40 ? 'bg-amber-400' :
+                        'bg-rose-400'
+                    }`}
                   style={{ width: `${Math.min(100, Math.max(0, health))}%` }}
                 />
               </div>
-              <span className={`text-[10px] font-bold w-12 text-right ${
-                health > 70 ? 'text-emerald-400' :
-                health > 40 ? 'text-amber-400' :
-                'text-rose-400'
-              }`}>
+              <span className={`text-[10px] font-bold w-12 text-right ${health > 70 ? 'text-emerald-400' :
+                  health > 40 ? 'text-amber-400' :
+                    'text-rose-400'
+                }`}>
                 {Math.round(health)}%
               </span>
             </div>

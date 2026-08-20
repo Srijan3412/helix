@@ -109,23 +109,27 @@ export default function LayerView({ result }: { result: any }) {
     hasResult: !!result,
     resultKeys: result ? Object.keys(result) : []
   });
-
   const [expandedLayer, setExpandedLayer] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [selectedFileLayer, setSelectedFileLayer] = useState<string>("");
-  const [showRenameDialog, setShowRenameDialog] = useState<{ layer: string; currentName: string } | null>(null);
-  const [layerOverrides, setLayerOverrides] = useState<Record<string, string>>({});
-  const [fileOverrides, setFileOverrides] = useState<Record<string, string>>({});
-  const [visibleFiles, setVisibleFiles] = useState<Record<string, number>>({});
-  const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
-  const FILES_PER_PAGE = 20;
+  // State for visible file count per layer
+  const [visibleFileCount, setVisibleFileCount] = useState<Record<string, number>>({});
+  const FILES_PER_PAGE = 20; // Define this near TOP_FILES_TO_SHOW
+  const TOP_FILES_TO_SHOW = 5;
+  const showMoreFiles = (layerKey: string, totalFiles: number) => {
+    const currentCount = visibleFileCount[layerKey] || TOP_FILES_TO_SHOW;
+    const newCount = currentCount + FILES_PER_PAGE;
+    setVisibleFileCount(prev => ({
+      ...prev,
+      [layerKey]: Math.min(newCount, totalFiles)
+    }));
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [tourIdx, setTourIdx] = useState<number | null>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const tourTimerRef = useRef<any>(null);
   const [focusedNodes, setFocusedNodes] = useState<Set<string>>(new Set());
-  const [showAllFilesInLayer, setShowAllFilesInLayer] = useState<Set<string>>(new Set());
-  const TOP_FILES_TO_SHOW = 5;
+
 
   // Fetch categorized layers and pre-generated graph from backend
   const { data: architectureData, isLoading } = useQuery({
@@ -325,17 +329,9 @@ export default function LayerView({ result }: { result: any }) {
     setExpandedLayer(null);
   };
 
-  const toggleShowAllFiles = (layerKey: string) => {
-    setShowAllFilesInLayer(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(layerKey)) {
-        newSet.delete(layerKey);
-      } else {
-        newSet.add(layerKey);
-      }
-      return newSet;
-    });
-  };
+  // Add incremental loading function
+  // Either delete this function or replace with:
+
 
   // Construct ReactFlow nodes & edges dynamically
   const { nodes, edges } = useMemo(() => {
@@ -352,9 +348,7 @@ export default function LayerView({ result }: { result: any }) {
       console.log('✅ [LAYERED VIEW] Using pre-generated graph');
 
       // ✅ ADD CONSOLE LOG #12 - Inside the preGeneratedGraph block
-      const layerOrder = ["Routes", "Controllers", "Services", "Repositories", "Models", "Database"];
-      console.log('📋 [LAYERED VIEW] Layer order:', layerOrder);
-
+      const layerOrder = ["Routes", "Controllers", "Services", "Repositories", "Models", "Middleware", "Config", "Tests", "Utils", "Database"];
       const nodesByLayer: Record<string, any[]> = {};
       layerOrder.forEach(l => nodesByLayer[l] = []);
 
@@ -408,6 +402,7 @@ export default function LayerView({ result }: { result: any }) {
         const layerMetrics = layersData?.find((l: any) => l.name?.toLowerCase() === key);
         const health = layerMetrics?.health || 80;
         const confidence = layerMetrics?.confidence || 90;
+        const currentVisibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
 
         mappedNodes.push({
           id: `layer-${key}`,
@@ -419,10 +414,10 @@ export default function LayerView({ result }: { result: any }) {
             key,
             health,
             confidence,
-            hasMore: filesInLayer.length > TOP_FILES_TO_SHOW,
-            visibleCount: Math.min(filesInLayer.length, TOP_FILES_TO_SHOW),
+            hasMore: filesInLayer.length > currentVisibleCount,
+            visibleCount: currentVisibleCount,
             totalFiles: filesInLayer.length,
-            onShowMore: () => toggleShowAllFiles(key),
+            onShowMore: () => showMoreFiles(key, filesInLayer.length),
           },
           position: { x: 50 + colIdx * 250 - 25, y: 20 },
           style: {
@@ -456,9 +451,8 @@ export default function LayerView({ result }: { result: any }) {
         const sorted = [...filesInLayer].sort((a: any, b: any) =>
           (b.data?.complexity || b.data?.loc || 0) - (a.data?.complexity || a.data?.loc || 0)
         );
-        visibleNodesByLayer[key] = showAllFilesInLayer.has(key)
-          ? sorted
-          : sorted.slice(0, TOP_FILES_TO_SHOW);
+        const visibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
+        visibleNodesByLayer[key] = sorted.slice(0, Math.min(visibleCount, sorted.length));
       });
 
       (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
@@ -685,7 +679,7 @@ export default function LayerView({ result }: { result: any }) {
 
     console.log('🎯 [LAYERED VIEW] Manual flow nodes/edges generated:', flowNodes.length, flowEdges.length);
     return { nodes: flowNodes, edges: flowEdges };
-  }, [layers, expandedLayer, selectedFile, searchQuery, focusedNodes, tourIdx, result, showAllFilesInLayer]);
+  }, [layers, expandedLayer, selectedFile, searchQuery, focusedNodes, tourIdx, result]);
 
   // ✅ ADD CONSOLE LOG #13 - After nodes/edges useMemo
   console.log('🎨 [LAYERED VIEW] Final nodes/edges:', {
@@ -819,7 +813,6 @@ export default function LayerView({ result }: { result: any }) {
     if (node.id.startsWith("layer-")) {
       const key = node.data.key as string;
       setExpandedLayer(prev => (prev === key ? null : key));
-      toggleShowAllFiles(key);
       setTourIdx(null); // Cancel tour if clicked manually
     } else if (node.id.startsWith("file-")) {
       const filePath = node.id.replace("file-", "");
