@@ -57,7 +57,6 @@ function getFocusedNodes(
 
 const NODE_TYPES = {
   layerNode: LayerNode,
-  layerFileNode: LayerFileNode,
 };
 
 const LAYER_KEYS = ["routes", "controllers", "services", "repositories", "models", "middleware", "config", "tests", "utils", "database"];
@@ -404,6 +403,36 @@ export default function LayerView({ result }: { result: any }) {
         const confidence = layerMetrics?.confidence || 90;
         const currentVisibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
 
+        const fileDataArray = filesInLayer.map((node: any, index: number) => {
+          const isSelected = selectedFile === node.id;
+          return {
+            id: node.id,
+            name: node.label || node.id || "",
+            method: node.method || node.data?.method || "",
+            path: node.path || node.data?.path || "",
+            loc: node.data?.loc || node.data?.complexity || Math.floor(Math.random() * 300) + 50,
+            deps: node.data?.dependencies || Math.floor(Math.random() * 10) + 1,
+            reqPerSecond: node.reqPerSecond || node.data?.reqPerSecond || Math.floor(Math.random() * 20) + 1,
+            rating: (Math.random() * 2 + 3).toFixed(1),
+            isGod: node.data?.isGod || false,
+            isDead: node.data?.isDead || false,
+            isRoute: node.type === 'route' || !!node.method,
+            isDatabase: node.type === 'database' || node.id?.includes('DB:') || node.id?.includes('ENTITY:'),
+            isSelected: isSelected,
+            onSelect: () => {
+              setSelectedFile(node.id);
+              // Find layer for this file
+              for (const key of LAYER_KEYS) {
+                if ((layers[key] || []).includes(node.id)) {
+                  setSelectedFileLayer(LAYER_LABELS[key] || "Services");
+                  break;
+                }
+              }
+              setTourIdx(null);
+            },
+          };
+        });
+
         mappedNodes.push({
           id: `layer-${key}`,
           type: "layerNode",
@@ -418,6 +447,10 @@ export default function LayerView({ result }: { result: any }) {
             visibleCount: currentVisibleCount,
             totalFiles: filesInLayer.length,
             onShowMore: () => showMoreFiles(key, filesInLayer.length),
+            onToggle: () => {
+              // Toggle expansion - will be handled by LayerNode internal state
+            },
+            files: fileDataArray,
           },
           position: { x: 50 + colIdx * 250 - 25, y: 20 },
           style: {
@@ -444,57 +477,7 @@ export default function LayerView({ result }: { result: any }) {
       });
 
       // Map File Nodes - Progressive Disclosure
-      const visibleNodesByLayer: Record<string, any[]> = {};
-      actualLayers.forEach(layerName => {
-        const key = layerName.toLowerCase();
-        const filesInLayer = nodesByLayer[layerName] || [];
-        const sorted = [...filesInLayer].sort((a: any, b: any) =>
-          (b.data?.complexity || b.data?.loc || 0) - (a.data?.complexity || a.data?.loc || 0)
-        );
-        const visibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
-        visibleNodesByLayer[key] = sorted.slice(0, Math.min(visibleCount, sorted.length));
-      });
 
-      (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
-        let rawLayer = node.layer || "Services";
-        const layerName = layerMap[rawLayer.toLowerCase()] || rawLayer;
-        const key = layerName.toLowerCase();
-        const colIdx = actualLayers.indexOf(layerName);
-        if (colIdx === -1) return;
-
-        const visibleLayerFiles = visibleNodesByLayer[key] || [];
-        if (!visibleLayerFiles.includes(node)) return;
-
-        const rowIdx = visibleLayerFiles.indexOf(node);
-        const x = 50 + colIdx * 250;
-        const y = 130 + rowIdx * 90;
-
-        mappedNodes.push({
-          ...node,
-          type: 'layerFileNode',
-          position: { x, y },
-          data: {
-            ...node.data,
-            file: node.id || node.file || "",
-            label: node.label || node.id || "",
-            method: node.method || (node.data?.method || ''),
-            path: node.path || (node.data?.path || ''),
-            reqPerSecond: node.reqPerSecond || node.data?.reqPerSecond || Math.floor(Math.random() * 20) + 1,
-            loc: node.data?.loc || node.data?.complexity || Math.floor(Math.random() * 300) + 50,
-            dependencies: node.data?.dependencies || Math.floor(Math.random() * 10) + 1,
-            rating: (Math.random() * 2 + 3).toFixed(1),
-            isTopFile: rowIdx < TOP_FILES_TO_SHOW,
-            isGod: node.data?.isGod || false,
-            isDead: node.data?.isDead || false,
-            isSelected: selectedFile === node.id,
-          },
-          style: {
-            ...node.style,
-            opacity: 1.0,
-            width: 200,
-          }
-        });
-      });
 
       console.log('🎯 [LAYERED VIEW] Generated nodes:', mappedNodes.length, 'edges:', mappedEdges.length);
       if (mappedNodes.length === 0) {
@@ -542,6 +525,38 @@ export default function LayerView({ result }: { result: any }) {
       const layerId = `layer-${key}`;
       if (!seenNodeIds.has(layerId)) {
         seenNodeIds.add(layerId);
+        const fileDataArray = files.map((filePath: string) => {
+          const fileIsGod = result?.staticAnalysis?.godServices?.some((g: any) => g.file === filePath);
+          const fileIsDead = result?.staticAnalysis?.deadCode?.some((d: any) => d.file === filePath);
+          let complexity = 0;
+          if (result?.staticAnalysis?.complexity) {
+            const match = result.staticAnalysis.complexity.find((c: any) => c.file === filePath);
+            if (match) complexity = match.score;
+          }
+
+          return {
+            id: filePath,
+            name: filePath.split(/[\\/]/).pop() || filePath,
+            loc: complexity || Math.floor(Math.random() * 300) + 50,
+            deps: Math.floor(Math.random() * 10) + 1,
+            reqPerSecond: Math.floor(Math.random() * 20) + 1,
+            rating: (Math.random() * 2 + 3).toFixed(1),
+            isGod: fileIsGod,
+            isDead: fileIsDead,
+            isRoute: false,
+            isDatabase: false,
+            isSelected: selectedFile === filePath,
+            onSelect: () => {
+              setSelectedFile(filePath);
+              setSelectedFileLayer(LAYER_LABELS[key] || "Services");
+              setTourIdx(null);
+            },
+          };
+        });
+
+        const currentVisibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
+
+
         flowNodes.push({
           id: layerId,
           type: "layerNode",
@@ -552,6 +567,11 @@ export default function LayerView({ result }: { result: any }) {
             key,
             health,
             confidence,
+            hasMore: files.length > currentVisibleCount,
+            visibleCount: currentVisibleCount,
+            totalFiles: files.length,
+            onShowMore: () => showMoreFiles(key, files.length),
+            onToggle: () => { },
           },
           position: { x: xCenter - 110, y: currentY },
           style: {
@@ -567,91 +587,13 @@ export default function LayerView({ result }: { result: any }) {
 
 
       // If this layer is expanded, place its files vertically below it
-      if (isExpanded && files.length > 0) {
-        // Connect the layer card to the first file node
-        flowEdges.push({
-          id: `edge-layer-to-first-${key}`,
-          source: `layer-${key}`,
-          target: `file-${files[0]}`,
-          animated: true,
-          style: {
-            stroke: "hsl(var(--primary, 60 100% 50%))",
-            strokeWidth: 2.0,
-            opacity: 0.8,
-          },
-        });
 
-        // Add the Layer node
-
-
-
-
-
-        for (let fIdx = 0; fIdx < files.length; fIdx++) {
-          const file = files[fIdx];
-          const fileIsGod = result?.staticAnalysis?.godServices?.some((g: any) => g.file === file);
-          const fileIsDead = result?.staticAnalysis?.deadCode?.some((d: any) => d.file === file);
-
-          let complexity = 0;
-          if (result?.staticAnalysis?.complexity) {
-            const match = result.staticAnalysis.complexity.find((c: any) => c.file === file);
-            if (match) complexity = match.score;
-          }
-
-          // File Node opacity
-          let fileOpacity = opacity;
-          if (hasSearch && focusedNodes.size > 0) {
-            // ✅ FIX: Use full node ID
-            fileOpacity = focusedNodes.has(`file-${file}`) ? 1.0 : 0.18;
-          }
-
-          const fileId = `file-${file}`;
-          if (!seenNodeIds.has(fileId)) {
-            seenNodeIds.add(fileId);
-
-            flowNodes.push({
-              id: fileId,
-              type: "layerFileNode",
-              data: {
-                file,
-                complexity,
-                isGod: fileIsGod,
-                isDead: fileIsDead,
-                isSelected: selectedFile === file,
-              },
-              position: { x: xCenter - 85, y: currentY },
-              style: {
-                width: 170,
-                opacity: fileOpacity,
-                transition: "opacity 250ms ease, border-color 250ms ease",
-              },
-            });
-          }
-
-
-
-
-
-          // Connect files sequentially
-          if (fIdx > 0) {
-            flowEdges.push({
-              id: `edge-file-${files[fIdx - 1]}-to-${file}`,
-              source: `file-${files[fIdx - 1]}`,
-              target: `file-${file}`,
-              style: { stroke: "#3f3f46", strokeWidth: 1.5, opacity: 0.5 },
-            });
-          }
-
-          currentY += 60; // vertical spacing between files
-        }
-        currentY += 30; // space after expanded list
-      }
 
       // Connect this layer to next layer
       if (idx < LAYER_KEYS.length - 1) {
         const nextKey = LAYER_KEYS[idx + 1];
         // Connect either from the last file (if expanded) or from the layer card itself
-        const sourceNodeId = (isExpanded && files.length > 0) ? `file-${files[files.length - 1]}` : `layer-${key}`;
+        const sourceNodeId = `layer-${key}`;
 
         let edgeDimmed = false;
         if (isTourActive) {
@@ -759,15 +701,7 @@ export default function LayerView({ result }: { result: any }) {
           let node = nodes.find((n: any) => n.id === `layer-${currentKey}`);
 
           // If no header, try to find first file in that layer
-          if (!node) {
-            const layerFiles = nodes.filter((n: any) =>
-              n.id.startsWith(`file-`) &&
-              n.data?.layer?.toLowerCase() === currentKey
-            );
-            if (layerFiles.length > 0) {
-              node = layerFiles[0];
-            }
-          }
+
 
           if (node) {
             const nodeWidth = node.style?.width || 220;
@@ -795,36 +729,39 @@ export default function LayerView({ result }: { result: any }) {
   useEffect(() => {
     if (reactFlowInstance) {
       if (selectedFile) {
-        const node = nodes.find((n: any) => n.id === `file-${selectedFile}`);
-        if (node) {
-          reactFlowInstance.setCenter(node.position.x + 85, node.position.y + 25, { zoom: 1.2, duration: 800 });
+        // Find the layer that contains this file and center on it
+        // Since files are inside LayerNode, we center on the layer node
+        for (const key of LAYER_KEYS) {
+          if ((layers[key] || []).includes(selectedFile)) {
+            const layerNode = nodes.find((n: any) => n.id === `layer-${key}`);
+            if (layerNode) {
+              reactFlowInstance.setCenter(
+                layerNode.position.x + 110,
+                layerNode.position.y + 45,
+                { zoom: 1.1, duration: 800 }
+              );
+            }
+            break;
+          }
         }
       } else if (expandedLayer) {
         const node = nodes.find((n: any) => n.id === `layer-${expandedLayer}`);
         if (node) {
-          reactFlowInstance.setCenter(node.position.x + 110, node.position.y + 45, { zoom: 1.1, duration: 800 });
+          reactFlowInstance.setCenter(
+            node.position.x + 110,
+            node.position.y + 45,
+            { zoom: 1.1, duration: 800 }
+          );
         }
       }
     }
-  }, [selectedFile, expandedLayer, reactFlowInstance, nodes]);
+  }, [selectedFile, expandedLayer, reactFlowInstance, nodes, layers]);
 
   // Handle node clicks
   const onNodeClick = (_event: React.MouseEvent, node: ReactFlowNode) => {
     if (node.id.startsWith("layer-")) {
       const key = node.data.key as string;
       setExpandedLayer(prev => (prev === key ? null : key));
-      setTourIdx(null); // Cancel tour if clicked manually
-    } else if (node.id.startsWith("file-")) {
-      const filePath = node.id.replace("file-", "");
-      setSelectedFile(filePath);
-
-      // Figure out which layer this file belongs to
-      for (const key of LAYER_KEYS) {
-        if ((layers[key] || []).includes(filePath)) {
-          setSelectedFileLayer(LAYER_LABELS[key] || "Services");
-          break;
-        }
-      }
       setTourIdx(null); // Cancel tour if clicked manually
     }
   };
