@@ -399,11 +399,52 @@ export default function LayerView({ result }: { result: any }) {
 
         // Get layer metrics from backend data if available
         const layerMetrics = layersData?.find((l: any) => l.name?.toLowerCase() === key);
-        const health = layerMetrics?.health || 80;
-        const confidence = layerMetrics?.confidence || 90;
-        const currentVisibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
+        let health = layerMetrics?.health || 0;
+        let confidence = layerMetrics?.confidence || 0;
 
-        const fileDataArray = filesInLayer.map((node: any, index: number) => {
+        // Fallback: calculate from files in layer
+        if (!health && filesInLayer.length > 0) {
+          // Use average complexity as health proxy
+          let totalComplexity = 0;
+          let totalLoc = 0;
+          let filesWithMetrics = 0;
+
+          filesInLayer.forEach((f: any) => {
+            const complexity = f.data?.complexity || f.data?.loc || 0;
+            const loc = f.data?.loc || f.data?.lineCount || 0;
+            if (complexity > 0) {
+              totalComplexity += complexity;
+              filesWithMetrics++;
+            }
+            if (loc > 0) {
+              totalLoc += loc;
+            }
+          });
+
+          // Calculate health based on complexity (lower is better)
+          if (filesWithMetrics > 0) {
+            const avgComplexity = totalComplexity / filesWithMetrics;
+            // Map complexity to health score: 0-50 complexity → 100-0 health
+            health = Math.max(10, Math.min(100, 100 - avgComplexity));
+          } else {
+            health = 50; // Default if no metrics
+          }
+
+          // Calculate confidence based on file count and metrics availability
+          const hasMetrics = filesInLayer.some((f: any) => f.data?.complexity || f.data?.loc);
+          confidence = hasMetrics ? 60 + Math.min(30, filesInLayer.length * 2) : 40;
+        }
+
+        // If still no health, use file count as proxy
+        if (!health) {
+          health = Math.min(85, 50 + filesInLayer.length * 2);
+        }
+        if (!confidence) {
+          confidence = 60 + Math.min(30, filesInLayer.length * 1.5);
+        }
+        const currentVisibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
+        const visibleFiles = filesInLayer.slice(0, currentVisibleCount);
+        const fileDataArray = visibleFiles.map((node: any, index: number) => {
           const isSelected = selectedFile === node.id;
           return {
             id: node.id,
@@ -421,7 +462,6 @@ export default function LayerView({ result }: { result: any }) {
             isSelected: isSelected,
             onSelect: () => {
               setSelectedFile(node.id);
-              // Find layer for this file
               for (const key of LAYER_KEYS) {
                 if ((layers[key] || []).includes(node.id)) {
                   setSelectedFileLayer(LAYER_LABELS[key] || "Services");
@@ -495,6 +535,7 @@ export default function LayerView({ result }: { result: any }) {
     const isTourActive = tourIdx !== null;
 
     let currentY = 30;
+    const LAYER_SPACING = 40;
     const xCenter = 220;
 
     for (let idx = 0; idx < LAYER_KEYS.length; idx++) {
@@ -583,7 +624,7 @@ export default function LayerView({ result }: { result: any }) {
         });
       }
 
-      currentY += 90; // space below layer card
+      currentY += 90 + LAYER_SPACING; // space below layer card
 
 
       // If this layer is expanded, place its files vertically below it
@@ -609,6 +650,14 @@ export default function LayerView({ result }: { result: any }) {
           source: sourceNodeId,
           target: `layer-${nextKey}`,
           animated: !edgeDimmed,
+          label: "⬇",
+          labelStyle: {
+            fill: edgeDimmed ? "#3f3f46" : "hsl(var(--primary))",
+            fontSize: 16,
+            fontWeight: "bold",
+          },
+          labelBgStyle: { fill: "transparent" },
+          labelShowBg: false,
           style: {
             stroke: edgeDimmed ? "#3f3f46" : "hsl(var(--primary, 60 100% 50%))",
             strokeWidth: edgeDimmed ? 1.5 : 2.5,
@@ -700,8 +749,14 @@ export default function LayerView({ result }: { result: any }) {
         if (reactFlowInstance) {
           let node = nodes.find((n: any) => n.id === `layer-${currentKey}`);
 
-          // If no header, try to find first file in that layer
-
+          // If no layer header found, try to find any node in that layer
+          if (!node) {
+            // Look for a layer node by checking data
+            node = nodes.find((n: any) =>
+              n.type === 'layerNode' &&
+              n.data?.key?.toLowerCase() === currentKey
+            );
+          }
 
           if (node) {
             const nodeWidth = node.style?.width || 220;

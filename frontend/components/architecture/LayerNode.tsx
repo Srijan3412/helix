@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { Badge } from "../ui/badge";
+import LayerFileRow from "./LayerFileRow";
 import {
   Shield,
   Network,
@@ -176,14 +177,14 @@ function FileRow({
   // ── File Icon ──
   const getFileIcon = () => {
     if (isDatabase) {
-      return <Database className="w-3 h-3 shrink-0 text-rose-400" />;
+      return <Database className="w-3.5 h-3.5 shrink-0 text-rose-400" />;
     }
     if (isRoute || method) {
-      return <Route className="w-3 h-3 shrink-0 text-blue-400" />;
+      return <Route className="w-3.5 h-3.5 shrink-0 text-blue-400" />;
     }
     const ext = name.split(".").pop()?.toLowerCase();
     if (ext === "ts" || ext === "tsx") {
-      return <FileCode className="w-3 h-3 shrink-0 text-blue-400" />;
+      return <FileCode className="w-3.5 h-3.5 shrink-0 text-blue-400" />;
     }
     if (ext === "js" || ext === "jsx") {
       return <FileCode className="w-3 h-3 shrink-0 text-yellow-400" />;
@@ -194,7 +195,7 @@ function FileRow({
   return (
     <div
       className={`
-        flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer
+        flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer
         transition-all duration-150 text-[10px]
         ${isSelected
           ? "bg-primary/10 border border-primary/30"
@@ -217,7 +218,7 @@ function FileRow({
       {getFileIcon()}
 
       {/* File Name */}
-      <span className="font-mono text-[10px] text-zinc-200 truncate max-w-[100px]" title={name}>
+      <span className="font-mono text-[10px] text-zinc-200 truncate max-w-[140px]" title={name}>
         {name}
       </span>
 
@@ -238,25 +239,26 @@ function FileRow({
       {/* Metrics */}
       <div className="flex items-center gap-1.5 ml-auto shrink-0">
         {loc !== undefined && loc > 0 && (
-          <span className="flex items-center gap-0.5 text-[8px] text-zinc-500">
+          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
+
             <span>📄</span>
             <span className={loc > 300 ? "text-amber-400" : "text-zinc-400"}>{loc}</span>
           </span>
         )}
         {deps !== undefined && deps > 0 && (
-          <span className="flex items-center gap-0.5 text-[8px] text-zinc-500">
+          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
             <span>🔗</span>
             <span className={deps > 10 ? "text-amber-400" : "text-zinc-400"}>{deps}</span>
           </span>
         )}
         {reqPerSecond !== undefined && reqPerSecond > 0 && (
-          <span className="flex items-center gap-0.5 text-[8px] text-zinc-500">
+          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
             <span>⚡</span>
             <span className="text-zinc-400">{reqPerSecond}</span>
           </span>
         )}
         {rating && (
-          <span className="flex items-center gap-0.5 text-[8px] text-amber-400">
+          <span className="flex items-center gap-0.5 text-[9px] text-amber-400">
             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
             {rating}
           </span>
@@ -344,7 +346,7 @@ export default function LayerNode({ data }: LayerNodeProps) {
     <div
       className={`
         p-4 rounded-2xl border bg-zinc-900/90 backdrop-blur-md
-        transition-all duration-300 shadow-xl min-w-[320px] max-w-[400px]
+        transition-all duration-300 shadow-xl min-w-[360px] max-w-[440px]
         ${theme.border}
         hover:shadow-2xl hover:border-opacity-80
       `}
@@ -433,25 +435,31 @@ export default function LayerNode({ data }: LayerNodeProps) {
           {/* File Rows */}
           <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700">
             {displayFiles.map((file, index) => (
-              <FileRow
+              <LayerFileRow
                 key={file.id || index}
                 rank={index + 1}
                 name={file.name}
                 method={file.method}
                 path={file.path}
                 loc={file.loc}
-                deps={file.deps}
+                dependencies={file.deps}
                 reqPerSecond={file.reqPerSecond}
                 rating={file.rating}
                 isGod={file.isGod}
                 isDead={file.isDead}
-                isRoute={file.isRoute}
-                isDatabase={file.isDatabase}
+                type={file.isRoute ? "route" : file.isDatabase ? "database" : "file"}
                 isSelected={file.isSelected}
                 onClick={file.onSelect}
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── NO FILES STATE ── */}
+      {!isCollapsed && displayFiles.length === 0 && (
+        <div className="mt-3 text-center py-4">
+          <span className="text-[10px] text-zinc-500">No files in this layer</span>
         </div>
       )}
 
