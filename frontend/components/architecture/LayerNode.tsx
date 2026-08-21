@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { Badge } from "../ui/badge";
-import LayerFileRow from "./LayerFileRow";
+import LayerFileRow from "./LayerFileNode";
 import {
   Shield,
   Network,
