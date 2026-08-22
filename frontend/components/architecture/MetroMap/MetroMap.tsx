@@ -89,8 +89,91 @@ export default function MetroMap({
   onSelectTraceRouteId,
 }: MetroMapProps) {
   const { currentJobId } = useAnalysisStore();
-  
+
+  // ── Filter Controls ──
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const toggleFilter = (featureId: string) => {
+    setActiveFilters(prev =>
+      prev.includes(featureId)
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // SCROLL CONTROLS
+  // ─────────────────────────────────────────────────────────────
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    setScrollProgress(maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0);
+    setIsAtStart(scrollLeft === 0);
+    setIsAtEnd(scrollLeft >= maxScroll - 1);
+  };
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    const scrollAmount = Math.min(600, scrollContainerRef.current.clientWidth * 0.8);
+    scrollContainerRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  };
+
+
+  // ── AFTER featureLines definition (around line ~185)
+  const totalStations = Object.values(featureLines).reduce((acc, arr) => acc + arr.length, 0);
+
+  // Add this before ReactFlow:
+  <div className="flex items-center gap-2 mb-3 px-4">
+    <div className="flex-1 flex items-center gap-2 bg-zinc-900/60 border border-border/60 rounded-xl px-3 py-1.5">
+      <span className="text-zinc-500 text-[10px]">🔍</span>
+      <input
+        type="text"
+        placeholder="Search stations..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="bg-transparent text-[10px] text-zinc-300 focus:outline-none flex-1"
+      />
+    </div>
+
+    <button
+      className={`px-2 py-1 rounded text-[8px] font-bold transition ${activeFilters.length === 0 ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-400'
+        }`}
+      onClick={() => setActiveFilters([])}
+    >
+      All
+    </button>
+
+    {features.slice(0, 5).map(f => (
+      <button
+        key={f.id}
+        className="px-2 py-1 rounded text-[8px] font-bold transition"
+        style={{
+          backgroundColor: activeFilters.includes(f.id) ? f.color : '#27272a',
+          color: activeFilters.includes(f.id) ? 'white' : '#a1a1aa',
+        }}
+        onClick={() => toggleFilter(f.id)}
+      >
+        {f.name.substring(0, 6)}
+      </button>
+    ))}
+  </div>
+
+  // ── Current Station Context ──
+  const [currentStation, setCurrentStation] = useState<{ featureId: string, index: number } | null>(null);
+
+  // ── Scroll State ──
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isAtStart, setIsAtStart] = useState(true);
+  const [isAtEnd, setIsAtEnd] = useState(false);
+
   // Interactive UI State
+
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
@@ -129,8 +212,8 @@ export default function MetroMap({
     if (type === "db") return "database";
     const lower = name.toLowerCase();
     if (
-      lower.includes("middleware") || 
-      lower.includes("guard") || 
+      lower.includes("middleware") ||
+      lower.includes("guard") ||
       (lower.includes("auth") && (lower.includes("middleware") || lower.includes("guard") || lower.includes("jwt")))
     ) {
       return "middleware";
@@ -216,6 +299,38 @@ export default function MetroMap({
     return lines;
   }, [features]);
 
+  // ─────────────────────────────────────────────────────────────
+  // STATION NUMBERING SYSTEM
+  // ─────────────────────────────────────────────────────────────
+  const getStationNumber = (feature: FeatureFlow, index: number) => {
+    const prefix = feature.name.substring(0, 2).toUpperCase();
+    return `${prefix}-${String(index + 1).padStart(2, '0')}`;
+  };
+
+  // ── Get station type emoji ──
+  const getStationEmoji = (type: string) => {
+    switch (type) {
+      case 'route': return '🚉';
+      case 'middleware': return '🛡️';
+      case 'controller': return '🎮';
+      case 'service': return '⚙️';
+      case 'repository': return '📦';
+      case 'database': return '🗄️';
+      default: return '📍';
+    }
+  };
+
+  // ── Get station display name ──
+  const getStationDisplayName = (station: any) => {
+    if (station.type === 'route') {
+      return station.label || `${station.method} ${station.path}`;
+    }
+    if (station.type === 'file') {
+      return station.raw?.split(/[\\/]/).pop() || station.label;
+    }
+    return station.label || station.raw || '';
+  };
+
   // Compute Layout Positions (Y by feature index, X by step index with clumping alignment)
   const positions = useMemo(() => {
     const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
@@ -232,7 +347,7 @@ export default function MetroMap({
 
     // Share keys index
     const keyToInstances: Record<string, { featureId: string; stationId: string }[]> = {};
-    features.forEach((feature) => {
+    filteredFeatures.forEach((feature) => {
       const stations = featureLines[feature.id] || [];
       stations.forEach((station) => {
         if (!keyToInstances[station.key]) {
@@ -280,18 +395,81 @@ export default function MetroMap({
     }
 
     return posMap;
+  }, [filteredFeatures, featureLines]);
+
+
+  // ─────────────────────────────────────────────────────────────
+  // INTERCHANGE STATION DETECTION
+  // ─────────────────────────────────────────────────────────────
+  const interchangeStations = useMemo(() => {
+    const stationMap: Record<string, { featureIds: string[], stations: any[] }> = {};
+
+    features.forEach(feature => {
+      const stations = featureLines[feature.id] || [];
+      stations.forEach(station => {
+        const key = station.raw || station.label;
+        if (!stationMap[key]) {
+          stationMap[key] = { featureIds: [], stations: [] };
+        }
+        if (!stationMap[key].featureIds.includes(feature.id)) {
+          stationMap[key].featureIds.push(feature.id);
+        }
+        stationMap[key].stations.push({ ...station, featureId: feature.id });
+      });
+    });
+
+    // Return stations used by 2+ features
+    return Object.entries(stationMap)
+      .filter(([_, data]) => data.featureIds.length > 1)
+      .map(([key, data]) => ({
+        key,
+        featureIds: data.featureIds,
+        stations: data.stations,
+        features: data.featureIds
+          .map(id => features.find(f => f.id === id))
+          .filter(Boolean) as FeatureFlow[],
+      }));
   }, [features, featureLines]);
 
   // 2. Compute ReactFlow Nodes and Edges
   const { nodes, edges } = useMemo(() => {
-    if (features.length === 0) return { nodes: [], edges: [] };
+
+    // ── Filter features based on active filters and search ──
+    const filteredFeatures = useMemo(() => {
+      let result = features;
+
+      // Filter by active filters
+      if (activeFilters.length > 0) {
+        result = result.filter(f => activeFilters.includes(f.id));
+      }
+
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        result = result.filter(f => {
+          // Check feature name
+          if (f.name.toLowerCase().includes(query)) return true;
+
+          // Check stations in this feature
+          const stations = featureLines[f.id] || [];
+          return stations.some(s =>
+            s.label.toLowerCase().includes(query) ||
+            s.raw?.toLowerCase().includes(query)
+          );
+        });
+      }
+
+      return result;
+    }, [features, activeFilters, searchQuery, featureLines]);
+
+    if (filteredFeatures.length === 0) return { nodes: [], edges: [] };
 
     const flowNodes: ReactFlowNode[] = [];
     const flowEdges: ReactFlowEdge[] = [];
 
     // Find shared keys index for transfer/highlight
     const keyToInstances: Record<string, { featureId: string; stationId: string }[]> = {};
-    features.forEach((feature) => {
+    filteredFeatures.forEach((feature) => {
       const stations = featureLines[feature.id] || [];
       stations.forEach((station) => {
         if (!keyToInstances[station.key]) {
@@ -308,7 +486,7 @@ export default function MetroMap({
     const activeFeatureId = selectedFeature || hoveredFeature;
 
     // Build Station Nodes
-    features.forEach((feature) => {
+    filteredFeatures.forEach((feature) => {
       const stations = featureLines[feature.id] || [];
       const isActiveLine = activeFeatureId === feature.id;
 
@@ -325,10 +503,10 @@ export default function MetroMap({
 
         // Custom Highlight and Glow Overlay Styling
         let glowStyle: React.CSSProperties = {};
-        
+
         // Check if node is active in Journey
         const isJourneyActiveNode = journeyActive && journeyNodeId === station.id;
-        
+
         if (isJourneyActiveNode) {
           glowStyle = {
             boxShadow: `0 0 25px ${feature.color}, inset 0 0 10px ${feature.color}`,
@@ -352,6 +530,7 @@ export default function MetroMap({
 
         const isSelectedNode = selectedStationId === station.id;
 
+        // ── London Underground Style Node ──
         flowNodes.push({
           id: station.id,
           type: "default",
@@ -364,32 +543,45 @@ export default function MetroMap({
                   setInspectorFeature(feature);
                   setSelectedFeature(null);
                 }}
-                className={`p-3 rounded-xl border text-center min-w-[170px] bg-zinc-950/90 backdrop-blur-md transition-all duration-300 ${
-                  isSelectedNode
-                    ? "border-primary ring-2 ring-primary bg-primary/10 scale-105"
-                    : "border-border/60 hover:border-primary/50"
-                }`}
-                style={{
-                  opacity: isNodeActive ? 1.0 : 0.25,
-                  cursor: "pointer",
-                  ...glowStyle
-                }}
+                className="flex flex-col items-center group cursor-pointer min-w-[50px]"
               >
-                <div className="flex items-center gap-1.5 justify-center mb-1">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: feature.color }} />
-                  {getStationIcon(station.type)}
-                  <span className="text-[7.5px] font-bold uppercase tracking-widest text-zinc-450">{station.type}</span>
+                <div className="relative">
+                  {/* Outer ring - London Underground style */}
+                  <div
+                    className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${isSelectedNode || isJourneyActiveNode ? 'scale-110 shadow-lg' : ''
+                      }`}
+                    style={{
+                      borderColor: feature.color,
+                      backgroundColor: isSelectedNode || isJourneyActiveNode ? `${feature.color}20` : 'transparent'
+                    }}
+                  >
+                    {/* Inner circle */}
+                    <div
+                      className={`w-5 h-5 rounded-full transition-all duration-300 ${isSelectedNode || isJourneyActiveNode ? 'scale-110' : ''
+                        }`}
+                      style={{
+                        backgroundColor: isJourneyActiveNode ? '#ffffff' : feature.color,
+                      }}
+                    />
+                  </div>
+                  {/* Station number */}
+                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[5px] text-zinc-500 font-mono whitespace-nowrap">
+                    {getStationNumber(feature, stations.indexOf(station))}
+                  </div>
                 </div>
-                <div className="text-[10px] font-mono font-bold truncate text-zinc-200" title={station.raw}>
-                  {station.label}
-                </div>
-                {healthGlowActive && (station.type !== "route" && station.type !== "database") && (
-                  <div className="text-[7.5px] mt-1 font-semibold uppercase tracking-wider">
-                    {hasHighComplexity ? (
-                      <span className="text-red-400">Risk: {complexity} (High)</span>
-                    ) : (
-                      <span className="text-emerald-400">Complexity: {complexity || "Low"}</span>
-                    )}
+                {/* Station label */}
+                <span className="text-[6px] text-zinc-400 mt-3 truncate max-w-[50px] text-center">
+                  {getStationDisplayName(station)}
+                </span>
+                {/* Station type indicator */}
+                <span className="text-[5px] text-zinc-600 mt-0.5">
+                  {getStationEmoji(station.type)}
+                </span>
+                {/* Health indicator (if active) */}
+                {healthGlowActive && station.type !== "route" && station.type !== "database" && (
+                  <div className={`text-[5px] mt-0.5 ${getComplexityScore(station.raw) > 15 ? 'text-red-400' : 'text-emerald-400'
+                    }`}>
+                    {getComplexityScore(station.raw) > 15 ? '⚠️' : '✓'}
                   </div>
                 )}
               </div>
@@ -402,27 +594,43 @@ export default function MetroMap({
     });
 
     // Build Horizontal Tube Lines (Thickness based on feature size)
-    features.forEach((feature) => {
+    filteredFeatures.forEach((feature) => {
       const stations = featureLines[feature.id] || [];
       const isActiveLine = activeFeatureId === feature.id;
       const isLineDimmed = hasHighlight && !isActiveLine;
-      
+
       // Calculate Line Thickness based on file count
       const lineThickness = Math.max(3, Math.min(8, 3 + (feature.files.length + feature.routes.length) * 0.25));
 
+      // ── Thick Line Connections with 🚇 Label ──
       for (let i = 0; i < stations.length - 1; i++) {
         const sNode = stations[i];
         const tNode = stations[i + 1];
+
+        const isActiveEdge = isActiveLine || (journeyActive && journeyFeatureId === feature.id);
+        const isEdgeDimmed = hasHighlight && !isActiveLine;
+
         flowEdges.push({
           id: `edge:${feature.id}:${sNode.id}:${tNode.id}`,
           source: sNode.id,
           target: tNode.id,
-          animated: isActiveLine || (journeyActive && journeyFeatureId === feature.id),
+          type: 'smoothstep',
+          animated: isActiveEdge,
+          ...(isActiveEdge && {
+            label: '🚇',
+            labelStyle: {
+              fill: feature.color,
+              fontSize: 12,
+              fontWeight: 'bold',
+            },
+            labelBgStyle: { fill: 'transparent' },
+            labelShowBg: false,
+          }),
           style: {
-            stroke: feature.color,
-            strokeWidth: isActiveLine ? lineThickness + 2 : lineThickness,
-            opacity: isLineDimmed ? 0.15 : 0.8,
-            transition: "stroke-width 0.2s, opacity 0.2s"
+            stroke: isEdgeDimmed ? `${feature.color}30` : feature.color,
+            strokeWidth: isActiveEdge ? 6 : 4,
+            opacity: isEdgeDimmed ? 0.3 : 0.9,
+            transition: "stroke-width 0.3s, opacity 0.3s"
           }
         });
       }
@@ -462,8 +670,7 @@ export default function MetroMap({
     });
 
     return { nodes: flowNodes, edges: flowEdges };
-  }, [features, featureLines, positions, hoveredFeature, selectedFeature, selectedStationId, healthGlowActive, journeyActive, journeyNodeId, result]);
-
+  }, [filteredFeatures, featureLines, positions, hoveredFeature, selectedFeature, selectedStationId, healthGlowActive, journeyActive, journeyNodeId, result, activeFilters, searchQuery]);
   // Journey Controller Engine
   const startJourney = (featureId: string) => {
     if (journeyTimerRef.current) clearInterval(journeyTimerRef.current);
@@ -615,12 +822,144 @@ export default function MetroMap({
 
   return (
     <div className="h-[600px] w-full text-left relative">
+
+      {/* ── FILTER CONTROLS ── */}
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <div className="flex-1 flex items-center gap-2 bg-zinc-900/60 border border-border/60 rounded-xl px-3 py-1.5">
+          <span className="text-zinc-500 text-[10px]">🔍</span>
+          <input
+            type="text"
+            placeholder="Search stations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-transparent text-[10px] text-zinc-300 focus:outline-none flex-1"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="text-zinc-500 hover:text-white text-[10px]"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        <button
+          className={`px-2 py-1 rounded text-[8px] font-bold transition whitespace-nowrap ${activeFilters.length === 0 ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-400'
+            }`}
+          onClick={() => setActiveFilters([])}
+        >
+          All
+        </button>
+
+        {features.slice(0, 6).map(f => (
+          <button
+            key={f.id}
+            className="px-2 py-1 rounded text-[8px] font-bold transition whitespace-nowrap"
+            style={{
+              backgroundColor: activeFilters.includes(f.id) ? f.color : '#27272a',
+              color: activeFilters.includes(f.id) ? 'white' : '#a1a1aa',
+              border: activeFilters.includes(f.id) ? `1px solid ${f.color}` : '1px solid transparent',
+            }}
+            onClick={() => toggleFilter(f.id)}
+          >
+            {f.name.substring(0, 6)}
+          </button>
+        ))}
+
+        {features.length > 6 && (
+          <span className="text-[8px] text-zinc-500">+{features.length - 6} more</span>
+        )}
+      </div>
+
       {/* ReactFlow Canvas Column */}
+      {/* ── SCROLLABLE CONTAINER ── */}
       <div className="w-full h-full rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative">
+        {/* Left scroll button */}
+        {!isAtStart && (
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-zinc-900/90 rounded-full border border-border/60 hover:bg-zinc-800 transition shadow-lg"
+          >
+            <span className="text-zinc-400 text-xs">◀</span>
+          </button>
+        )}
+
+        {/* Scrollable content */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="w-full h-full overflow-x-auto overflow-y-hidden scrollbar-hide px-10"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          <div className="min-w-max h-full">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onInit={(instance) => setReactFlowInstance(instance)}
+              fitView
+              panOnDrag={false}
+              zoomOnScroll
+              nodesDraggable={false}
+              nodesConnectable={false}
+              elementsSelectable={false}
+              proOptions={{ hideAttribution: true }}
+            >
+              <Background color="#222" gap={20} />
+              <Controls />
+            </ReactFlow>
+          </div>
+        </div>
+
+        {/* Right scroll button */}
+        {!isAtEnd && (
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-zinc-900/90 rounded-full border border-border/60 hover:bg-zinc-800 transition shadow-lg"
+          >
+            <span className="text-zinc-400 text-xs">▶</span>
+          </button>
+        )}
+
+        {/* Scroll progress bar */}
+        <div className="absolute bottom-2 left-4 right-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary/60 transition-all duration-300 rounded-full"
+                style={{ width: `${scrollProgress}%` }}
+              />
+            </div>
+            <span className="text-[7px] text-zinc-500 whitespace-nowrap">
+              {Math.round(scrollProgress)}%
+            </span>
+          </div>
+        </div>
+
+        {/* ── INTERCHANGE STATIONS ── */}
+        {interchangeStations.length > 0 && (
+          <div className="absolute bottom-12 left-4 right-4 z-10">
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              {interchangeStations.slice(0, 4).map((is, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-zinc-800/60 border border-white/10"
+                >
+                  <span className="text-[6px] text-white font-bold">T</span>
+                  {is.features.map(f => (
+                    <div key={f.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: f.color }} />
+                  ))}
+                </div>
+              ))}
+              {interchangeStations.length > 4 && (
+                <span className="text-[6px] text-zinc-500">+{interchangeStations.length - 4} more</span>
+              )}
+            </div>
+          </div>
+        )}
         {/* Map Control Buttons: Glow Switch + SVG Exporter */}
-        <div className={`absolute top-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg transition-all duration-300 ${
-          activeDetailsScope ? "right-[340px] sm:right-[400px]" : "right-3"
-        }`}>
+        <div className={`absolute top-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg transition-all duration-300 ${activeDetailsScope ? "right-[340px] sm:right-[400px]" : "right-3"
+          }`}>
           <button
             onClick={exportToSvg}
             className="flex items-center gap-1.5 bg-zinc-950 border border-border/60 hover:border-zinc-500 hover:text-white px-2 py-1 rounded-lg text-[9px] font-extrabold text-zinc-350 shadow-sm transition"
@@ -628,20 +967,18 @@ export default function MetroMap({
             <Download className="w-3.5 h-3.5" />
             <span>Export SVG</span>
           </button>
-          
+
           <div className="w-[1px] h-3.5 bg-border/60" />
 
           <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Health Glow</span>
           <button
             onClick={() => setHealthGlowActive(!healthGlowActive)}
-            className={`w-8 h-4.5 rounded-full transition-colors relative flex items-center ${
-              healthGlowActive ? "bg-primary" : "bg-zinc-700"
-            }`}
+            className={`w-8 h-4.5 rounded-full transition-colors relative flex items-center ${healthGlowActive ? "bg-primary" : "bg-zinc-700"
+              }`}
           >
             <div
-              className={`w-3.5 h-3.5 rounded-full bg-zinc-950 transition-transform ${
-                healthGlowActive ? "translate-x-4" : "translate-x-0.5"
-              }`}
+              className={`w-3.5 h-3.5 rounded-full bg-zinc-950 transition-transform ${healthGlowActive ? "translate-x-4" : "translate-x-0.5"
+                }`}
             />
           </button>
         </div>
@@ -669,9 +1006,8 @@ export default function MetroMap({
         </ReactFlow>
 
         {/* Floating Details/Inspector Overlay Card */}
-        <div className={`absolute top-3 right-3 bottom-3 z-20 w-80 sm:w-96 transition-all duration-300 transform ${
-          activeDetailsScope ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
-        }`}>
+        <div className={`absolute top-3 right-3 bottom-3 z-20 w-80 sm:w-96 transition-all duration-300 transform ${activeDetailsScope ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+          }`}>
 
           {/* Station Inspector - from daadd-main */}
           <AnimatePresence>

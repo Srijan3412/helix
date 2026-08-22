@@ -155,17 +155,24 @@ function FileGraphInternal({ result }: { result: any }) {
     const files = result?.files || [];
     return files
       .filter((f: any) => !f.path.startsWith("ROUTE:") && !f.path.startsWith("ENV:") && !f.path.startsWith("DB:") && !f.path.startsWith("ENTITY:"))
-      .map((f: any) => ({
-        id: f.path,
-        name: f.path.split(/[\\/]/).pop() || f.path,
-        path: f.path,
-        type: 'file' as const,
-        loc: f.loc || 100,
-        imports: f.internalImports || [],
-        importedBy: f.referencedBy || [],
-        complexity: f.complexity || 0,
-        riskLevel: (f.complexity > 20 ? 'high' : f.complexity > 10 ? 'medium' : 'low') as 'low' | 'medium' | 'high'
-      }));
+      .map((f: any) => {
+        const complexityInfo = result?.staticAnalysis?.complexity?.find((c: any) => c.file === f.path);
+        const complexity = complexityInfo?.score || 0;
+        const loc = f.lineCount || complexityInfo?.score || 100;
+        const imports = f.internalImports || f.dependencies || [];
+
+        return {
+          id: f.path,
+          name: f.path.split(/[\\/]/).pop() || f.path,
+          path: f.path,
+          type: 'file' as const,
+          loc,
+          imports,
+          importedBy: f.referencedBy || [],
+          complexity,
+          riskLevel: (complexity > 20 ? 'high' : complexity > 10 ? 'medium' : 'low') as 'low' | 'medium' | 'high'
+        };
+      });
   }, [result]);
 
   // Generate nodes and edges with circular layout
