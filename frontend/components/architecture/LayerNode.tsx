@@ -346,7 +346,7 @@ export default function LayerNode({ data }: LayerNodeProps) {
     <div
       className={`
         p-4 rounded-2xl border bg-zinc-900/90 backdrop-blur-md
-        transition-all duration-300 shadow-xl min-w-[360px] max-w-[440px]
+transition-all duration-300 shadow-xl min-w-[400px] max-w-[500px]
         ${theme.border}
         hover:shadow-2xl hover:border-opacity-80
       `}
@@ -464,6 +464,7 @@ export default function LayerNode({ data }: LayerNodeProps) {
       )}
 
       {/* ── SHOW MORE BUTTON ── */}
+      {/* ── SHOW MORE BUTTON ── */}
       {!isCollapsed && hasMore && totalFiles && totalFiles > 0 && (
         <div className="mt-3 pt-2 border-t border-border/30">
           <button
@@ -486,6 +487,18 @@ export default function LayerNode({ data }: LayerNodeProps) {
           </button>
         </div>
       )}
+
+      {/* ── "All files loaded" message ── */}
+      {!isCollapsed && !hasMore && totalFiles && totalFiles > 0 && (
+        <div className="mt-3 pt-2 border-t border-border/30">
+          <span className="text-[8px] text-zinc-500 flex items-center justify-center gap-1">
+            <CheckCircle className="w-3 h-3 text-emerald-400" />
+            All {totalFiles} files visible
+          </span>
+        </div>
+      )}
+
+      <Handle type="source" position={Position.Bottom} className="opacity-0" />
 
       {/* ── "All files loaded" message ── */}
       {!isCollapsed && !hasMore && totalFiles && totalFiles > 0 && (

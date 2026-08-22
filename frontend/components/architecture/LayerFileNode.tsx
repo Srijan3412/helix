@@ -84,27 +84,27 @@ export default function LayerFileRow({
   // ── File Icon ──
   const getFileIcon = () => {
     if (isDatabase) {
-      return <Database className="w-3 h-3 shrink-0 text-rose-400" />;
+      return <Database className="w-3.5 h-3.5 shrink-0 text-rose-400" />;
     }
     if (type === "route" || method) {
-      return <Route className="w-3 h-3 shrink-0 text-blue-400" />;
+      return <Route className="w-3.5 h-3.5 shrink-0 text-blue-400" />;
     }
     if (isTypeScript) {
-      return <FileCode className="w-3 h-3 shrink-0 text-blue-400" />;
+      return <FileCode className="w-3.5 h-3.5 shrink-0 text-blue-400" />;
     }
     if (isJavaScript) {
-      return <FileCode className="w-3 h-3 shrink-0 text-yellow-400" />;
+      return <FileCode className="w-3.5 h-3.5 shrink-0 text-yellow-400" />;
     }
     if (isJson) {
-      return <FileCode className="w-3 h-3 shrink-0 text-emerald-400" />;
+      return <FileCode className="w-3.5 h-3.5 shrink-0 text-emerald-400" />;
     }
     if (isMarkdown) {
-      return <FileText className="w-3 h-3 shrink-0 text-zinc-400" />;
+      return <FileText className="w-3.5 h-3.5 shrink-0 text-zinc-400" />;
     }
     if (isConfig) {
-      return <FileText className="w-3 h-3 shrink-0 text-amber-400" />;
+      return <FileText className="w-3.5 h-3.5 shrink-0 text-amber-400" />;
     }
-    return <FileText className="w-3 h-3 shrink-0 text-zinc-500" />;
+    return <FileText className="w-3.5 h-3.5 shrink-0 text-zinc-500" />;
   };
 
   // ── Rank Badge Colors ──
@@ -139,9 +139,9 @@ export default function LayerFileRow({
       {/* ── Rank Badge ── */}
       <span
         className={`
-          text-[8px] font-bold w-5 text-center rounded px-1 py-0.5 shrink-0
-          ${getRankColor(rank)}
-        `}
+    text-[9px] font-bold w-6 text-center rounded px-1 py-0.5 shrink-0
+    ${getRankColor(rank)}
+  `}
       >
         #{rank}
       </span>
@@ -151,7 +151,7 @@ export default function LayerFileRow({
 
       {/* ── File Name ── */}
       <span
-        className="font-mono text-[10px] text-zinc-200 truncate max-w-[100px]"
+        className="font-mono text-[10px] text-zinc-200 truncate max-w-[140px]"
         title={fileString}
       >
         {filename}
@@ -178,7 +178,7 @@ export default function LayerFileRow({
       <div className="flex items-center gap-1.5 ml-auto shrink-0">
         {/* LOC */}
         {loc !== undefined && loc > 0 && (
-          <span className="flex items-center gap-0.5 text-[8px] text-zinc-500">
+          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
             <span>📄</span>
             <span className={loc > 300 ? "text-amber-400" : "text-zinc-400"}>{loc}</span>
           </span>
@@ -186,7 +186,7 @@ export default function LayerFileRow({
 
         {/* Dependencies */}
         {dependencies !== undefined && dependencies > 0 && (
-          <span className="flex items-center gap-0.5 text-[8px] text-zinc-500">
+          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
             <span>🔗</span>
             <span className={dependencies > 10 ? "text-amber-400" : "text-zinc-400"}>
               {dependencies}
@@ -196,7 +196,7 @@ export default function LayerFileRow({
 
         {/* Request Rate */}
         {reqPerSecond !== undefined && reqPerSecond > 0 && (
-          <span className="flex items-center gap-0.5 text-[8px] text-zinc-500">
+          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
             <span>⚡</span>
             <span className="text-zinc-400">{reqPerSecond}</span>
           </span>
@@ -204,7 +204,7 @@ export default function LayerFileRow({
 
         {/* Rating */}
         {rating && (
-          <span className="flex items-center gap-0.5 text-[8px] text-amber-400">
+          <span className="flex items-center gap-0.5 text-[9px] text-amber-400">
             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
             {rating}
           </span>

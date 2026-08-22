@@ -16,7 +16,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
 
   const files: FileNode[] = result.files || [];
   const fileNode = files.find(f => f.path === filePath);
-  
+
   // Find complexity from static analysis report
   const staticReport = result.staticAnalysis;
   const complexityInfo = staticReport?.complexity?.find((c: any) => c.file === filePath);
@@ -184,6 +184,24 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
         </div>
       </div>
 
+      {/* ── REQUEST RATE FOR ROUTE FILES ── */}
+      {isRouteFile && (
+        <div className="p-3 rounded-xl bg-zinc-900/60 border border-border/50 text-center sm:text-left flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[8px] text-muted-foreground uppercase font-semibold text-blue-400">Request Rate</span>
+            <span className="text-[10px] text-zinc-500 mt-0.5">Estimated throughput</span>
+          </div>
+          <div className="text-xs font-extrabold text-white">
+            {getDeterministicRate(filePath)} req/s
+          </div>
+        </div>
+      )}
+
+      {/* Dependency Graph Link / Inline Diagram */}
+      {fileNode?.internalImports && fileNode.internalImports.length > 0 && (
+        // ... existing code ...
+      )}
+
       {/* Request Rate for Route Files */}
       {isRouteFile && (
         <div className="p-3 rounded-xl bg-zinc-900/60 border border-border/50 text-center sm:text-left flex items-center justify-between">
@@ -298,7 +316,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
             <Zap className="w-4 h-4" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Complexity Analyzer</span>
           </div>
-          
+
           <div className="space-y-1.5 text-xs">
             {complexityInfo && (
               <div className="flex justify-between items-center text-[11px]">
@@ -308,7 +326,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
                 </Badge>
               </div>
             )}
-            
+
             {godInfo && (
               <div className="flex justify-between items-center text-[11px]">
                 <span className="text-zinc-400">God Service Status:</span>

@@ -392,9 +392,12 @@ export default function LayerView({ result }: { result: any }) {
       }));
 
       // Generate Column Headers
+      // ── LAYER HEADERS - VERTICAL LAYOUT ──
+      let currentY = 30;
+      const LAYER_SPACING = 40; // Gap between layers
+
       actualLayers.forEach((layerName) => {
         const key = layerName.toLowerCase();
-        const colIdx = actualLayers.indexOf(layerName);
         const filesInLayer = nodesByLayer[layerName] || [];
 
         // Get layer metrics from backend data if available
@@ -404,46 +407,39 @@ export default function LayerView({ result }: { result: any }) {
 
         // Fallback: calculate from files in layer
         if (!health && filesInLayer.length > 0) {
-          // Use average complexity as health proxy
           let totalComplexity = 0;
-          let totalLoc = 0;
           let filesWithMetrics = 0;
 
           filesInLayer.forEach((f: any) => {
             const complexity = f.data?.complexity || f.data?.loc || 0;
-            const loc = f.data?.loc || f.data?.lineCount || 0;
             if (complexity > 0) {
               totalComplexity += complexity;
               filesWithMetrics++;
             }
-            if (loc > 0) {
-              totalLoc += loc;
-            }
           });
 
-          // Calculate health based on complexity (lower is better)
           if (filesWithMetrics > 0) {
             const avgComplexity = totalComplexity / filesWithMetrics;
-            // Map complexity to health score: 0-50 complexity → 100-0 health
             health = Math.max(10, Math.min(100, 100 - avgComplexity));
           } else {
-            health = 50; // Default if no metrics
+            health = 50;
           }
 
-          // Calculate confidence based on file count and metrics availability
           const hasMetrics = filesInLayer.some((f: any) => f.data?.complexity || f.data?.loc);
           confidence = hasMetrics ? 60 + Math.min(30, filesInLayer.length * 2) : 40;
         }
 
-        // If still no health, use file count as proxy
         if (!health) {
           health = Math.min(85, 50 + filesInLayer.length * 2);
         }
         if (!confidence) {
           confidence = 60 + Math.min(30, filesInLayer.length * 1.5);
         }
+
         const currentVisibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
         const visibleFiles = filesInLayer.slice(0, currentVisibleCount);
+
+        // ── File Data Array ──
         const fileDataArray = visibleFiles.map((node: any, index: number) => {
           const isSelected = selectedFile === node.id;
           return {
@@ -473,6 +469,7 @@ export default function LayerView({ result }: { result: any }) {
           };
         });
 
+        // ── HEADER NODE (Vertical) ──
         mappedNodes.push({
           id: `layer-${key}`,
           type: "layerNode",
@@ -487,20 +484,21 @@ export default function LayerView({ result }: { result: any }) {
             visibleCount: currentVisibleCount,
             totalFiles: filesInLayer.length,
             onShowMore: () => showMoreFiles(key, filesInLayer.length),
-            onToggle: () => {
-              // Toggle expansion - will be handled by LayerNode internal state
-            },
+            onToggle: () => { },
             files: fileDataArray,
           },
-          position: { x: 50 + colIdx * 250 - 25, y: 20 },
+          position: {
+            x: 150,  // ← VERTICAL: centered (adjust as needed)
+            y: currentY
+          },
           style: {
-            width: 260,
+            width: 400,  // ← Wider for vertical layout
             opacity: 1.0,
             transition: "opacity 250ms ease, transform 250ms ease",
           },
         });
 
-        // Connect header to the first file in the column
+        // ── CONNECT HEADER TO FIRST FILE ──
         if (filesInLayer.length > 0) {
           mappedEdges.push({
             id: `edge-header-to-first-${key}`,
@@ -514,8 +512,12 @@ export default function LayerView({ result }: { result: any }) {
             },
           });
         }
-      });
 
+        // ── UPDATE Y POSITION FOR NEXT LAYER ──
+        // Calculate height of this layer: header height (approx 180) + files * 60 + spacing
+        const layerHeight = 180 + visibleFiles.length * 60 + 40;
+        currentY += layerHeight + LAYER_SPACING;
+      });
       // Map File Nodes - Progressive Disclosure
 
 
