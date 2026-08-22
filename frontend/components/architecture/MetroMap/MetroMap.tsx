@@ -124,44 +124,7 @@ export default function MetroMap({
   };
 
 
-  // ── AFTER featureLines definition (around line ~185)
-  const totalStations = Object.values(featureLines).reduce((acc, arr) => acc + arr.length, 0);
 
-  // Add this before ReactFlow:
-  <div className="flex items-center gap-2 mb-3 px-4">
-    <div className="flex-1 flex items-center gap-2 bg-zinc-900/60 border border-border/60 rounded-xl px-3 py-1.5">
-      <span className="text-zinc-500 text-[10px]">🔍</span>
-      <input
-        type="text"
-        placeholder="Search stations..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="bg-transparent text-[10px] text-zinc-300 focus:outline-none flex-1"
-      />
-    </div>
-
-    <button
-      className={`px-2 py-1 rounded text-[8px] font-bold transition ${activeFilters.length === 0 ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-400'
-        }`}
-      onClick={() => setActiveFilters([])}
-    >
-      All
-    </button>
-
-    {features.slice(0, 5).map(f => (
-      <button
-        key={f.id}
-        className="px-2 py-1 rounded text-[8px] font-bold transition"
-        style={{
-          backgroundColor: activeFilters.includes(f.id) ? f.color : '#27272a',
-          color: activeFilters.includes(f.id) ? 'white' : '#a1a1aa',
-        }}
-        onClick={() => toggleFilter(f.id)}
-      >
-        {f.name.substring(0, 6)}
-      </button>
-    ))}
-  </div>
 
   // ── Current Station Context ──
   const [currentStation, setCurrentStation] = useState<{ featureId: string, index: number } | null>(null);
@@ -299,6 +262,34 @@ export default function MetroMap({
     return lines;
   }, [features]);
 
+  // ── Filter features based on active filters and search ──
+  const filteredFeatures = useMemo(() => {
+    let result = features;
+
+    // Filter by active filters
+    if (activeFilters.length > 0) {
+      result = result.filter(f => activeFilters.includes(f.id));
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(f => {
+        // Check feature name
+        if (f.name.toLowerCase().includes(query)) return true;
+
+        // Check stations in this feature
+        const stations = featureLines[f.id] || [];
+        return stations.some(s =>
+          s.label.toLowerCase().includes(query) ||
+          s.raw?.toLowerCase().includes(query)
+        );
+      });
+    }
+
+    return result;
+  }, [features, activeFilters, searchQuery, featureLines]);
+
   // ─────────────────────────────────────────────────────────────
   // STATION NUMBERING SYSTEM
   // ─────────────────────────────────────────────────────────────
@@ -334,7 +325,7 @@ export default function MetroMap({
   // Compute Layout Positions (Y by feature index, X by step index with clumping alignment)
   const positions = useMemo(() => {
     const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
-    features.forEach((feature, fIdx) => {
+    filteredFeatures.forEach((feature, fIdx) => {
       posMap[feature.id] = {};
       const stations = featureLines[feature.id] || [];
       stations.forEach((station, stepIdx) => {
@@ -433,35 +424,6 @@ export default function MetroMap({
 
   // 2. Compute ReactFlow Nodes and Edges
   const { nodes, edges } = useMemo(() => {
-
-    // ── Filter features based on active filters and search ──
-    const filteredFeatures = useMemo(() => {
-      let result = features;
-
-      // Filter by active filters
-      if (activeFilters.length > 0) {
-        result = result.filter(f => activeFilters.includes(f.id));
-      }
-
-      // Filter by search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        result = result.filter(f => {
-          // Check feature name
-          if (f.name.toLowerCase().includes(query)) return true;
-
-          // Check stations in this feature
-          const stations = featureLines[f.id] || [];
-          return stations.some(s =>
-            s.label.toLowerCase().includes(query) ||
-            s.raw?.toLowerCase().includes(query)
-          );
-        });
-      }
-
-      return result;
-    }, [features, activeFilters, searchQuery, featureLines]);
-
     if (filteredFeatures.length === 0) return { nodes: [], edges: [] };
 
     const flowNodes: ReactFlowNode[] = [];
