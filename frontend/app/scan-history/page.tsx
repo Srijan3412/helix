@@ -42,13 +42,6 @@ export default function ScanHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedScans, setSelectedScans] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      loadScanHistory();
-    }
-  }, [user]);
-
   const loadScanHistory = async () => {
     try {
       setIsLoading(true);
@@ -61,6 +54,12 @@ export default function ScanHistoryPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadScanHistory();
+    }
+  }, [user]);
 
   const handleDeleteScan = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();

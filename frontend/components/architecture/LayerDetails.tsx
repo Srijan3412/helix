@@ -128,57 +128,69 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
         </button>
       </div>
 
-      {/* Layer Badge & Status Indicators */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-[9px] font-bold text-zinc-550 uppercase tracking-widest block">Architecture Layer</span>
-            <Badge variant="primary" className="text-[10px] uppercase font-bold tracking-wider mt-1">{layerName}</Badge>
-          </div>
-          <div className="flex flex-wrap gap-1.5 justify-end">
-            {godInfo && (
-              <Badge variant="error" className="text-[9px] font-bold">🔥 God Service</Badge>
-            )}
-            {isDead && (
-              <Badge variant="secondary" className="text-[9px] bg-zinc-700 text-white font-bold">💀 Dead Code</Badge>
-            )}
-            {isTopFile && (
-              <Badge variant="primary" className="text-[9px] font-bold">⭐ Top File</Badge>
-            )}
-            <Badge variant="outline" className="text-[9px] border-zinc-700 text-zinc-400 font-bold">{getFileTypeLabel()}</Badge>
-          </div>
-        </div>
+      {/* ── Status Badges (Single Row with Icons) ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Badge variant="primary" className="text-[10px] uppercase font-bold tracking-wider">
+          {layerName}
+        </Badge>
+        {godInfo && (
+          <Badge variant="error" className="text-[9px] font-bold flex items-center gap-1">
+            🔥 God Service
+          </Badge>
+        )}
+        {isTopFile && (
+          <Badge variant="primary" className="text-[9px] font-bold flex items-center gap-1">
+            ⭐ Top File
+          </Badge>
+        )}
+        {isDead && (
+          <Badge variant="secondary" className="text-[9px] bg-zinc-700 text-white font-bold flex items-center gap-1">
+            💀 Dead Code
+          </Badge>
+        )}
+        <Badge variant="outline" className="text-[9px] border-zinc-700 text-zinc-400 font-bold">
+          {getFileTypeLabel()}
+        </Badge>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="p-3 rounded-xl bg-zinc-900/60 border border-border/50 text-center sm:text-left">
-          <span className="text-[8px] text-muted-foreground uppercase font-semibold">File Size</span>
-          <div className="text-sm font-extrabold text-white mt-0.5">{fileNode ? formatBytes(fileNode.size) : "—"}</div>
+      {/* ── Metrics Cards (5-Column Grid with Icons) ── */}
+      <div className="grid grid-cols-5 gap-1.5">
+        {/* File Size */}
+        <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
+          <div className="text-[10px] text-zinc-500">📄 Size</div>
+          <div className="text-[11px] font-extrabold text-white mt-0.5">
+            {fileNode ? formatBytes(fileNode.size) : "—"}
+          </div>
         </div>
-        <div className="p-3 rounded-xl bg-zinc-900/60 border border-border/50 text-center sm:text-left">
-          <span className="text-[8px] text-muted-foreground uppercase font-semibold">Lines of Code</span>
-          <div className="text-sm font-extrabold text-white mt-0.5">{fileNode ? fileNode.lineCount : "—"}</div>
-        </div>
-      </div>
 
-      {/* Extended Metrics */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="p-2 rounded-lg bg-zinc-900/60 border border-border/50 text-center">
-          <span className="text-[8px] text-muted-foreground uppercase font-semibold">Dependencies</span>
-          <div className="text-sm font-extrabold text-white mt-0.5">
-            {fileNode?.internalImports ? fileNode.internalImports.length : 0}
+        {/* LOC */}
+        <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
+          <div className="text-[10px] text-zinc-500">📊 LOC</div>
+          <div className="text-[11px] font-extrabold text-white mt-0.5">
+            {fileNode ? fileNode.lineCount : "—"}
           </div>
         </div>
-        <div className="p-2 rounded-lg bg-zinc-900/60 border border-border/50 text-center">
-          <span className="text-[8px] text-muted-foreground uppercase font-semibold">Referenced By</span>
-          <div className="text-sm font-extrabold text-white mt-0.5">
-            {fileNode?.referencedBy ? fileNode.referencedBy.length : 0}
+
+        {/* Dependencies */}
+        <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
+          <div className="text-[10px] text-zinc-500">🔗 Deps</div>
+          <div className="text-[11px] font-extrabold text-white mt-0.5">
+            {fileNode?.internalImports?.length || 0}
           </div>
         </div>
-        <div className="p-2 rounded-lg bg-zinc-900/60 border border-border/50 text-center">
-          <span className="text-[8px] text-muted-foreground uppercase font-semibold">Complexity</span>
-          <div className="text-sm font-extrabold text-white mt-0.5">
+
+        {/* Referenced By */}
+        <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
+          <div className="text-[10px] text-zinc-500">📤 Ref</div>
+          <div className="text-[11px] font-extrabold text-white mt-0.5">
+            {fileNode?.referencedBy?.length || 0}
+          </div>
+        </div>
+
+        {/* Complexity */}
+        <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
+          <div className="text-[10px] text-zinc-500">🧠 Comp</div>
+          <div className="text-[11px] font-extrabold text-white mt-0.5">
             {complexityInfo?.score !== undefined ? complexityInfo.score : "—"}
           </div>
         </div>
@@ -319,16 +331,17 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
         </div>
       )}
 
-      {/* Imports (Dependencies) */}
+
+      {/* ── Dependencies Section with Bullets ── */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
-          <ArrowRight className="w-3.5 h-3.5 text-blue-400" />
-          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Imports ({fileNode?.internalImports?.length ?? 0})</span>
+          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">📥 Dependencies ({fileNode?.internalImports?.length ?? 0})</span>
         </div>
-        <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+        <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
           {fileNode?.internalImports && fileNode.internalImports.length > 0 ? (
             fileNode.internalImports.map(imp => (
-              <div key={imp} className="p-1.5 rounded bg-zinc-900/60 border border-border/40 text-[10px] font-mono text-zinc-300 truncate" title={imp}>
+              <div key={imp} className="flex items-center gap-1.5 p-1 rounded bg-zinc-900/60 border border-border/40 text-[10px] font-mono text-zinc-300 truncate hover:bg-zinc-800/60 transition" title={imp}>
+                <span className="text-[8px] text-blue-400">●</span>
                 {imp.split(/[\\/]/).pop()}
               </div>
             ))
@@ -338,16 +351,17 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
         </div>
       </div>
 
-      {/* Referenced By (Incoming references) */}
+
+      {/* ── References Section with Bullets ── */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
-          <ArrowLeft className="w-3.5 h-3.5 text-purple-400" />
-          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Referenced By ({fileNode?.referencedBy?.length ?? 0})</span>
+          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">📤 Referenced By ({fileNode?.referencedBy?.length ?? 0})</span>
         </div>
-        <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+        <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
           {fileNode?.referencedBy && fileNode.referencedBy.length > 0 ? (
             fileNode.referencedBy.map(ref => (
-              <div key={ref} className="p-1.5 rounded bg-zinc-900/60 border border-border/40 text-[10px] font-mono text-zinc-300 truncate" title={ref}>
+              <div key={ref} className="flex items-center gap-1.5 p-1 rounded bg-zinc-900/60 border border-border/40 text-[10px] font-mono text-zinc-300 truncate hover:bg-zinc-800/60 transition" title={ref}>
+                <span className="text-[8px] text-purple-400">●</span>
                 {ref.split(/[\\/]/).pop()}
               </div>
             ))
@@ -357,13 +371,12 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
         </div>
       </div>
 
-      {/* Path info */}
-      <div className="p-3 rounded-xl bg-zinc-900/40 border border-border/40 space-y-1">
-        <div className="flex items-center gap-1.5 text-zinc-450">
-          <Info className="w-3 h-3 text-muted-foreground" />
-          <span className="text-[8.5px] font-bold uppercase tracking-wider">Workspace Path</span>
-        </div>
-        <code className="block text-[9.5px] font-mono text-zinc-450 break-all leading-normal">{filePath}</code>
+
+      {/* ── Path Section ── */}
+      <div className="p-2 rounded-xl bg-zinc-900/40 border border-border/40">
+        <code className="block text-[9.5px] font-mono text-zinc-400 truncate" title={filePath}>
+          📁 {filePath}
+        </code>
       </div>
     </Card>
   );

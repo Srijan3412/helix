@@ -129,6 +129,60 @@ export default function LayerView({ result }: { result: any }) {
   const tourTimerRef = useRef<any>(null);
   const [focusedNodes, setFocusedNodes] = useState<Set<string>>(new Set());
 
+  const getDeterministicRate = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash % 20) + 1;
+  };
+
+  const getFileMetrics = (filePath: string, layerKey: string) => {
+    const isDbNode = layerKey?.toLowerCase() === "database" || filePath.includes("DB:") || filePath.includes("ENTITY:");
+    const fileNode = result?.files?.find((f: any) => f.path === filePath);
+    const fileIsGod = result?.staticAnalysis?.godServices?.some((g: any) => g.file === filePath);
+    const fileIsDead = result?.staticAnalysis?.deadCode?.some((d: any) => d.file === filePath);
+    const complexityInfo = result?.staticAnalysis?.complexity?.find((c: any) => c.file === filePath);
+
+    if (isDbNode && !fileNode) {
+      return {
+        loc: undefined,
+        deps: undefined,
+        rating: undefined,
+        reqPerSecond: undefined,
+        isGod: false,
+        isDead: false,
+        isRoute: false,
+      };
+    }
+
+    const loc = fileNode?.lineCount || complexityInfo?.score || (getDeterministicRate(filePath) * 15 + 10);
+    const deps = fileNode?.internalImports?.length || fileNode?.dependencies?.length || (getDeterministicRate(filePath) % 6 + 1);
+
+    let ratingScore = 5.0;
+    if (fileIsGod) ratingScore -= 1.5;
+    if (fileIsDead) ratingScore -= 2.0;
+    if (complexityInfo) {
+      if (complexityInfo.rating === "risky") ratingScore -= 1.5;
+      else if (complexityInfo.rating === "medium") ratingScore -= 0.5;
+    }
+    if (loc > 1000) ratingScore -= 1.0;
+    else if (loc > 500) ratingScore -= 0.5;
+    const rating = Math.max(1.0, Math.min(5.0, ratingScore)).toFixed(1);
+
+    const isRoute = layerKey?.toLowerCase() === "routes" || result?.routes?.some((r: any) => r.file === filePath) || filePath.startsWith("ROUTE:");
+    const reqPerSecond = isRoute ? getDeterministicRate(filePath) : undefined;
+
+    return {
+      loc,
+      deps,
+      rating,
+      reqPerSecond,
+      isGod: fileIsGod,
+      isDead: fileIsDead,
+      isRoute,
+    };
+  };
 
   // Fetch categorized layers and pre-generated graph from backend
   const { data: architectureData, isLoading } = useQuery({
@@ -365,7 +419,7 @@ export default function LayerView({ result }: { result: any }) {
       };
 
       (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
-        let rawLayer = node.layer || "Services";
+        const rawLayer = node.layer || "Services";
         const layerName = layerMap[rawLayer.toLowerCase()] || rawLayer;
         if (!nodesByLayer[layerName]) {
           nodesByLayer[layerName] = [];
@@ -403,7 +457,9 @@ export default function LayerView({ result }: { result: any }) {
         // Get layer metrics from backend data if available
         const layerMetrics = layersData?.find((l: any) => l.name?.toLowerCase() === key);
         let health = layerMetrics?.health || 0;
-        let confidence = layerMetrics?.confidence || 0;
+        let confidence = layerMetrics?.confidence !== undefined
+          ? (layerMetrics.confidence <= 1 ? layerMetrics.confidence * 100 : layerMetrics.confidence)
+          : 0;
 
         // Fallback: calculate from files in layer
         if (!health && filesInLayer.length > 0) {
@@ -442,18 +498,19 @@ export default function LayerView({ result }: { result: any }) {
         // ── File Data Array ──
         const fileDataArray = visibleFiles.map((node: any, index: number) => {
           const isSelected = selectedFile === node.id;
+          const metrics = getFileMetrics(node.id, key);
           return {
             id: node.id,
             name: node.label || node.id || "",
             method: node.method || node.data?.method || "",
             path: node.path || node.data?.path || "",
-            loc: node.data?.loc || node.data?.complexity || Math.floor(Math.random() * 300) + 50,
-            deps: node.data?.dependencies || Math.floor(Math.random() * 10) + 1,
-            reqPerSecond: node.reqPerSecond || node.data?.reqPerSecond || Math.floor(Math.random() * 20) + 1,
-            rating: (Math.random() * 2 + 3).toFixed(1),
-            isGod: node.data?.isGod || false,
-            isDead: node.data?.isDead || false,
-            isRoute: node.type === 'route' || !!node.method,
+            loc: metrics.loc,
+            deps: metrics.deps,
+            reqPerSecond: metrics.reqPerSecond,
+            rating: metrics.rating,
+            isGod: metrics.isGod,
+            isDead: metrics.isDead,
+            isRoute: metrics.isRoute,
             isDatabase: node.type === 'database' || node.id?.includes('DB:') || node.id?.includes('ENTITY:'),
             isSelected: isSelected,
             onSelect: () => {
@@ -563,31 +620,27 @@ export default function LayerView({ result }: { result: any }) {
       // Get layer metrics from backend data
       const layerMetrics = layersData?.find((l: any) => l.name?.toLowerCase() === key);
       const health = layerMetrics?.health || 0;
-      const confidence = layerMetrics?.confidence || 0;
+      const confidenceVal = layerMetrics?.confidence !== undefined
+        ? (layerMetrics.confidence <= 1 ? layerMetrics.confidence * 100 : layerMetrics.confidence)
+        : 0;
 
       const layerId = `layer-${key}`;
       if (!seenNodeIds.has(layerId)) {
         seenNodeIds.add(layerId);
         const fileDataArray = files.map((filePath: string) => {
-          const fileIsGod = result?.staticAnalysis?.godServices?.some((g: any) => g.file === filePath);
-          const fileIsDead = result?.staticAnalysis?.deadCode?.some((d: any) => d.file === filePath);
-          let complexity = 0;
-          if (result?.staticAnalysis?.complexity) {
-            const match = result.staticAnalysis.complexity.find((c: any) => c.file === filePath);
-            if (match) complexity = match.score;
-          }
+          const metrics = getFileMetrics(filePath, key);
 
           return {
             id: filePath,
             name: filePath.split(/[\\/]/).pop() || filePath,
-            loc: complexity || Math.floor(Math.random() * 300) + 50,
-            deps: Math.floor(Math.random() * 10) + 1,
-            reqPerSecond: Math.floor(Math.random() * 20) + 1,
-            rating: (Math.random() * 2 + 3).toFixed(1),
-            isGod: fileIsGod,
-            isDead: fileIsDead,
-            isRoute: false,
-            isDatabase: false,
+            loc: metrics.loc,
+            deps: metrics.deps,
+            reqPerSecond: metrics.reqPerSecond,
+            rating: metrics.rating,
+            isGod: metrics.isGod,
+            isDead: metrics.isDead,
+            isRoute: metrics.isRoute,
+            isDatabase: key === "database",
             isSelected: selectedFile === filePath,
             onSelect: () => {
               setSelectedFile(filePath);
@@ -599,7 +652,6 @@ export default function LayerView({ result }: { result: any }) {
 
         const currentVisibleCount = visibleFileCount[key] || TOP_FILES_TO_SHOW;
 
-
         flowNodes.push({
           id: layerId,
           type: "layerNode",
@@ -609,12 +661,13 @@ export default function LayerView({ result }: { result: any }) {
             isExpanded,
             key,
             health,
-            confidence,
+            confidence: confidenceVal,
             hasMore: files.length > currentVisibleCount,
             visibleCount: currentVisibleCount,
             totalFiles: files.length,
             onShowMore: () => showMoreFiles(key, files.length),
             onToggle: () => { },
+            files: fileDataArray,
           },
           position: { x: xCenter - 110, y: currentY },
           style: {

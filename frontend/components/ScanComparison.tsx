@@ -34,10 +34,6 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
   // Accordion state
   const [expandedSection, setExpandedSection] = useState<"files" | "routes" | "layers" | null>("files");
 
-  useEffect(() => {
-    loadComparison();
-  }, [baselineId, compareId]);
-
   const loadComparison = async () => {
     try {
       setIsLoading(true);
@@ -50,6 +46,10 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadComparison();
+  }, [baselineId, compareId]);
 
   if (isLoading) {
     return (

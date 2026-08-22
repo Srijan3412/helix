@@ -26,26 +26,6 @@ const CATEGORY_STYLES: Record<string, { label: string; border: string; bg: strin
   middleware: { label: "Middleware", border: "border-orange-500/70", bg: "bg-orange-950/20", text: "text-orange-300", icon: Shield },
 };
 
-interface ExecutionTraceProps {
-  result: any;
-  onSwitchTab?: (tab: any) => void;
-  onSetImpactFile?: (file: string) => void;
-  initialRouteId?: string;
-}
-
-export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, initialRouteId }: ExecutionTraceProps) {
-  const { currentJobId } = useAnalysisStore();
-  const [selectedRouteId, setSelectedRouteId] = useState<string>(initialRouteId || "");
-  const [routeSearch, setRouteSearch] = useState<string>("");
-
-  React.useEffect(() => {
-    if (initialRouteId) {
-      setSelectedRouteId(initialRouteId);
-    }
-  }, [initialRouteId]);
-
-  // Add this COMPONENT before the ExecutionTrace component
-
 interface InspectorSidebarProps {
   selectedStep: any;
   trace: any;
@@ -88,138 +68,156 @@ function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProp
   const dbEntities = getDbEntities();
   const style = CATEGORY_STYLES[selectedStep?.type || 'helper'];
 
-    return (
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 20 }}
-        className="w-72 bg-zinc-900/95 backdrop-blur-xl border-l border-border/70 h-full overflow-y-auto shrink-0"
-      >
-        <div className="p-4 border-b border-border/50 flex items-center justify-between">
-          <h3 className="font-bold text-white flex items-center gap-2 text-xs">
-            <Info size={14} className="text-primary" />
-            Step Inspector
-          </h3>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white transition">
-            <X size={14} />
-          </button>
-        </div>
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      className="w-72 bg-zinc-900/95 backdrop-blur-xl border-l border-border/70 h-full overflow-y-auto shrink-0"
+    >
+      <div className="p-4 border-b border-border/50 flex items-center justify-between">
+        <h3 className="font-bold text-white flex items-center gap-2 text-xs">
+          <Info size={14} className="text-primary" />
+          Step Inspector
+        </h3>
+        <button onClick={onClose} className="text-zinc-400 hover:text-white transition">
+          <X size={14} />
+        </button>
+      </div>
 
-        <div className="p-4 space-y-4">
-          {selectedStep ? (
-            <>
-              {/* Module Details */}
-              <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
-                <div className="flex items-center gap-2 mb-3">
-                  <FileCode size={14} className="text-zinc-400" />
-                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Module</span>
-                </div>
-                <div className="font-mono text-white text-sm">{selectedStep.name}</div>
-                <div className={`text-[10px] mt-1 ${style?.text || 'text-zinc-400'} capitalize`}>
-                  {selectedStep.type}
-                </div>
-                {selectedStep.file && (
-                  <div className="text-[10px] text-zinc-500 mt-1 font-mono truncate">{selectedStep.file}</div>
-                )}
+      <div className="p-4 space-y-4">
+        {selectedStep ? (
+          <>
+            {/* Module Details */}
+            <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
+              <div className="flex items-center gap-2 mb-3">
+                <FileCode size={14} className="text-zinc-400" />
+                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Module</span>
               </div>
+              <div className="font-mono text-white text-sm">{selectedStep.name}</div>
+              <div className={`text-[10px] mt-1 ${style?.text || 'text-zinc-400'} capitalize`}>
+                {selectedStep.type}
+              </div>
+              {selectedStep.file && (
+                <div className="text-[10px] text-zinc-500 mt-1 font-mono truncate">{selectedStep.file}</div>
+              )}
+            </div>
 
-              {/* Auth Alert */}
-              {authAlert && (
-                <div className={`rounded-xl p-4 border ${
-                  authAlert.status === 'protected'
-                    ? 'bg-emerald-950/30 border-emerald-500/40'
-                    : 'bg-amber-950/30 border-amber-500/40'
-                }`}>
-                  <div className="flex items-start gap-2">
-                    {authAlert.status === 'protected' ? (
-                      <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
-                    )}
-                    <div>
-                      <div className={`text-xs font-medium ${
-                        authAlert.status === 'protected' ? 'text-emerald-300' : 'text-amber-300'
-                      }`}>
-                        {authAlert.status === 'protected' ? 'Protected' : 'Security Warning'}
-                      </div>
-                      <div className={`text-[10px] mt-0.5 ${
-                        authAlert.status === 'protected' ? 'text-emerald-400/80' : 'text-amber-400/80'
-                      }`}>
-                        {authAlert.message}
-                      </div>
+            {/* Auth Alert */}
+            {authAlert && (
+              <div className={`rounded-xl p-4 border ${
+                authAlert.status === 'protected'
+                  ? 'bg-emerald-950/30 border-emerald-500/40'
+                  : 'bg-amber-950/30 border-amber-500/40'
+              }`}>
+                <div className="flex items-start gap-2">
+                  {authAlert.status === 'protected' ? (
+                    <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <div className={`text-xs font-medium ${
+                      authAlert.status === 'protected' ? 'text-emerald-300' : 'text-amber-300'
+                    }`}>
+                      {authAlert.status === 'protected' ? 'Protected' : 'Security Warning'}
+                    </div>
+                    <div className={`text-[10px] mt-0.5 ${
+                      authAlert.status === 'protected' ? 'text-emerald-400/80' : 'text-amber-400/80'
+                    }`}>
+                      {authAlert.message}
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Environment Variables */}
-              {envVars.length > 0 && (
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Key size={14} className="text-amber-400" />
-                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Env Secrets</span>
-                  </div>
-                  <div className="space-y-1">
-                    {envVars.map((env: string, i: number) => (
-                      <div key={i} className="font-mono text-[10px] text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded">
-                        {env}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* DB Entities */}
-              {dbEntities.length > 0 && (
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Database size={14} className="text-rose-400" />
-                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">DB Entities</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {dbEntities.map((entity: string, i: number) => (
-                      <span key={i} className="px-2 py-1 bg-rose-500/10 border border-rose-500/30 rounded text-[10px] text-rose-300 font-mono">
-                        {entity}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : trace ? (
-            <>
-              {/* Trace Summary */}
+            {/* Environment Variables */}
+            {envVars.length > 0 && (
               <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-3">
-                  <Route size={14} className="text-blue-400" />
-                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Trace Summary</span>
+                  <Key size={14} className="text-amber-400" />
+                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Env Secrets</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Confidence</div>
-                    <div className="text-lg font-bold text-emerald-400">{trace.confidence}%</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Complexity</div>
-                    <div className="text-lg font-bold text-amber-400">Σ {trace.metrics?.complexity || 42}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-zinc-500">DB Access</div>
-                    <div className="text-lg font-bold text-blue-400">{trace.reachability ? 'Yes' : 'No'}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Auth Strategy</div>
-                    <div className="text-lg font-bold text-purple-400">{trace.authType || 'None'}</div>
-                  </div>
+                <div className="space-y-1">
+                  {envVars.map((env: string, i: number) => (
+                    <div key={i} className="font-mono text-[10px] text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded">
+                      {env}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </>
-          ) : null}
-        </div>
-      </motion.div>
-    );
-  }
-  
+            )}
+
+            {/* DB Entities */}
+            {dbEntities.length > 0 && (
+              <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <Database size={14} className="text-rose-400" />
+                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">DB Entities</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {dbEntities.map((entity: string, i: number) => (
+                    <span key={i} className="px-2 py-1 bg-rose-500/10 border border-rose-500/30 rounded text-[10px] text-rose-300 font-mono">
+                      {entity}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : trace ? (
+          <>
+            {/* Trace Summary */}
+            <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
+              <div className="flex items-center gap-2 mb-3">
+                <Route size={14} className="text-blue-400" />
+                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Trace Summary</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-[10px] text-zinc-500">Confidence</div>
+                  <div className="text-lg font-bold text-emerald-400">{trace.confidence}%</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-zinc-500">Complexity</div>
+                  <div className="text-lg font-bold text-amber-400">Σ {trace.metrics?.complexity || 42}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-zinc-500">DB Access</div>
+                  <div className="text-lg font-bold text-blue-400">{trace.reachability ? 'Yes' : 'No'}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-zinc-500">Auth Strategy</div>
+                  <div className="text-lg font-bold text-purple-400">{trace.authType || 'None'}</div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </motion.div>
+  );
+}
+
+interface ExecutionTraceProps {
+  result: any;
+  onSwitchTab?: (tab: any) => void;
+  onSetImpactFile?: (file: string) => void;
+  initialRouteId?: string;
+}
+
+export default function ExecutionTrace({ result, onSwitchTab, onSetImpactFile, initialRouteId }: ExecutionTraceProps) {
+  const { currentJobId } = useAnalysisStore();
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(initialRouteId || "");
+  const [routeSearch, setRouteSearch] = useState<string>("");
+
+  React.useEffect(() => {
+    if (initialRouteId) {
+      setSelectedRouteId(initialRouteId);
+    }
+  }, [initialRouteId]);
+
   // View mode toggle: timeline vs node-link graph
   const [viewMode, setViewMode] = useState<"timeline" | "graph">("timeline");
   

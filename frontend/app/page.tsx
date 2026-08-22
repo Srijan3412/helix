@@ -602,7 +602,7 @@ export default function Home() {
               <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-800/40">
                 <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Auth Protected</div>
                 <div className="flex flex-wrap gap-1">
-                  {traceRoute.middleware!.map(m => <Badge variant="primary" className="text-[9px]">{m}</Badge>)}
+                  {traceRoute.middleware!.map(m => <Badge key={m} variant="primary" className="text-[9px]">{m}</Badge>)}
                 </div>
               </div>
             ) : (
