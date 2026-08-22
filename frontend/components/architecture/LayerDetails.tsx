@@ -199,24 +199,6 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
 
       {/* Dependency Graph Link / Inline Diagram */}
       {fileNode?.internalImports && fileNode.internalImports.length > 0 && (
-        // ... existing code ...
-      )}
-
-      {/* Request Rate for Route Files */}
-      {isRouteFile && (
-        <div className="p-3 rounded-xl bg-zinc-900/60 border border-border/50 text-center sm:text-left flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[8px] text-muted-foreground uppercase font-semibold text-blue-400">Request Rate</span>
-            <span className="text-[10px] text-zinc-500 mt-0.5">Estimated throughput</span>
-          </div>
-          <div className="text-xs font-extrabold text-white">
-            {getDeterministicRate(filePath)} req/s
-          </div>
-        </div>
-      )}
-
-      {/* Dependency Graph Link / Inline Diagram */}
-      {fileNode?.internalImports && fileNode.internalImports.length > 0 && (
         <div className="space-y-2">
           {!showDependencyGraph ? (
             <button
