@@ -177,7 +177,7 @@ function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProp
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="text-[10px] text-zinc-500">Confidence</div>
-                  <div className="text-lg font-bold text-emerald-400">{trace.confidence}%</div>
+                  <div className="text-lg font-bold text-emerald-400">{trace.confidence <= 1 ? Math.round(trace.confidence * 100) : Math.round(trace.confidence)}%</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-zinc-500">Complexity</div>
@@ -516,7 +516,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
                 <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest">Confidence</span>
                 <div className="flex items-center gap-1 mt-0.5">
                   <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="text-sm font-extrabold text-white">{activeTrace.confidence}%</span>
+                  <span className="text-sm font-extrabold text-white">{activeTrace.confidence <= 1 ? Math.round(activeTrace.confidence * 100) : Math.round(activeTrace.confidence)}%</span>
                 </div>
               </div>
 

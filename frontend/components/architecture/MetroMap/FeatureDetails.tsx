@@ -146,7 +146,7 @@ export default function FeatureDetails({
           </div>
           <div className="p-2.5 rounded-lg bg-zinc-900/50 border border-border/40">
             <span className="text-[8px] text-zinc-550 uppercase font-semibold block mb-0.5">Confidence</span>
-            <div className="text-xs font-bold text-zinc-350">{selectedFeature.confidence}% Conf</div>
+            <div className="text-xs font-bold text-zinc-350">{selectedFeature.confidence <= 1 ? Math.round(selectedFeature.confidence * 100) : Math.round(selectedFeature.confidence)}% Conf</div>
           </div>
         </div>
 

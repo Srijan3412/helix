@@ -845,10 +845,11 @@ export default function LayerView({ result }: { result: any }) {
           if ((layers[key] || []).includes(selectedFile)) {
             const layerNode = nodes.find((n: any) => n.id === `layer-${key}`);
             if (layerNode) {
+              const nodeWidth = layerNode.style?.width || 400;
               reactFlowInstance.setCenter(
-                layerNode.position.x + 110,
-                layerNode.position.y + 45,
-                { zoom: 1.1, duration: 800 }
+                layerNode.position.x + Number(nodeWidth) / 2,
+                layerNode.position.y + 90,
+                { zoom: 0.8, duration: 800 }
               );
             }
             break;
@@ -857,10 +858,11 @@ export default function LayerView({ result }: { result: any }) {
       } else if (expandedLayer) {
         const node = nodes.find((n: any) => n.id === `layer-${expandedLayer}`);
         if (node) {
+          const nodeWidth = node.style?.width || 400;
           reactFlowInstance.setCenter(
-            node.position.x + 110,
-            node.position.y + 45,
-            { zoom: 1.1, duration: 800 }
+            node.position.x + Number(nodeWidth) / 2,
+            node.position.y + 90,
+            { zoom: 0.8, duration: 800 }
           );
         }
       }

@@ -115,7 +115,7 @@ export default function SubwayLegend({
                 </div>
                 
                 <span className="text-zinc-450 text-[8.5px]">
-                  {feature.confidence}% Confidence
+                  {feature.confidence <= 1 ? Math.round(feature.confidence * 100) : Math.round(feature.confidence)}% Confidence
                 </span>
               </div>
 

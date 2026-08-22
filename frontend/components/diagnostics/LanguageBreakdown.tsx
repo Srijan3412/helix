@@ -112,10 +112,10 @@ export default function LanguageBreakdown({ languages, totalLines: customTotalLi
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${entry.confidence * 100}%` }} />
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${entry.confidence <= 1 ? entry.confidence * 100 : entry.confidence}%` }} />
                   </div>
                   <span className="text-[10px] text-muted-foreground w-8 text-right font-medium">
-                    {Math.round(entry.confidence * 100)}%
+                    {Math.round((entry.confidence <= 1 ? entry.confidence * 100 : entry.confidence))}%
                   </span>
                 </div>
               </motion.div>

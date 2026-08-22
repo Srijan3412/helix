@@ -236,7 +236,7 @@ export default function ArchitectureViewer({
                     </span>
                     <span className="text-zinc-500">Health</span>
                     <span className="text-zinc-300 font-bold ml-auto">
-                      {Math.round(feat.confidence * 100)}%
+                      {Math.round((feat.confidence <= 1 ? feat.confidence * 100 : feat.confidence))}%
                     </span>
                     <span className="text-zinc-500">Conf</span>
                   </div>

@@ -78,7 +78,7 @@ export default function AuthDetector({ authType, evidence }: AuthDetectorProps) 
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mb-4">
-            Confidence: <span className="text-primary font-bold">{confidence}%</span>
+            Confidence: <span className="text-primary font-bold">{confidence <= 1 ? Math.round(confidence * 100) : Math.round(confidence)}%</span>
           </p>
 
           {/* Evidence Panel - from daadd-main with projectAnalyser styling */}

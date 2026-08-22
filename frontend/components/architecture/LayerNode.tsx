@@ -202,7 +202,10 @@ function FileRow({
           : "hover:bg-zinc-800/60 border border-transparent hover:border-zinc-700/50"
         }
       `}
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
     >
       {/* Rank Badge */}
       <span
@@ -373,7 +376,10 @@ transition-all duration-300 shadow-xl min-w-[400px] max-w-[500px]
 
         {/* Toggle Button (replaces "Expanded/View" badge) */}
         <button
-          onClick={toggleCollapse}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleCollapse();
+          }}
           className={`
             p-1.5 rounded-lg transition-all duration-200
             hover:bg-zinc-800/60 text-zinc-400 hover:text-white

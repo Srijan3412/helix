@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ReactFlow, Background, Controls, MiniMap, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
 import { useAnalysisStore } from "../../../store/analysis.store";
 import { getSubwayMap, getFeaturesMap, getImpactAnalysis } from "../../../lib/api/client";
-import SubwayLegend from "./SubwayLegend";
+// import SubwayLegend from "./SubwayLegend";
 import SubwayDetails from "./SubwayDetails";
 import { Loader2, HelpCircle, Download, Play, Square, Globe, Shield, Settings, Zap, Box, Server, GitMerge, ChevronDown, Search, X, Network, ChevronLeft, ChevronRight } from "lucide-react";
 import { FeatureFlow, RepositorySubway, SubwayStation, SubwayLine, RouteNode } from "@shared/types";
@@ -825,25 +825,9 @@ export default function SubwayMap({
   const activeDetailsScope = selectedStationId || selectedFeature;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[600px] text-left">
-      {/* Legend Column */}
-      <div className="lg:col-span-1 h-full overflow-hidden">
-        <SubwayLegend
-          subway={subway}
-          features={features}
-          result={result}
-          hoveredFeature={hoveredFeature}
-          setHoveredFeature={setHoveredFeature}
-          selectedFeature={selectedFeature}
-          setSelectedFeature={(fId) => {
-            setSelectedFeature(fId);
-            setSelectedStationId(null); // clear node selection when feature legend is selected
-          }}
-        />
-      </div>
-
+    <div className="h-[600px] w-full text-left relative">
       {/* ReactFlow Canvas Column */}
-      <div className="lg:col-span-3 rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative h-full">
+      <div className="w-full h-full rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative">
         {/* Map Control Buttons: Glow Switch + SVG Exporter */}
         <div className={`absolute top-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg transition-all duration-300 ${
           activeDetailsScope ? "right-[340px] sm:right-[400px]" : "right-3"
