@@ -3,13 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { ReactFlow, Background, Controls, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
 import { useAnalysisStore } from "../../../store/analysis.store";
 import { getFeaturesMap } from "../../../lib/api/client";
-// import FeatureLegend from "./FeatureLegend";
+import FeatureLegend from "./FeatureLegend";
 import FeatureDetails from "./FeatureDetails";
 import { Loader2, HelpCircle, Download, Play, Square, Globe, Shield, Settings, Zap, Box, Server } from "lucide-react";
 import { FeatureFlow } from "@shared/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Info, X } from 'lucide-react';
-
+import { MarkerType } from '@xyflow/react';
 
 interface MetroMapProps {
   result: any;
@@ -332,7 +332,7 @@ export default function MetroMap({
       stations.forEach((station, stepIdx) => {
         posMap[feature.id][station.id] = {
           x: stepIdx * 250,
-          y: fIdx * 120 + 50  // Reduced from 200 to 120
+          y: fIdx * 120 + 50
         };
       });
     });
@@ -579,6 +579,14 @@ export default function MetroMap({
           target: tNode.id,
           type: 'smoothstep',
           animated: isActiveEdge,
+          // ✅ Arrow marker pointing to target
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isEdgeDimmed ? `${feature.color}30` : feature.color,
+            width: 12,
+            height: 12,
+          },
+          // ✅ 🚇 Train label on active edges
           ...(isActiveEdge && {
             label: '🚇',
             labelStyle: {
@@ -836,6 +844,18 @@ export default function MetroMap({
       </div>
 
       {/* ReactFlow Canvas Column */}
+
+
+      <FeatureLegend
+        features={features}
+        result={result}
+        hoveredFeature={hoveredFeature}
+        setHoveredFeature={setHoveredFeature}
+        selectedFeature={selectedFeature}
+        setSelectedFeature={setSelectedFeature}
+      />
+
+
       {/* ── SCROLLABLE CONTAINER ── */}
       <div className="w-full h-full rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative">
         {/* Left scroll button */}
@@ -899,6 +919,35 @@ export default function MetroMap({
           </div>
         </div>
 
+        {/* ── HEAT MAP ── */}
+        <div className="absolute bottom-16 left-4 right-4 z-10">
+          <div className="space-y-1">
+            <span className="text-[7px] text-zinc-500 uppercase tracking-wider">🔥 Complexity Heat Map</span>
+            {filteredFeatures.slice(0, 4).map((feature) => {
+              const avgComplexity = feature.files.reduce((sum, f) => {
+                const score = getComplexityScore(f);
+                return sum + (score || 0);
+              }, 0) / (feature.files.length || 1);
+
+              const intensity = Math.min(100, Math.round((avgComplexity / 30) * 100));
+              const color = intensity > 70 ? 'bg-red-500' : intensity > 40 ? 'bg-yellow-500' : 'bg-emerald-500';
+
+              return (
+                <div key={feature.id} className="flex items-center gap-2">
+                  <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${color} transition-all duration-500`}
+                      style={{ width: `${intensity}%` }}
+                    />
+                  </div>
+                  <span className="text-[6px] text-zinc-400 w-10">{feature.name}</span>
+                  <span className="text-[5px] text-zinc-500 ml-auto">{Math.round(avgComplexity)} complexity</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* ── INTERCHANGE STATIONS ── */}
         {interchangeStations.length > 0 && (
           <div className="absolute bottom-12 left-4 right-4 z-10">
@@ -951,22 +1000,6 @@ export default function MetroMap({
           <HelpCircle className="w-3.5 h-3.5 text-zinc-550 shrink-0" />
           <span>Software Metro Map Dashboard</span>
         </div>
-
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onInit={(instance) => setReactFlowInstance(instance)}
-          fitView
-          panOnDrag
-          zoomOnScroll
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable={false}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background color="#222" gap={20} />
-          <Controls />
-        </ReactFlow>
 
         {/* Floating Details/Inspector Overlay Card */}
         <div className={`absolute top-3 right-3 bottom-3 z-20 w-80 sm:w-96 transition-all duration-300 transform ${activeDetailsScope ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
