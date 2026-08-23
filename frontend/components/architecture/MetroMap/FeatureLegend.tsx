@@ -51,10 +51,10 @@ export default function FeatureLegend({
       <div className="border-b border-border/50 pb-2.5 shrink-0">
         <h4 className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5">
           <Activity className="w-3.5 h-3.5 text-primary animate-pulse" />
-          <span>Business Features</span>
+          <span>🚇 Transit Network Lines</span>
         </h4>
         <p className="text-[10px] text-zinc-550 mt-1 leading-normal">
-          Hover/click a metro line to highlight domains or inspect details.
+          Each line represents a business feature. Hover/click to highlight domains.
         </p>
       </div>
 

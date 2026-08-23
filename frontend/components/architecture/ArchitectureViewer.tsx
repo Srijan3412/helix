@@ -196,81 +196,83 @@ export default function ArchitectureViewer({
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left Sidebar */}
-        <aside className="w-52 shrink-0 flex flex-col border-r border-border/30 bg-zinc-900/60 overflow-y-auto">
-          {/* Title */}
-          <div className="p-4 border-b border-border/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Activity size={13} className="text-primary" />
-              <h3 className="text-[11px] font-extrabold text-primary uppercase tracking-widest leading-tight">
-                {sidebarTitle}
-              </h3>
-            </div>
-            <p className="text-[10px] text-zinc-500 leading-relaxed">{sidebarDesc}</p>
-          </div>
-
-          {/* Feature Lines */}
-          <div className="p-3 space-y-2 flex-1">
-            {features.slice(0, 6).map((feat, i) => {
-              const healthBad = feat.health < 40;
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-3 cursor-pointer hover:border-zinc-600/60 transition-all duration-200"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: feat.color }}
-                    />
-                    <span className="text-[11px] font-bold text-white truncate flex-1">
-                      {feat.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[10px]">
-                    {healthBad && <AlertTriangle size={11} className="text-red-400 shrink-0" />}
-                    <span className={`font-bold ${healthBad ? "text-red-400" : "text-zinc-300"}`}>
-                      {feat.health}
-                    </span>
-                    <span className="text-zinc-500">Health</span>
-                    <span className="text-zinc-300 font-bold ml-auto">
-                      {Math.round((feat.confidence <= 1 ? feat.confidence * 100 : feat.confidence))}%
-                    </span>
-                    <span className="text-zinc-500">Conf</span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-1 text-[10px] text-zinc-500">
-                    <ChevronRight size={10} />
-                    <span>{feat.fileCount} files</span>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* PageRank Importance */}
-          {topFiles.length > 0 && (
-            <div className="p-3 border-t border-border/20 shrink-0">
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-[9px] font-extrabold text-zinc-500 uppercase tracking-widest">
-                  Pagerank Importance
-                </span>
+        {activeMode !== "metro" && (
+          <aside className="w-52 shrink-0 flex flex-col border-r border-border/30 bg-zinc-900/60 overflow-y-auto">
+            {/* Title */}
+            <div className="p-4 border-b border-border/20">
+              <div className="flex items-center gap-2 mb-1">
+                <Activity size={13} className="text-primary" />
+                <h3 className="text-[11px] font-extrabold text-primary uppercase tracking-widest leading-tight">
+                  {sidebarTitle}
+                </h3>
               </div>
-              <div className="space-y-1.5">
-                {topFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="text-[9px] text-zinc-600 font-bold w-3">{i + 1}</span>
-                    <span className="text-[10px] text-zinc-400 truncate flex-1 font-mono">{f.name}</span>
-                    <div className="bg-zinc-800 text-zinc-300 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                      {Math.round(f.score)}
+              <p className="text-[10px] text-zinc-550 mt-1 leading-normal">{sidebarDesc}</p>
+            </div>
+
+            {/* Feature Lines */}
+            <div className="p-3 space-y-2 flex-1">
+              {features.slice(0, 6).map((feat, i) => {
+                const healthBad = feat.health < 40;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-3 cursor-pointer hover:border-zinc-600/60 transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: feat.color }}
+                      />
+                      <span className="text-[11px] font-bold text-white truncate flex-1">
+                        {feat.name}
+                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                    <div className="flex items-center gap-3 text-[10px]">
+                      {healthBad && <AlertTriangle size={11} className="text-red-400 shrink-0" />}
+                      <span className={`font-bold ${healthBad ? "text-red-400" : "text-zinc-300"}`}>
+                        {feat.health}
+                      </span>
+                      <span className="text-zinc-500">Health</span>
+                      <span className="text-zinc-300 font-bold ml-auto">
+                        {Math.round((feat.confidence <= 1 ? feat.confidence * 100 : feat.confidence))}%
+                      </span>
+                      <span className="text-zinc-500">Conf</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-1 text-[10px] text-zinc-500">
+                      <ChevronRight size={10} />
+                      <span>{feat.fileCount} files</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
-          )}
-        </aside>
+
+            {/* PageRank Importance */}
+            {topFiles.length > 0 && (
+              <div className="p-3 border-t border-border/20 shrink-0">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-[9px] font-extrabold text-zinc-500 uppercase tracking-widest">
+                    Pagerank Importance
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {topFiles.map((f, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-[9px] text-zinc-600 font-bold w-3">{i + 1}</span>
+                      <span className="text-[10px] text-zinc-400 truncate flex-1 font-mono">{f.name}</span>
+                      <div className="bg-zinc-800 text-zinc-300 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                        {Math.round(f.score)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
 
         {/* Main Canvas */}
         <div className="flex-1 relative overflow-hidden bg-zinc-950">
