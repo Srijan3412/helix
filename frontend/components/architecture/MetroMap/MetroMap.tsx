@@ -109,6 +109,7 @@ export default function MetroMap({
     if (!scrollContainerRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
     const maxScroll = scrollWidth - clientWidth;
+    // ✅ This should work if scrollContainerRef is attached
     setScrollProgress(maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0);
     setIsAtStart(scrollLeft === 0);
     setIsAtEnd(scrollLeft >= maxScroll - 1);
@@ -331,7 +332,7 @@ export default function MetroMap({
       stations.forEach((station, stepIdx) => {
         posMap[feature.id][station.id] = {
           x: stepIdx * 250,
-          y: fIdx * 200 + 70
+          y: fIdx * 120 + 50  // Reduced from 200 to 120
         };
       });
     });
@@ -510,8 +511,8 @@ export default function MetroMap({
                 <div className="relative">
                   {/* Outer ring - London Underground style */}
                   <div
-                    className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${isSelectedNode || isJourneyActiveNode ? 'scale-110 shadow-lg' : ''
-                      }`}
+                    className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${isSelectedNode || isJourneyActiveNode ? 'scale-110 shadow-lg' : ''
+                      }`}  // ← Changed from w-10 h-10 to w-12 h-12
                     style={{
                       borderColor: feature.color,
                       backgroundColor: isSelectedNode || isJourneyActiveNode ? `${feature.color}20` : 'transparent'
@@ -519,24 +520,24 @@ export default function MetroMap({
                   >
                     {/* Inner circle */}
                     <div
-                      className={`w-5 h-5 rounded-full transition-all duration-300 ${isSelectedNode || isJourneyActiveNode ? 'scale-110' : ''
-                        }`}
+                      className={`w-6 h-6 rounded-full transition-all duration-300 ${isSelectedNode || isJourneyActiveNode ? 'scale-110' : ''
+                        }`}  // ← Changed from w-5 h-5 to w-6 h-6
                       style={{
                         backgroundColor: isJourneyActiveNode ? '#ffffff' : feature.color,
                       }}
                     />
                   </div>
                   {/* Station number */}
-                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[5px] text-zinc-500 font-mono whitespace-nowrap">
+                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] text-zinc-500 font-mono whitespace-nowrap">
                     {getStationNumber(feature, stations.indexOf(station))}
                   </div>
                 </div>
                 {/* Station label */}
-                <span className="text-[6px] text-zinc-400 mt-3 truncate max-w-[50px] text-center">
+                <span className="text-[8px] text-zinc-400 mt-3 truncate max-w-[60px] text-center">
                   {getStationDisplayName(station)}
                 </span>
                 {/* Station type indicator */}
-                <span className="text-[5px] text-zinc-600 mt-0.5">
+                <span className="text-[7px] text-zinc-600 mt-0.5">
                   {getStationEmoji(station.type)}
                 </span>
                 {/* Health indicator (if active) */}
@@ -860,7 +861,7 @@ export default function MetroMap({
               edges={edges}
               onInit={(instance) => setReactFlowInstance(instance)}
               fitView
-              panOnDrag={false}
+              panOnDrag={true}
               zoomOnScroll
               nodesDraggable={false}
               nodesConnectable={false}
