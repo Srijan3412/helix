@@ -635,6 +635,7 @@ export default function MetroMap({
         const complexity = station.type === "route" || station.type === "database" ? 0 : getComplexityScore(station.raw);
         const hasHighComplexity = complexity > 15;
         const isSelectedNode = selectedStationId === station.id;
+        const isJourneyActiveNode = journeyActive && journeyNodeId === station.id;
 
         // ✅ CORRECT - Larger node with readable labels
         flowNodes.push({
