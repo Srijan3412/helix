@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ReactFlow, Background, Controls, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
+import { ReactFlow, Background, Controls, Handle, Position, MarkerType, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
 import { useAnalysisStore } from "../../../store/analysis.store";
 import { getFeaturesMap } from "../../../lib/api/client";
 import FeatureLegend from "./FeatureLegend";
@@ -9,13 +9,112 @@ import { Loader2, HelpCircle, Download, Play, Square, Globe, Shield, Settings, Z
 import { FeatureFlow } from "@shared/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Info, X } from 'lucide-react';
-import { MarkerType } from '@xyflow/react';
 
 interface MetroMapProps {
   result: any;
   onSwitchTab?: (tab: any) => void;
   onSetImpactFile?: (file: string) => void;
   onSelectTraceRouteId?: (routeId: string) => void;
+}
+
+// ============================================================
+// Custom Metro Station Node
+// ============================================================
+interface MetroStationNodeProps {
+  data: {
+    stationNumber: string;
+    typeLabel: string;
+    displayName: string;
+    color: string;
+    isActive: boolean;
+    hasHighComplexity: boolean;
+    healthGlowActive: boolean;
+    complexity: number;
+    isSelected: boolean;
+    onClick: () => void;
+  };
+}
+
+function MetroStationNode({ data }: MetroStationNodeProps) {
+  const {
+    stationNumber,
+    typeLabel,
+    displayName,
+    color,
+    isActive,
+    hasHighComplexity,
+    healthGlowActive,
+    complexity,
+    isSelected,
+    onClick
+  } = data;
+
+  return (
+    <div
+      onClick={onClick}
+      className={`flex flex-col items-center group cursor-pointer transition-all duration-300`}
+      style={{ width: "100px", opacity: isActive ? 1.0 : 0.25 }}
+    >
+      {/* Horizontal handles for straight connections */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        style={{ top: "28px", background: color, border: `1.5px solid ${color}`, width: "8px", height: "8px", zIndex: 10 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        style={{ top: "28px", background: color, border: `1.5px solid ${color}`, width: "8px", height: "8px", zIndex: 10 }}
+      />
+
+      {/* Vertical handles for transfer connections */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        style={{ left: "50%", background: "#52525b", border: "1.5px solid #27272a", width: "6px", height: "6px", zIndex: 10 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        style={{ left: "50%", bottom: "0px", background: "#52525b", border: "1.5px solid #27272a", width: "6px", height: "6px", zIndex: 10 }}
+      />
+
+      {/* London Underground styled box */}
+      <div
+        className={`w-12 h-14 rounded-xl border-[3px] flex flex-col items-center justify-center font-mono text-sm font-extrabold shadow-md transition-all duration-300 ${isSelected ? "bg-zinc-800 scale-105" : "bg-zinc-950"
+          }`}
+        style={{
+          borderColor: color,
+          color: isSelected ? "#ffffff" : color,
+          boxShadow: isSelected ? `0 0 16px ${color}a0` : `0 4px 6px -1px rgba(0, 0, 0, 0.5)`,
+        }}
+      >
+        <span className="text-[10px] text-zinc-450 font-sans tracking-tight leading-none mb-1">STATION</span>
+        <span className="text-sm leading-none">{stationNumber}</span>
+      </div>
+
+      {/* Type/Method Label */}
+      <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mt-2 text-center truncate w-full">
+        {typeLabel}
+      </div>
+
+      {/* Name/Path Label */}
+      <div className="text-[10.5px] font-bold text-zinc-300 text-center truncate w-full mt-0.5" title={displayName}>
+        {displayName}
+      </div>
+
+      {/* Complexity Info */}
+      {healthGlowActive && (
+        <div className={`text-[8.5px] mt-1 font-bold ${hasHighComplexity ? "text-red-400" : "text-emerald-400"}`}>
+          {hasHighComplexity ? `⚠️ ${complexity}` : "✓"}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ============================================================
@@ -89,6 +188,37 @@ export default function MetroMap({
   onSelectTraceRouteId,
 }: MetroMapProps) {
   const { currentJobId } = useAnalysisStore();
+
+  const nodeTypes = useMemo(() => ({
+    station: MetroStationNode,
+  }), []);
+
+  // Helper to resolve short station type labels
+  const getStationTypeLabel = (station: any) => {
+    if (station.type === 'route') {
+      const r = station.raw || "";
+      const spaceIdx = r.indexOf(" ");
+      return spaceIdx > 0 ? r.substring(0, spaceIdx) : "GET";
+    }
+    if (station.type === 'database') return 'DB';
+    if (station.type === 'middleware') return 'MID';
+    if (station.type === 'controller') return 'CONT';
+    if (station.type === 'repository') return 'REPO';
+    if (station.type === 'service') return 'SERV';
+    return station.type.toUpperCase();
+  };
+
+  // Helper to resolve display name
+  const getStationNameLabel = (station: any) => {
+    if (station.type === 'route') {
+      const r = station.raw || "";
+      const spaceIdx = r.indexOf(" ");
+      return spaceIdx > 0 ? r.substring(spaceIdx + 1) : r;
+    }
+    return station.label || '';
+  };
+
+
 
   // ── Filter Controls ──
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -263,6 +393,27 @@ export default function MetroMap({
     return lines;
   }, [features]);
 
+  // Find the maximum number of stations in any feature line
+  const maxStationsCount = useMemo(() => {
+    let maxCount = 0;
+    features.forEach((feature) => {
+      const count = featureLines[feature.id]?.length || 0;
+      if (count > maxCount) maxCount = count;
+    });
+    return maxCount;
+  }, [features, featureLines]);
+
+  const canvasWidth = useMemo(() => {
+    const padding = 200;
+    return 80 + maxStationsCount * 170 + padding; // START_X = 80, STATION_SPACING = 170
+  }, [maxStationsCount]);
+
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener("resize", handleScroll);
+    return () => window.removeEventListener("resize", handleScroll);
+  }, [canvasWidth]);
+
   // ── Filter features based on active filters and search ──
   const filteredFeatures = useMemo(() => {
     let result = features;
@@ -313,20 +464,30 @@ export default function MetroMap({
   };
 
   // ── Get station display name ──
+  // ✅ CORRECT - Better display names
   const getStationDisplayName = (station: any) => {
     if (station.type === 'route') {
-      return station.label || `${station.method} ${station.path}`;
+      // Show method + path
+      const parts = station.label.split(' ');
+      return parts.length > 1 ? parts[1] : station.label;
     }
     if (station.type === 'file') {
-      return station.raw?.split(/[\\/]/).pop() || station.label;
+      // Show filename without extension
+      const name = station.raw?.split(/[\\/]/).pop() || station.label;
+      return name.replace(/\.[^.]+$/, '');
+    }
+    if (station.type === 'db') {
+      return station.raw || station.label;
     }
     return station.label || station.raw || '';
   };
   // ── COMPUTE LAYOUT POSITIONS ──
   const positions = useMemo(() => {
     const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
-    const FEATURE_SPACING = 120;
-    const STATION_SPACING = 140;
+    const FEATURE_SPACING = 130;
+    const STATION_SPACING = 100;
+    const START_X = 80;
+    const START_Y = 60;
 
     // Use filtered features for layout
     const featuresToLayout = filteredFeatures.length > 0 ? filteredFeatures : features;
@@ -335,13 +496,14 @@ export default function MetroMap({
       posMap[feature.id] = {};
       const stations = featureLines[feature.id] || [];
 
-      // ✅ All stations in this feature share the same Y
-      const baseY = 60 + fIdx * FEATURE_SPACING;
+
+
+      const baseY = 30 + fIdx * FEATURE_SPACING;
 
       stations.forEach((station, stepIdx) => {
         posMap[feature.id][station.id] = {
-          x: 100 + stepIdx * STATION_SPACING,
-          y: baseY  // ← SAME Y for all stations
+          x: START_X + stepIdx * STATION_SPACING,
+          y: baseY  // ← SAME Y for all stations!
         };
       });
     });
@@ -472,37 +634,9 @@ export default function MetroMap({
 
         const complexity = station.type === "route" || station.type === "database" ? 0 : getComplexityScore(station.raw);
         const hasHighComplexity = complexity > 15;
-
-        // Custom Highlight and Glow Overlay Styling
-        let glowStyle: React.CSSProperties = {};
-
-        // Check if node is active in Journey
-        const isJourneyActiveNode = journeyActive && journeyNodeId === station.id;
-
-        if (isJourneyActiveNode) {
-          glowStyle = {
-            boxShadow: `0 0 25px ${feature.color}, inset 0 0 10px ${feature.color}`,
-            border: `2px solid ${feature.color}`,
-            transform: "scale(1.08)",
-            transition: "all 0.3s ease-in-out"
-          };
-        } else if (healthGlowActive && isNodeActive) {
-          if (hasHighComplexity) {
-            glowStyle = {
-              boxShadow: "0 0 16px rgba(239, 68, 68, 0.75)",
-              border: "1.5px solid rgb(239, 68, 68)"
-            };
-          } else {
-            glowStyle = {
-              boxShadow: "0 0 12px rgba(16, 185, 129, 0.45)",
-              border: "1.5px solid rgb(16, 185, 129)"
-            };
-          }
-        }
-
         const isSelectedNode = selectedStationId === station.id;
 
-        // ── London Underground Style Node ──
+        // ✅ CORRECT - Larger node with readable labels
         flowNodes.push({
           id: station.id,
           type: "default",
@@ -515,52 +649,50 @@ export default function MetroMap({
                   setInspectorFeature(feature);
                   setSelectedFeature(null);
                 }}
-                className="flex flex-col items-center group cursor-pointer min-w-[50px]"
+                className="flex flex-col items-center cursor-pointer min-w-[80px]"
               >
                 <div className="relative">
-                  {/* Outer ring - London Underground style */}
+                  {/* Larger outer ring - w-14 h-14 */}
                   <div
-                    className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${isSelectedNode || isJourneyActiveNode ? 'scale-110 shadow-lg' : ''
-                      }`}  // ← Changed from w-10 h-10 to w-12 h-12
+                    className="w-14 h-14 rounded-full border-3 flex items-center justify-center transition-all duration-300 shadow-lg"
                     style={{
                       borderColor: feature.color,
-                      backgroundColor: isSelectedNode || isJourneyActiveNode ? `${feature.color}20` : 'transparent'
+                      borderWidth: 3,
+                      backgroundColor: isSelectedNode || isJourneyActiveNode ? `${feature.color}30` : 'transparent'
                     }}
                   >
-                    {/* Inner circle */}
+                    {/* Larger inner circle - w-7 h-7 */}
                     <div
-                      className={`w-6 h-6 rounded-full transition-all duration-300 ${isSelectedNode || isJourneyActiveNode ? 'scale-110' : ''
-                        }`}  // ← Changed from w-5 h-5 to w-6 h-6
+                      className="w-7 h-7 rounded-full transition-all duration-300"
                       style={{
                         backgroundColor: isJourneyActiveNode ? '#ffffff' : feature.color,
                       }}
                     />
                   </div>
-                  {/* Station number */}
-                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] text-zinc-500 font-mono whitespace-nowrap">
+                  {/* Station number - larger font */}
+                  <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white font-mono bg-zinc-900/80 px-1.5 py-0.5 rounded">
                     {getStationNumber(feature, stations.indexOf(station))}
                   </div>
                 </div>
-                {/* Station label */}
-                <span className="text-[8px] text-zinc-400 mt-3 truncate max-w-[60px] text-center">
+                {/* Station label - readable */}
+                <span className="text-[10px] text-zinc-200 mt-5 truncate max-w-[80px] text-center font-medium">
                   {getStationDisplayName(station)}
                 </span>
                 {/* Station type indicator */}
-                <span className="text-[7px] text-zinc-600 mt-0.5">
-                  {getStationEmoji(station.type)}
+                <span className="text-[8px] text-zinc-500 mt-0.5 uppercase tracking-wider">
+                  {station.type}
                 </span>
-                {/* Health indicator (if active) */}
-                {healthGlowActive && station.type !== "route" && station.type !== "database" && (
-                  <div className={`text-[5px] mt-0.5 ${getComplexityScore(station.raw) > 15 ? 'text-red-400' : 'text-emerald-400'
-                    }`}>
-                    {getComplexityScore(station.raw) > 15 ? '⚠️' : '✓'}
-                  </div>
-                )}
               </div>
             )
           },
           position: pos,
-          style: { background: "transparent", border: "none", padding: 0 }
+          style: {
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            width: 100,
+            height: 100,
+          }
         });
       });
     });
@@ -587,15 +719,16 @@ export default function MetroMap({
           source: sNode.id,
           target: tNode.id,
           type: 'smoothstep',
+          sourceHandle: 'right',
+          targetHandle: 'left',
           animated: isActiveEdge,
-          // ✅ Arrow marker pointing to target
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: isEdgeDimmed ? `${feature.color}30` : feature.color,
             width: 12,
             height: 12,
           },
-          // ✅ 🚇 Train label on active edges
+
           ...(isActiveEdge && {
             label: '🚇',
             labelStyle: {
@@ -608,8 +741,8 @@ export default function MetroMap({
           }),
           style: {
             stroke: isEdgeDimmed ? `${feature.color}30` : feature.color,
-            strokeWidth: isActiveEdge ? 6 : 4,
-            opacity: isEdgeDimmed ? 0.3 : 0.9,
+            strokeWidth: isActiveEdge ? 4 : 3,
+            opacity: isEdgeDimmed ? 0.25 : 0.95,
             transition: "stroke-width 0.3s, opacity 0.3s"
           }
         });
@@ -636,12 +769,13 @@ export default function MetroMap({
             id: `transfer:${src.stationId}:${dest.stationId}`,
             source: src.stationId,
             target: dest.stationId,
+            type: 'straight',
             animated: false,
             style: {
               stroke: "#71717a",
               strokeWidth: 6,
               strokeDasharray: "4 4",
-              opacity: isDimmed ? 0.12 : 0.7,
+              opacity: isDimmed ? 0.15 : 0.75,
               transition: "opacity 0.2s"
             }
           });
@@ -853,7 +987,6 @@ export default function MetroMap({
       </div>
 
       {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
-      {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
       <div className="flex gap-3 h-[calc(100%-40px)]">
 
         {/* ── FEATURE LEGEND (Left Sidebar) ── */}
@@ -887,14 +1020,16 @@ export default function MetroMap({
             className="w-full h-full overflow-x-auto overflow-y-hidden scrollbar-hide px-10"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            <div className="min-w-max h-full">
+            <div className="h-full" style={{ width: `${canvasWidth}px` }}>
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
+                nodeTypes={nodeTypes}
                 onInit={(instance) => setReactFlowInstance(instance)}
-                fitView
-                panOnDrag={true}
-                zoomOnScroll
+                fitView={false}
+                defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+                panOnDrag={false}
+                zoomOnScroll={false}
                 nodesDraggable={false}
                 nodesConnectable={false}
                 elementsSelectable={false}
@@ -932,51 +1067,93 @@ export default function MetroMap({
           </div>
 
           {/* ── HEAT MAP ── */}
+          {/* ── COMPACT HORIZONTAL HEAT MAP ── */}
           <div className="absolute bottom-16 left-4 right-4 z-10">
-            <div className="space-y-1">
-              <span className="text-[7px] text-zinc-500 uppercase tracking-wider">🔥 Complexity Heat Map</span>
-              {filteredFeatures.slice(0, 4).map((feature) => {
-                const avgComplexity = feature.files.reduce((sum, f) => {
-                  const score = getComplexityScore(f);
-                  return sum + (score || 0);
-                }, 0) / (feature.files.length || 1);
-
-                const intensity = Math.min(100, Math.round((avgComplexity / 30) * 100));
-                const color = intensity > 70 ? 'bg-red-500' : intensity > 40 ? 'bg-yellow-500' : 'bg-emerald-500';
-
-                return (
-                  <div key={feature.id} className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${color} transition-all duration-500`}
-                        style={{ width: `${intensity}%` }}
-                      />
-                    </div>
-                    <span className="text-[6px] text-zinc-400 w-10">{feature.name}</span>
-                    <span className="text-[5px] text-zinc-500 ml-auto">{Math.round(avgComplexity)} complexity</span>
-                  </div>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              <span className="text-[6px] text-zinc-500 font-bold uppercase tracking-wider shrink-0">🔥 Heat</span>
+              <div className="flex-1 flex gap-0.5 h-3 bg-zinc-800/50 rounded-full overflow-hidden">
+                {filteredFeatures.slice(0, 8).map((feature) => {
+                  const avgComplexity = feature.files.reduce((sum, f) => {
+                    const score = getComplexityScore(f);
+                    return sum + (score || 0);
+                  }, 0) / (feature.files.length || 1);
+                  const intensity = Math.min(100, Math.round((avgComplexity / 30) * 100));
+                  const color = intensity > 70 ? 'bg-red-500' : intensity > 40 ? 'bg-yellow-500' : 'bg-emerald-500';
+                  const width = Math.max(2, intensity / 10);
+                  return (
+                    <div
+                      key={feature.id}
+                      className={`h-full ${color} transition-all duration-500`}
+                      style={{ width: `${width}%` }}
+                      title={`${feature.name}: ${Math.round(avgComplexity)} complexity`}
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-[5px] text-zinc-500 shrink-0">Low</span>
+              <span className="text-[5px] text-zinc-500 shrink-0">High</span>
+            </div>
+            {/* Feature names below the bar */}
+            <div className="flex gap-1 mt-0.5 px-1">
+              {filteredFeatures.slice(0, 6).map((feature) => (
+                <span key={feature.id} className="text-[5px] text-zinc-500 truncate flex-1 text-center">
+                  {feature.name.substring(0, 8)}
+                </span>
+              ))}
             </div>
           </div>
 
           {/* ── INTERCHANGE STATIONS ── */}
           {interchangeStations.length > 0 && (
-            <div className="absolute bottom-12 left-4 right-4 z-10">
-              <div className="flex flex-wrap gap-1.5 justify-center">
-                {interchangeStations.slice(0, 4).map((is, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-zinc-800/60 border border-white/10"
-                  >
-                    <span className="text-[6px] text-white font-bold">T</span>
-                    {is.features.map(f => (
-                      <div key={f.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: f.color }} />
-                    ))}
+            <div className="absolute bottom-28 left-4 right-4 z-10 bg-zinc-900/90 border border-border/50 rounded-xl p-3 backdrop-blur-md shadow-lg">
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className="text-[9px] font-black text-zinc-450 uppercase tracking-widest flex items-center gap-1">
+                  🚉 Interchange Stations (Shared Components)
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {interchangeStations.slice(0, 5).map((is, idx) => {
+                  const filename = is.key.split(/[\\/]/).pop() || is.key;
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-zinc-950/80 border border-border/60 hover:border-zinc-500 rounded-lg p-2 flex flex-col min-w-[120px] transition cursor-pointer"
+                      onClick={() => {
+                        const targetNode = is.stations[0];
+                        if (targetNode) {
+                          setSelectedStationId(targetNode.id);
+                          setInspectorStation(targetNode.raw || targetNode.label);
+                          const featureObj = features.find(f => f.id === targetNode.featureId);
+                          if (featureObj) setInspectorFeature(featureObj);
+                          setSelectedFeature(null);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex -space-x-1">
+                          {is.features.map(f => (
+                            <div
+                              key={f.id}
+                              className="w-2.5 h-2.5 rounded-full border border-zinc-950"
+                              style={{ backgroundColor: f.color }}
+                              title={f.name}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[8.5px] font-bold text-zinc-450 uppercase truncate max-w-[80px]">
+                          {is.features.map(f => f.name.substring(0, 4)).join("/")}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-zinc-200 truncate" title={is.key}>
+                        {filename}
+                      </span>
+                    </div>
+                  );
+                })}
+                {interchangeStations.length > 5 && (
+                  <div className="flex items-center justify-center px-3 rounded-lg border border-dashed border-border/40 text-[9px] font-bold text-zinc-550">
+                    +{interchangeStations.length - 5} more
                   </div>
-                ))}
-                {interchangeStations.length > 4 && (
-                  <span className="text-[6px] text-zinc-500">+{interchangeStations.length - 4} more</span>
                 )}
               </div>
             </div>
