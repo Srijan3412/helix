@@ -322,22 +322,30 @@ export default function MetroMap({
     }
     return station.label || station.raw || '';
   };
-
-  // Compute Layout Positions (Y by feature index, X by step index with clumping alignment)
+  // ── COMPUTE LAYOUT POSITIONS ──
   const positions = useMemo(() => {
     const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
-    filteredFeatures.forEach((feature, fIdx) => {
+    const FEATURE_SPACING = 120;
+    const STATION_SPACING = 140;
+
+    // Use filtered features for layout
+    const featuresToLayout = filteredFeatures.length > 0 ? filteredFeatures : features;
+
+    featuresToLayout.forEach((feature, fIdx) => {
       posMap[feature.id] = {};
       const stations = featureLines[feature.id] || [];
+
+      // ✅ All stations in this feature share the same Y
+      const baseY = 60 + fIdx * FEATURE_SPACING;
+
       stations.forEach((station, stepIdx) => {
         posMap[feature.id][station.id] = {
-          x: stepIdx * 250,
-          y: fIdx * 120 + 50
+          x: 100 + stepIdx * STATION_SPACING,
+          y: baseY  // ← SAME Y for all stations
         };
       });
     });
 
-    // Share keys index
     const keyToInstances: Record<string, { featureId: string; stationId: string }[]> = {};
     filteredFeatures.forEach((feature) => {
       const stations = featureLines[feature.id] || [];
@@ -387,8 +395,9 @@ export default function MetroMap({
     }
 
     return posMap;
-  }, [filteredFeatures, featureLines]);
+  }, [filteredFeatures, features, featureLines]);
 
+  // Share keys index
 
   // ─────────────────────────────────────────────────────────────
   // INTERCHANGE STATION DETECTION
@@ -843,201 +852,200 @@ export default function MetroMap({
         )}
       </div>
 
-      {/* ReactFlow Canvas Column */}
+      {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
+      {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
+      <div className="flex gap-3 h-[calc(100%-40px)]">
 
+        {/* ── FEATURE LEGEND (Left Sidebar) ── */}
+        <div className="w-52 shrink-0">
+          <FeatureLegend
+            features={features}
+            result={result}
+            hoveredFeature={hoveredFeature}
+            setHoveredFeature={setHoveredFeature}
+            selectedFeature={selectedFeature}
+            setSelectedFeature={setSelectedFeature}
+          />
+        </div>
 
-      <FeatureLegend
-        features={features}
-        result={result}
-        hoveredFeature={hoveredFeature}
-        setHoveredFeature={setHoveredFeature}
-        selectedFeature={selectedFeature}
-        setSelectedFeature={setSelectedFeature}
-      />
-
-
-      {/* ── SCROLLABLE CONTAINER ── */}
-      <div className="w-full h-full rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative">
-        {/* Left scroll button */}
-        {!isAtStart && (
-          <button
-            onClick={() => scroll('left')}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-zinc-900/90 rounded-full border border-border/60 hover:bg-zinc-800 transition shadow-lg"
-          >
-            <span className="text-zinc-400 text-xs">◀</span>
-          </button>
-        )}
-
-        {/* Scrollable content */}
-        <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="w-full h-full overflow-x-auto overflow-y-hidden scrollbar-hide px-10"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          <div className="min-w-max h-full">
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onInit={(instance) => setReactFlowInstance(instance)}
-              fitView
-              panOnDrag={true}
-              zoomOnScroll
-              nodesDraggable={false}
-              nodesConnectable={false}
-              elementsSelectable={false}
-              proOptions={{ hideAttribution: true }}
+        {/* ── SCROLLABLE CONTAINER (Canvas) ── */}
+        <div className="flex-1 h-full rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative">
+          {/* Left scroll button */}
+          {!isAtStart && (
+            <button
+              onClick={() => scroll('left')}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-zinc-900/90 rounded-full border border-border/60 hover:bg-zinc-800 transition shadow-lg"
             >
-              <Background color="#222" gap={20} />
-              <Controls />
-            </ReactFlow>
-          </div>
-        </div>
+              <span className="text-zinc-400 text-xs">◀</span>
+            </button>
+          )}
 
-        {/* Right scroll button */}
-        {!isAtEnd && (
-          <button
-            onClick={() => scroll('right')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-zinc-900/90 rounded-full border border-border/60 hover:bg-zinc-800 transition shadow-lg"
+          {/* Scrollable content */}
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="w-full h-full overflow-x-auto overflow-y-hidden scrollbar-hide px-10"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            <span className="text-zinc-400 text-xs">▶</span>
-          </button>
-        )}
-
-        {/* Scroll progress bar */}
-        <div className="absolute bottom-2 left-4 right-4">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary/60 transition-all duration-300 rounded-full"
-                style={{ width: `${scrollProgress}%` }}
-              />
+            <div className="min-w-max h-full">
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onInit={(instance) => setReactFlowInstance(instance)}
+                fitView
+                panOnDrag={true}
+                zoomOnScroll
+                nodesDraggable={false}
+                nodesConnectable={false}
+                elementsSelectable={false}
+                proOptions={{ hideAttribution: true }}
+              >
+                <Background color="#222" gap={20} />
+                <Controls />
+              </ReactFlow>
             </div>
-            <span className="text-[7px] text-zinc-500 whitespace-nowrap">
-              {Math.round(scrollProgress)}%
-            </span>
           </div>
-        </div>
 
-        {/* ── HEAT MAP ── */}
-        <div className="absolute bottom-16 left-4 right-4 z-10">
-          <div className="space-y-1">
-            <span className="text-[7px] text-zinc-500 uppercase tracking-wider">🔥 Complexity Heat Map</span>
-            {filteredFeatures.slice(0, 4).map((feature) => {
-              const avgComplexity = feature.files.reduce((sum, f) => {
-                const score = getComplexityScore(f);
-                return sum + (score || 0);
-              }, 0) / (feature.files.length || 1);
+          {/* Right scroll button */}
+          {!isAtEnd && (
+            <button
+              onClick={() => scroll('right')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-zinc-900/90 rounded-full border border-border/60 hover:bg-zinc-800 transition shadow-lg"
+            >
+              <span className="text-zinc-400 text-xs">▶</span>
+            </button>
+          )}
 
-              const intensity = Math.min(100, Math.round((avgComplexity / 30) * 100));
-              const color = intensity > 70 ? 'bg-red-500' : intensity > 40 ? 'bg-yellow-500' : 'bg-emerald-500';
-
-              return (
-                <div key={feature.id} className="flex items-center gap-2">
-                  <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${color} transition-all duration-500`}
-                      style={{ width: `${intensity}%` }}
-                    />
-                  </div>
-                  <span className="text-[6px] text-zinc-400 w-10">{feature.name}</span>
-                  <span className="text-[5px] text-zinc-500 ml-auto">{Math.round(avgComplexity)} complexity</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── INTERCHANGE STATIONS ── */}
-        {interchangeStations.length > 0 && (
-          <div className="absolute bottom-12 left-4 right-4 z-10">
-            <div className="flex flex-wrap gap-1.5 justify-center">
-              {interchangeStations.slice(0, 4).map((is, idx) => (
+          {/* Scroll progress bar */}
+          <div className="absolute bottom-2 left-4 right-4">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
                 <div
-                  key={idx}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-zinc-800/60 border border-white/10"
-                >
-                  <span className="text-[6px] text-white font-bold">T</span>
-                  {is.features.map(f => (
-                    <div key={f.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: f.color }} />
-                  ))}
-                </div>
-              ))}
-              {interchangeStations.length > 4 && (
-                <span className="text-[6px] text-zinc-500">+{interchangeStations.length - 4} more</span>
-              )}
+                  className="h-full bg-primary/60 transition-all duration-300 rounded-full"
+                  style={{ width: `${scrollProgress}%` }}
+                />
+              </div>
+              <span className="text-[7px] text-zinc-500 whitespace-nowrap">
+                {Math.round(scrollProgress)}%
+              </span>
             </div>
           </div>
-        )}
-        {/* Map Control Buttons: Glow Switch + SVG Exporter */}
-        <div className={`absolute top-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg transition-all duration-300 ${activeDetailsScope ? "right-[340px] sm:right-[400px]" : "right-3"
-          }`}>
-          <button
-            onClick={exportToSvg}
-            className="flex items-center gap-1.5 bg-zinc-950 border border-border/60 hover:border-zinc-500 hover:text-white px-2 py-1 rounded-lg text-[9px] font-extrabold text-zinc-350 shadow-sm transition"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export SVG</span>
-          </button>
 
-          <div className="w-[1px] h-3.5 bg-border/60" />
+          {/* ── HEAT MAP ── */}
+          <div className="absolute bottom-16 left-4 right-4 z-10">
+            <div className="space-y-1">
+              <span className="text-[7px] text-zinc-500 uppercase tracking-wider">🔥 Complexity Heat Map</span>
+              {filteredFeatures.slice(0, 4).map((feature) => {
+                const avgComplexity = feature.files.reduce((sum, f) => {
+                  const score = getComplexityScore(f);
+                  return sum + (score || 0);
+                }, 0) / (feature.files.length || 1);
 
-          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Health Glow</span>
-          <button
-            onClick={() => setHealthGlowActive(!healthGlowActive)}
-            className={`w-8 h-4.5 rounded-full transition-colors relative flex items-center ${healthGlowActive ? "bg-primary" : "bg-zinc-700"
-              }`}
-          >
-            <div
-              className={`w-3.5 h-3.5 rounded-full bg-zinc-950 transition-transform ${healthGlowActive ? "translate-x-4" : "translate-x-0.5"
-                }`}
-            />
-          </button>
-        </div>
+                const intensity = Math.min(100, Math.round((avgComplexity / 30) * 100));
+                const color = intensity > 70 ? 'bg-red-500' : intensity > 40 ? 'bg-yellow-500' : 'bg-emerald-500';
 
-        {/* Legend Hint overlay */}
-        <div className="absolute top-3 left-3 z-10 px-3 py-1.5 rounded-lg bg-zinc-900/95 border border-border/60 text-[9.5px] font-bold text-zinc-400 pointer-events-none flex items-center gap-1.5">
-          <HelpCircle className="w-3.5 h-3.5 text-zinc-550 shrink-0" />
-          <span>Software Metro Map Dashboard</span>
-        </div>
+                return (
+                  <div key={feature.id} className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${color} transition-all duration-500`}
+                        style={{ width: `${intensity}%` }}
+                      />
+                    </div>
+                    <span className="text-[6px] text-zinc-400 w-10">{feature.name}</span>
+                    <span className="text-[5px] text-zinc-500 ml-auto">{Math.round(avgComplexity)} complexity</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-        {/* Floating Details/Inspector Overlay Card */}
-        <div className={`absolute top-3 right-3 bottom-3 z-20 w-80 sm:w-96 transition-all duration-300 transform ${activeDetailsScope ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
-          }`}>
+          {/* ── INTERCHANGE STATIONS ── */}
+          {interchangeStations.length > 0 && (
+            <div className="absolute bottom-12 left-4 right-4 z-10">
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {interchangeStations.slice(0, 4).map((is, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-zinc-800/60 border border-white/10"
+                  >
+                    <span className="text-[6px] text-white font-bold">T</span>
+                    {is.features.map(f => (
+                      <div key={f.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: f.color }} />
+                    ))}
+                  </div>
+                ))}
+                {interchangeStations.length > 4 && (
+                  <span className="text-[6px] text-zinc-500">+{interchangeStations.length - 4} more</span>
+                )}
+              </div>
+            </div>
+          )}
 
-          {/* Station Inspector - from daadd-main */}
-          <AnimatePresence>
-            {inspectorStation && inspectorFeature && (
-              <StationInspector
-                station={inspectorStation}
-                feature={inspectorFeature}
+          {/* Map Control Buttons */}
+          <div className={`absolute top-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg transition-all duration-300 ${activeDetailsScope ? "right-[340px] sm:right-[400px]" : "right-3"}`}>
+            <button
+              onClick={exportToSvg}
+              className="flex items-center gap-1.5 bg-zinc-950 border border-border/60 hover:border-zinc-500 hover:text-white px-2 py-1 rounded-lg text-[9px] font-extrabold text-zinc-350 shadow-sm transition"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export SVG</span>
+            </button>
+
+            <div className="w-[1px] h-3.5 bg-border/60" />
+
+            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Health Glow</span>
+            <button
+              onClick={() => setHealthGlowActive(!healthGlowActive)}
+              className={`w-8 h-4.5 rounded-full transition-colors relative flex items-center ${healthGlowActive ? "bg-primary" : "bg-zinc-700"}`}
+            >
+              <div
+                className={`w-3.5 h-3.5 rounded-full bg-zinc-950 transition-transform ${healthGlowActive ? "translate-x-4" : "translate-x-0.5"}`}
+              />
+            </button>
+          </div>
+
+          {/* Legend Hint overlay */}
+          <div className="absolute top-3 left-3 z-10 px-3 py-1.5 rounded-lg bg-zinc-900/95 border border-border/60 text-[9.5px] font-bold text-zinc-400 pointer-events-none flex items-center gap-1.5">
+            <HelpCircle className="w-3.5 h-3.5 text-zinc-550 shrink-0" />
+            <span>Software Metro Map Dashboard</span>
+          </div>
+
+          {/* Floating Details/Inspector Overlay Card */}
+          <div className={`absolute top-3 right-3 bottom-3 z-20 w-80 sm:w-96 transition-all duration-300 transform ${activeDetailsScope ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}`}>
+            <AnimatePresence>
+              {inspectorStation && inspectorFeature && (
+                <StationInspector
+                  station={inspectorStation}
+                  feature={inspectorFeature}
+                  onClose={() => {
+                    setInspectorStation(null);
+                    setInspectorFeature(null);
+                  }}
+                />
+              )}
+            </AnimatePresence>
+
+            {activeDetailsScope && (
+              <FeatureDetails
+                stationId={selectedStationId}
+                featureId={selectedFeature}
+                result={result}
+                features={features}
                 onClose={() => {
-                  setInspectorStation(null);
-                  setInspectorFeature(null);
+                  setSelectedStationId(null);
+                  setSelectedFeature(null);
                 }}
+                onSwitchTab={onSwitchTab}
+                onSetImpactFile={onSetImpactFile}
+                onSelectTraceRouteId={onSelectTraceRouteId}
+                onStartJourney={startJourney}
+                onStopJourney={stopJourney}
+                journeyActive={journeyActive}
+                journeyNodeId={journeyNodeId}
               />
             )}
-          </AnimatePresence>
-
-          {activeDetailsScope && (
-            <FeatureDetails
-              stationId={selectedStationId}
-              featureId={selectedFeature}
-              result={result}
-              features={features}
-              onClose={() => {
-                setSelectedStationId(null);
-                setSelectedFeature(null);
-              }}
-              onSwitchTab={onSwitchTab}
-              onSetImpactFile={onSetImpactFile}
-              onSelectTraceRouteId={onSelectTraceRouteId}
-              onStartJourney={startJourney}
-              onStopJourney={stopJourney}
-              journeyActive={journeyActive}
-              journeyNodeId={journeyNodeId}
-            />
-          )}
+          </div>
         </div>
       </div>
     </div>
