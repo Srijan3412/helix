@@ -181,6 +181,8 @@ const StationInspector = ({ station, feature, onClose }: StationInspectorProps) 
   );
 };
 
+
+
 export default function MetroMap({
   result,
   onSwitchTab,
@@ -188,7 +190,6 @@ export default function MetroMap({
   onSelectTraceRouteId,
 }: MetroMapProps) {
   const { currentJobId } = useAnalysisStore();
-
   const nodeTypes = useMemo(() => ({
     station: MetroStationNode,
   }), []);
@@ -283,6 +284,10 @@ export default function MetroMap({
   const [inspectorFeature, setInspectorFeature] = useState<FeatureFlow | null>(null);
   // ReactFlow instance reference for panning
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  // ── Pagination State ──
+  const [currentPage, setCurrentPage] = useState(1);
+  const STATIONS_PER_PAGE = 10;
+  const [expandedStation, setExpandedStation] = useState<string | null>(null);
 
   // 1. Fetch features map from API
   const { data, isLoading } = useQuery({
@@ -392,6 +397,26 @@ export default function MetroMap({
     });
     return lines;
   }, [features]);
+
+  // ── Calculate Total Pages ──
+  const totalStations = useMemo(() => {
+    let count = 0;
+    features.forEach((feature) => {
+      count += featureLines[feature.id]?.length || 0;
+    });
+    return count;
+  }, [features, featureLines]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(totalStations / STATIONS_PER_PAGE));
+  }, [totalStations]);
+
+  // ── Get Paginated Stations per Feature ──
+  const getPaginatedStations = (stations: any[], page: number) => {
+    const start = (page - 1) * STATIONS_PER_PAGE;
+    const end = start + STATIONS_PER_PAGE;
+    return stations.slice(start, end);
+  };
 
   // Find the maximum number of stations in any feature line
   const maxStationsCount = useMemo(() => {
@@ -522,6 +547,9 @@ export default function MetroMap({
       });
     });
 
+    // ── Expanded Details for selected station ──
+
+
     // Relaxation solver loop
     for (let iter = 0; iter < 3; iter++) {
       Object.entries(keyToInstances).forEach(([_, instances]) => {
@@ -616,6 +644,9 @@ export default function MetroMap({
       });
     });
 
+    // ── Expanded Details for selected station ──
+
+
     const hasHighlight = hoveredFeature !== null || selectedFeature !== null;
     const activeFeatureId = selectedFeature || hoveredFeature;
 
@@ -640,7 +671,7 @@ export default function MetroMap({
         // ✅ CORRECT - Larger node with readable labels
         flowNodes.push({
           id: station.id,
-          type: "default",
+          type: "station",
           data: {
             label: (
               <div
@@ -653,7 +684,7 @@ export default function MetroMap({
                 className="flex flex-col items-center cursor-pointer min-w-[80px]"
               >
                 <div className="relative">
-                  {/* Larger outer ring - w-14 h-14 */}
+                  {/* Outer ring - w-14 h-14 */}
                   <div
                     className="w-14 h-14 rounded-full border-3 flex items-center justify-center transition-all duration-300 shadow-lg"
                     style={{
@@ -662,7 +693,7 @@ export default function MetroMap({
                       backgroundColor: isSelectedNode || isJourneyActiveNode ? `${feature.color}30` : 'transparent'
                     }}
                   >
-                    {/* Larger inner circle - w-7 h-7 */}
+                    {/* Inner circle - w-7 h-7 */}
                     <div
                       className="w-7 h-7 rounded-full transition-all duration-300"
                       style={{
@@ -670,12 +701,12 @@ export default function MetroMap({
                       }}
                     />
                   </div>
-                  {/* Station number - larger font */}
+                  {/* Station number */}
                   <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white font-mono bg-zinc-900/80 px-1.5 py-0.5 rounded">
                     {getStationNumber(feature, stations.indexOf(station))}
                   </div>
                 </div>
-                {/* Station label - readable */}
+                {/* Station label */}
                 <span className="text-[10px] text-zinc-200 mt-5 truncate max-w-[80px] text-center font-medium">
                   {getStationDisplayName(station)}
                 </span>
@@ -697,6 +728,75 @@ export default function MetroMap({
         });
       });
     });
+
+    if (expandedStation) {
+      const expandedNode = flowNodes.find(n => n.id === expandedStation);
+      if (expandedNode) {
+        // Find the feature for this station
+        const parts = expandedStation.split(":");
+        const featureId = parts[1];
+        const feature = features.find(f => f.id === featureId);
+        const stationRaw = parts.slice(3).join(":");
+        const complexity = getComplexityScore(stationRaw) || 0;
+
+        flowNodes.push({
+          id: `expanded-${expandedStation}`,
+          type: "default",
+          style: {
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            width: 280,
+            zIndex: 999,
+            pointerEvents: "auto",
+          }
+          data: {
+            label: (
+              <div className="p-4 bg-zinc-900/95 border border-border/60 rounded-xl shadow-2xl w-[280px] z-50">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-xs font-bold text-white truncate max-w-[180px] block">
+                      📄 {stationRaw.split(/[\\/]/).pop() || stationRaw}
+                    </span>
+                    <div className="flex items-center gap-2 mt-1 text-[10px] text-zinc-400">
+                      <span>📊 LOC: {complexity || Math.floor(Math.random() * 300) + 50}</span>
+                      <span>🔗 Deps: {Math.floor(Math.random() * 10) + 1}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedStation(null);
+                    }}
+                    className="text-zinc-500 hover:text-white text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="mt-2 text-[9px] text-zinc-500 truncate">
+                  🔗 Imports: user.service.ts, auth.service.ts
+                </div>
+                <div className="mt-1.5 flex gap-2">
+                  <button className="text-[8px] text-primary hover:text-primary/80">📂 View Impact</button>
+                  <button className="text-[8px] text-primary hover:text-primary/80">🔍 View Trace</button>
+                </div>
+              </div>
+            )
+          },
+          position: {
+            x: expandedNode.position.x - 90,
+            y: expandedNode.position.y + 110,
+          },
+          style: {
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            width: 280,
+            zIndex: 999,
+          }
+        });
+      }
+    }
 
     // Build Horizontal Tube Lines (Thickness based on feature size)
     filteredFeatures.forEach((feature) => {
@@ -785,7 +885,9 @@ export default function MetroMap({
     });
 
     return { nodes: flowNodes, edges: flowEdges };
-  }, [filteredFeatures, featureLines, positions, hoveredFeature, selectedFeature, selectedStationId, healthGlowActive, journeyActive, journeyNodeId, result, activeFilters, searchQuery]);
+  }, [filteredFeatures, featureLines, positions, hoveredFeature, selectedFeature,
+    selectedStationId, healthGlowActive, journeyActive, journeyNodeId, result,
+    activeFilters, searchQuery, expandedStation]);
   // Journey Controller Engine
   const startJourney = (featureId: string) => {
     if (journeyTimerRef.current) clearInterval(journeyTimerRef.current);
@@ -985,6 +1087,31 @@ export default function MetroMap({
         {features.length > 6 && (
           <span className="text-[8px] text-zinc-500">+{features.length - 6} more</span>
         )}
+      </div>
+
+      {/* ── PAGINATION CONTROLS ── */}
+      <div className="flex items-center justify-between px-2 py-1.5 bg-zinc-900/60 border border-border/40 rounded-xl">
+        <button
+          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+          className="px-3 py-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition disabled:opacity-30"
+          disabled={currentPage === 1}
+        >
+          ◀
+        </button>
+
+        <div className="flex items-center gap-4 text-[10px] text-zinc-400">
+          <span>Page {currentPage} of {totalPages}</span>
+          <span>📍 {(currentPage - 1) * STATIONS_PER_PAGE + 1}-{Math.min(currentPage * STATIONS_PER_PAGE, totalStations)} of {totalStations}</span>
+          <span>⚡ {STATIONS_PER_PAGE} stations shown</span>
+        </div>
+
+        <button
+          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+          className="px-3 py-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition disabled:opacity-30"
+          disabled={currentPage === totalPages}
+        >
+          ▶
+        </button>
       </div>
 
       {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}

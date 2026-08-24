@@ -1,5 +1,5 @@
 "use client";
-
+import { parseAISummary, extractStructuredSummary, isValidSummary } from "../lib/markdown-parser";
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -859,9 +859,8 @@ export default function Home() {
               onClick={() => router.push("/scan-history")}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Scan History" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${
-                !sidebarExpanded ? "justify-center" : ""
-              }`}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+                }`}
             >
               <div className="rounded-md p-1.5 text-white/30">
                 <History className="h-4 w-4" />
@@ -1408,45 +1407,202 @@ export default function Home() {
                   <p className="text-xs font-bold text-primary uppercase tracking-widest">AI Analysis</p>
                   <h2 className="text-2xl font-bold text-white mt-1">AI Architect</h2>
                 </div>
-                <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-bold text-white">Architecture Summary</span>
-                  </div>
-                  {result.aiSummary.purpose && (
-                    <p className="text-sm text-zinc-300 leading-relaxed mb-4 font-semibold italic">
-                      "{result.aiSummary.purpose}"
-                    </p>
-                  )}
-                  {result.aiSummary.stack && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 p-4 bg-zinc-950/40 rounded-xl border border-border/20">
-                      {Object.entries(result.aiSummary.stack).map(([key, val]) => (
-                        <div key={key} className="text-xs">
-                          <span className="text-zinc-500 capitalize block mb-0.5">{key}</span>
-                          <span className="text-zinc-200 font-medium font-mono">{String(val || 'N/A')}</span>
+
+                {/* ── Parse AI Summary with Fallbacks ── */}
+                {(() => {
+                  // Phase 3: Use extractStructuredSummary with fallback
+                  const parsed = extractStructuredSummary(result.aiSummary);
+                  const hasData = isValidSummary(parsed);
+
+                  if (!hasData) {
+                    return (
+                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6 text-center">
+                        <Sparkles className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+                        <p className="text-sm text-zinc-400">No AI summary available for this repository.</p>
+                        <p className="text-xs text-zinc-500 mt-1">Run analysis to generate an AI-powered architecture summary.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      {/* ── Phase 2: Purpose Section (Quote Box) ── */}
+                      {parsed.purpose && (
+                        <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Project Purpose</span>
+                          </div>
+                          <div className="relative">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/30 rounded-full" />
+                            <p className="text-sm text-zinc-300 leading-relaxed font-medium pl-4 italic">
+                              "{parsed.purpose}"
+                            </p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  {result.aiSummary.markdownSummary && (
-                    <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line border-t border-border/20 pt-4">
-                      {result.aiSummary.markdownSummary}
-                    </p>
-                  )}
-                </div>
-                {result.staticAnalysis?.summary?.recommendations && result.staticAnalysis.summary.recommendations.length > 0 && (
-                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                    <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Refactoring Recommendations</div>
-                    <div className="space-y-2">
-                      {result.staticAnalysis.summary.recommendations.map((item: string, i: number) => (
-                        <div key={i} className="flex items-start gap-2 text-sm text-zinc-300">
-                          <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                          <span>{item}</span>
+                      )}
+
+                      {/* ── Phase 4: Technical Stack (Grid Cards) ── */}
+                      {(() => {
+                        // Phase 4: Use parsed.stack with fallback to result.aiSummary.stack
+                        const stack = parsed.stack;
+                        const hasStack = stack.framework !== 'N/A' || stack.language !== 'N/A';
+
+                        if (hasStack) {
+                          const stackItems = [
+                            { key: 'framework', label: 'Framework', value: stack.framework },
+                            { key: 'language', label: 'Language', value: stack.language },
+                            { key: 'runtime', label: 'Runtime', value: stack.runtime },
+                            { key: 'database', label: 'Database', value: stack.database },
+                            { key: 'orm', label: 'ORM', value: stack.orm },
+                            { key: 'auth', label: 'Auth', value: stack.auth },
+                          ].filter(item => item.value !== 'N/A');
+
+                          return (
+                            <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                              <div className="flex items-center gap-2 mb-4">
+                                <BarChart3 className="w-4 h-4 text-primary" />
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Technical Stack</span>
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                                {stackItems.map((item) => (
+                                  <div
+                                    key={item.key}
+                                    className="bg-zinc-950/40 rounded-lg p-3 text-center border border-border/20 hover:border-primary/30 transition-colors"
+                                  >
+                                    <div className="text-[8px] text-zinc-500 uppercase tracking-wider">{item.label}</div>
+                                    <div className="text-sm font-bold text-white mt-1 font-mono">{item.value}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Fallback: Try to extract from result.aiSummary.stack if available
+                        if (result.aiSummary.stack) {
+                          const stackEntries = Object.entries(result.aiSummary.stack).filter(
+                            ([, val]) => val && val !== 'N/A'
+                          );
+                          if (stackEntries.length > 0) {
+                            return (
+                              <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <BarChart3 className="w-4 h-4 text-primary" />
+                                  <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Technical Stack</span>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                                  {stackEntries.map(([key, val]) => (
+                                    <div
+                                      key={key}
+                                      className="bg-zinc-950/40 rounded-lg p-3 text-center border border-border/20"
+                                    >
+                                      <div className="text-[8px] text-zinc-500 uppercase tracking-wider">{key}</div>
+                                      <div className="text-sm font-bold text-white mt-1 font-mono">{String(val)}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })()}
+
+                      {/* ── Phase 2: Key Insights (Bullet List) ── */}
+                      {parsed.insights.length > 0 && (
+                        <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Zap className="w-4 h-4 text-amber-400" />
+                            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Key Insights</span>
+                          </div>
+                          <ul className="space-y-2">
+                            {parsed.insights.map((insight, idx) => (
+                              <li key={idx} className="flex items-start gap-2 text-sm text-zinc-300">
+                                <span className="text-amber-400 mt-1">◆</span>
+                                <span>{insight}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      )}
+
+                      {/* ── Phase 5: Recommendations (Clickable Cards) ── */}
+                      {parsed.recommendations.length > 0 && (
+                        <div className="bg-amber-950/10 border border-amber-900/30 rounded-xl p-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Recommendations</span>
+                          </div>
+                          <div className="space-y-2">
+                            {parsed.recommendations.map((rec, idx) => {
+                              // Determine which tab this recommendation relates to
+                              const tabMapping: Record<string, ResultTab> = {
+                                'authentication': 'health',
+                                'auth': 'health',
+                                'security': 'health',
+                                'middleware': 'routes',
+                                'validation': 'routes',
+                                'database': 'db',
+                                'orm': 'db',
+                                'schema': 'db',
+                                'testing': 'health',
+                                'test': 'health',
+                                'dependency': 'impact',
+                                'performance': 'overview',
+                              };
+
+                              let targetTab: ResultTab = 'health';
+                              const lowerRec = rec.toLowerCase();
+                              for (const [key, tab] of Object.entries(tabMapping)) {
+                                if (lowerRec.includes(key)) {
+                                  targetTab = tab;
+                                  break;
+                                }
+                              }
+
+                              // Extract first 50 chars for display
+                              const displayText = rec.length > 120 ? rec.substring(0, 120) + '...' : rec;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  onClick={() => setActiveResultTab(targetTab)}
+                                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-zinc-950/60 border border-amber-800/20 hover:border-amber-700/50 hover:bg-zinc-950/80 cursor-pointer transition-all group"
+                                >
+                                  <div className="flex items-start gap-2 flex-1">
+                                    <span className="text-amber-400 mt-0.5 text-sm">▸</span>
+                                    <span className="text-sm text-zinc-300">{displayText}</span>
+                                  </div>
+                                  <Badge
+                                    variant="primary"
+                                    className="text-[8px] uppercase tracking-wider shrink-0 group-hover:bg-primary/30 transition"
+                                  >
+                                    → {targetTab}
+                                  </Badge>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Phase 3: Raw Markdown Fallback (Collapsible) ── */}
+                      {result.aiSummary.markdownSummary && (
+                        <details className="bg-zinc-900/40 border border-border/30 rounded-xl p-4 group">
+                          <summary className="text-[10px] text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors flex items-center gap-2">
+                            <span className="text-zinc-600">📄</span>
+                            View raw AI response
+                            <span className="text-[8px] text-zinc-600 ml-auto group-open:rotate-180 transition-transform">▼</span>
+                          </summary>
+                          <pre className="mt-3 text-[10px] text-zinc-400 whitespace-pre-wrap font-mono max-h-60 overflow-y-auto p-3 bg-zinc-950/60 rounded-lg border border-border/20">
+                            {result.aiSummary.markdownSummary}
+                          </pre>
+                        </details>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 
