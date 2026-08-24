@@ -1,6 +1,6 @@
 import { EntryPointInfo } from "@shared/types";
 
-export interface EntryPointCandidate extends EntryPointInfo {}
+export type EntryPointCandidate = EntryPointInfo;
 
 export interface ParsedPackageJson {
   exists: boolean;

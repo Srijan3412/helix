@@ -32,36 +32,82 @@ export interface ParsedAISummary {
 
 export interface ParsedAISummarySections {
     purpose: string;
-    stack: {
-        framework: string;
-        language: string;
-        runtime: string;
-        database: string;
-        orm: string;
-        auth: string;
-    };
+    stack: { framework: string; language: string; runtime: string; database: string; orm: string; auth: string; };
     insights: string[];
     recommendations: string[];
+    lifecycle?: string[];        // ← ADD
+    quickStart?: string[];       // ← ADD
+    authDetected?: boolean;      // ← ADD
+    authEnvVars?: string[];      // ← ADD
 }
 
-/**
- * Main parser function - converts markdown to structured data
- */
+function extractLifecycle(sections: Record<string, string>, markdown: string): string[] {
+    const lifecycleKeys = ['request lifecycle', 'lifecycle', 'flow', 'execution flow'];
+    for (const key of lifecycleKeys) {
+        if (sections[key]) {
+            const steps = sections[key]
+                .replace(/→/g, '|')
+                .split(/[|→]/)
+                .map(s => s.trim())
+                .filter(Boolean);
+            if (steps.length > 0) return steps;
+        }
+    }
+    return [];
+}
+
+function extractQuickStart(sections: Record<string, string>, markdown: string): string[] {
+    const quickStartKeys = ['quick start', 'getting started', 'setup', 'installation'];
+    for (const key of quickStartKeys) {
+        if (sections[key]) {
+            const items = sections[key]
+                .split(/\n/)
+                .filter(line => /^[-*•]|\d+\./.test(line.trim()))
+                .map(line => line.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+                .filter(Boolean);
+            if (items.length > 0) return items;
+        }
+    }
+    return [];
+}
+
+function extractAuthInfo(sections: Record<string, string>, markdown: string): { detected: boolean; envVars: string[] } {
+    const authKeys = ['authentication', 'auth', 'security'];
+    let detected = false;
+    const envVars: string[] = [];
+
+    for (const key of authKeys) {
+        if (sections[key]) {
+            const section = sections[key];
+            detected = !/(?:no|none|not)\s*(?:detected|found|present|available|implemented)/i.test(section);
+            const vars = section.match(/[A-Z_]{3,}_[A-Z_]{3,}/g) || [];
+            envVars.push(...vars);
+            break;
+        }
+    }
+    return { detected, envVars };
+}
+
+// ── Update parseAISummary function ──
 export function parseAISummary(markdown: string): ParsedAISummarySections {
     if (!markdown || typeof markdown !== 'string') {
         return getDefaultSummary();
     }
 
     const sections = extractSections(markdown);
+    const authInfo = extractAuthInfo(sections, markdown);
 
     return {
         purpose: extractPurpose(sections, markdown),
         stack: extractStack(sections, markdown),
         insights: extractInsights(sections, markdown),
         recommendations: extractRecommendations(sections, markdown),
+        lifecycle: extractLifecycle(sections, markdown),
+        quickStart: extractQuickStart(sections, markdown),
+        authDetected: authInfo.detected,
+        authEnvVars: authInfo.envVars,
     };
 }
-
 /**
  * Extract sections from markdown based on headers
  */

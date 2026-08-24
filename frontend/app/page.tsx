@@ -309,6 +309,34 @@ export default function Home() {
   const healthData = computeHealthScore(result);
   const authData = detectAuth(result);
 
+  // ── Export Functions for AI Architect ──
+  const exportAsMarkdown = () => {
+    if (!result?.aiSummary?.markdownSummary) return;
+    const blob = new Blob([result.aiSummary.markdownSummary], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-architect-summary-${new Date().toISOString().split('T')[0]}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const copySummary = () => {
+    if (!result?.aiSummary?.markdownSummary) return;
+    navigator.clipboard.writeText(result.aiSummary.markdownSummary)
+      .then(() => {
+        console.log('✅ Copied to clipboard');
+      })
+      .catch(() => {
+        console.error('❌ Failed to copy');
+      });
+  };
+
+  const regenerateSummary = () => {
+    // TODO: Call API to regenerate
+    console.log('🔄 Regenerate summary');
+  };
+
   const getTopRisks = () => {
     if (!result) return [];
     const files = result.files || [];
@@ -1401,210 +1429,172 @@ export default function Home() {
             )}
 
             {/* ─── AI ARCHITECT TAB ─── */}
-            {activeResultTab === "ai-architect" && result.aiSummary && (
-              <div className="space-y-6 max-w-5xl mx-auto">
-                <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">AI Analysis</p>
-                  <h2 className="text-2xl font-bold text-white mt-1">AI Architect</h2>
-                </div>
+            {/* ─── AI ARCHITECT TAB ─── */}
+            {activeResultTab === "ai-architect" && result.aiSummary && (() => {
+              // Parse the markdown summary
+              const parsed = parseAISummary(result.aiSummary.markdownSummary || '');
 
-                {/* ── Parse AI Summary with Fallbacks ── */}
-                {(() => {
-                  // Phase 3: Use extractStructuredSummary with fallback
-                  const parsed = extractStructuredSummary(result.aiSummary);
-                  const hasData = isValidSummary(parsed);
+              return (
+                <div className="space-y-6 max-w-6xl mx-auto">
+                  {/* Header */}
+                  <div className="mb-6">
+                    <p className="text-xs font-bold text-primary uppercase tracking-widest">AI Analysis</p>
+                    <h2 className="text-2xl font-bold text-white mt-1">AI Architect</h2>
+                  </div>
 
-                  if (!hasData) {
+                  {/* ── Project Purpose ── */}
+                  {parsed.purpose && (
+                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">🎯</span>
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Project Purpose</span>
+                      </div>
+                      <div className="border-l-4 border-primary/40 pl-4">
+                        <p className="text-sm text-zinc-200 leading-relaxed font-medium italic">
+                          "{parsed.purpose}"
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Technical Stack ── */}
+                  {parsed.stack && Object.keys(parsed.stack).length > 0 && (
+                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="text-lg">📊</span>
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Technical Stack</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                        {Object.entries(parsed.stack).map(([key, val]) => (
+                          <div key={key} className="bg-zinc-950/60 border border-border/30 rounded-xl p-3 text-center">
+                            <div className="text-xs font-mono font-bold text-white truncate">{String(val || 'N/A')}</div>
+                            <div className="text-[9px] text-zinc-500 capitalize mt-0.5">{key}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Request Lifecycle ── */}
+                  {(() => {
+                    const lifecycle = parsed.lifecycle;
+                    if (!lifecycle || lifecycle.length === 0) return null;
                     return (
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6 text-center">
-                        <Sparkles className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
-                        <p className="text-sm text-zinc-400">No AI summary available for this repository.</p>
-                        <p className="text-xs text-zinc-500 mt-1">Run analysis to generate an AI-powered architecture summary.</p>
+                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">📋</span>
+                          <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Request Lifecycle</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          {lifecycle.map((step: string, i: number) => (
+                            <React.Fragment key={i}>
+                              <span className="px-3 py-1.5 bg-zinc-800/60 border border-border/30 rounded-lg text-zinc-200 font-mono">
+                                {step}
+                              </span>
+                              {i < lifecycle.length - 1 && (
+                                <span className="text-zinc-600">→</span>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
                       </div>
                     );
-                  }
+                  })()}
 
-                  return (
-                    <>
-                      {/* ── Phase 2: Purpose Section (Quote Box) ── */}
-                      {parsed.purpose && (
-                        <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Sparkles className="w-4 h-4 text-primary" />
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Project Purpose</span>
+                  {/* ── Authentication Status ── */}
+                  {parsed.authDetected !== undefined && (
+                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">🔒</span>
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Authentication Status</span>
+                      </div>
+                      <div className={`p-3 rounded-lg ${parsed.authDetected ? 'bg-emerald-950/20 border border-emerald-800/30' : 'bg-amber-950/20 border border-amber-800/30'}`}>
+                        <p className="text-sm text-zinc-300">
+                          {parsed.authDetected ? '✅ Authentication detected' : '⚠️ No explicit authentication mechanism detected'}
+                        </p>
+                        {parsed.authEnvVars && parsed.authEnvVars.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-[10px] text-zinc-500">Critical environment variables present:</p>
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {parsed.authEnvVars.map((env: string) => (
+                                <code key={env} className="text-[10px] font-mono bg-zinc-800/60 px-2 py-0.5 rounded text-amber-400">{env}</code>
+                              ))}
+                            </div>
                           </div>
-                          <div className="relative">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/30 rounded-full" />
-                            <p className="text-sm text-zinc-300 leading-relaxed font-medium pl-4 italic">
-                              "{parsed.purpose}"
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                      {/* ── Phase 4: Technical Stack (Grid Cards) ── */}
-                      {(() => {
-                        // Phase 4: Use parsed.stack with fallback to result.aiSummary.stack
-                        const stack = parsed.stack;
-                        const hasStack = stack.framework !== 'N/A' || stack.language !== 'N/A';
-
-                        if (hasStack) {
-                          const stackItems = [
-                            { key: 'framework', label: 'Framework', value: stack.framework },
-                            { key: 'language', label: 'Language', value: stack.language },
-                            { key: 'runtime', label: 'Runtime', value: stack.runtime },
-                            { key: 'database', label: 'Database', value: stack.database },
-                            { key: 'orm', label: 'ORM', value: stack.orm },
-                            { key: 'auth', label: 'Auth', value: stack.auth },
-                          ].filter(item => item.value !== 'N/A');
-
+                  {/* ── Refactoring Recommendations ── */}
+                  {parsed.recommendations && parsed.recommendations.length > 0 && (
+                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">💡</span>
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Refactoring Recommendations</span>
+                      </div>
+                      <div className="space-y-2">
+                        {parsed.recommendations.map((item: string, i: number) => {
+                          // Simple priority detection
+                          let priority: 'high' | 'medium' | 'low' = 'medium';
+                          if (/(?:remove|fix|reduce|critical|high|urgent|broken|dead)/i.test(item)) priority = 'high';
+                          else if (/(?:consider|optional|low|minor|maybe)/i.test(item)) priority = 'low';
+                          const icon = priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : '🟢';
                           return (
-                            <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                              <div className="flex items-center gap-2 mb-4">
-                                <BarChart3 className="w-4 h-4 text-primary" />
-                                <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Technical Stack</span>
-                              </div>
-                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                                {stackItems.map((item) => (
-                                  <div
-                                    key={item.key}
-                                    className="bg-zinc-950/40 rounded-lg p-3 text-center border border-border/20 hover:border-primary/30 transition-colors"
-                                  >
-                                    <div className="text-[8px] text-zinc-500 uppercase tracking-wider">{item.label}</div>
-                                    <div className="text-sm font-bold text-white mt-1 font-mono">{item.value}</div>
-                                  </div>
-                                ))}
-                              </div>
+                            <div key={i} className="flex items-center gap-3 p-2.5 bg-zinc-950/40 border border-border/20 rounded-lg">
+                              <span className="text-sm">{icon}</span>
+                              <span className="text-sm text-zinc-300">{item}</span>
                             </div>
                           );
-                        }
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-                        // Fallback: Try to extract from result.aiSummary.stack if available
-                        if (result.aiSummary.stack) {
-                          const stackEntries = Object.entries(result.aiSummary.stack).filter(
-                            ([, val]) => val && val !== 'N/A'
-                          );
-                          if (stackEntries.length > 0) {
-                            return (
-                              <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                                <div className="flex items-center gap-2 mb-4">
-                                  <BarChart3 className="w-4 h-4 text-primary" />
-                                  <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Technical Stack</span>
-                                </div>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                                  {stackEntries.map(([key, val]) => (
-                                    <div
-                                      key={key}
-                                      className="bg-zinc-950/40 rounded-lg p-3 text-center border border-border/20"
-                                    >
-                                      <div className="text-[8px] text-zinc-500 uppercase tracking-wider">{key}</div>
-                                      <div className="text-sm font-bold text-white mt-1 font-mono">{String(val)}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          }
-                        }
-                        return null;
-                      })()}
-
-                      {/* ── Phase 2: Key Insights (Bullet List) ── */}
-                      {parsed.insights.length > 0 && (
-                        <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Zap className="w-4 h-4 text-amber-400" />
-                            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Key Insights</span>
+                  {/* ── Quick Start ── */}
+                  {parsed.quickStart && parsed.quickStart.length > 0 && (
+                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">📎</span>
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Quick Start</span>
+                      </div>
+                      <div className="space-y-2">
+                        {parsed.quickStart.map((step: string, i: number) => (
+                          <div key={i} className="flex items-start gap-3">
+                            <span className="text-xs font-bold text-primary w-6">{i + 1}.</span>
+                            <span className="text-sm text-zinc-300">{step}</span>
                           </div>
-                          <ul className="space-y-2">
-                            {parsed.insights.map((insight, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-sm text-zinc-300">
-                                <span className="text-amber-400 mt-1">◆</span>
-                                <span>{insight}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                      {/* ── Phase 5: Recommendations (Clickable Cards) ── */}
-                      {parsed.recommendations.length > 0 && (
-                        <div className="bg-amber-950/10 border border-amber-900/30 rounded-xl p-6">
-                          <div className="flex items-center gap-2 mb-3">
-                            <CheckCircle2 className="w-4 h-4 text-amber-400" />
-                            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Recommendations</span>
-                          </div>
-                          <div className="space-y-2">
-                            {parsed.recommendations.map((rec, idx) => {
-                              // Determine which tab this recommendation relates to
-                              const tabMapping: Record<string, ResultTab> = {
-                                'authentication': 'health',
-                                'auth': 'health',
-                                'security': 'health',
-                                'middleware': 'routes',
-                                'validation': 'routes',
-                                'database': 'db',
-                                'orm': 'db',
-                                'schema': 'db',
-                                'testing': 'health',
-                                'test': 'health',
-                                'dependency': 'impact',
-                                'performance': 'overview',
-                              };
-
-                              let targetTab: ResultTab = 'health';
-                              const lowerRec = rec.toLowerCase();
-                              for (const [key, tab] of Object.entries(tabMapping)) {
-                                if (lowerRec.includes(key)) {
-                                  targetTab = tab;
-                                  break;
-                                }
-                              }
-
-                              // Extract first 50 chars for display
-                              const displayText = rec.length > 120 ? rec.substring(0, 120) + '...' : rec;
-
-                              return (
-                                <div
-                                  key={idx}
-                                  onClick={() => setActiveResultTab(targetTab)}
-                                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-zinc-950/60 border border-amber-800/20 hover:border-amber-700/50 hover:bg-zinc-950/80 cursor-pointer transition-all group"
-                                >
-                                  <div className="flex items-start gap-2 flex-1">
-                                    <span className="text-amber-400 mt-0.5 text-sm">▸</span>
-                                    <span className="text-sm text-zinc-300">{displayText}</span>
-                                  </div>
-                                  <Badge
-                                    variant="primary"
-                                    className="text-[8px] uppercase tracking-wider shrink-0 group-hover:bg-primary/30 transition"
-                                  >
-                                    → {targetTab}
-                                  </Badge>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Phase 3: Raw Markdown Fallback (Collapsible) ── */}
-                      {result.aiSummary.markdownSummary && (
-                        <details className="bg-zinc-900/40 border border-border/30 rounded-xl p-4 group">
-                          <summary className="text-[10px] text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors flex items-center gap-2">
-                            <span className="text-zinc-600">📄</span>
-                            View raw AI response
-                            <span className="text-[8px] text-zinc-600 ml-auto group-open:rotate-180 transition-transform">▼</span>
-                          </summary>
-                          <pre className="mt-3 text-[10px] text-zinc-400 whitespace-pre-wrap font-mono max-h-60 overflow-y-auto p-3 bg-zinc-950/60 rounded-lg border border-border/20">
-                            {result.aiSummary.markdownSummary}
-                          </pre>
-                        </details>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+                  {/* ── Export Actions ── */}
+                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        onClick={exportAsMarkdown}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/20 transition"
+                      >
+                        📄 Export as Markdown
+                      </button>
+                      <button
+                        onClick={copySummary}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-border/30 text-zinc-400 text-[10px] font-bold hover:bg-white/10 transition"
+                      >
+                        📋 Copy Summary
+                      </button>
+                      <button
+                        onClick={regenerateSummary}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-border/30 text-zinc-400 text-[10px] font-bold hover:bg-white/10 transition"
+                      >
+                        🔄 Regenerate
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ─── ONBOARDING TAB ─── */}
             {activeResultTab === "onboarding" && result.onboarding && (

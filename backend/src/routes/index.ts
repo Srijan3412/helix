@@ -566,8 +566,9 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
             const res = JSON.parse(resultData);
             repoName = res.tree?.name || res.overview?.repoName || repoName;
             totalFiles = res.overview?.totalFiles || 0;
-            totalRoutes = res.overview?.totalRoutes || 0;
-          } catch {}
+          } catch {
+            // Ignore JSON parsing errors for compatibility fallback
+          }
         }
       }
 

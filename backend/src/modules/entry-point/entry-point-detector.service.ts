@@ -62,8 +62,8 @@ export class EntryPointDetectorService {
       // 2. Parse package.json start/dev/run scripts
       if (parsedPkg.scripts && typeof parsedPkg.scripts === "object") {
         // Regex to match files referenced in script commands (e.g. ts-node src/index.ts, nodemon app.js)
-        const scriptFileRegex = /(?:^|\s)(?:[a-zA-Z0-9_\-\.\/]+)\/([a-zA-Z0-9_\-\.]+)\.(ts|js|tsx|jsx)\b/g;
-        const simpleFileRegex = /\b([a-zA-Z0-9_\-\.]+)\.(ts|js|tsx|jsx)\b/g;
+        const scriptFileRegex = /(?:^|\s)(?:[a-zA-Z0-9_\-./]+)\/([a-zA-Z0-9_\-.]+)\.(ts|js|tsx|jsx)\b/g;
+        const simpleFileRegex = /\b([a-zA-Z0-9_\-.]+)\.(ts|js|tsx|jsx)\b/g;
 
         for (const [scriptName, scriptVal] of Object.entries(parsedPkg.scripts)) {
           if (typeof scriptVal !== "string") continue;
