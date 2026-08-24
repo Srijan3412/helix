@@ -1,5 +1,4 @@
 "use client";
-import { parseAISummary, extractStructuredSummary, isValidSummary } from "../lib/markdown-parser";
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1429,172 +1428,53 @@ export default function Home() {
             )}
 
             {/* ─── AI ARCHITECT TAB ─── */}
-            {/* ─── AI ARCHITECT TAB ─── */}
-            {activeResultTab === "ai-architect" && result.aiSummary && (() => {
-              // Parse the markdown summary
-              const parsed = parseAISummary(result.aiSummary.markdownSummary || '');
-
-              return (
-                <div className="space-y-6 max-w-6xl mx-auto">
-                  {/* Header */}
-                  <div className="mb-6">
-                    <p className="text-xs font-bold text-primary uppercase tracking-widest">AI Analysis</p>
-                    <h2 className="text-2xl font-bold text-white mt-1">AI Architect</h2>
-                  </div>
-
-                  {/* ── Project Purpose ── */}
-                  {parsed.purpose && (
-                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-lg">🎯</span>
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Project Purpose</span>
-                      </div>
-                      <div className="border-l-4 border-primary/40 pl-4">
-                        <p className="text-sm text-zinc-200 leading-relaxed font-medium italic">
-                          "{parsed.purpose}"
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── Technical Stack ── */}
-                  {parsed.stack && Object.keys(parsed.stack).length > 0 && (
-                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className="text-lg">📊</span>
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Technical Stack</span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                        {Object.entries(parsed.stack).map(([key, val]) => (
-                          <div key={key} className="bg-zinc-950/60 border border-border/30 rounded-xl p-3 text-center">
-                            <div className="text-xs font-mono font-bold text-white truncate">{String(val || 'N/A')}</div>
-                            <div className="text-[9px] text-zinc-500 capitalize mt-0.5">{key}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── Request Lifecycle ── */}
-                  {(() => {
-                    const lifecycle = parsed.lifecycle;
-                    if (!lifecycle || lifecycle.length === 0) return null;
-                    return (
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-lg">📋</span>
-                          <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Request Lifecycle</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          {lifecycle.map((step: string, i: number) => (
-                            <React.Fragment key={i}>
-                              <span className="px-3 py-1.5 bg-zinc-800/60 border border-border/30 rounded-lg text-zinc-200 font-mono">
-                                {step}
-                              </span>
-                              {i < lifecycle.length - 1 && (
-                                <span className="text-zinc-600">→</span>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── Authentication Status ── */}
-                  {parsed.authDetected !== undefined && (
-                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-lg">🔒</span>
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Authentication Status</span>
-                      </div>
-                      <div className={`p-3 rounded-lg ${parsed.authDetected ? 'bg-emerald-950/20 border border-emerald-800/30' : 'bg-amber-950/20 border border-amber-800/30'}`}>
-                        <p className="text-sm text-zinc-300">
-                          {parsed.authDetected ? '✅ Authentication detected' : '⚠️ No explicit authentication mechanism detected'}
-                        </p>
-                        {parsed.authEnvVars && parsed.authEnvVars.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-[10px] text-zinc-500">Critical environment variables present:</p>
-                            <div className="flex flex-wrap gap-1.5 mt-1">
-                              {parsed.authEnvVars.map((env: string) => (
-                                <code key={env} className="text-[10px] font-mono bg-zinc-800/60 px-2 py-0.5 rounded text-amber-400">{env}</code>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── Refactoring Recommendations ── */}
-                  {parsed.recommendations && parsed.recommendations.length > 0 && (
-                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-lg">💡</span>
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Refactoring Recommendations</span>
-                      </div>
-                      <div className="space-y-2">
-                        {parsed.recommendations.map((item: string, i: number) => {
-                          // Simple priority detection
-                          let priority: 'high' | 'medium' | 'low' = 'medium';
-                          if (/(?:remove|fix|reduce|critical|high|urgent|broken|dead)/i.test(item)) priority = 'high';
-                          else if (/(?:consider|optional|low|minor|maybe)/i.test(item)) priority = 'low';
-                          const icon = priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : '🟢';
-                          return (
-                            <div key={i} className="flex items-center gap-3 p-2.5 bg-zinc-950/40 border border-border/20 rounded-lg">
-                              <span className="text-sm">{icon}</span>
-                              <span className="text-sm text-zinc-300">{item}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── Quick Start ── */}
-                  {parsed.quickStart && parsed.quickStart.length > 0 && (
-                    <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-lg">📎</span>
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Quick Start</span>
-                      </div>
-                      <div className="space-y-2">
-                        {parsed.quickStart.map((step: string, i: number) => (
-                          <div key={i} className="flex items-start gap-3">
-                            <span className="text-xs font-bold text-primary w-6">{i + 1}.</span>
-                            <span className="text-sm text-zinc-300">{step}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── Export Actions ── */}
-                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        onClick={exportAsMarkdown}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/20 transition"
-                      >
-                        📄 Export as Markdown
-                      </button>
-                      <button
-                        onClick={copySummary}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-border/30 text-zinc-400 text-[10px] font-bold hover:bg-white/10 transition"
-                      >
-                        📋 Copy Summary
-                      </button>
-                      <button
-                        onClick={regenerateSummary}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-border/30 text-zinc-400 text-[10px] font-bold hover:bg-white/10 transition"
-                      >
-                        🔄 Regenerate
-                      </button>
-                    </div>
-                  </div>
+            {activeResultTab === "ai-architect" && result.aiSummary && (
+              <div className="space-y-6 max-w-5xl mx-auto">
+                <div className="mb-6">
+                  <p className="text-xs font-bold text-primary uppercase tracking-widest">AI Analysis</p>
+                  <h2 className="text-2xl font-bold text-white mt-1">AI Architect</h2>
                 </div>
-              );
-            })()}
+                <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-bold text-white">Architecture Summary</span>
+                  </div>
+                  {result.aiSummary.purpose && (
+                    <p className="text-sm text-zinc-300 leading-relaxed mb-4 font-semibold italic">
+                      "{result.aiSummary.purpose}"
+                    </p>
+                  )}
+                  {result.aiSummary.stack && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 p-4 bg-zinc-950/40 rounded-xl border border-border/20">
+                      {Object.entries(result.aiSummary.stack).map(([key, val]) => (
+                        <div key={key} className="text-xs">
+                          <span className="text-zinc-500 capitalize block mb-0.5">{key}</span>
+                          <span className="text-zinc-200 font-medium font-mono">{String(val || 'N/A')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {result.aiSummary.markdownSummary && (
+                    <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line border-t border-border/20 pt-4">
+                      {result.aiSummary.markdownSummary}
+                    </p>
+                  )}
+                </div>
+                {result.staticAnalysis?.summary?.recommendations && result.staticAnalysis.summary.recommendations.length > 0 && (
+                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
+                    <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Refactoring Recommendations</div>
+                    <div className="space-y-2">
+                      {result.staticAnalysis.summary.recommendations.map((item: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-zinc-300">
+                          <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ─── ONBOARDING TAB ─── */}
             {activeResultTab === "onboarding" && result.onboarding && (
