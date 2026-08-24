@@ -749,7 +749,7 @@ export default function MetroMap({
             width: 280,
             zIndex: 999,
             pointerEvents: "auto",
-          }
+          },
           data: {
             label: (
               <div className="p-4 bg-zinc-900/95 border border-border/60 rounded-xl shadow-2xl w-[280px] z-50">
@@ -786,13 +786,6 @@ export default function MetroMap({
           position: {
             x: expandedNode.position.x - 90,
             y: expandedNode.position.y + 110,
-          },
-          style: {
-            background: "transparent",
-            border: "none",
-            padding: 0,
-            width: 280,
-            zIndex: 999,
           }
         });
       }
