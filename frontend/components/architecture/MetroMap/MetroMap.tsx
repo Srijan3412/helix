@@ -673,49 +673,21 @@ export default function MetroMap({
           id: station.id,
           type: "station",
           data: {
-            label: (
-              <div
-                onClick={() => {
-                  setSelectedStationId(station.id);
-                  setInspectorStation(station.raw || station.label);
-                  setInspectorFeature(feature);
-                  setSelectedFeature(null);
-                }}
-                className="flex flex-col items-center cursor-pointer min-w-[80px]"
-              >
-                <div className="relative">
-                  {/* Outer ring - w-14 h-14 */}
-                  <div
-                    className="w-14 h-14 rounded-full border-3 flex items-center justify-center transition-all duration-300 shadow-lg"
-                    style={{
-                      borderColor: feature.color,
-                      borderWidth: 3,
-                      backgroundColor: isSelectedNode || isJourneyActiveNode ? `${feature.color}30` : 'transparent'
-                    }}
-                  >
-                    {/* Inner circle - w-7 h-7 */}
-                    <div
-                      className="w-7 h-7 rounded-full transition-all duration-300"
-                      style={{
-                        backgroundColor: isJourneyActiveNode ? '#ffffff' : feature.color,
-                      }}
-                    />
-                  </div>
-                  {/* Station number */}
-                  <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white font-mono bg-zinc-900/80 px-1.5 py-0.5 rounded">
-                    {getStationNumber(feature, stations.indexOf(station))}
-                  </div>
-                </div>
-                {/* Station label */}
-                <span className="text-[10px] text-zinc-200 mt-5 truncate max-w-[80px] text-center font-medium">
-                  {getStationDisplayName(station)}
-                </span>
-                {/* Station type indicator */}
-                <span className="text-[8px] text-zinc-500 mt-0.5 uppercase tracking-wider">
-                  {station.type}
-                </span>
-              </div>
-            )
+            stationNumber: getStationNumber(feature, stations.indexOf(station)),
+            typeLabel: getStationTypeLabel(station),
+            displayName: getStationDisplayName(station),
+            color: feature.color,
+            isActive: isActiveLine,
+            hasHighComplexity,
+            healthGlowActive,
+            complexity,
+            isSelected: isSelectedNode,
+            onClick: () => {
+              setSelectedStationId(station.id);
+              setInspectorStation(station.raw || station.label);
+              setInspectorFeature(feature);
+              setSelectedFeature(null);
+            },
           },
           position: pos,
           style: {
