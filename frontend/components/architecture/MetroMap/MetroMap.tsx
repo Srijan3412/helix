@@ -1172,13 +1172,7 @@ export default function MetroMap({
       <div className="flex items-center gap-2 mb-2 px-1">
         <div className="flex-1 flex items-center gap-2 bg-zinc-900/60 border border-border/60 rounded-xl px-3 py-1.5">
           <span className="text-zinc-500 text-[10px]">🔍</span>
-          <input
-            type="text"
-            placeholder="Search stations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent text-[10px] text-zinc-300 focus:outline-none flex-1"
-          />
+
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
@@ -1217,30 +1211,6 @@ export default function MetroMap({
         )}
       </div>
 
-      {/* ── PAGINATION CONTROLS ── */}
-      <div className="flex items-center justify-between px-2 py-1.5 bg-zinc-900/60 border border-border/40 rounded-xl">
-        <button
-          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-          className="px-3 py-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition disabled:opacity-30"
-          disabled={currentPage === 1}
-        >
-          ◀
-        </button>
-
-        <div className="flex items-center gap-4 text-[10px] text-zinc-400">
-          <span>Page {currentPage} of {totalPages}</span>
-          <span>📍 {(currentPage - 1) * STATIONS_PER_PAGE + 1}-{Math.min(currentPage * STATIONS_PER_PAGE, totalStations)} of {totalStations}</span>
-          <span>⚡ {STATIONS_PER_PAGE} stations shown</span>
-        </div>
-
-        <button
-          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-          className="px-3 py-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition disabled:opacity-30"
-          disabled={currentPage === totalPages}
-        >
-          ▶
-        </button>
-      </div>
 
       {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
       <div className="flex gap-3 h-[calc(100%-140px)]">

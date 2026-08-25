@@ -23,9 +23,8 @@ import RouteGraph from "./RouteGraph";
 import PackageGraph from "./PackageGraph";
 import ExecutionTrace from "./ExecutionTrace";
 import MetroMap from "./MetroMap/MetroMap";
-import SubwayMap from "./SubwayMap/SubwayMap";
 
-type ArchMode = "layer" | "file" | "route" | "dependency" | "trace" | "metro" | "subway";
+type ArchMode = "layer" | "file" | "route" | "dependency" | "trace" | "metro";
 
 const TABS: { id: ArchMode; label: string; icon: React.ReactNode }[] = [
   { id: "layer",      label: "Layered View",       icon: <Layers size={16} /> },
@@ -34,7 +33,6 @@ const TABS: { id: ArchMode; label: string; icon: React.ReactNode }[] = [
   { id: "dependency", label: "Package Dependencies",icon: <Package size={16} /> },
   { id: "trace",      label: "Execution Trace",     icon: <GitBranch size={16} /> },
   { id: "metro",      label: "Metro Map",           icon: <Map size={16} /> },
-  { id: "subway",     label: "Subway Map",          icon: <Train size={16} /> },
 ];
 
 interface ArchitectureViewerProps {
@@ -140,15 +138,13 @@ export default function ArchitectureViewer({
   const totalFiles = result?.overview?.totalFiles || result?.files?.length || 0;
   const totalRoutes = result?.overview?.totalRoutes || result?.routes?.length || 0;
 
-  const sidebarTitle = activeMode === "subway" || activeMode === "metro"
+  const sidebarTitle = activeMode === "metro"
     ? "TRANSIT NETWORK LINES"
     : activeMode === "layer"
     ? "ARCHITECTURE LAYERS"
     : "CODEBASE FEATURES";
 
-  const sidebarDesc = activeMode === "subway"
-    ? "A city-wide transit network map. Hover or click a subway line to highlight domains."
-    : activeMode === "metro"
+  const sidebarDesc = activeMode === "metro"
     ? "Hover/click a metro line to highlight domains or inspect details."
     : activeMode === "layer"
     ? "Click tier box to expand file listings or start a tier tour."
@@ -307,17 +303,7 @@ export default function ArchitectureViewer({
                   }}
                 />
               )}
-              {activeMode === "subway" && (
-                <SubwayMap
-                  result={result}
-                  onSwitchTab={onSwitchTab}
-                  onSetImpactFile={onSetImpactFile}
-                  onSelectTraceRouteId={(routeId) => {
-                    onSelectTraceRouteId?.(routeId);
-                    setActiveMode("trace");
-                  }}
-                />
-              )}
+
             </motion.div>
           </AnimatePresence>
         </div>
