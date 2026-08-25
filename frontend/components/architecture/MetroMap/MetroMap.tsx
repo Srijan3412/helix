@@ -116,9 +116,9 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
         }}
       >
         {/* Vintage Tile Letters */}
-        <div className="flex justify-center gap-0.5 mb-1">
+        <div className="flex justify-center gap-0.5 mb-1.5">
           {stationNumber.split('').map((char, idx) => (
-            <div key={idx} className="w-5 h-5 bg-zinc-800/80 border border-zinc-700/50 rounded flex items-center justify-center text-[9px] font-bold text-zinc-300 font-mono">
+            <div key={idx} className="w-5 h-5 bg-zinc-800/80 border border-zinc-700/50 rounded flex items-center justify-center text-[8px] font-bold text-zinc-300 font-mono">
               {char}
             </div>
           ))}
@@ -126,17 +126,17 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
 
         {/* Station Code & Time */}
         <div className="flex items-center justify-between text-[7px] text-zinc-400">
-          <span className="font-mono font-bold text-white">🚉 {stationNumber}</span>
-          <span className="text-zinc-500">🕐 {localTime}</span>
+          <span className="font-mono font-bold text-white text-[8px]">🚉 {stationNumber}</span>
+          <span className="text-zinc-500 text-[7px]">🕐 {localTime}</span>
         </div>
 
         {/* Type / Method Action prefix */}
-        <div className="text-[8px] font-bold font-mono tracking-wider mt-1 text-zinc-400">
+        <div className="text-[9px] font-bold font-mono tracking-wider mt-1.5 text-zinc-400">
           {typeLabel}
         </div>
 
         {/* Route Details */}
-        <div className="text-[9px] font-mono font-bold text-white truncate max-w-[100px] mt-0.5" title={displayName}>
+        <div className="text-[10px] font-mono font-bold text-white truncate max-w-[100px] mt-0.5 leading-tight" title={displayName}>
           {displayName}
         </div>
 
@@ -154,10 +154,10 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
         )}
 
         {/* Health Bar */}
-        <div className="mt-1.5">
-          <div className="flex items-center gap-1">
+        <div className="mt-2">
+          <div className="flex items-center gap-1.5">
             <span className="text-[5px] text-zinc-500">HEALTH</span>
-            <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                <div
                  className="h-full transition-all duration-500"
                  style={{
@@ -166,20 +166,20 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
                  }}
                />
             </div>
-            <span className="text-[6px] font-bold text-zinc-300">{health}%</span>
+            <span className="text-[7px] font-bold text-zinc-300">{health}%</span>
           </div>
         </div>
 
         {/* Next Station Preview */}
         {nextStationName && (
-          <div className="mt-1 text-[6px] text-zinc-500 truncate max-w-[100px]" title={nextStationName}>
+          <div className="mt-1.5 text-[7px] text-zinc-500 truncate max-w-[100px]" title={nextStationName}>
             🔄 Next: {nextStationName}
           </div>
         )}
 
         {/* Line Name */}
         {lineName && (
-          <div className="absolute bottom-2 left-3 right-3 text-[6px] text-primary/60 uppercase tracking-wider font-bold truncate">
+          <div className="absolute bottom-2 left-3 right-3 text-[7px] text-primary/50 uppercase tracking-wider font-bold truncate">
             🚇 {lineName.substring(0, 16)}
           </div>
         )}
@@ -378,7 +378,7 @@ export default function MetroMap({
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   // ── Pagination State ──
   const [currentPage, setCurrentPage] = useState(1);
-  const STATIONS_PER_PAGE = 9999; // Show all stations
+  const STATIONS_PER_PAGE = 9999;
   const [expandedStation, setExpandedStation] = useState<string | null>(null);
 
   // 1. Fetch features map from API
@@ -1191,7 +1191,7 @@ export default function MetroMap({
           All
         </button>
 
-        {features.slice(0, 6).map(f => (
+        {features.slice(0, 8).map(f => (
           <button
             key={f.id}
             className="px-2 py-1 rounded text-[8px] font-bold transition whitespace-nowrap"
@@ -1202,17 +1202,17 @@ export default function MetroMap({
             }}
             onClick={() => toggleFilter(f.id)}
           >
-            {f.name.substring(0, 6)}
+            {f.name}
           </button>
         ))}
 
-        {features.length > 6 && (
-          <span className="text-[8px] text-zinc-500">+{features.length - 6} more</span>
+        {features.length > 8 && (
+          <span className="text-[8px] text-zinc-500">+{features.length - 8} more</span>
         )}
       </div>
 
       {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
-      <div className="flex gap-3 h-[calc(100%-80px)]">
+      <div className="flex gap-3 h-[calc(100%-48px)]">
 
         {/* ── FEATURE LEGEND (Left Sidebar) ── */}
         <div className="w-52 shrink-0">
@@ -1262,7 +1262,7 @@ export default function MetroMap({
                 style={{ width: '100%', height: '100%' }}
               >
                 <Background color="#222" gap={20} />
-                <Controls />
+                
               </ReactFlow>
             </div>
           </div>
@@ -1400,22 +1400,6 @@ export default function MetroMap({
         </div>
       </div>
 
-      {/* ── CONTEXT FOOTER ── */}
-      <div className="mt-3 p-3 bg-zinc-900/60 border border-border/40 rounded-xl flex items-center justify-between text-[10px] text-zinc-300 font-mono">
-        <div className="flex items-center gap-2">
-          <span>📍 Current: <span className="text-white font-bold">{footerContext.currentCode}</span> ({footerContext.currentName})</span>
-          {footerContext.nextCode && (
-            <>
-              <span className="text-zinc-500">▶</span>
-              <span>Next: <span className="text-white font-bold">{footerContext.nextCode}</span> ({footerContext.nextName})</span>
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-4 text-zinc-400">
-          <span>⚡ {totalStations} stations</span>
-          <span>🚉 {features.length} lines</span>
-        </div>
-      </div>
     </div>
   );
 }
