@@ -428,6 +428,43 @@ export default function MetroMap({
     }
   };
 
+  // ── Get station type emoji ──
+  const getStationEmoji = (type: string) => {
+    switch (type) {
+      case 'route': return '🚉';
+      case 'middleware': return '🛡️';
+      case 'controller': return '🎮';
+      case 'service': return '⚙️';
+      case 'repository': return '📦';
+      case 'database': return '🗄️';
+      default: return '📍';
+    }
+  };
+
+  // ── Get station display name ──
+  const getStationDisplayName = (station: any) => {
+    if (station.type === 'route') {
+      // Show method + path
+      const parts = station.label.split(' ');
+      return parts.length > 1 ? parts[1] : station.label;
+    }
+    if (station.type === 'file') {
+      // Show filename without extension
+      const name = station.raw?.split(/[\\/]/).pop() || station.label;
+      return name.replace(/\.[^.]+$/, '');
+    }
+    if (station.type === 'db') {
+      return station.raw || station.label;
+    }
+    return station.label || station.raw || '';
+  };
+
+  // ── Station Numbering helper ──
+  const getStationNumber = (feature: FeatureFlow, index: number) => {
+    const prefix = feature.name.substring(0, 2).toUpperCase();
+    return `${prefix}${String(index + 1).padStart(2, '0')}`;
+  };
+
   // Map each feature to its ordered stations list
   const featureLines = useMemo(() => {
     const lines: Record<string, any[]> = {};
@@ -555,13 +592,7 @@ export default function MetroMap({
     return 80 + linesCount * 240 + 100; // START_Y = 80, FEATURE_SPACING = 240, bottom padding = 100
   }, [filteredFeatures, features]);
 
-  // ─────────────────────────────────────────────────────────────
-  // STATION NUMBERING SYSTEM
-  // ─────────────────────────────────────────────────────────────
-  const getStationNumber = (feature: FeatureFlow, index: number) => {
-    const prefix = feature.name.substring(0, 2).toUpperCase();
-    return `${prefix}${String(index + 1).padStart(2, '0')}`;
-  };
+
 
   // ── Context Footer Calculation ──
   const footerContext = useMemo(() => {
@@ -609,37 +640,7 @@ export default function MetroMap({
     return () => window.removeEventListener("resize", handleScroll);
   }, [canvasWidth]);
 
-  // ── Get station type emoji ──
-  const getStationEmoji = (type: string) => {
-    switch (type) {
-      case 'route': return '🚉';
-      case 'middleware': return '🛡️';
-      case 'controller': return '🎮';
-      case 'service': return '⚙️';
-      case 'repository': return '📦';
-      case 'database': return '🗄️';
-      default: return '📍';
-    }
-  };
 
-  // ── Get station display name ──
-  // ✅ CORRECT - Better display names
-  const getStationDisplayName = (station: any) => {
-    if (station.type === 'route') {
-      // Show method + path
-      const parts = station.label.split(' ');
-      return parts.length > 1 ? parts[1] : station.label;
-    }
-    if (station.type === 'file') {
-      // Show filename without extension
-      const name = station.raw?.split(/[\\/]/).pop() || station.label;
-      return name.replace(/\.[^.]+$/, '');
-    }
-    if (station.type === 'db') {
-      return station.raw || station.label;
-    }
-    return station.label || station.raw || '';
-  };
   // ── COMPUTE LAYOUT POSITIONS ──
   const positions = useMemo(() => {
     const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
