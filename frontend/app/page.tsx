@@ -29,7 +29,8 @@ import {
   Heart, AlertTriangle, Zap, Eye, Search, X, Play,
   Shield, Database, GitBranch, Activity, FileText, ArrowRight,
   GitCompare, CreditCard, Lock, User, LogOut,
-  Code2, BarChart3, History
+  Code2, BarChart3, History,
+  RefreshCw, Download, Target, Cpu, Trash2, Split, Package, AlertCircle
 } from "lucide-react";
 
 // ─── Dynamic Imports (Code Splitting) ───────────────────────────────────────
@@ -101,6 +102,179 @@ function computeHealthScore(result: any) {
 
   const score = Math.max(0, 100 - cycleDeduction - deadDeduction - brokenDeduction - largeDeduction);
   return { score, cycles, deadFiles, largeFiles, brokenImports };
+}
+// ─── Markdown Content Formatter ──────────────────────────────────────────────
+
+function formatMarkdownContent(content: string) {
+  if (!content || typeof content !== 'string') return [];
+  
+  // Split by lines
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Skip empty lines
+    if (!line.trim()) {
+      i++;
+      continue;
+    }
+
+    // Check for headings (## or ###)
+    if (line.startsWith('## ')) {
+      const headingText = line.slice(3);
+      // Detect emoji - using Emoji_Presentation to avoid matching digits 0-9
+      const emojiMatch = headingText.match(/^([\u{1F300}-\u{1FAFF}]|\p{Emoji_Presentation})\s+(.+)/u);
+      if (emojiMatch) {
+        elements.push(
+          <h3 key={i} className="text-lg font-bold text-white mt-8 mb-4 flex items-center gap-2">
+            <span className="text-xl">{emojiMatch[1]}</span>
+            <span>{emojiMatch[2]}</span>
+          </h3>
+        );
+      } else {
+        elements.push(
+          <h3 key={i} className="text-lg font-bold text-white mt-8 mb-4 border-b border-white/10 pb-2">
+            {headingText}
+          </h3>
+        );
+      }
+      i++;
+      continue;
+    }
+
+    if (line.startsWith('### ')) {
+      elements.push(
+        <h4 key={i} className="text-base font-semibold text-white/90 mt-6 mb-3">{line.slice(4)}</h4>
+      );
+      i++;
+      continue;
+    }
+
+    // Check for bullet lists
+    if (line.match(/^[\*\-]\s/)) {
+      const bulletItems: string[] = [];
+      while (i < lines.length && lines[i].match(/^[\*\-]\s/)) {
+        bulletItems.push(lines[i].replace(/^[\*\-]\s/, ''));
+        i++;
+      }
+      elements.push(
+        <ul key={i} className="space-y-2 my-3">
+          {bulletItems.map((item, idx) => {
+            const parts = item.split(/(\*\*[^*]+\*\*|`[^`]+`)/);
+            const styledParts = parts.map((part, pIdx) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={pIdx} className="text-white font-bold">{part.slice(2, -2)}</strong>;
+              }
+              if (part.startsWith('`') && part.endsWith('`')) {
+                return <code key={pIdx} className="px-1.5 py-0.5 rounded bg-zinc-800/60 text-emerald-400 font-mono text-[11px]">{part.slice(1, -1)}</code>;
+              }
+              return <span key={pIdx}>{part}</span>;
+            });
+            return (
+              <li key={idx} className="flex items-start gap-2 text-sm text-zinc-300 leading-relaxed">
+                <span className="text-primary mt-1.5">•</span>
+                <span>{styledParts}</span>
+              </li>
+            );
+          })}
+        </ul>
+      );
+      continue;
+    }
+
+    // Check for numbered lists
+    if (line.match(/^\d+\.\s/)) {
+      const numItems: string[] = [];
+      while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
+        numItems.push(lines[i].replace(/^\d+\.\s/, ''));
+        i++;
+      }
+      elements.push(
+        <ol key={i} className="space-y-2 my-3 list-decimal list-inside text-sm text-zinc-300 leading-relaxed">
+          {numItems.map((item, idx) => {
+            const parts = item.split(/(\*\*[^*]+\*\*|`[^`]+`)/);
+            const styledParts = parts.map((part, pIdx) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={pIdx} className="text-white font-bold">{part.slice(2, -2)}</strong>;
+              }
+              if (part.startsWith('`') && part.endsWith('`')) {
+                return <code key={pIdx} className="px-1.5 py-0.5 rounded bg-zinc-800/60 text-emerald-400 font-mono text-[11px]">{part.slice(1, -1)}</code>;
+              }
+              return <span key={pIdx}>{part}</span>;
+            });
+            return <li key={idx}>{styledParts}</li>;
+          })}
+        </ol>
+      );
+      continue;
+    }
+
+    // Check for code blocks
+    if (line.startsWith('```')) {
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++;
+      elements.push(
+        <pre key={i} className="my-4 p-4 bg-zinc-950/80 rounded-xl border border-white/5 overflow-x-auto">
+          <code className="text-xs font-mono text-emerald-400 whitespace-pre-wrap leading-relaxed">
+            {codeLines.join('\n')}
+          </code>
+        </pre>
+      );
+      continue;
+    }
+
+    // Check for horizontal rules
+    if (line.match(/^---$/)) {
+      elements.push(
+        <hr key={i} className="my-6 border-white/10" />
+      );
+      i++;
+      continue;
+    }
+
+    // Regular paragraph with inline formatting
+    const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/);
+    const styledParts = parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={idx} className="text-white font-bold">{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return <code key={idx} className="px-1.5 py-0.5 rounded bg-zinc-800/60 text-emerald-400 font-mono text-[11px]">{part.slice(1, -1)}</code>;
+      }
+      if (part.startsWith('*') && part.endsWith('*') && !part.includes('**')) {
+        return <em key={idx} className="text-zinc-400 italic">{part.slice(1, -1)}</em>;
+      }
+      return <span key={idx}>{part}</span>;
+    });
+
+    // Handle "key: value" style lines
+    const keyValueMatch = line.match(/^(\w+):\s+(.+)$/);
+    if (keyValueMatch && !line.includes('**') && !line.includes('`')) {
+      elements.push(
+        <div key={i} className="flex items-center gap-3 py-1.5 border-b border-white/5 last:border-0">
+          <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider min-w-[100px]">{keyValueMatch[1]}</span>
+          <span className="text-sm text-zinc-300 font-mono">{keyValueMatch[2]}</span>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    elements.push(
+      <p key={i} className="text-sm text-zinc-300 leading-relaxed">{styledParts}</p>
+    );
+    i++;
+  }
+
+  return elements;
 }
 
 // ─── Auth Detector (frontend, deterministic) ──────────────────────────────────
@@ -324,9 +498,11 @@ export default function Home() {
     if (!result?.aiSummary?.markdownSummary) return;
     navigator.clipboard.writeText(result.aiSummary.markdownSummary)
       .then(() => {
+        // Show success toast
         console.log('✅ Copied to clipboard');
       })
       .catch(() => {
+        // Show error toast
         console.error('❌ Failed to copy');
       });
   };
@@ -1428,51 +1604,142 @@ export default function Home() {
             )}
 
             {/* ─── AI ARCHITECT TAB ─── */}
+            {/* ─── AI ARCHITECT TAB ─── */}
             {activeResultTab === "ai-architect" && result.aiSummary && (
               <div className="space-y-6 max-w-5xl mx-auto">
-                <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">AI Analysis</p>
-                  <h2 className="text-2xl font-bold text-white mt-1">AI Architect</h2>
-                </div>
-                <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-bold text-white">Architecture Summary</span>
-                  </div>
-                  {result.aiSummary.purpose && (
-                    <p className="text-sm text-zinc-300 leading-relaxed mb-4 font-semibold italic">
-                      "{result.aiSummary.purpose}"
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      AI Analysis
                     </p>
-                  )}
-                  {result.aiSummary.stack && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 p-4 bg-zinc-950/40 rounded-xl border border-border/20">
-                      {Object.entries(result.aiSummary.stack).map(([key, val]) => (
-                        <div key={key} className="text-xs">
-                          <span className="text-zinc-500 capitalize block mb-0.5">{key}</span>
-                          <span className="text-zinc-200 font-medium font-mono">{String(val || 'N/A')}</span>
+                    <h2 className="text-3xl font-bold text-white mt-1">AI Architect</h2>
+                    <p className="text-sm text-zinc-500">Intelligent codebase analysis & insights</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={copySummary}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-zinc-400 hover:text-white transition"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Copy
+                    </button>
+                    <button
+                      onClick={exportAsMarkdown}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/20 text-xs text-primary transition"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Export
+                    </button>
+                    <button
+                      onClick={regenerateSummary}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-zinc-400 hover:text-white transition"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Regenerate
+                    </button>
+                  </div>
+                </div>
+
+                {/* Main Summary Card */}
+                <div className="bg-gradient-to-b from-zinc-900/80 to-zinc-950/80 border border-white/10 rounded-2xl overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5 bg-white/5">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold text-white">Architecture Summary</span>
+                      <p className="text-[10px] text-zinc-500">Generated by AI analysis engine</p>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 prose prose-invert prose-sm max-w-none">
+                    {/* Quote/Purpose Section */}
+                    {result.aiSummary.purpose && (
+                      <div className="mb-6 p-4 bg-blue-500/5 border-l-2 border-primary rounded-r-xl">
+                        <div className="flex items-start gap-3">
+                          <div className="p-1.5 rounded-lg bg-primary/20 mt-0.5">
+                            <Target className="w-3.5 h-3.5 text-primary" />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider block mb-1">Project Purpose</span>
+                            <p className="text-sm text-zinc-300 leading-relaxed italic">
+                              "{result.aiSummary.purpose}"
+                            </p>
+                          </div>
                         </div>
-                      ))}
+                      </div>
+                    )}
+
+                    {/* Technical Stack Grid */}
+                    {result.aiSummary.stack && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Cpu className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-bold text-white">Technical Stack</span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {Object.entries(result.aiSummary.stack).map(([key, val]) => (
+                            <div key={key} className="p-3 bg-white/5 rounded-xl border border-white/5">
+                              <span className="text-[10px] text-zinc-500 capitalize block mb-0.5">{key}</span>
+                              <span className="text-sm text-white font-medium font-mono">{String(val || 'N/A')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Markdown Summary - Rendered as rich content */}
+                    {result.aiSummary.markdownSummary && (
+                      <div className="mt-4 pt-4 border-t border-white/10">
+                        <div className="flex items-center gap-2 mb-3">
+                          <FileText className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-bold text-white">AI Analysis</span>
+                        </div>
+                        <div className="space-y-4 text-zinc-300 leading-relaxed">
+                          {formatMarkdownContent(result.aiSummary.markdownSummary)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recommendations Section */}
+                {result.staticAnalysis?.summary?.recommendations &&
+                  result.staticAnalysis.summary.recommendations.length > 0 && (
+                    <div className="bg-gradient-to-b from-amber-950/20 to-zinc-950/80 border border-amber-900/30 rounded-2xl overflow-hidden">
+                      <div className="flex items-center gap-2 px-6 py-4 border-b border-amber-900/20 bg-amber-950/20">
+                        <div className="p-1.5 rounded-lg bg-amber-500/20">
+                          <AlertTriangle className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <span className="text-sm font-bold text-amber-400">Refactoring Recommendations</span>
+                        <span className="text-[10px] text-amber-500/60 ml-auto">{result.staticAnalysis.summary.recommendations.length} items</span>
+                      </div>
+                      <div className="p-6 space-y-3">
+                        {result.staticAnalysis.summary.recommendations.map((item: string, i: number) => {
+                          const icons = [
+                            <Trash2 className="w-4 h-4 text-red-400" />,
+                            <Split className="w-4 h-4 text-orange-400" />,
+                            <Package className="w-4 h-4 text-amber-400" />,
+                            <BarChart3 className="w-4 h-4 text-yellow-400" />,
+                            <AlertCircle className="w-4 h-4 text-red-400" />
+                          ];
+                          return (
+                            <div key={i} className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition">
+                              <div className="p-1.5 rounded-lg bg-white/5 mt-0.5">
+                                {icons[i % icons.length]}
+                              </div>
+                              <div>
+                                <p className="text-sm text-zinc-300">{item}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
-                  {result.aiSummary.markdownSummary && (
-                    <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-line border-t border-border/20 pt-4">
-                      {result.aiSummary.markdownSummary}
-                    </p>
-                  )}
-                </div>
-                {result.staticAnalysis?.summary?.recommendations && result.staticAnalysis.summary.recommendations.length > 0 && (
-                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-6">
-                    <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Refactoring Recommendations</div>
-                    <div className="space-y-2">
-                      {result.staticAnalysis.summary.recommendations.map((item: string, i: number) => (
-                        <div key={i} className="flex items-start gap-2 text-sm text-zinc-300">
-                          <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 

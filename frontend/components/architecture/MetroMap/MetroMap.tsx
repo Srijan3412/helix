@@ -126,8 +126,13 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
           <span className="text-zinc-500">🕐 {localTime}</span>
         </div>
 
+        {/* Type / Method Action prefix */}
+        <div className="text-[8px] font-bold font-mono tracking-wider mt-1 text-zinc-400">
+          {typeLabel}
+        </div>
+
         {/* Route Details */}
-        <div className="mt-1.5 text-[9px] font-mono font-bold text-white truncate max-w-[100px]" title={displayName}>
+        <div className="text-[9px] font-mono font-bold text-white truncate max-w-[100px] mt-0.5" title={displayName}>
           {displayName}
         </div>
 
@@ -243,7 +248,27 @@ const StationInspector = ({ station, feature, onClose }: StationInspectorProps) 
   );
 };
 
+const getCircleEmoji = (color: string) => {
+  const c = color.toLowerCase();
+  if (c.includes("ef4444") || c.includes("red")) return "🔴";
+  if (c.includes("22c55e") || c.includes("green")) return "🟢";
+  if (c.includes("eab308") || c.includes("yellow")) return "🟡";
+  if (c.includes("3b82f6") || c.includes("blue")) return "🔵";
+  if (c.includes("a855f7") || c.includes("purple")) return "🟣";
+  return "⚪";
+};
 
+// ── Line Header Node ──
+function LineHeaderNode({ data }: { data: { label: string; color: string; count: number } }) {
+  const emoji = getCircleEmoji(data.color);
+  const name = data.label.toUpperCase() + (data.label.toLowerCase().includes("line") ? "" : " LINE");
+  return (
+    <div className="flex items-center gap-2 font-mono font-bold text-xs uppercase select-none pb-1" style={{ color: data.color }}>
+      <span>{emoji}</span>
+      <span>{name} ({data.count} stations)</span>
+    </div>
+  );
+}
 
 export default function MetroMap({
   result,
@@ -254,6 +279,7 @@ export default function MetroMap({
   const { currentJobId } = useAnalysisStore();
   const nodeTypes = useMemo(() => ({
     station: MetroStationNode,
+    lineHeader: LineHeaderNode,
   }), []);
 
   // Helper to resolve short station type labels
@@ -348,7 +374,7 @@ export default function MetroMap({
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   // ── Pagination State ──
   const [currentPage, setCurrentPage] = useState(1);
-  const STATIONS_PER_PAGE = 10;
+  const STATIONS_PER_PAGE = 8;
   const [expandedStation, setExpandedStation] = useState<string | null>(null);
 
   // 1. Fetch features map from API
@@ -460,19 +486,6 @@ export default function MetroMap({
     return lines;
   }, [features]);
 
-  // ── Calculate Total Pages ──
-  const totalStations = useMemo(() => {
-    let count = 0;
-    features.forEach((feature) => {
-      count += featureLines[feature.id]?.length || 0;
-    });
-    return count;
-  }, [features, featureLines]);
-
-  const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(totalStations / STATIONS_PER_PAGE));
-  }, [totalStations]);
-
   // ── Get Paginated Stations per Feature ──
   const getPaginatedStations = (stations: any[], page: number) => {
     const start = (page - 1) * STATIONS_PER_PAGE;
@@ -490,16 +503,18 @@ export default function MetroMap({
     return maxCount;
   }, [features, featureLines]);
 
-  const canvasWidth = useMemo(() => {
-    const padding = 200;
-    return 80 + maxStationsCount * 170 + padding; // START_X = 80, STATION_SPACING = 170
-  }, [maxStationsCount]);
+  // ── Calculate Total Pages ──
+  const totalStations = useMemo(() => {
+    let count = 0;
+    features.forEach((feature) => {
+      count += featureLines[feature.id]?.length || 0;
+    });
+    return count;
+  }, [features, featureLines]);
 
-  useEffect(() => {
-    handleScroll();
-    window.addEventListener("resize", handleScroll);
-    return () => window.removeEventListener("resize", handleScroll);
-  }, [canvasWidth]);
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(maxStationsCount / STATIONS_PER_PAGE));
+  }, [maxStationsCount]);
 
   // ── Filter features based on active filters and search ──
   const filteredFeatures = useMemo(() => {
@@ -529,13 +544,70 @@ export default function MetroMap({
     return result;
   }, [features, activeFilters, searchQuery, featureLines]);
 
+  const canvasWidth = useMemo(() => {
+    const padding = 200;
+    const visibleCount = Math.min(STATIONS_PER_PAGE, maxStationsCount);
+    return 80 + visibleCount * 170 + padding; // START_X = 80, STATION_SPACING = 170
+  }, [maxStationsCount]);
+
+  const canvasHeight = useMemo(() => {
+    const linesCount = filteredFeatures.length || features.length || 1;
+    return 80 + linesCount * 240 + 100; // START_Y = 80, FEATURE_SPACING = 240, bottom padding = 100
+  }, [filteredFeatures, features]);
+
   // ─────────────────────────────────────────────────────────────
   // STATION NUMBERING SYSTEM
   // ─────────────────────────────────────────────────────────────
   const getStationNumber = (feature: FeatureFlow, index: number) => {
     const prefix = feature.name.substring(0, 2).toUpperCase();
-    return `${prefix}-${String(index + 1).padStart(2, '0')}`;
+    return `${prefix}${String(index + 1).padStart(2, '0')}`;
   };
+
+  // ── Context Footer Calculation ──
+  const footerContext = useMemo(() => {
+    if (!selectedStationId) {
+      // Default to the first station of the first feature
+      const firstFeature = features[0];
+      if (firstFeature) {
+        const stations = featureLines[firstFeature.id] || [];
+        if (stations.length > 0) {
+          const current = stations[0];
+          const next = stations[1];
+          return {
+            currentCode: getStationNumber(firstFeature, 0),
+            currentName: getStationDisplayName(current),
+            nextCode: next ? getStationNumber(firstFeature, 1) : null,
+            nextName: next ? getStationDisplayName(next) : null,
+          };
+        }
+      }
+      return { currentCode: "N/A", currentName: "None", nextCode: null, nextName: null };
+    }
+
+    // Find the selected station
+    for (const feature of features) {
+      const stations = featureLines[feature.id] || [];
+      const idx = stations.findIndex(s => s.id === selectedStationId);
+      if (idx >= 0) {
+        const current = stations[idx];
+        const next = stations[idx + 1];
+        return {
+          currentCode: getStationNumber(feature, idx),
+          currentName: getStationDisplayName(current),
+          nextCode: next ? getStationNumber(feature, idx + 1) : null,
+          nextName: next ? getStationDisplayName(next) : null,
+        };
+      }
+    }
+
+    return { currentCode: "N/A", currentName: "None", nextCode: null, nextName: null };
+  }, [selectedStationId, features, featureLines]);
+
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener("resize", handleScroll);
+    return () => window.removeEventListener("resize", handleScroll);
+  }, [canvasWidth]);
 
   // ── Get station type emoji ──
   const getStationEmoji = (type: string) => {
@@ -571,26 +643,24 @@ export default function MetroMap({
   // ── COMPUTE LAYOUT POSITIONS ──
   const positions = useMemo(() => {
     const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
-    const FEATURE_SPACING = 130;
-    const STATION_SPACING = 100;
+    const FEATURE_SPACING = 240;
+    const STATION_SPACING = 170;
     const START_X = 80;
-    const START_Y = 60;
+    const START_Y = 80;
 
-    // Use filtered features for layout
     const featuresToLayout = filteredFeatures.length > 0 ? filteredFeatures : features;
 
     featuresToLayout.forEach((feature, fIdx) => {
       posMap[feature.id] = {};
-      const stations = featureLines[feature.id] || [];
+      const allStations = featureLines[feature.id] || [];
+      const stations = getPaginatedStations(allStations, currentPage);
 
-
-
-      const baseY = 30 + fIdx * FEATURE_SPACING;
+      const baseY = 80 + fIdx * FEATURE_SPACING;
 
       stations.forEach((station, stepIdx) => {
         posMap[feature.id][station.id] = {
           x: START_X + stepIdx * STATION_SPACING,
-          y: baseY  // ← SAME Y for all stations!
+          y: baseY
         };
       });
     });
@@ -608,9 +678,6 @@ export default function MetroMap({
         });
       });
     });
-
-    // ── Expanded Details for selected station ──
-
 
     // Relaxation solver loop
     for (let iter = 0; iter < 3; iter++) {
@@ -647,7 +714,7 @@ export default function MetroMap({
     }
 
     return posMap;
-  }, [filteredFeatures, features, featureLines]);
+  }, [filteredFeatures, features, featureLines, currentPage]);
 
   // Share keys index
 
@@ -693,8 +760,10 @@ export default function MetroMap({
 
     // Find shared keys index for transfer/highlight
     const keyToInstances: Record<string, { featureId: string; stationId: string }[]> = {};
+
     filteredFeatures.forEach((feature) => {
-      const stations = featureLines[feature.id] || [];
+      const allStations = featureLines[feature.id] || [];
+      const stations = getPaginatedStations(allStations, currentPage); // Sliced!
       stations.forEach((station) => {
         if (!keyToInstances[station.key]) {
           keyToInstances[station.key] = [];
@@ -713,9 +782,32 @@ export default function MetroMap({
     const activeFeatureId = selectedFeature || hoveredFeature;
 
     // Build Station Nodes
-    filteredFeatures.forEach((feature) => {
-      const stations = featureLines[feature.id] || [];
+    filteredFeatures.forEach((feature, fIdx) => {
+      const allStations = featureLines[feature.id] || [];
+      const stations = getPaginatedStations(allStations, currentPage);
       const isActiveLine = activeFeatureId === feature.id;
+      const FEATURE_SPACING = 240;
+      const baseY = 80 + fIdx * FEATURE_SPACING;
+
+      // ── Inject Line Header Node ──
+      flowNodes.push({
+        id: `header:${feature.id}`,
+        type: "lineHeader",
+        data: {
+          label: feature.name,
+          color: feature.color,
+          count: allStations.length,
+        },
+        position: { x: 80, y: baseY - 35 },
+        draggable: false,
+        selectable: false,
+        style: {
+          background: "transparent",
+          border: "none",
+          padding: 0,
+        },
+      });
+
 
       stations.forEach((station) => {
         const pos = positions[feature.id]?.[station.id];
@@ -735,7 +827,7 @@ export default function MetroMap({
           id: station.id,
           type: "station",
           data: {
-            stationNumber: getStationNumber(feature, stations.indexOf(station)),
+            stationNumber: getStationNumber(feature, allStations.indexOf(station)),
             typeLabel: getStationTypeLabel(station),
             displayName: getStationDisplayName(station),
             color: feature.color,
@@ -746,8 +838,8 @@ export default function MetroMap({
             isSelected: isSelectedNode,
             rawType: station.type,
             health: feature.health || 85,
-            nextStationName: stations[stations.indexOf(station) + 1] 
-              ? getStationDisplayName(stations[stations.indexOf(station) + 1])
+            nextStationName: allStations[allStations.indexOf(station) + 1]
+              ? getStationDisplayName(allStations[allStations.indexOf(station) + 1])
               : undefined,
             lineName: feature.name,
             onClick: () => {
@@ -832,8 +924,10 @@ export default function MetroMap({
     }
 
     // Build Horizontal Tube Lines (Thickness based on feature size)
+
     filteredFeatures.forEach((feature) => {
-      const stations = featureLines[feature.id] || [];
+      const allStations = featureLines[feature.id] || [];
+      const stations = getPaginatedStations(allStations, currentPage);
       const isActiveLine = activeFeatureId === feature.id;
       const isLineDimmed = hasHighlight && !isActiveLine;
 
@@ -1148,7 +1242,7 @@ export default function MetroMap({
       </div>
 
       {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
-      <div className="flex gap-3 h-[calc(100%-40px)]">
+      <div className="flex gap-3 h-[calc(100%-140px)]">
 
         {/* ── FEATURE LEGEND (Left Sidebar) ── */}
         <div className="w-52 shrink-0">
@@ -1178,10 +1272,10 @@ export default function MetroMap({
           <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="w-full h-full overflow-x-auto overflow-y-hidden scrollbar-hide px-10"
+            className="w-full h-full overflow-auto scrollbar-hide px-10"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            <div className="h-full" style={{ width: `${canvasWidth}px` }}>
+            <div style={{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }}>
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -1195,6 +1289,7 @@ export default function MetroMap({
                 nodesConnectable={false}
                 elementsSelectable={false}
                 proOptions={{ hideAttribution: true }}
+                style={{ width: '100%', height: '100%' }}
               >
                 <Background color="#222" gap={20} />
                 <Controls />
@@ -1212,61 +1307,9 @@ export default function MetroMap({
             </button>
           )}
 
-          {/* Scroll progress bar */}
-          <div className="absolute bottom-2 left-4 right-4">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary/60 transition-all duration-300 rounded-full"
-                  style={{ width: `${scrollProgress}%` }}
-                />
-              </div>
-              <span className="text-[7px] text-zinc-500 whitespace-nowrap">
-                {Math.round(scrollProgress)}%
-              </span>
-            </div>
-          </div>
-
-          {/* ── HEAT MAP ── */}
-          {/* ── COMPACT HORIZONTAL HEAT MAP ── */}
-          <div className="absolute bottom-16 left-4 right-4 z-10">
-            <div className="flex items-center gap-2">
-              <span className="text-[6px] text-zinc-500 font-bold uppercase tracking-wider shrink-0">🔥 Heat</span>
-              <div className="flex-1 flex gap-0.5 h-3 bg-zinc-800/50 rounded-full overflow-hidden">
-                {filteredFeatures.slice(0, 8).map((feature) => {
-                  const avgComplexity = feature.files.reduce((sum, f) => {
-                    const score = getComplexityScore(f);
-                    return sum + (score || 0);
-                  }, 0) / (feature.files.length || 1);
-                  const intensity = Math.min(100, Math.round((avgComplexity / 30) * 100));
-                  const color = intensity > 70 ? 'bg-red-500' : intensity > 40 ? 'bg-yellow-500' : 'bg-emerald-500';
-                  const width = Math.max(2, intensity / 10);
-                  return (
-                    <div
-                      key={feature.id}
-                      className={`h-full ${color} transition-all duration-500`}
-                      style={{ width: `${width}%` }}
-                      title={`${feature.name}: ${Math.round(avgComplexity)} complexity`}
-                    />
-                  );
-                })}
-              </div>
-              <span className="text-[5px] text-zinc-500 shrink-0">Low</span>
-              <span className="text-[5px] text-zinc-500 shrink-0">High</span>
-            </div>
-            {/* Feature names below the bar */}
-            <div className="flex gap-1 mt-0.5 px-1">
-              {filteredFeatures.slice(0, 6).map((feature) => (
-                <span key={feature.id} className="text-[5px] text-zinc-500 truncate flex-1 text-center">
-                  {feature.name.substring(0, 8)}
-                </span>
-              ))}
-            </div>
-          </div>
-
           {/* ── INTERCHANGE STATIONS ── */}
           {interchangeStations.length > 0 && (
-            <div className="absolute bottom-28 left-4 right-4 z-10 bg-zinc-900/90 border border-border/50 rounded-xl p-3 backdrop-blur-md shadow-lg">
+            <div className="absolute bottom-4 left-4 right-4 z-10 bg-zinc-900/90 border border-border/50 rounded-xl p-3 backdrop-blur-md shadow-lg">
               <div className="flex items-center gap-1.5 mb-2.5">
                 <span className="text-[9px] font-black text-zinc-450 uppercase tracking-widest flex items-center gap-1">
                   🚉 Interchange Stations (Shared Components)
@@ -1384,6 +1427,23 @@ export default function MetroMap({
               />
             )}
           </div>
+        </div>
+      </div>
+
+      {/* ── CONTEXT FOOTER ── */}
+      <div className="mt-3 p-3 bg-zinc-900/60 border border-border/40 rounded-xl flex items-center justify-between text-[10px] text-zinc-300 font-mono">
+        <div className="flex items-center gap-2">
+          <span>📍 Current: <span className="text-white font-bold">{footerContext.currentCode}</span> ({footerContext.currentName})</span>
+          {footerContext.nextCode && (
+            <>
+              <span className="text-zinc-500">▶</span>
+              <span>Next: <span className="text-white font-bold">{footerContext.nextCode}</span> ({footerContext.nextName})</span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-4 text-zinc-400">
+          <span>⚡ {totalStations} stations</span>
+          <span>🚉 {features.length} lines</span>
         </div>
       </div>
     </div>
