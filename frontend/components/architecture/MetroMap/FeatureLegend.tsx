@@ -45,7 +45,7 @@ export default function FeatureLegend({
   };
 
   return (
-    <div className="flex flex-col bg-zinc-950/40 border border-border/60 rounded-2xl p-4 space-y-4 overflow-hidden h-full select-none">
+    <div className="flex flex-col space-y-4 select-none h-full">
       
       {/* Title & Info */}
       <div className="border-b border-border/50 pb-2.5 shrink-0">

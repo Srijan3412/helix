@@ -1025,7 +1025,12 @@ export default function MetroMap({
       }
     });
 
-    return { nodes: flowNodes, edges: flowEdges };
+    const validNodeIds = new Set(flowNodes.map(n => n.id));
+    const filteredFlowEdges = flowEdges.filter(e => 
+      validNodeIds.has(e.source) && validNodeIds.has(e.target)
+    );
+
+    return { nodes: flowNodes, edges: filteredFlowEdges };
   }, [filteredFeatures, featureLines, positions, hoveredFeature, selectedFeature,
     selectedStationId, healthGlowActive, journeyActive, journeyNodeId, result,
     activeFilters, searchQuery, expandedStation]);
@@ -1179,13 +1184,16 @@ export default function MetroMap({
   const activeDetailsScope = selectedStationId || selectedFeature;
 
   return (
-    <div className="h-[600px] w-full text-left relative">
+    <div className="h-full w-full text-left relative flex flex-col">
 
       {/* ── FILTER CONTROLS ── */}
-      <div className="flex items-center gap-2 mb-2 px-1">
+      <div className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900/40 border-b border-border/30 shrink-0">
         <button
-          className={`px-2 py-1 rounded text-[8px] font-bold transition whitespace-nowrap ${activeFilters.length === 0 ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-400'
-            }`}
+          className={`px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border ${
+            activeFilters.length === 0 
+              ? 'bg-primary/20 text-primary border-primary/30' 
+              : 'bg-zinc-800/60 text-zinc-400 border-transparent hover:border-white/10'
+          }`}
           onClick={() => setActiveFilters([])}
         >
           All
@@ -1194,11 +1202,11 @@ export default function MetroMap({
         {features.slice(0, 8).map(f => (
           <button
             key={f.id}
-            className="px-2 py-1 rounded text-[8px] font-bold transition whitespace-nowrap"
+            className="px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border"
             style={{
               backgroundColor: activeFilters.includes(f.id) ? f.color : '#27272a',
               color: activeFilters.includes(f.id) ? 'white' : '#a1a1aa',
-              border: activeFilters.includes(f.id) ? `1px solid ${f.color}` : '1px solid transparent',
+              borderColor: activeFilters.includes(f.id) ? f.color : 'transparent',
             }}
             onClick={() => toggleFilter(f.id)}
           >
@@ -1207,15 +1215,15 @@ export default function MetroMap({
         ))}
 
         {features.length > 8 && (
-          <span className="text-[8px] text-zinc-500">+{features.length - 8} more</span>
+          <span className="text-[9px] text-zinc-550 ml-1.5 font-semibold">+{features.length - 8} more</span>
         )}
       </div>
 
       {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
-      <div className="flex gap-3 h-[calc(100%-48px)]">
+      <div className="flex flex-1 overflow-hidden">
 
         {/* ── FEATURE LEGEND (Left Sidebar) ── */}
-        <div className="w-52 shrink-0">
+        <aside className="w-56 shrink-0 border-r border-border/30 bg-zinc-900/60 p-4 overflow-y-auto">
           <FeatureLegend
             features={features}
             result={result}
@@ -1224,15 +1232,15 @@ export default function MetroMap({
             selectedFeature={selectedFeature}
             setSelectedFeature={setSelectedFeature}
           />
-        </div>
+        </aside>
 
         {/* ── SCROLLABLE CONTAINER (Canvas) ── */}
-        <div className="flex-1 h-full rounded-2xl overflow-hidden border border-border/60 bg-zinc-950/60 relative">
+        <div className="flex-1 h-full relative bg-zinc-950/20">
           {/* Left scroll button */}
           {!isAtStart && (
             <button
               onClick={() => scroll('left')}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-zinc-900/90 rounded-full border border-border/60 hover:bg-zinc-800 transition shadow-lg"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-zinc-900/95 rounded-full border border-border/60 hover:bg-zinc-800 transition shadow-xl"
             >
               <span className="text-zinc-400 text-xs">◀</span>
             </button>
