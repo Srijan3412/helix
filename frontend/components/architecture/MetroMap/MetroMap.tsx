@@ -17,6 +17,10 @@ interface MetroMapProps {
   onSelectTraceRouteId?: (routeId: string) => void;
 }
 
+const HEALTH_GOOD_THRESHOLD = 70;
+const HEALTH_WARNING_THRESHOLD = 40;
+const HIGH_COMPLEXITY_THRESHOLD = 15;
+
 // ============================================================
 // Custom Metro Station Node
 // ============================================================
@@ -70,8 +74,8 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
   return (
     <div
       onClick={onClick}
-      className="flex flex-col items-center cursor-pointer min-w-[120px] group transition-all duration-300"
-      style={{ width: "120px", opacity: isActive ? 1.0 : 0.25 }}
+      className="flex flex-col items-center cursor-pointer min-w-[140px] group transition-all duration-300"
+      style={{ width: "140px", opacity: isActive ? 1.0 : 0.25 }}
     >
       {/* Horizontal handles for straight connections */}
       <Handle
@@ -106,8 +110,8 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
         className={`relative bg-zinc-900/95 border-2 rounded-xl p-3 shadow-xl transition-all duration-300 hover:scale-105 hover:border-primary/50 text-left`}
         style={{
           borderColor: color,
-          width: "120px",
-          height: "160px",
+          width: "140px",
+          height: "180px",
           boxShadow: isSelected ? `0 0 16px ${color}a0` : `0 4px 6px -1px rgba(0, 0, 0, 0.5)`,
         }}
       >
@@ -154,13 +158,13 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
           <div className="flex items-center gap-1">
             <span className="text-[5px] text-zinc-500">HEALTH</span>
             <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className="h-full transition-all duration-500"
-                style={{
-                  width: `${health}%`,
-                  backgroundColor: health > 70 ? '#34d399' : health > 40 ? '#f59e0b' : '#ef4444'
-                }}
-              />
+               <div
+                 className="h-full transition-all duration-500"
+                 style={{
+                   width: `${health}%`,
+                   backgroundColor: health > HEALTH_GOOD_THRESHOLD ? '#34d399' : health > HEALTH_WARNING_THRESHOLD ? '#f59e0b' : '#ef4444'
+                 }}
+               />
             </div>
             <span className="text-[6px] font-bold text-zinc-300">{health}%</span>
           </div>
@@ -374,7 +378,7 @@ export default function MetroMap({
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   // ── Pagination State ──
   const [currentPage, setCurrentPage] = useState(1);
-  const STATIONS_PER_PAGE = 100;
+  const STATIONS_PER_PAGE = 9999; // Show all stations
   const [expandedStation, setExpandedStation] = useState<string | null>(null);
 
   // 1. Fetch features map from API
@@ -583,13 +587,17 @@ export default function MetroMap({
 
   const canvasWidth = useMemo(() => {
     const padding = 200;
+    const linesCount = filteredFeatures.length || features.length || 1;
+    const maxStations = maxStationsCount || 1;
+    const STATION_SPACING = Math.max(150, Math.min(200, 1200 / maxStations));
     const visibleCount = Math.min(STATIONS_PER_PAGE, maxStationsCount);
-    return 80 + visibleCount * 170 + padding; // START_X = 80, STATION_SPACING = 170
-  }, [maxStationsCount]);
+    return 80 + visibleCount * STATION_SPACING + padding;
+  }, [maxStationsCount, features, filteredFeatures]);
 
   const canvasHeight = useMemo(() => {
     const linesCount = filteredFeatures.length || features.length || 1;
-    return 80 + linesCount * 240 + 100; // START_Y = 80, FEATURE_SPACING = 240, bottom padding = 100
+    const FEATURE_SPACING = Math.max(200, Math.min(280, 600 / linesCount));
+    return 80 + linesCount * FEATURE_SPACING + 100;
   }, [filteredFeatures, features]);
 
 
@@ -644,8 +652,11 @@ export default function MetroMap({
   // ── COMPUTE LAYOUT POSITIONS ──
   const positions = useMemo(() => {
     const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
-    const FEATURE_SPACING = 240;
-    const STATION_SPACING = 170;
+    const linesCount = filteredFeatures.length || features.length || 1;
+    const maxStations = maxStationsCount || 1;
+
+    const FEATURE_SPACING = Math.max(200, Math.min(280, 600 / linesCount));
+    const STATION_SPACING = Math.max(150, Math.min(200, 1200 / maxStations));
     const START_X = 80;
     const START_Y = 80;
 
@@ -656,7 +667,7 @@ export default function MetroMap({
       const allStations = featureLines[feature.id] || [];
       const stations = getPaginatedStations(allStations, currentPage);
 
-      const baseY = 80 + fIdx * FEATURE_SPACING;
+      const baseY = START_Y + fIdx * FEATURE_SPACING;
 
       stations.forEach((station, stepIdx) => {
         posMap[feature.id][station.id] = {
@@ -819,7 +830,7 @@ export default function MetroMap({
         const isNodeActive = hasHighlight ? (isActiveLine || isSharedActive) : true;
 
         const complexity = station.type === "route" || station.type === "database" ? 0 : getComplexityScore(station.raw);
-        const hasHighComplexity = complexity > 15;
+        const hasHighComplexity = complexity > HIGH_COMPLEXITY_THRESHOLD;
         const isSelectedNode = selectedStationId === station.id;
         const isJourneyActiveNode = journeyActive && journeyNodeId === station.id;
 
@@ -838,7 +849,7 @@ export default function MetroMap({
             complexity,
             isSelected: isSelectedNode,
             rawType: station.type,
-            health: feature.health || 85,
+            health: feature.health || 0,
             nextStationName: allStations[allStations.indexOf(station) + 1]
               ? getStationDisplayName(allStations[allStations.indexOf(station) + 1])
               : undefined,
@@ -855,8 +866,8 @@ export default function MetroMap({
             background: "transparent",
             border: "none",
             padding: 0,
-            width: 120,
-            height: 160,
+            width: 140,
+            height: 180,
           }
         });
       });
@@ -892,8 +903,8 @@ export default function MetroMap({
                       📄 {stationRaw.split(/[\\/]/).pop() || stationRaw}
                     </span>
                     <div className="flex items-center gap-2 mt-1 text-[10px] text-zinc-400">
-                      <span>📊 LOC: {complexity || Math.floor(Math.random() * 300) + 50}</span>
-                      <span>🔗 Deps: {Math.floor(Math.random() * 10) + 1}</span>
+                      <span>📊 LOC: {complexity || 'N/A'}</span>
+                      <span>🔗 Deps: {stationRaw ? stationRaw.split(/[\\/]/).pop() : 'N/A'}</span>
                     </div>
                   </div>
                   <button
@@ -907,7 +918,7 @@ export default function MetroMap({
                   </button>
                 </div>
                 <div className="mt-2 text-[9px] text-zinc-500 truncate">
-                  🔗 Imports: user.service.ts, auth.service.ts
+                  🔗 Imports: {stationRaw ? stationRaw.split(/[\\/]/).pop() : 'N/A'}
                 </div>
                 <div className="mt-1.5 flex gap-2">
                   <button className="text-[8px] text-primary hover:text-primary/80">📂 View Impact</button>
@@ -999,6 +1010,8 @@ export default function MetroMap({
             source: src.stationId,
             target: dest.stationId,
             type: 'straight',
+            sourceHandle: 'bottom',
+            targetHandle: 'top',
             animated: false,
             style: {
               stroke: "#71717a",
