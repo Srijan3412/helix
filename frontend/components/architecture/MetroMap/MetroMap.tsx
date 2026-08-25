@@ -374,7 +374,7 @@ export default function MetroMap({
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   // ── Pagination State ──
   const [currentPage, setCurrentPage] = useState(1);
-  const STATIONS_PER_PAGE = 8;
+  const STATIONS_PER_PAGE = 100;
   const [expandedStation, setExpandedStation] = useState<string | null>(null);
 
   // 1. Fetch features map from API
@@ -1170,19 +1170,6 @@ export default function MetroMap({
 
       {/* ── FILTER CONTROLS ── */}
       <div className="flex items-center gap-2 mb-2 px-1">
-        <div className="flex-1 flex items-center gap-2 bg-zinc-900/60 border border-border/60 rounded-xl px-3 py-1.5">
-          <span className="text-zinc-500 text-[10px]">🔍</span>
-
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="text-zinc-500 hover:text-white text-[10px]"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
         <button
           className={`px-2 py-1 rounded text-[8px] font-bold transition whitespace-nowrap ${activeFilters.length === 0 ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-400'
             }`}
@@ -1211,9 +1198,8 @@ export default function MetroMap({
         )}
       </div>
 
-
       {/* ── MAIN LAYOUT: Sidebar (Legend) + Canvas ── */}
-      <div className="flex gap-3 h-[calc(100%-140px)]">
+      <div className="flex gap-3 h-[calc(100%-80px)]">
 
         {/* ── FEATURE LEGEND (Left Sidebar) ── */}
         <div className="w-52 shrink-0">
