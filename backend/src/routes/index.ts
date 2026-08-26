@@ -2,8 +2,21 @@ import { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
-import { analysisQueue, redisConnection, isInMemoryMode } from "../jobs/analysis.queue.js";
-import { getJobStatus, getJobResult, getJobGraph, getJobRepoPath, runAnalysisJob, setJobRepoPath, setJobMetadata, getJobMetadata } from "../jobs/analysis.worker.js";
+import {
+  analysisQueue,
+  redisConnection,
+  isInMemoryMode,
+} from "../jobs/analysis.queue.js";
+import {
+  getJobStatus,
+  getJobResult,
+  getJobGraph,
+  getJobRepoPath,
+  runAnalysisJob,
+  setJobRepoPath,
+  setJobMetadata,
+  getJobMetadata,
+} from "../jobs/analysis.worker.js";
 import { StorageService } from "../modules/upload/storage.service.js";
 import { UploadFailedError, JobNotFoundError } from "../core/errors/index.js";
 import { logger } from "../core/logger/index.js";
@@ -18,6 +31,7 @@ import { TraceBuilderService } from "../modules/execution-trace/trace-builder.se
 import { FeatureBuilderService } from "../modules/feature-map/feature-builder.service.js";
 import { requireAuth } from "../core/auth/auth.middleware.js";
 import { ScanHistoryService } from "../modules/analysis/scan-history.service.js";
+import { requireAdmin } from "../middleware/admin.middleware.js";
 
 const AnalyzeRequestSchema = z.object({
   url: z.string().url({ message: "Invalid GitHub repository URL" }).optional(),
@@ -25,12 +39,14 @@ const AnalyzeRequestSchema = z.object({
   source: z.enum(["github", "local"]).optional(),
 });
 
-export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+export const apiRoutes: FastifyPluginAsync = async (
+  fastify: FastifyInstance,
+) => {
   // Register authentication hook to protect all API endpoints
   fastify.addHook("preHandler", requireAuth);
-  
+
   // Register multipart support context if needed (handled in app.ts, but standard Fastify practice)
-  
+
   /**
    * POST /api/analyze
    * Enqueue a new analysis job for a GitHub URL, uploaded ZIP file, or local path.
@@ -40,7 +56,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
     // Check if multipart request (ZIP file) or JSON request (GitHub URL or Local Path)
     const contentType = request.headers["content-type"] || "";
     logger.info({ contentType }, "Request content type parsed");
-    
+
     let repoId = Math.random().toString(36).substring(2, 11);
     let jobId = Math.random().toString(36).substring(2, 11);
     let repoName = `repo-${repoId}`;
@@ -58,7 +74,11 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
           const buffer = await part.toBuffer();
           repoName = part.filename.replace(/\.zip$/i, "");
           // Save ZIP file to the workspace
-          repoPath = await StorageService.saveFileToWorkspace(repoId, part.filename, buffer);
+          repoPath = await StorageService.saveFileToWorkspace(
+            repoId,
+            part.filename,
+            buffer,
+          );
           fileSaved = true;
         }
       }
@@ -76,22 +96,28 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       }
 
       const reqData = result.data;
-      
+
       // Determine if local path scanning is requested
       if (reqData.source === "local" || reqData.path) {
         if (!reqData.path) {
           reply.code(400);
-          return { error: "Path parameter is required for local source analysis" };
+          return {
+            error: "Path parameter is required for local source analysis",
+          };
         }
 
         const resolvedPath = path.resolve(reqData.path);
-        
+
         // Security check: restrict path traversal outside approved folders
         const normalized = resolvedPath.toLowerCase();
-        const isAllowed = normalized.startsWith("c:\\users\\91798\\documents") || normalized.startsWith("c:/users/91798/documents");
+        const isAllowed =
+          normalized.startsWith("c:\\users\\91798\\documents") ||
+          normalized.startsWith("c:/users/91798/documents");
         if (!isAllowed) {
           reply.code(403);
-          return { error: "Access denied: Local path is outside authorized workspaces" };
+          return {
+            error: "Access denied: Local path is outside authorized workspaces",
+          };
         }
 
         try {
@@ -112,7 +138,10 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         // GitHub URL source
         if (!reqData.url) {
           reply.code(400);
-          return { error: "Either url (for github) or path (for local) must be provided" };
+          return {
+            error:
+              "Either url (for github) or path (for local) must be provided",
+          };
         }
         gitUrl = reqData.url;
         const urlParts = gitUrl.split("/");
@@ -125,7 +154,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
     }
 
     logger.info("Queuing background task...");
-    
+
     // Initialize repository path and metadata so they are immediately available to the jobs list query
     await setJobRepoPath(jobId, repoPath);
     await setJobMetadata(jobId, {
@@ -147,8 +176,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
           repoPath,
           url: gitUrl,
           userId: request.user?.id || "anonymous",
-        })
-          .catch((err) => logger.error({ jobId, err }, "❌ Inline job failed"));
+        }).catch((err) => logger.error({ jobId, err }, "❌ Inline job failed"));
       });
     } else {
       logger.info("Adding job to analysisQueue...");
@@ -165,7 +193,10 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       await redisConnectionSetStatus(jobId, "uploaded");
     }
 
-    logger.info({ jobId, repoId, repoName, source }, "🚀 Enqueued analysis job");
+    logger.info(
+      { jobId, repoId, repoName, source },
+      "🚀 Enqueued analysis job",
+    );
 
     reply.code(202);
     return { jobId };
@@ -174,46 +205,52 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
   /**
    * GET /api/analyze/:jobId/status
    */
-  fastify.get<{ Params: { jobId: string } }>("/api/analyze/:jobId/status", async (request, reply) => {
-    const { jobId } = request.params;
-    const status = await getJobStatus(jobId);
-    if (status === "unknown") {
-      throw new JobNotFoundError(jobId);
-    }
-    return { status };
-  });
+  fastify.get<{ Params: { jobId: string } }>(
+    "/api/analyze/:jobId/status",
+    async (request, reply) => {
+      const { jobId } = request.params;
+      const status = await getJobStatus(jobId);
+      if (status === "unknown") {
+        throw new JobNotFoundError(jobId);
+      }
+      return { status };
+    },
+  );
 
   /**
    * GET /api/analyze/:jobId/results
    */
-  fastify.get<{ Params: { jobId: string } }>("/api/analyze/:jobId/results", async (request, reply) => {
-    const { jobId } = request.params;
-    
-    // Try Redis first (recent scans)
-    const results = await getJobResult(jobId);
-    if (results) {
-      return results;
-    }
+  fastify.get<{ Params: { jobId: string } }>(
+    "/api/analyze/:jobId/results",
+    async (request, reply) => {
+      const { jobId } = request.params;
 
-    // Fallback to Supabase database (older or archived scans)
-    const dbResult = await ScanHistoryService.getFullAnalysisResult(jobId);
-    if (dbResult) {
-      return dbResult;
-    }
+      // Try Redis first (recent scans)
+      const results = await getJobResult(jobId);
+      if (results) {
+        return results;
+      }
 
-    const status = await getJobStatus(jobId);
-    if (status === "unknown") {
-      throw new JobNotFoundError(jobId);
-    }
+      // Fallback to Supabase database (older or archived scans)
+      const dbResult = await ScanHistoryService.getFullAnalysisResult(jobId);
+      if (dbResult) {
+        return dbResult;
+      }
 
-    if (status !== "completed") {
-      reply.code(400);
-      return { error: "Analysis results not ready yet", status };
-    }
+      const status = await getJobStatus(jobId);
+      if (status === "unknown") {
+        throw new JobNotFoundError(jobId);
+      }
 
-    reply.code(500);
-    return { error: "Failed to retrieve analysis results" };
-  });
+      if (status !== "completed") {
+        reply.code(400);
+        return { error: "Analysis results not ready yet", status };
+      }
+
+      reply.code(500);
+      return { error: "Failed to retrieve analysis results" };
+    },
+  );
 
   /**
    * GET /api/analyze/:jobId/graph/query
@@ -246,10 +283,15 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       case "dependents": {
         if (!file) {
           reply.code(400);
-          return { error: "Query parameter 'file' is required for action 'dependents'" };
+          return {
+            error: "Query parameter 'file' is required for action 'dependents'",
+          };
         }
         const incomingDirect = GraphQueryService.findIncoming(graph, file);
-        const dependentsTransitive = GraphQueryService.findDependents(graph, file);
+        const dependentsTransitive = GraphQueryService.findDependents(
+          graph,
+          file,
+        );
         return {
           file,
           direct: incomingDirect,
@@ -259,10 +301,16 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       case "dependencies": {
         if (!file) {
           reply.code(400);
-          return { error: "Query parameter 'file' is required for action 'dependencies'" };
+          return {
+            error:
+              "Query parameter 'file' is required for action 'dependencies'",
+          };
         }
         const outgoingDirect = GraphQueryService.findOutgoing(graph, file);
-        const dependenciesTransitive = GraphQueryService.findDependencies(graph, file);
+        const dependenciesTransitive = GraphQueryService.findDependencies(
+          graph,
+          file,
+        );
         return {
           file,
           direct: outgoingDirect,
@@ -272,7 +320,10 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       case "path": {
         if (!file || !targetFile) {
           reply.code(400);
-          return { error: "Query parameters 'file' and 'targetFile' are required for action 'path'" };
+          return {
+            error:
+              "Query parameters 'file' and 'targetFile' are required for action 'path'",
+          };
         }
         const pathResult = GraphQueryService.findPath(graph, file, targetFile);
         return { source: file, target: targetFile, path: pathResult };
@@ -286,7 +337,10 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         return { deadCodeCandidates: deadCode };
       }
       case "centrality": {
-        const mostConnected = GraphQueryService.getMostConnectedFiles(graph, 10);
+        const mostConnected = GraphQueryService.getMostConnectedFiles(
+          graph,
+          10,
+        );
         return { mostConnectedFiles: mostConnected };
       }
       case "visualization": {
@@ -295,11 +349,17 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       }
       case "validate": {
         const issues = GraphValidatorService.validateGraph(graph);
-        return { isValid: issues.filter((i) => i.severity === "error").length === 0, issues };
+        return {
+          isValid: issues.filter((i) => i.severity === "error").length === 0,
+          issues,
+        };
       }
       default: {
         reply.code(400);
-        return { error: "Invalid action. Supported values: dependents, dependencies, path, circular, deadcode, centrality, visualization, validate" };
+        return {
+          error:
+            "Invalid action. Supported values: dependents, dependencies, path, circular, deadcode, centrality, visualization, validate",
+        };
       }
     }
   });
@@ -307,90 +367,112 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
   /**
    * GET /api/analyze/:jobId/routes
    */
-  fastify.get<{ Params: { jobId: string } }>("/api/analyze/:jobId/routes", async (request, reply) => {
-    const { jobId } = request.params;
-    const status = await getJobStatus(jobId);
-    
-    if (status === "unknown") {
-      throw new JobNotFoundError(jobId);
-    }
+  fastify.get<{ Params: { jobId: string } }>(
+    "/api/analyze/:jobId/routes",
+    async (request, reply) => {
+      const { jobId } = request.params;
+      const status = await getJobStatus(jobId);
 
-    if (status !== "completed") {
-      reply.code(400);
-      return { error: "Analysis results not ready yet", status };
-    }
+      if (status === "unknown") {
+        throw new JobNotFoundError(jobId);
+      }
 
-    const results = await getJobResult(jobId);
-    if (!results) {
-      reply.code(500);
-      return { error: "Failed to retrieve analysis results" };
-    }
+      if (status !== "completed") {
+        reply.code(400);
+        return { error: "Analysis results not ready yet", status };
+      }
 
-    return { routes: results.routes || [] };
-  });
+      const results = await getJobResult(jobId);
+      if (!results) {
+        reply.code(500);
+        return { error: "Failed to retrieve analysis results" };
+      }
+
+      return { routes: results.routes || [] };
+    },
+  );
 
   /**
    * GET /api/analyze/:jobId/openapi
    * Serves the generated OpenAPI 3.0 specification.
    */
-  fastify.get<{ Params: { jobId: string } }>("/api/analyze/:jobId/openapi", async (request, reply) => {
-    const { jobId } = request.params;
-    const status = await getJobStatus(jobId);
-    
-    if (status === "unknown") {
-      throw new JobNotFoundError(jobId);
-    }
+  fastify.get<{ Params: { jobId: string } }>(
+    "/api/analyze/:jobId/openapi",
+    async (request, reply) => {
+      const { jobId } = request.params;
+      const status = await getJobStatus(jobId);
 
-    if (status !== "completed") {
-      reply.code(400);
-      return { error: "Analysis results not ready yet", status };
-    }
+      if (status === "unknown") {
+        throw new JobNotFoundError(jobId);
+      }
 
-    const results = await getJobResult(jobId);
-    if (!results) {
-      reply.code(500);
-      return { error: "Failed to retrieve analysis results" };
-    }
+      if (status !== "completed") {
+        reply.code(400);
+        return { error: "Analysis results not ready yet", status };
+      }
 
-    const { OpenApiExporter } = await import("../modules/routes/openapi-exporter.js");
-    const openApiSpec = OpenApiExporter.generateSpec("Repository", results.routes || []);
-    
-    return openApiSpec;
-  });
+      const results = await getJobResult(jobId);
+      if (!results) {
+        reply.code(500);
+        return { error: "Failed to retrieve analysis results" };
+      }
+
+      const { OpenApiExporter } =
+        await import("../modules/routes/openapi-exporter.js");
+      const openApiSpec = OpenApiExporter.generateSpec(
+        "Repository",
+        results.routes || [],
+      );
+
+      return openApiSpec;
+    },
+  );
 
   /**
    * GET /api/analyze/:jobId/ai-summary
    * Returns the AI-generated architecture summary (Phase 11).
    */
-  fastify.get<{ Params: { jobId: string } }>("/api/analyze/:jobId/ai-summary", async (request, reply) => {
-    const { jobId } = request.params;
-    const status = await getJobStatus(jobId);
-    if (status === "unknown") throw new JobNotFoundError(jobId);
-    if (status !== "completed") {
-      reply.code(400);
-      return { error: "Analysis not completed yet", status };
-    }
-    const results = await getJobResult(jobId);
-    if (!results) { reply.code(500); return { error: "Failed to retrieve results" }; }
-    return { aiSummary: results.aiSummary || null };
-  });
+  fastify.get<{ Params: { jobId: string } }>(
+    "/api/analyze/:jobId/ai-summary",
+    async (request, reply) => {
+      const { jobId } = request.params;
+      const status = await getJobStatus(jobId);
+      if (status === "unknown") throw new JobNotFoundError(jobId);
+      if (status !== "completed") {
+        reply.code(400);
+        return { error: "Analysis not completed yet", status };
+      }
+      const results = await getJobResult(jobId);
+      if (!results) {
+        reply.code(500);
+        return { error: "Failed to retrieve results" };
+      }
+      return { aiSummary: results.aiSummary || null };
+    },
+  );
 
   /**
    * GET /api/analyze/:jobId/onboarding
    * Returns the Developer Onboarding Guide (Phase 12).
    */
-  fastify.get<{ Params: { jobId: string } }>("/api/analyze/:jobId/onboarding", async (request, reply) => {
-    const { jobId } = request.params;
-    const status = await getJobStatus(jobId);
-    if (status === "unknown") throw new JobNotFoundError(jobId);
-    if (status !== "completed") {
-      reply.code(400);
-      return { error: "Analysis not completed yet", status };
-    }
-    const results = await getJobResult(jobId);
-    if (!results) { reply.code(500); return { error: "Failed to retrieve results" }; }
-    return { onboarding: results.onboarding || null };
-  });
+  fastify.get<{ Params: { jobId: string } }>(
+    "/api/analyze/:jobId/onboarding",
+    async (request, reply) => {
+      const { jobId } = request.params;
+      const status = await getJobStatus(jobId);
+      if (status === "unknown") throw new JobNotFoundError(jobId);
+      if (status !== "completed") {
+        reply.code(400);
+        return { error: "Analysis not completed yet", status };
+      }
+      const results = await getJobResult(jobId);
+      if (!results) {
+        reply.code(500);
+        return { error: "Failed to retrieve results" };
+      }
+      return { onboarding: results.onboarding || null };
+    },
+  );
 
   /**
    * POST /api/analyze/:jobId/chat
@@ -415,7 +497,10 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
 
     if (status !== "completed") {
       reply.code(400);
-      return { error: "Analysis must be completed before chatting with the codebase", status };
+      return {
+        error: "Analysis must be completed before chatting with the codebase",
+        status,
+      };
     }
 
     // Retrieve cached analysis results and path
@@ -430,7 +515,11 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
     // Coordinate query through multi-agent orchestrator
     const { AgentOrchestrator } = await import("../modules/ai/agents.js");
     const orchestrator = new AgentOrchestrator();
-    const chatResult = await orchestrator.coordinateAnalysis(message, repoPath, results);
+    const chatResult = await orchestrator.coordinateAnalysis(
+      message,
+      repoPath,
+      results,
+    );
 
     const chatResponseMsg = {
       id: Math.random().toString(36).substring(2, 11),
@@ -475,7 +564,11 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
     }
 
     const realFiles = (results.files ?? []).filter(
-      (f: any) => !f.path.startsWith("ROUTE:") && !f.path.startsWith("ENV:") && !f.path.startsWith("DB:") && !f.path.startsWith("ENTITY:")
+      (f: any) =>
+        !f.path.startsWith("ROUTE:") &&
+        !f.path.startsWith("ENV:") &&
+        !f.path.startsWith("DB:") &&
+        !f.path.startsWith("ENTITY:"),
     );
 
     const impact = ImpactAnalysisService.analyze(file, graph, realFiles.length);
@@ -508,7 +601,10 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
 
     if (!results.staticAnalysis) {
       reply.code(404);
-      return { error: "Static analysis not available for this job — re-analyze to generate" };
+      return {
+        error:
+          "Static analysis not available for this job — re-analyze to generate",
+      };
     }
 
     return results.staticAnalysis;
@@ -547,7 +643,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       const jobId = key.split(":")[1];
       const status = await redisConnection.get(key);
       const repoPath = await redisConnection.get(`job:${jobId}:repoPath`);
-      
+
       let repoName = "Unknown";
       let totalFiles = 0;
       let totalRoutes = 0;
@@ -598,7 +694,11 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
 
       if (statusA !== "completed" || statusB !== "completed") {
         reply.code(400);
-        return { error: "Both jobs must be completed before comparison", statusA, statusB };
+        return {
+          error: "Both jobs must be completed before comparison",
+          statusA,
+          statusB,
+        };
       }
 
       const resultA = await getJobResult(jobId);
@@ -611,7 +711,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
 
       const diff = ArchitectureDiffService.compare(resultA, resultB);
       return diff;
-    }
+    },
   );
 
   /**
@@ -640,31 +740,34 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
             result.files,
             result.dependencies,
             result.routes,
-            result.metadata?.databaseInfo
-          )
+            result.metadata?.databaseInfo,
+          ),
         ]);
 
-        const layerArray = LayerDetectorService.calculateLayerMetrics(layers, result);
+        const layerArray = LayerDetectorService.calculateLayerMetrics(
+          layers,
+          result,
+        );
 
         return {
           layers: layerArray,
           graph: graph.graph,
           metadata: {
             totalFiles: result.files?.length || 0,
-            totalLayers: layerArray.filter(l => l.files.length > 0).length,
-            layerDetails: layerArray.map(l => ({
+            totalLayers: layerArray.filter((l) => l.files.length > 0).length,
+            layerDetails: layerArray.map((l) => ({
               layer: l.name,
               fileCount: l.files.length,
               health: l.health,
-              confidence: l.confidence
-            }))
-          }
+              confidence: l.confidence,
+            })),
+          },
         };
       } catch (error: any) {
         reply.code(500);
         return { error: `Failed to analyze architecture: ${error.message}` };
       }
-    }
+    },
   );
 
   // ============================================================
@@ -672,118 +775,128 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
   // ============================================================
 
   // GET /api/scan-history/:userId - Get user's scan history
-  fastify.get('/api/scan-history/:userId', async (request, reply) => {
+  fastify.get("/api/scan-history/:userId", async (request, reply) => {
     try {
       const { userId } = request.params as { userId: string };
       const history = await ScanHistoryService.getScanHistory(userId);
       return reply.send({ success: true, data: history });
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ 
-        success: false, 
-        error: 'Failed to fetch scan history' 
+      return reply.status(500).send({
+        success: false,
+        error: "Failed to fetch scan history",
       });
     }
   });
 
   // GET /api/scan-history/session/:jobId - Get scan session by job ID
-  fastify.get('/api/scan-history/session/:jobId', async (request, reply) => {
+  fastify.get("/api/scan-history/session/:jobId", async (request, reply) => {
     try {
       const { jobId } = request.params as { jobId: string };
       const session = await ScanHistoryService.getScanSessionByJobId(jobId);
       if (!session) {
-        return reply.status(404).send({ 
-          success: false, 
-          error: 'Scan session not found' 
+        return reply.status(404).send({
+          success: false,
+          error: "Scan session not found",
         });
       }
       return reply.send({ success: true, data: session });
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ 
-        success: false, 
-        error: 'Failed to fetch scan session' 
+      return reply.status(500).send({
+        success: false,
+        error: "Failed to fetch scan session",
       });
     }
   });
 
   // GET /api/scan-history/:sessionId/snapshot - Get scan snapshot
-  fastify.get('/api/scan-history/:sessionId/snapshot', async (request, reply) => {
-    try {
-      const { sessionId } = request.params as { sessionId: string };
-      const snapshot = await ScanHistoryService.getScanSnapshot(sessionId);
-      if (!snapshot) {
-        return reply.status(404).send({ 
-          success: false, 
-          error: 'Scan snapshot not found' 
+  fastify.get(
+    "/api/scan-history/:sessionId/snapshot",
+    async (request, reply) => {
+      try {
+        const { sessionId } = request.params as { sessionId: string };
+        const snapshot = await ScanHistoryService.getScanSnapshot(sessionId);
+        if (!snapshot) {
+          return reply.status(404).send({
+            success: false,
+            error: "Scan snapshot not found",
+          });
+        }
+        return reply.send({ success: true, data: snapshot });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to fetch scan snapshot",
         });
       }
-      return reply.send({ success: true, data: snapshot });
-    } catch (error) {
-      request.log.error(error);
-      return reply.status(500).send({ 
-        success: false, 
-        error: 'Failed to fetch scan snapshot' 
-      });
-    }
-  });
+    },
+  );
 
   // POST /api/scan-history/compare - Compare two scans
-  fastify.post('/api/scan-history/compare', async (request, reply) => {
+  fastify.post("/api/scan-history/compare", async (request, reply) => {
     try {
       const { baselineSessionId, compareSessionId } = request.body as {
         baselineSessionId: string;
         compareSessionId: string;
       };
-      
+
       if (!baselineSessionId || !compareSessionId) {
         return reply.status(400).send({
           success: false,
-          error: 'Both baselineSessionId and compareSessionId are required'
+          error: "Both baselineSessionId and compareSessionId are required",
         });
       }
-      
+
+      const userId = (request as any).user?.id;
+
       const diffReport = await ScanHistoryService.compareScans(
         baselineSessionId,
-        compareSessionId
+        compareSessionId,
+        userId,
       );
-      
+
       return reply.send({ success: true, data: diffReport });
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ 
-        success: false, 
-        error: 'Failed to compare scans' 
+      return reply.status(500).send({
+        success: false,
+        error: "Failed to compare scans",
       });
     }
   });
 
   // DELETE /api/scan-history/:sessionId - Delete a scan
-  fastify.delete('/api/scan-history/:sessionId', async (request, reply) => {
+  fastify.delete("/api/scan-history/:sessionId", async (request, reply) => {
     try {
       const { sessionId } = request.params as { sessionId: string };
-      await ScanHistoryService.deleteScan(sessionId);
-      return reply.send({ success: true, message: 'Scan deleted successfully' });
+      const userId = (request as any).user?.id;
+      await ScanHistoryService.deleteScan(sessionId, userId);
+      return reply.send({
+        success: true,
+        message: "Scan deleted successfully",
+      });
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ 
-        success: false, 
-        error: 'Failed to delete scan' 
+      return reply.status(500).send({
+        success: false,
+        error: "Failed to delete scan",
       });
     }
   });
 
   // GET /api/scan-history/stats/:userId - Get user statistics
-  fastify.get('/api/scan-history/stats/:userId', async (request, reply) => {
+  fastify.get("/api/scan-history/stats/:userId", async (request, reply) => {
     try {
       const { userId } = request.params as { userId: string };
       const stats = await ScanHistoryService.getUserStats(userId);
       return reply.send({ success: true, data: stats });
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ 
-        success: false, 
-        error: 'Failed to fetch user stats' 
+      return reply.status(500).send({
+        success: false,
+        error: "Failed to fetch user stats",
       });
     }
   });
@@ -810,7 +923,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       }
       const traces = await TraceBuilderService.buildTraces(repoPath, result);
       return { traces };
-    }
+    },
   );
 
   /**
@@ -834,7 +947,7 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       }
       const features = FeatureBuilderService.buildFeatures(result);
       return { features };
-    }
+    },
   );
 
   /**
@@ -857,17 +970,19 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         return { error: "Failed to retrieve analysis results" };
       }
 
-      const { SubwayBuilderService } = await import("../modules/subway-map/subway-builder.service.js");
-      const { SubwayLayoutService } = await import("../modules/subway-map/subway-layout.service.js");
+      const { SubwayBuilderService } =
+        await import("../modules/subway-map/subway-builder.service.js");
+      const { SubwayLayoutService } =
+        await import("../modules/subway-map/subway-layout.service.js");
 
       const subway = SubwayBuilderService.buildSubway(result);
       const layout = SubwayLayoutService.layout(subway);
 
       return {
         subway,
-        layout
+        layout,
       };
-    }
+    },
   );
 
   /**
@@ -908,9 +1023,137 @@ export const apiRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         reply.code(404);
         return { error: "File not found or unreadable", details: err.message };
       }
-    }
+    },
   );
 
+  // ── ADMIN SCAN MANAGEMENT ROUTES ──
+  // Add import at top of file (with other imports):
+  // import { requireAdmin } from '../middleware/admin.middleware.js';
+
+  // GET /api/admin/scans - Get all scans (admin only)
+  fastify.get(
+    "/api/admin/scans",
+    { preHandler: [requireAuth, requireAdmin] },
+    async (request, reply) => {
+      try {
+        const { includeDeleted } = request.query as { includeDeleted?: string };
+        const scans = await ScanHistoryService.adminGetAllScans(
+          includeDeleted === "true",
+        );
+
+        return reply.send({
+          success: true,
+          data: scans,
+          count: scans.length,
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to fetch scans",
+        });
+      }
+    },
+  );
+
+  // DELETE /api/admin/scans/:scanId - Soft delete a scan (admin only)
+  fastify.delete(
+    "/api/admin/scans/:scanId",
+    { preHandler: [requireAuth, requireAdmin] },
+    async (request, reply) => {
+      try {
+        const { scanId } = request.params as { scanId: string };
+        const adminId = (request as any).user?.id;
+
+        if (!scanId) {
+          return reply.status(400).send({
+            success: false,
+            error: "Scan ID is required",
+          });
+        }
+
+        const result = await ScanHistoryService.softDeleteScan(scanId, adminId);
+
+        return reply.send({
+          ...result,
+          scanId,
+        });
+      } catch (error) {
+        request.log.error(error);
+
+        // Handle specific errors
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to delete scan";
+
+        if (errorMessage === "Scan not found") {
+          return reply.status(404).send({
+            success: false,
+            error: "Scan not found",
+          });
+        }
+
+        if (errorMessage.includes("processing")) {
+          return reply.status(409).send({
+            success: false,
+            error: errorMessage,
+          });
+        }
+
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to delete scan",
+        });
+      }
+    },
+  );
+
+  // POST /api/admin/scans/:scanId/restore - Restore a soft-deleted scan (admin only)
+  fastify.post(
+    "/api/admin/scans/:scanId/restore",
+    { preHandler: [requireAuth, requireAdmin] },
+    async (request, reply) => {
+      try {
+        const { scanId } = request.params as { scanId: string };
+
+        const result = await ScanHistoryService.adminRestoreScan(scanId);
+
+        return reply.send({
+          ...result,
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to restore scan",
+        });
+      }
+    },
+  );
+
+  // DELETE /api/admin/scans/:scanId/permanent - Hard delete (admin only, use sparingly)
+  fastify.delete(
+    "/api/admin/scans/:scanId/permanent",
+    { preHandler: [requireAuth, requireAdmin] },
+    async (request, reply) => {
+      try {
+        const { scanId } = request.params as { scanId: string };
+
+        await ScanHistoryService.permanentDeleteScan(scanId);
+
+        return reply.send({
+          success: true,
+          message: "Scan permanently deleted",
+          scanId,
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to permanently delete scan",
+        });
+      }
+    },
+  );
 
   /**
    * GET /health

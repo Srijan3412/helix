@@ -94,162 +94,178 @@ const COMMON_ENTRY_FILES = new Set([
 
 // ─── Core pipeline (shared by BullMQ Worker and inline runner) ───────────────
 export async function runAnalysisJob(jobData: AnalysisJobData, updateProgress?: (n: number) => Promise<void>): Promise<any> {
-    const { jobId, repoId, repoName, source, repoPath, url } = jobData;
-    const prog = updateProgress ?? (async (_n: number) => {});
-    logger.info({ jobId, stage: "started", repoId, repoName, source }, "🛠️ Starting background analysis job");
+  const { jobId, repoId, repoName, source, repoPath, url } = jobData;
+  const prog = updateProgress ?? (async (_n: number) => { });
+  logger.info({ jobId, stage: "started", repoId, repoName, source }, "🛠️ Starting background analysis job");
 
-    // Cache the repository absolute path in Redis for AI Q&A access
-    await setJobRepoPath(jobId, repoPath);
+  // Cache the repository absolute path in Redis for AI Q&A access
+  await setJobRepoPath(jobId, repoPath);
 
-    await setJobMetadata(jobId, {
-      repoName,
-      repoPath,
-      totalFiles: 0,
-      totalRoutes: 0,
+  await setJobMetadata(jobId, {
+    repoName,
+    repoPath,
+    totalFiles: 0,
+    totalRoutes: 0,
+  });
+
+  const targetDir = source === "zip" ? path.dirname(repoPath) : repoPath;
+
+  try {
+    // Step 1: Clone or Extract Repository
+    if (source === "github") {
+      if (!url) {
+        throw new Error("GitHub repository URL is missing in job data");
+      }
+      await setJobStatus(jobId, "cloning");
+      await prog(10);
+      await CloneService.clone(url, repoPath);
+    } else if (source === "zip") {
+      await setJobStatus(jobId, "extracting");
+      await prog(10);
+      await ExtractionService.extract(repoPath, targetDir);
+
+      // Clean up the uploaded ZIP archive file
+      await fs.unlink(repoPath).catch((err) => {
+        logger.warn({ err, repoPath }, "⚠️ Failed to remove temporary ZIP file");
+      });
+    } else if (source === "local") {
+      // Direct scanning of local directory: no cloning/extraction required
+      await setJobStatus(jobId, "scanning");
+      await prog(10);
+    }
+
+    // Step 2: Recursive Scanner
+    await setJobStatus(jobId, "scanning");
+    await prog(40);
+    const scanResult = await RepositoryScanner.scan(targetDir);
+
+    // Step 3: Language Detection
+    await prog(70);
+    const langResult = LanguageDetector.detect(scanResult.filePaths);
+    const primaryLanguage = langResult.primaryLanguages[0] || "Unknown";
+
+    // Step 3.5: Framework Intelligence Engine
+    const frameworkMetadata = await FrameworkDetectorService.detect(
+      targetDir,
+      scanResult.filePaths,
+      { primaryLanguage }
+    );
+
+    await prog(80);
+    const treeRoot = TreeBuilder.buildTree(scanResult.filePaths, repoName);
+
+    // Step 5: Detect Entry Candidates (baseline names)
+    const entryCandidates = scanResult.filePaths.filter((filePath) => {
+      const normalized = filePath.replace(/\\/g, "/").toLowerCase();
+      return COMMON_ENTRY_FILES.has(normalized) || COMMON_ENTRY_FILES.has(path.basename(normalized));
     });
 
-    const targetDir = source === "zip" ? path.dirname(repoPath) : repoPath;
+    // Step 6: Analyze Codebase Dependencies via AST Parsing
+    const depResult = await ASTAnalyzer.analyzeRepository(targetDir);
 
-    try {
-      // Step 1: Clone or Extract Repository
-      if (source === "github") {
-        if (!url) {
-          throw new Error("GitHub repository URL is missing in job data");
-        }
-        await setJobStatus(jobId, "cloning");
-        await prog(10);
-        await CloneService.clone(url, repoPath);
-      } else if (source === "zip") {
-        await setJobStatus(jobId, "extracting");
-        await prog(10);
-        await ExtractionService.extract(repoPath, targetDir);
-        
-        // Clean up the uploaded ZIP archive file
-        await fs.unlink(repoPath).catch((err) => {
-          logger.warn({ err, repoPath }, "⚠️ Failed to remove temporary ZIP file");
-        });
-      } else if (source === "local") {
-        // Direct scanning of local directory: no cloning/extraction required
-        await setJobStatus(jobId, "scanning");
-        await prog(10);
-      }
+    // Step 6.5: Route Discovery Engine
+    const detectedRoutes = await RouteDetectorService.detectRoutes(
+      targetDir,
+      scanResult.filePaths,
+      frameworkMetadata,
+      depResult.dependencies
+    );
+    const routeMetrics = RouteDetectorService.computeMetrics(detectedRoutes);
 
-      // Step 2: Recursive Scanner
-      await setJobStatus(jobId, "scanning");
-      await prog(40);
-      const scanResult = await RepositoryScanner.scan(targetDir);
+    // Step 6.8: Inject Route Nodes and Route Edges into Dependency files/edges before building graph
+    for (const r of detectedRoutes) {
+      const routeNodeId = `ROUTE:${r.method}:${r.path}`;
 
-      // Step 3: Language Detection
-      await prog(70);
-      const langResult = LanguageDetector.detect(scanResult.filePaths);
-      const primaryLanguage = langResult.primaryLanguages[0] || "Unknown";
-
-      // Step 3.5: Framework Intelligence Engine
-      const frameworkMetadata = await FrameworkDetectorService.detect(
-        targetDir,
-        scanResult.filePaths,
-        { primaryLanguage }
-      );
-
-      await prog(80);
-      const treeRoot = TreeBuilder.buildTree(scanResult.filePaths, repoName);
-
-      // Step 5: Detect Entry Candidates (baseline names)
-      const entryCandidates = scanResult.filePaths.filter((filePath) => {
-        const normalized = filePath.replace(/\\/g, "/").toLowerCase();
-        return COMMON_ENTRY_FILES.has(normalized) || COMMON_ENTRY_FILES.has(path.basename(normalized));
+      depResult.files.push({
+        id: routeNodeId,
+        path: routeNodeId, // Unique path identifier for the node map
+        extension: "route",
+        imports: [],
+        exports: [],
+        dependencies: r.chain || [],
+        internalImports: r.chain || [],
+        externalImports: [],
+        referencedBy: [],
+        lineCount: 0,
+        size: 0,
       });
 
-      // Step 6: Analyze Codebase Dependencies via AST Parsing
-      const depResult = await ASTAnalyzer.analyzeRepository(targetDir);
+      // Edge from Route Node to the file defining it
+      depResult.dependencies.push({
+        source: routeNodeId,
+        target: r.file,
+        type: "dependency",
+      });
 
-      // Step 6.5: Route Discovery Engine
-      const detectedRoutes = await RouteDetectorService.detectRoutes(
-        targetDir,
-        scanResult.filePaths,
-        frameworkMetadata,
-        depResult.dependencies
-      );
-      const routeMetrics = RouteDetectorService.computeMetrics(detectedRoutes);
-
-      // Step 6.8: Inject Route Nodes and Route Edges into Dependency files/edges before building graph
-      for (const r of detectedRoutes) {
-        const routeNodeId = `ROUTE:${r.method}:${r.path}`;
-        
-        depResult.files.push({
-          id: routeNodeId,
-          path: routeNodeId, // Unique path identifier for the node map
-          extension: "route",
-          imports: [],
-          exports: [],
-          dependencies: r.chain || [],
-          internalImports: r.chain || [],
-          externalImports: [],
-          referencedBy: [],
-          lineCount: 0,
-          size: 0,
-        });
-
-        // Edge from Route Node to the file defining it
-        depResult.dependencies.push({
-          source: routeNodeId,
-          target: r.file,
-          type: "dependency",
-        });
-
-        // Edges from Route Node to files in the execution chain
-        if (r.chain) {
-          for (const chainFile of r.chain) {
-            depResult.dependencies.push({
-              source: routeNodeId,
-              target: chainFile,
-              type: "dependency",
-            });
-          }
-        }
-      }
-
-      // Step 7.6: Environment variables analysis
-      const envAnalysis = await EnvironmentAnalyzerService.analyze(targetDir, scanResult.filePaths);
-
-      // Step 7.7: Database discovery & flow tracking
-      const parsedPkg = await PackageAnalyzer.analyze(targetDir);
-      const dbDiscovery = await DatabaseDetectorService.discover(targetDir, scanResult.filePaths, parsedPkg);
-      const dbFlows = await TransactionFlowService.trace(targetDir, detectedRoutes, dbDiscovery.entities, dbDiscovery.type || "");
-      dbDiscovery.flows = dbFlows;
-
-      // Step 7.8: Inject Environment Variable Nodes
-      for (const envVar of envAnalysis.envVars) {
-        const envNodeId = `ENV:${envVar.name}`;
-        depResult.files.push({
-          id: envNodeId,
-          path: envNodeId,
-          extension: "env",
-          imports: [],
-          exports: [],
-          dependencies: [],
-          internalImports: [],
-          externalImports: [],
-          referencedBy: envVar.files,
-          lineCount: 0,
-          size: 0,
-        });
-
-        for (const f of envVar.files) {
+      // Edges from Route Node to files in the execution chain
+      if (r.chain) {
+        for (const chainFile of r.chain) {
           depResult.dependencies.push({
-            source: f,
-            target: envNodeId,
+            source: routeNodeId,
+            target: chainFile,
             type: "dependency",
           });
         }
       }
+    }
 
-      // Step 7.85: Inject Database and Entity Nodes
-      const dbNodeId = `DB:${dbDiscovery.type || "Database"}`;
+    // Step 7.6: Environment variables analysis
+    const envAnalysis = await EnvironmentAnalyzerService.analyze(targetDir, scanResult.filePaths);
+
+    // Step 7.7: Database discovery & flow tracking
+    const parsedPkg = await PackageAnalyzer.analyze(targetDir);
+    const dbDiscovery = await DatabaseDetectorService.discover(targetDir, scanResult.filePaths, parsedPkg);
+    const dbFlows = await TransactionFlowService.trace(targetDir, detectedRoutes, dbDiscovery.entities, dbDiscovery.type || "");
+    dbDiscovery.flows = dbFlows;
+
+    // Step 7.8: Inject Environment Variable Nodes
+    for (const envVar of envAnalysis.envVars) {
+      const envNodeId = `ENV:${envVar.name}`;
       depResult.files.push({
-        id: dbNodeId,
-        path: dbNodeId,
-        extension: "database",
+        id: envNodeId,
+        path: envNodeId,
+        extension: "env",
+        imports: [],
+        exports: [],
+        dependencies: [],
+        internalImports: [],
+        externalImports: [],
+        referencedBy: envVar.files,
+        lineCount: 0,
+        size: 0,
+      });
+
+      for (const f of envVar.files) {
+        depResult.dependencies.push({
+          source: f,
+          target: envNodeId,
+          type: "dependency",
+        });
+      }
+    }
+
+    // Step 7.85: Inject Database and Entity Nodes
+    const dbNodeId = `DB:${dbDiscovery.type || "Database"}`;
+    depResult.files.push({
+      id: dbNodeId,
+      path: dbNodeId,
+      extension: "database",
+      imports: [],
+      exports: [],
+      dependencies: [],
+      internalImports: [],
+      externalImports: [],
+      referencedBy: [],
+      lineCount: 0,
+      size: 0,
+    });
+
+    for (const entity of dbDiscovery.entities) {
+      const entityNodeId = `ENTITY:${entity.entity}`;
+      depResult.files.push({
+        id: entityNodeId,
+        path: entityNodeId,
+        extension: "entity",
         imports: [],
         exports: [],
         dependencies: [],
@@ -260,229 +276,245 @@ export async function runAnalysisJob(jobData: AnalysisJobData, updateProgress?: 
         size: 0,
       });
 
-      for (const entity of dbDiscovery.entities) {
-        const entityNodeId = `ENTITY:${entity.entity}`;
-        depResult.files.push({
-          id: entityNodeId,
-          path: entityNodeId,
-          extension: "entity",
-          imports: [],
-          exports: [],
-          dependencies: [],
-          internalImports: [],
-          externalImports: [],
-          referencedBy: [],
-          lineCount: 0,
-          size: 0,
-        });
+      // Edge from Entity to Database
+      depResult.dependencies.push({
+        source: entityNodeId,
+        target: dbNodeId,
+        type: "dependency",
+      });
+    }
 
-        // Edge from Entity to Database
-        depResult.dependencies.push({
-          source: entityNodeId,
-          target: dbNodeId,
-          type: "dependency",
-        });
+    // Edge from Route to Entity based on dbFlows
+    for (const flow of dbFlows) {
+      const routeNodeId = `ROUTE:${flow.method}:${flow.route}`;
+      if (flow.entities) {
+        for (const ent of flow.entities) {
+          depResult.dependencies.push({
+            source: routeNodeId,
+            target: `ENTITY:${ent}`,
+            type: "dependency",
+          });
+        }
       }
+    }
 
-      // Edge from Route to Entity based on dbFlows
-      for (const flow of dbFlows) {
-        const routeNodeId = `ROUTE:${flow.method}:${flow.route}`;
-        if (flow.entities) {
-          for (const ent of flow.entities) {
-            depResult.dependencies.push({
-              source: routeNodeId,
-              target: `ENTITY:${ent}`,
-              type: "dependency",
-            });
+    // Step 7: Build Repository Graph (now includes route, env, database & entity nodes)
+    const repoGraph = GraphBuilderService.buildGraph(depResult.files, depResult.dependencies);
+
+    // Save repository_graph.json separately in target workspace directory
+    const graphPath = path.join(targetDir, "repository_graph.json");
+    const graphOutput = {
+      nodes: repoGraph.nodes,
+      edges: repoGraph.edges,
+      metrics: repoGraph.metrics,
+    };
+    await fs.writeFile(graphPath, JSON.stringify(graphOutput, null, 2), "utf8");
+    logger.info({ jobId, graphPath }, "💾 Repository graph file saved to workspace");
+
+    // Step 7.2: Generate and save openapi_spec.json
+    try {
+      const openApiSpec = OpenApiExporter.generateSpec(repoName, detectedRoutes);
+      const openApiPath = path.join(targetDir, "openapi_spec.json");
+      await fs.writeFile(openApiPath, JSON.stringify(openApiSpec, null, 2), "utf8");
+      logger.info({ jobId, openApiPath }, "💾 OpenAPI 3.0 spec file saved to workspace");
+    } catch (specErr) {
+      logger.error({ jobId, specErr }, "⚠️ Failed to generate or save OpenAPI spec");
+    }
+
+    // Step 7.5: Entry Point Discovery
+    const entryPoints = await EntryPointDetectorService.detect(
+      targetDir,
+      scanResult.filePaths,
+      parsedPkg,
+      repoGraph
+    );
+    const entryPoint = entryPoints[0]?.filePath || null;
+
+    // Step 7.9: Generate manifest.json file
+    const manifest = {
+      repositoryName: repoName,
+      framework: frameworkMetadata.frameworks[0]?.name || null,
+      frameworks: frameworkMetadata.frameworks,
+      runtime: frameworkMetadata.runtime,
+      packageManager: frameworkMetadata.packageManager,
+      language: frameworkMetadata.language,
+      monorepo: frameworkMetadata.monorepo,
+      languages: langResult.primaryLanguages,
+      primaryLanguage,
+      entryCandidates,
+      entryPoint,
+      entryPoints,
+      totalRoutes: detectedRoutes.length,
+      database: dbDiscovery.type || null,
+      orm: dbDiscovery.orm || null,
+    };
+
+    const manifestPath = path.join(targetDir, "manifest.json");
+    await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
+    logger.info({ jobId, manifestPath }, "💾 Repository manifest.json generated successfully");
+
+    // Step 8: Synthesize central metadata object
+    const hasDocker =
+      scanResult.filePaths.some(p => p.toLowerCase().includes("dockerfile") || p.toLowerCase().includes("docker-compose"));
+    const totalSizeMB = parseFloat((scanResult.totalSize / (1024 * 1024)).toFixed(2));
+
+    // Step 8.5: Architecture layout generation
+    const architecture = ArchitectureGeneratorService.generate(
+      depResult.files,
+      depResult.dependencies,
+      detectedRoutes,
+      dbDiscovery
+    );
+
+    // Save architecture.json separately in target workspace directory
+    const architecturePath = path.join(targetDir, "architecture.json");
+    await fs.writeFile(architecturePath, JSON.stringify(architecture, null, 2), "utf8");
+    logger.info({ jobId, architecturePath }, "💾 Architecture layout file saved to workspace");
+
+    const analysisResult: AnalysisResult = {
+      overview: {
+        totalFiles: scanResult.totalFiles,
+        totalRoutes: detectedRoutes.length,
+        totalDependencies: depResult.dependencies.length,
+        totalEnvVars: envAnalysis.envVars.length,
+      },
+      metadata: {
+        languages: langResult.languages,
+        primaryLanguage,
+        totalLines: scanResult.totalLines,
+        totalSizeMB,
+        totalFolders: scanResult.totalFolders,
+        framework: frameworkMetadata.frameworks[0] || undefined,
+        frameworkMetadata,
+        hasDocker,
+        entryPoint: entryPoint || undefined,
+        entryPoints,
+        routeMetrics,
+        databaseInfo: dbDiscovery,
+        missingEnvVars: envAnalysis.missingEnvVars,
+      },
+      tree: treeRoot,
+      files: depResult.files,
+      routes: detectedRoutes,
+      envVars: envAnalysis.envVars,
+      dependencies: depResult.dependencies,
+      graph: graphOutput,
+      frameworks: frameworkMetadata.frameworks,
+      architecture,
+      graphIssues: GraphValidatorService.validateGraph(repoGraph).map(i => ({
+        type: i.type,
+        severity: i.severity,
+        description: i.description,
+      })),
+    };
+
+    // Step 9a: Phase 11 — Generate AI Architecture Summary (structured metadata only, no source code)
+    try {
+      logger.info({ jobId }, "🤖 [Phase 11] Generating AI Architect summary...");
+      analysisResult.aiSummary = await AiArchitectService.generate(analysisResult);
+      logger.info({ jobId }, "✅ [Phase 11] AI Architect summary complete.");
+    } catch (err) {
+      logger.warn({ jobId, err }, "⚠️ [Phase 11] AI Architect summary failed — skipping.");
+    }
+
+    // Step 9b: Phase 12 — Generate Developer Onboarding Guide
+    try {
+      logger.info({ jobId }, "📚 [Phase 12] Generating Onboarding Guide...");
+      analysisResult.onboarding = await OnboardingEngine.generate(analysisResult);
+      logger.info({ jobId }, "✅ [Phase 12] Onboarding Guide complete.");
+    } catch (err) {
+      logger.warn({ jobId, err }, "⚠️ [Phase 12] Onboarding Guide generation failed — skipping.");
+    }
+
+    // Step 9c: Phase 13 — Static Analysis Engine
+    try {
+      logger.info({ jobId }, "🔬 [Phase 13] Running Static Analysis Engine...");
+      const entryPointPaths = (entryPoints ?? []).map((ep: any) => ep.filePath ?? ep);
+      analysisResult.staticAnalysis = await StaticAnalysisService.analyze(
+        depResult.files,
+        repoGraph,
+        repoPath,
+        entryPointPaths,
+        analysisResult.graphIssues ?? []
+      );
+      logger.info({ jobId, score: analysisResult.staticAnalysis.healthScore }, "✅ [Phase 13] Static Analysis complete.");
+    } catch (err) {
+      logger.warn({ jobId, err }, "⚠️ [Phase 13] Static Analysis failed — skipping.");
+    }
+
+    // Step 9d: Software Metro Map - Feature Discovery
+    try {
+      logger.info({ jobId }, "🚇 Mapping business features...");
+      analysisResult.features = FeatureBuilderService.buildFeatures(analysisResult);
+      logger.info({ jobId, count: analysisResult.features.length }, "✅ Business features mapped successfully.");
+    } catch (err) {
+      logger.warn({ jobId, err }, "⚠️ Feature mapping failed — skipping.");
+    }
+
+    // Save results JSON in isolated workspace directory
+    const resultPath = path.join(targetDir, "analysis_result.json");
+    await fs.writeFile(resultPath, JSON.stringify(analysisResult, null, 2), "utf8");
+    logger.info({ jobId, resultPath }, "💾 Analysis result saved to workspace");
+
+    // Step 9: Store cached results and complete status
+    await setJobResult(jobId, analysisResult);
+    await setJobGraph(jobId, repoGraph);
+    await setJobMetadata(jobId, {
+      repoName: analysisResult.tree?.name || repoName,
+      repoPath,
+      totalFiles: analysisResult.overview?.totalFiles || 0,
+      totalRoutes: analysisResult.overview?.totalRoutes || 0,
+    });
+    await setJobStatus(jobId, "completed");
+    await prog(100);
+
+    // Save scan to history
+    // ── Save scan to history with retry logic ──
+    try {
+      const userId = jobData.userId || "anonymous";
+      let retries = 3;
+      let lastError: any = null;
+
+      while (retries > 0) {
+        try {
+          await ScanHistoryService.saveScan(userId, jobId, analysisResult);
+          logger.info({ jobId, userId }, "✅ Scan saved to history successfully");
+          break; // Success - exit retry loop
+        } catch (err) {
+          lastError = err;
+          retries--;
+          if (retries > 0) {
+            logger.warn({
+              jobId,
+              userId,
+              retriesLeft: retries,
+              err
+            }, "⚠️ Failed to save scan to history, retrying...");
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
           }
         }
       }
 
-      // Step 7: Build Repository Graph (now includes route, env, database & entity nodes)
-      const repoGraph = GraphBuilderService.buildGraph(depResult.files, depResult.dependencies);
-
-      // Save repository_graph.json separately in target workspace directory
-      const graphPath = path.join(targetDir, "repository_graph.json");
-      const graphOutput = {
-        nodes: repoGraph.nodes,
-        edges: repoGraph.edges,
-        metrics: repoGraph.metrics,
-      };
-      await fs.writeFile(graphPath, JSON.stringify(graphOutput, null, 2), "utf8");
-      logger.info({ jobId, graphPath }, "💾 Repository graph file saved to workspace");
-
-      // Step 7.2: Generate and save openapi_spec.json
-      try {
-        const openApiSpec = OpenApiExporter.generateSpec(repoName, detectedRoutes);
-        const openApiPath = path.join(targetDir, "openapi_spec.json");
-        await fs.writeFile(openApiPath, JSON.stringify(openApiSpec, null, 2), "utf8");
-        logger.info({ jobId, openApiPath }, "💾 OpenAPI 3.0 spec file saved to workspace");
-      } catch (specErr) {
-        logger.error({ jobId, specErr }, "⚠️ Failed to generate or save OpenAPI spec");
+      if (retries === 0 && lastError) {
+        logger.error({
+          jobId,
+          userId,
+          err: lastError
+        }, "❌ Failed to save scan to history after all retries");
       }
-
-      // Step 7.5: Entry Point Discovery
-      const entryPoints = await EntryPointDetectorService.detect(
-        targetDir,
-        scanResult.filePaths,
-        parsedPkg,
-        repoGraph
-      );
-      const entryPoint = entryPoints[0]?.filePath || null;
-
-      // Step 7.9: Generate manifest.json file
-      const manifest = {
-        repositoryName: repoName,
-        framework: frameworkMetadata.frameworks[0]?.name || null,
-        frameworks: frameworkMetadata.frameworks,
-        runtime: frameworkMetadata.runtime,
-        packageManager: frameworkMetadata.packageManager,
-        language: frameworkMetadata.language,
-        monorepo: frameworkMetadata.monorepo,
-        languages: langResult.primaryLanguages,
-        primaryLanguage,
-        entryCandidates,
-        entryPoint,
-        entryPoints,
-        totalRoutes: detectedRoutes.length,
-        database: dbDiscovery.type || null,
-        orm: dbDiscovery.orm || null,
-      };
-      
-      const manifestPath = path.join(targetDir, "manifest.json");
-      await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
-      logger.info({ jobId, manifestPath }, "💾 Repository manifest.json generated successfully");
-
-      // Step 8: Synthesize central metadata object
-      const hasDocker = 
-        scanResult.filePaths.some(p => p.toLowerCase().includes("dockerfile") || p.toLowerCase().includes("docker-compose"));
-      const totalSizeMB = parseFloat((scanResult.totalSize / (1024 * 1024)).toFixed(2));
-
-      // Step 8.5: Architecture layout generation
-      const architecture = ArchitectureGeneratorService.generate(
-        depResult.files,
-        depResult.dependencies,
-        detectedRoutes,
-        dbDiscovery
-      );
-
-      // Save architecture.json separately in target workspace directory
-      const architecturePath = path.join(targetDir, "architecture.json");
-      await fs.writeFile(architecturePath, JSON.stringify(architecture, null, 2), "utf8");
-      logger.info({ jobId, architecturePath }, "💾 Architecture layout file saved to workspace");
-
-      const analysisResult: AnalysisResult = {
-        overview: {
-          totalFiles: scanResult.totalFiles,
-          totalRoutes: detectedRoutes.length, 
-          totalDependencies: depResult.dependencies.length,
-          totalEnvVars: envAnalysis.envVars.length,
-        },
-        metadata: {
-          languages: langResult.languages,
-          primaryLanguage,
-          totalLines: scanResult.totalLines,
-          totalSizeMB,
-          totalFolders: scanResult.totalFolders,
-          framework: frameworkMetadata.frameworks[0] || undefined,
-          frameworkMetadata,
-          hasDocker,
-          entryPoint: entryPoint || undefined,
-          entryPoints,
-          routeMetrics,
-          databaseInfo: dbDiscovery,
-          missingEnvVars: envAnalysis.missingEnvVars,
-        },
-        tree: treeRoot,
-        files: depResult.files,
-        routes: detectedRoutes,
-        envVars: envAnalysis.envVars,
-        dependencies: depResult.dependencies,
-        graph: graphOutput,
-        frameworks: frameworkMetadata.frameworks,
-        architecture,
-        graphIssues: GraphValidatorService.validateGraph(repoGraph).map(i => ({
-          type: i.type,
-          severity: i.severity,
-          description: i.description,
-        })),
-      };
-
-      // Step 9a: Phase 11 — Generate AI Architecture Summary (structured metadata only, no source code)
-      try {
-        logger.info({ jobId }, "🤖 [Phase 11] Generating AI Architect summary...");
-        analysisResult.aiSummary = await AiArchitectService.generate(analysisResult);
-        logger.info({ jobId }, "✅ [Phase 11] AI Architect summary complete.");
-      } catch (err) {
-        logger.warn({ jobId, err }, "⚠️ [Phase 11] AI Architect summary failed — skipping.");
-      }
-
-      // Step 9b: Phase 12 — Generate Developer Onboarding Guide
-      try {
-        logger.info({ jobId }, "📚 [Phase 12] Generating Onboarding Guide...");
-        analysisResult.onboarding = await OnboardingEngine.generate(analysisResult);
-        logger.info({ jobId }, "✅ [Phase 12] Onboarding Guide complete.");
-      } catch (err) {
-        logger.warn({ jobId, err }, "⚠️ [Phase 12] Onboarding Guide generation failed — skipping.");
-      }
-
-      // Step 9c: Phase 13 — Static Analysis Engine
-      try {
-        logger.info({ jobId }, "🔬 [Phase 13] Running Static Analysis Engine...");
-        const entryPointPaths = (entryPoints ?? []).map((ep: any) => ep.filePath ?? ep);
-        analysisResult.staticAnalysis = await StaticAnalysisService.analyze(
-          depResult.files,
-          repoGraph,
-          repoPath,
-          entryPointPaths,
-          analysisResult.graphIssues ?? []
-        );
-        logger.info({ jobId, score: analysisResult.staticAnalysis.healthScore }, "✅ [Phase 13] Static Analysis complete.");
-      } catch (err) {
-        logger.warn({ jobId, err }, "⚠️ [Phase 13] Static Analysis failed — skipping.");
-      }
-
-      // Step 9d: Software Metro Map - Feature Discovery
-      try {
-        logger.info({ jobId }, "🚇 Mapping business features...");
-        analysisResult.features = FeatureBuilderService.buildFeatures(analysisResult);
-        logger.info({ jobId, count: analysisResult.features.length }, "✅ Business features mapped successfully.");
-      } catch (err) {
-        logger.warn({ jobId, err }, "⚠️ Feature mapping failed — skipping.");
-      }
-
-      // Save results JSON in isolated workspace directory
-      const resultPath = path.join(targetDir, "analysis_result.json");
-      await fs.writeFile(resultPath, JSON.stringify(analysisResult, null, 2), "utf8");
-      logger.info({ jobId, resultPath }, "💾 Analysis result saved to workspace");
-
-      // Step 9: Store cached results and complete status
-      await setJobResult(jobId, analysisResult);
-      await setJobGraph(jobId, repoGraph);
-      await setJobMetadata(jobId, {
-        repoName: analysisResult.tree?.name || repoName,
-        repoPath,
-        totalFiles: analysisResult.overview?.totalFiles || 0,
-        totalRoutes: analysisResult.overview?.totalRoutes || 0,
-      });
-      await setJobStatus(jobId, "completed");
-      await prog(100);
-
-      // Save scan to history
-      try {
-        const userId = jobData.userId || "anonymous";
-        await ScanHistoryService.saveScan(userId, jobId, analysisResult);
-      } catch (historyErr) {
-        logger.error({ jobId, err: historyErr }, "⚠️ Failed to save scan to history");
-      }
-
-      logger.info({ jobId, stage: "completed", repoId }, "✅ Ingestion pipeline completed successfully");
-      return analysisResult;
-    } catch (err: any) {
-      logger.error({ jobId, stage: "failed", err }, "❌ Ingestion pipeline failed");
-      await setJobStatus(jobId, "failed");
-      throw err;
+    } catch (historyErr) {
+      // Final fallback - log error but don't fail the job
+      logger.error({ jobId, err: historyErr }, "⚠️ Failed to save scan to history");
     }
+
+    logger.info({ jobId, stage: "completed", repoId }, "✅ Ingestion pipeline completed successfully");
+    return analysisResult;
+  } catch (err: any) {
+    logger.error({ jobId, stage: "failed", err }, "❌ Ingestion pipeline failed");
+    await setJobStatus(jobId, "failed");
+    throw err;
+  }
 }
 
 // ─── BullMQ Worker (only when real Redis is available) ───────────────────────

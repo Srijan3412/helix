@@ -19,19 +19,11 @@ import {
   Sparkles
 } from "lucide-react";
 import { useSubscription } from "../../lib/subscription/SubscriptionContext";
-import { getScanHistory, deleteScan } from "../../lib/api/client";
+import { getScanHistory, adminDeleteScan } from "../../lib/api/client";
+import { useAuth } from "../../hooks/useAuth";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
+import type { ScanSession } from "@shared/types";
 import ScanComparison from "../../components/ScanComparison";
-
-interface ScanSession {
-  id: string;
-  jobId: string;
-  repoName: string;
-  totalFiles: number;
-  totalRoutes: number;
-  healthScore: number;
-  scannedAt: string;
-  status: string;
-}
 
 export default function ScanHistoryPage() {
   const router = useRouter();
@@ -42,6 +34,10 @@ export default function ScanHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedScans, setSelectedScans] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
+  const { isAdmin } = useAuth();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingScan, setDeletingScan] = useState<ScanSession | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const loadScanHistory = async () => {
     try {
       setIsLoading(true);
@@ -61,15 +57,25 @@ export default function ScanHistoryPage() {
     }
   }, [user]);
 
-  const handleDeleteScan = async (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this scan? This will remove all snapshot results.")) return;
+  const handleDeleteClick = (scan: ScanSession) => {
+    setDeletingScan(scan);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingScan) return;
+
+    setIsDeleting(true);
     try {
-      await deleteScan(sessionId);
-      setScans(scans.filter(s => s.id !== sessionId));
-      setSelectedScans(selectedScans.filter(id => id !== sessionId));
+      await adminDeleteScan(deletingScan.id);
+      setScans(scans.filter(s => s.id !== deletingScan.id));
+      setSelectedScans(selectedScans.filter(id => id !== deletingScan.id));
+      setShowDeleteModal(false);
     } catch (error) {
       console.error("Failed to delete scan:", error);
+    } finally {
+      setIsDeleting(false);
+      setDeletingScan(null);
     }
   };
 
@@ -301,13 +307,15 @@ export default function ScanHistoryPage() {
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={(e) => handleDeleteScan(scan.id, e)}
-                            className="p-2 hover:bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-800/80 hover:text-rose-400 transition text-zinc-500"
-                            title="Delete scan"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteClick(scan); }}
+                              className="p-2 hover:bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-800/80 hover:text-rose-400 transition text-zinc-500"
+                              title="Delete scan"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </motion.div>
                     );
@@ -318,6 +326,14 @@ export default function ScanHistoryPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        scan={deletingScan}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

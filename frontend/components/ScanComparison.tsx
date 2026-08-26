@@ -2,20 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  GitCompare, 
-  Loader2, 
-  ArrowRight, 
-  PlusCircle, 
-  MinusCircle, 
-  Settings, 
-  ArrowUpRight, 
-  FileCode, 
-  Route, 
-  Layers, 
-  ChevronDown, 
+import {
+  GitCompare,
+  Loader2,
+  ArrowRight,
+  PlusCircle,
+  MinusCircle,
+  Settings,
+  ArrowUpRight,
+  FileCode,
+  Route,
+  Layers,
+  ChevronDown,
   ChevronUp,
-  Calendar
+  Calendar,
+  AlertTriangle  // ✅ ADDED: Proper import
 } from "lucide-react";
 import { compareScans } from "../lib/api/client";
 import { DiffReport } from "@shared/types";
@@ -79,7 +80,7 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
     const totalChanges = addedCount + removedCount + modifiedCount;
 
     return (
-      <div 
+      <div
         onClick={() => setExpandedSection(isExpanded ? null : sectionKey)}
         className="flex items-center justify-between p-4 border border-zinc-800 bg-zinc-900/30 rounded-xl cursor-pointer hover:border-zinc-700 transition"
       >
@@ -122,8 +123,8 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
         <h5 className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-widest">{labels[type]}</h5>
         <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
           {items.map((item, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className={`p-2 rounded-lg border text-xs font-mono truncate flex items-center gap-2 ${colors[type]}`}
             >
               {type === "added" && <PlusCircle size={11} className="shrink-0" />}
@@ -153,9 +154,9 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
             <h3 className="text-sm font-bold text-white tracking-wide truncate">{baseline.repoName}</h3>
             <p className="text-[10px] text-zinc-500 mt-1 flex items-center gap-1">
               <Calendar size={11} />
-              {new Date(baseline.scannedAt).toLocaleDateString(undefined, { 
-                month: 'short', 
-                day: 'numeric', 
+              {new Date(baseline.scannedAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
@@ -173,11 +174,10 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
             </div>
             <div>
               <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest block">Health</span>
-              <span className={`text-sm font-black ${
-                baseline.healthScore >= 70 ? 'text-emerald-400' :
-                baseline.healthScore >= 40 ? 'text-amber-400' :
-                'text-rose-400'
-              }`}>{baseline.healthScore}%</span>
+              <span className={`text-sm font-black ${baseline.healthScore >= 70 ? 'text-emerald-400' :
+                  baseline.healthScore >= 40 ? 'text-amber-400' :
+                    'text-rose-400'
+                }`}>{baseline.healthScore}%</span>
             </div>
           </div>
         </div>
@@ -194,9 +194,9 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
             <h3 className="text-sm font-bold text-white tracking-wide truncate">{compare.repoName}</h3>
             <p className="text-[10px] text-zinc-500 mt-1 flex items-center gap-1">
               <Calendar size={11} />
-              {new Date(compare.scannedAt).toLocaleDateString(undefined, { 
-                month: 'short', 
-                day: 'numeric', 
+              {new Date(compare.scannedAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
@@ -214,11 +214,10 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
             </div>
             <div>
               <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest block">Health</span>
-              <span className={`text-sm font-black ${
-                compare.healthScore >= 70 ? 'text-emerald-400' :
-                compare.healthScore >= 40 ? 'text-amber-400' :
-                'text-rose-400'
-              }`}>{compare.healthScore}%</span>
+              <span className={`text-sm font-black ${compare.healthScore >= 70 ? 'text-emerald-400' :
+                  compare.healthScore >= 40 ? 'text-amber-400' :
+                    'text-rose-400'
+                }`}>{compare.healthScore}%</span>
             </div>
           </div>
         </div>
@@ -231,11 +230,10 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
           <div>
             <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Files Change</div>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className={`text-lg font-black ${
-                changes.totalFiles.diff > 0 ? "text-emerald-400" :
-                changes.totalFiles.diff < 0 ? "text-rose-400" :
-                "text-zinc-400"
-              }`}>
+              <span className={`text-lg font-black ${changes.totalFiles.diff > 0 ? "text-emerald-400" :
+                  changes.totalFiles.diff < 0 ? "text-rose-400" :
+                    "text-zinc-400"
+                }`}>
                 {changes.totalFiles.diff > 0 ? "+" : ""}{changes.totalFiles.diff}
               </span>
               <span className="text-[9px] text-zinc-500 font-semibold">Files</span>
@@ -245,11 +243,10 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
           <div>
             <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Health Delta</div>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className={`text-lg font-black ${
-                changes.healthScore.diff > 0 ? "text-emerald-400 animate-pulse" :
-                changes.healthScore.diff < 0 ? "text-rose-400" :
-                "text-zinc-400"
-              }`}>
+              <span className={`text-lg font-black ${changes.healthScore.diff > 0 ? "text-emerald-400 animate-pulse" :
+                  changes.healthScore.diff < 0 ? "text-rose-400" :
+                    "text-zinc-400"
+                }`}>
                 {changes.healthScore.diff > 0 ? "+" : ""}{changes.healthScore.diff}%
               </span>
               <span className="text-[9px] text-zinc-500 font-semibold">Health Score</span>
@@ -277,11 +274,11 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
         {/* Files Section */}
         <div className="space-y-1">
           {renderSectionHeader(
-            "Files Delta", 
-            <FileCode size={14} />, 
-            changes.files.added.length, 
-            changes.files.removed.length, 
-            changes.files.modified.length, 
+            "Files Delta",
+            <FileCode size={14} />,
+            changes.files.added.length,
+            changes.files.removed.length,
+            changes.files.modified.length,
             "files"
           )}
           {expandedSection === "files" && (
@@ -302,11 +299,11 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
         {/* Routes Section */}
         <div className="space-y-1">
           {renderSectionHeader(
-            "Routes Delta", 
-            <Route size={14} />, 
-            changes.routes.added.length, 
-            changes.routes.removed.length, 
-            changes.routes.modified.length, 
+            "Routes Delta",
+            <Route size={14} />,
+            changes.routes.added.length,
+            changes.routes.removed.length,
+            changes.routes.modified.length,
             "routes"
           )}
           {expandedSection === "routes" && (
@@ -327,11 +324,11 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
         {/* Layers Section */}
         <div className="space-y-1">
           {renderSectionHeader(
-            "Layers Delta", 
-            <Layers size={14} />, 
-            changes.layers.added.length, 
-            changes.layers.removed.length, 
-            changes.layers.modified.length, 
+            "Layers Delta",
+            <Layers size={14} />,
+            changes.layers.added.length,
+            changes.layers.removed.length,
+            changes.layers.modified.length,
             "layers"
           )}
           {expandedSection === "layers" && (
@@ -350,27 +347,5 @@ export default function ScanComparison({ baselineId, compareId, onClose }: ScanC
         </div>
       </div>
     </div>
-  );
-}
-
-// AlertTriangle fallback helper
-function AlertTriangle({ className, size }: { className?: string; size?: number }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size || 24} 
-      height={size || 24} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-      <line x1="12" y1="9" x2="12" y2="13"/>
-      <line x1="12" y1="17" x2="12.01" y2="17"/>
-    </svg>
   );
 }

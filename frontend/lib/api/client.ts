@@ -319,6 +319,55 @@ export async function compareScans(baselineSessionId: string, compareSessionId: 
   return result.data;
 }
 
+// ── Admin Scan Management ──
+export async function adminGetAllScans(includeDeleted?: boolean): Promise<ScanSession[]> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/scans?includeDeleted=${includeDeleted || false}`, {
+    headers: await getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to fetch scans');
+  }
+  const result = await response.json();
+  return result.data;
+}
+
+export async function adminDeleteScan(scanId: string): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/scans/${scanId}`, {
+    method: 'DELETE',
+    headers: await getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to delete scan');
+  }
+  return response.json();
+}
+
+export async function adminRestoreScan(scanId: string): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/scans/${scanId}/restore`, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to restore scan');
+  }
+  return response.json();
+}
+
+export async function adminPermanentDeleteScan(scanId: string): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/scans/${scanId}/permanent`, {
+    method: 'DELETE',
+    headers: await getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to permanently delete scan');
+  }
+  return response.json();
+}
+
 export async function deleteScan(sessionId: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/scan-history/${sessionId}`, {
     method: "DELETE",

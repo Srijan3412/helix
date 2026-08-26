@@ -186,6 +186,7 @@ export interface ArchitectureMetadata {
     color?: string;
   }>;
   graph: ReactFlowGraph;
+  databaseInfo?: DatabaseInfo;
 }
 
 // ─── Phase 11: AI Architect Summary ─────────────────────────────────────────
@@ -201,11 +202,11 @@ export interface AiArchitectSummary {
     authentication: string;
     packageManager: string;
   };
-  lifecycle: string[];          // e.g. ["Route", "Controller", "Service", "Repository", "Database"]
-  authentication: string;       // e.g. "JWT tokens validated via middleware on protected routes."
-  database: string;             // e.g. "PostgreSQL managed via Prisma ORM with 5 entities."
+  lifecycle: string[]; // e.g. ["Route", "Controller", "Service", "Repository", "Database"]
+  authentication: string; // e.g. "JWT tokens validated via middleware on protected routes."
+  database: string; // e.g. "PostgreSQL managed via Prisma ORM with 5 entities."
   keyModules: { file: string; role: string; importance: number }[];
-  markdownSummary: string;      // Full AI-generated markdown document
+  markdownSummary: string; // Full AI-generated markdown document
 }
 
 // ─── Phase 12: Developer Onboarding Guide ────────────────────────────────────
@@ -232,9 +233,13 @@ export interface LearningStep {
 export interface OnboardingGuide {
   learningPath: LearningStep[];
   criticalFiles: { file: string; role: string; importanceScore: number }[];
-  envSetup: { name: string; criticality: "HIGH" | "LOW"; description: string }[];
-  architectureTour: string[];   // Ordered file paths forming the primary request lifecycle
-  summary: string;              // Short paragraph describing what to do on day 1
+  envSetup: {
+    name: string;
+    criticality: "HIGH" | "LOW";
+    description: string;
+  }[];
+  architectureTour: string[]; // Ordered file paths forming the primary request lifecycle
+  summary: string; // Short paragraph describing what to do on day 1
 }
 
 // ─── Repository Health ────────────────────────────────────────────────────────
@@ -249,8 +254,8 @@ export interface GraphIssue {
 
 export interface DeadCodeResult {
   file: string;
-  confidence: number;     // 0-100
-  reason: string;         // "zero incoming references"
+  confidence: number; // 0-100
+  reason: string; // "zero incoming references"
 }
 
 export interface UnusedExportResult {
@@ -260,7 +265,7 @@ export interface UnusedExportResult {
 }
 
 export interface CycleResult {
-  cycle: string[];        // e.g. ["a.ts","b.ts","c.ts","a.ts"]
+  cycle: string[]; // e.g. ["a.ts","b.ts","c.ts","a.ts"]
   length: number;
 }
 
@@ -280,13 +285,13 @@ export interface GodServiceResult {
 
 export interface ComplexityResult {
   file: string;
-  score: number;          // Estimated cyclomatic complexity
+  score: number; // Estimated cyclomatic complexity
   rating: "good" | "medium" | "risky";
-  hotspots: string[];     // top complex function names if detected
+  hotspots: string[]; // top complex function names if detected
 }
 
 export interface StaticAnalysisReport {
-  healthScore: number;    // 0-100 aggregate
+  healthScore: number; // 0-100 aggregate
   deadCode: DeadCodeResult[];
   unusedExports: UnusedExportResult[];
   cycles: CycleResult[];
@@ -307,7 +312,7 @@ export interface ImpactAnalysis {
   directDependents: string[];
   transitiveDependents: string[];
   totalAffectedFiles: number;
-  impactScore: number;    // 0-100, based on % of codebase affected
+  impactScore: number; // 0-100, based on % of codebase affected
   criticalPaths: string[][];
 }
 
@@ -371,7 +376,13 @@ export interface ArchitectureDiff {
 
 export interface TraceStep {
   name: string;
-  type: "controller" | "service" | "helper" | "repository" | "database" | "middleware";
+  type:
+    | "controller"
+    | "service"
+    | "helper"
+    | "repository"
+    | "database"
+    | "middleware";
   filePath?: string;
 }
 
@@ -434,6 +445,7 @@ export interface RepositorySubway {
 }
 
 // ─── Scan History & Comparison Types ───
+// ─── Scan History & Comparison Types ───
 
 export interface ScanSession {
   id: string;
@@ -447,6 +459,9 @@ export interface ScanSession {
   status: string;
   scannedAt: string;
   metadata: any;
+  // ✅ ADDED: Soft delete fields
+  deletedAt?: string | null;
+  deletedBy?: string | null;
 }
 
 export interface ScanSnapshot {
@@ -458,6 +473,14 @@ export interface ScanSnapshot {
   files: FileNode[];
   routes: RouteNode[];
   dependencies: DependencyEdge[];
+  envVars?: EnvironmentVariable[];
+  features?: FeatureFlow[];
+  aiSummary?: any;
+  onboarding?: any;
+  tree?: any;
+  frameworks?: string[];
+  graphIssues?: any[];
+  subway?: any;
   createdAt: string;
 }
 
@@ -494,6 +517,14 @@ export interface DiffReport {
     layers: { added: string[]; removed: string[]; modified: string[] };
     healthScore: { baseline: number; compare: number; diff: number };
     totalFiles: { baseline: number; compare: number; diff: number };
+    envVars: { added: string[]; removed: string[]; modified: string[] };
+    database: { added: string[]; removed: string[] };
+    features: { added: string[]; removed: string[] };
+    staticAnalysis: {
+      baselineHealth: number;
+      compareHealth: number;
+      diff: number;
+    };
   };
 }
 
@@ -503,4 +534,22 @@ export interface UserScanStats {
   totalFiles: number;
   totalRoutes: number;
   lastScan: ScanSession | null;
+}
+
+// ─── Admin Types ──────────────────────────────────────────────────────────────
+
+// ✅ ADDED: User profile for admin management
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: "USER" | "ADMIN";
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ✅ ADDED: Admin delete request/response
+export interface AdminDeleteResponse {
+  success: boolean;
+  message: string;
+  scanId: string;
 }

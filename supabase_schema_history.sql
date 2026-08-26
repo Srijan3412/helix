@@ -93,3 +93,101 @@ CREATE INDEX IF NOT EXISTS idx_scan_sessions_job_id ON public.scan_sessions(job_
 CREATE INDEX IF NOT EXISTS idx_scan_sessions_scanned_at ON public.scan_sessions(scanned_at);
 CREATE INDEX IF NOT EXISTS idx_scan_snapshots_session_id ON public.scan_snapshots(session_id);
 CREATE INDEX IF NOT EXISTS idx_scan_comparisons_user_id ON public.scan_comparisons(user_id);
+-- ============================================================
+-- 5. Admin Scan Deletion & Soft Delete (Run this section last)
+--    Idempotent - safe to run multiple times.
+-- ============================================================
+
+-- ── 5a. Add soft-delete columns to scan_sessions ─────────────
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'scan_sessions' AND column_name = 'deleted_at'
+  ) THEN
+    ALTER TABLE public.scan_sessions ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'scan_sessions' AND column_name = 'deleted_by'
+  ) THEN
+    ALTER TABLE public.scan_sessions ADD COLUMN deleted_by UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+-- Index for soft-delete queries
+CREATE INDEX IF NOT EXISTS idx_scan_sessions_deleted_at ON public.scan_sessions(deleted_at);
+
+-- ── 5b. Profiles table (user roles: USER / ADMIN) ──────────
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+CREATE POLICY "Users can view own profile" ON public.profiles
+  FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'ADMIN')
+  );
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
+CREATE POLICY "Admins can update any profile" ON public.profiles
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'ADMIN')
+  );
+
+-- Auto-create a profile row on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, role)
+  VALUES (NEW.id, NEW.email, 'USER')
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- ── 5c. Scan session soft-delete RLS policies ──────────────
+-- Replace the original "read own" SELECT policy with one that
+-- hides soft-deleted scans from normal users.
+DROP POLICY IF EXISTS "Users can read own scan sessions" ON public.scan_sessions;
+DROP POLICY IF EXISTS "Users can view their own non-deleted scans" ON public.scan_sessions;
+CREATE POLICY "Users can view their own non-deleted scans" ON public.scan_sessions
+  FOR SELECT USING (auth.uid() = user_id AND deleted_at IS NULL);
+
+-- Admins can view all scans (including soft-deleted)
+DROP POLICY IF EXISTS "Admins can view all scans" ON public.scan_sessions;
+CREATE POLICY "Admins can view all scans" ON public.scan_sessions
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'ADMIN')
+  );
+
+-- Admins can soft-delete any scan
+DROP POLICY IF EXISTS "Admins can soft delete any scan" ON public.scan_sessions;
+CREATE POLICY "Admins can soft delete any scan" ON public.scan_sessions
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'ADMIN')
+  ) WITH CHECK (deleted_at IS NOT NULL);
