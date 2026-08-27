@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useAnalysisStore } from "../store/analysis.store";
-import { adminDeleteScan, getScanHistory } from "../lib/api/client";
+import { adminDeleteScan, getScanHistory, getUserProfile } from "../lib/api/client";
 import { useAuth } from "../hooks/useAuth";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import {
@@ -90,6 +90,7 @@ import {
   Target,
   Cpu,
   Trash2,
+  Mail,
   Split,
   Package,
   AlertCircle,
@@ -107,6 +108,7 @@ import {
 //   ExecutionTrace, MetroMap, SubwayMap
 // Removing these unused imports eliminates their entire dependency tree
 // (including @xyflow/react) from the initial bundle.
+
 
 const LandingPage = dynamic(
   () => import("../components/subscription/LandingPage"),
@@ -152,6 +154,8 @@ const ArchitectureViewer = dynamic(
   },
 );
 
+
+
 const IngestionControl = dynamic(
   () => import("../components/ingestion/IngestionControl"),
   { ssr: false },
@@ -174,6 +178,7 @@ const LanguageBreakdown = dynamic(
 );
 
 import { useSubscription } from "../lib/subscription/SubscriptionContext";
+import ScanUsageDisplay from '../components/ScanUsageDisplay';
 import { PLAN_CONFIG } from "../lib/subscription/subscription";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -671,6 +676,26 @@ export default function Home() {
     }
   }, [setJob]);
 
+  // ✅ ADD THIS - OTP Verification Check
+  useEffect(() => {
+    if (subLoading) return;
+
+    // Check if user is admin (mock bypass)
+    const isAdmin = session?.user?.email === 'admin@projectanalyser.com';
+
+    if (isAdmin) {
+      // Admin bypass: Skip OTP verification
+      return;
+    }
+
+    // Regular user flow - check email verification
+    if (session && profile) {
+      if (!profile.email_verified) {
+        // If email not verified, redirect to OTP page
+        router.push('/auth?mode=verify-otp');
+      }
+    }
+  }, [session, profile, subLoading, router]);
   // ── Subscription and Auth States ──
   const {
     session,
@@ -693,7 +718,12 @@ export default function Home() {
     title?: string;
     message?: string;
   }>({ open: false });
-
+  // ── User Profile State ──
+  const [userProfile, setUserProfile] = useState<{
+    scan_limit: number;
+    scans_used: number;
+  } | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   // ── Ingestion Error State ──
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -733,7 +763,7 @@ export default function Home() {
     if (user?.id) {
       getScanHistory(user.id)
         .then((history) => setScans(history))
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [user]);
 
@@ -936,8 +966,8 @@ export default function Home() {
     : (healthData?.largeFiles.length ?? 0);
   const complexCount = hasReport
     ? staticAnalysisReport.complexity.filter(
-        (c: any) => c.rating === "risky" || c.rating === "medium",
-      ).length
+      (c: any) => c.rating === "risky" || c.rating === "medium",
+    ).length
     : 0;
   const godCount = hasReport ? staticAnalysisReport.godServices.length : 0;
   const unusedExportsCount = hasReport
@@ -1075,6 +1105,30 @@ export default function Home() {
     }
   }, [resultData, setResult, currentJobId]);
 
+
+  // ── Fetch User Profile ──
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.id) return;
+
+      setIsProfileLoading(true);
+      try {
+        const profile = await getUserProfile(user.id);
+        setUserProfile({
+          scan_limit: profile.scan_limit,
+          scans_used: profile.scans_used
+        });
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+      } finally {
+        setIsProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user?.id]);
+
+
   const handleFileDrop = (file: File) => {
     if (file.name.endsWith(".zip")) fileMutation.mutate(file);
     else setErrorMessage("Please upload a valid .zip compressed archive");
@@ -1111,82 +1165,82 @@ export default function Home() {
 
   // ─── Render Tabs ──────────────────────────────────────────────────────────────
 
-  const resultTabs: {
-    id: ResultTab;
-    label: string;
-    icon: React.ReactNode;
-    show: boolean;
-  }[] = [
-    {
-      id: "overview",
-      label: "Overview",
-      icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-      show: true,
-    },
-    {
-      id: "arch",
-      label: "Architecture",
-      icon: <Layers className="w-3.5 h-3.5" />,
-      show: !!result?.architecture?.graph,
-    },
-    {
-      id: "routes",
-      label: "Routes",
-      icon: <Network className="w-3.5 h-3.5" />,
-      show: !!result?.routes?.length,
-    },
-    {
-      id: "db",
-      label: "Database",
-      icon: <Database className="w-3.5 h-3.5" />,
-      show: !!(
-        result?.metadata?.databaseInfo?.entities?.length ||
-        result?.metadata?.databaseInfo?.orm
-      ),
-    },
-    {
-      id: "health",
-      label: "Health",
-      icon: <Heart className="w-3.5 h-3.5" />,
-      show: !!result?.graph?.metrics,
-    },
-    {
-      id: "impact",
-      label: "Impact Analysis",
-      icon: <Zap className="w-3.5 h-3.5" />,
-      show: !!result?.graph?.metrics,
-    },
-    {
-      id: "compare",
-      label: "Compare",
-      icon: <GitCompare className="w-3.5 h-3.5" />,
-      show: true,
-    },
-    {
-      id: "env",
-      label: "Environment",
-      icon: <Settings className="w-3.5 h-3.5" />,
-      show: !!result?.envVars?.length,
-    },
-    {
-      id: "ai-architect",
-      label: "AI Architect",
-      icon: <Sparkles className="w-3.5 h-3.5" />,
-      show: !!result?.aiSummary,
-    },
-    {
-      id: "onboarding",
-      label: "Onboarding",
-      icon: <Terminal className="w-3.5 h-3.5" />,
-      show: !!result?.onboarding,
-    },
-    {
-      id: "billing",
-      label: "Billing",
-      icon: <CreditCard className="w-3.5 h-3.5" />,
-      show: true,
-    },
-  ];
+  // const resultTabs: {
+  //   id: ResultTab;
+  //   label: string;
+  //   icon: React.ReactNode;
+  //   show: boolean;
+  // }[] = [
+  //     {
+  //       id: "overview",
+  //       label: "Overview",
+  //       icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+  //       show: true,
+  //     },
+  //     {
+  //       id: "arch",
+  //       label: "Architecture",
+  //       icon: <Layers className="w-3.5 h-3.5" />,
+  //       show: !!result?.architecture?.graph,
+  //     },
+  //     {
+  //       id: "routes",
+  //       label: "Routes",
+  //       icon: <Network className="w-3.5 h-3.5" />,
+  //       show: !!result?.routes?.length,
+  //     },
+  //     {
+  //       id: "db",
+  //       label: "Database",
+  //       icon: <Database className="w-3.5 h-3.5" />,
+  //       show: !!(
+  //         result?.metadata?.databaseInfo?.entities?.length ||
+  //         result?.metadata?.databaseInfo?.orm
+  //       ),
+  //     },
+  //     {
+  //       id: "health",
+  //       label: "Health",
+  //       icon: <Heart className="w-3.5 h-3.5" />,
+  //       show: !!result?.graph?.metrics,
+  //     },
+  //     {
+  //       id: "impact",
+  //       label: "Impact Analysis",
+  //       icon: <Zap className="w-3.5 h-3.5" />,
+  //       show: !!result?.graph?.metrics,
+  //     },
+  //     {
+  //       id: "compare",
+  //       label: "Compare",
+  //       icon: <GitCompare className="w-3.5 h-3.5" />,
+  //       show: true,
+  //     },
+  //     {
+  //       id: "env",
+  //       label: "Environment",
+  //       icon: <Settings className="w-3.5 h-3.5" />,
+  //       show: !!result?.envVars?.length,
+  //     },
+  //     {
+  //       id: "ai-architect",
+  //       label: "AI Architect",
+  //       icon: <Sparkles className="w-3.5 h-3.5" />,
+  //       show: !!result?.aiSummary,
+  //     },
+  //     {
+  //       id: "onboarding",
+  //       label: "Onboarding",
+  //       icon: <Terminal className="w-3.5 h-3.5" />,
+  //       show: !!result?.onboarding,
+  //     },
+  //     {
+  //       id: "billing",
+  //       label: "Billing",
+  //       icon: <CreditCard className="w-3.5 h-3.5" />,
+  //       show: true,
+  //     },
+  //   ];
 
   // ─── Execution Trace Panel ────────────────────────────────────────────────────
 
@@ -1362,6 +1416,7 @@ export default function Home() {
   };
 
   // ─── AUTH & SUBSCRIPTION INTERCEPT ───
+  // ─── AUTH & SUBSCRIPTION INTERCEPT ───
   if (subLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-950">
@@ -1370,6 +1425,15 @@ export default function Home() {
         </div>
       </div>
     );
+  }
+
+  // ✅ ADD THIS - Check if email is verified before showing dashboard
+  if (session && profile && !profile.email_verified) {
+    const isAdmin = session?.user?.email === 'admin@projectanalyser.com';
+    if (!isAdmin) {
+      // Not admin and email not verified - redirect to auth
+      return null; // Will redirect via useEffect
+    }
   }
 
   if (!session || !profile) {
@@ -1405,7 +1469,6 @@ export default function Home() {
 
   // ─── MAIN RETURN ──────────────────────────────────────────────────────────────
 
-  const visibleTabs = resultTabs.filter((t) => t.show);
 
   // ─── Not yet started ───
   if (!currentJobId) {
@@ -1432,6 +1495,17 @@ export default function Home() {
           </p>
         </div>
         <div className="w-full max-w-3xl z-10 mb-16">
+
+          {userProfile && (
+            <div className="w-full max-w-3xl z-10 mb-6">
+              <ScanUsageDisplay
+                scansUsed={userProfile.scans_used}
+                scanLimit={userProfile.scan_limit}
+                isLoading={isPending || isProfileLoading}
+              />
+            </div>
+          )}
+
           <IngestionControl
             onSubmitGithub={(url) => {
               const currentRepos = usage?.repositories_analyzed ?? 0;
@@ -1567,18 +1641,16 @@ export default function Home() {
               onClick={() => reset()}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Upload Repository" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${
-                !currentJobId
-                  ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
-                  : "text-white/50 hover:bg-white/5 hover:text-white/80"
-              } ${!sidebarExpanded ? "justify-center" : ""}`}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${!currentJobId
+                ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
+                : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                } ${!sidebarExpanded ? "justify-center" : ""}`}
             >
               <div
-                className={`rounded-md p-1.5 ${
-                  !currentJobId
-                    ? "bg-blue-500/20 text-blue-400"
-                    : "text-white/30"
-                }`}
+                className={`rounded-md p-1.5 ${!currentJobId
+                  ? "bg-blue-500/20 text-blue-400"
+                  : "text-white/30"
+                  }`}
               >
                 <Upload className="h-4 w-4" />
               </div>
@@ -1616,9 +1688,8 @@ export default function Home() {
               onClick={() => router.push("/scan-history")}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Scan History" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${
-                !sidebarExpanded ? "justify-center" : ""
-              }`}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+                }`}
             >
               <div className="rounded-md p-1.5 text-white/30">
                 <History className="h-4 w-4" />
@@ -1668,18 +1739,16 @@ export default function Home() {
                   onClick={() => setActiveResultTab(tab.id)}
                   whileHover={{ x: sidebarExpanded ? 3 : 0 }}
                   title={!sidebarExpanded ? tab.label : undefined}
-                  className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${
-                    isActive
-                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/80"
-                  } ${!sidebarExpanded ? "justify-center" : ""}`}
+                  className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${isActive
+                    ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
+                    : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                    } ${!sidebarExpanded ? "justify-center" : ""}`}
                 >
                   <div
-                    className={`rounded-md p-1.5 ${
-                      isActive
-                        ? "bg-blue-500/20 text-blue-400"
-                        : "text-white/30"
-                    }`}
+                    className={`rounded-md p-1.5 ${isActive
+                      ? "bg-blue-500/20 text-blue-400"
+                      : "text-white/30"
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                   </div>
@@ -1727,9 +1796,8 @@ export default function Home() {
         <div className="border-t border-white/5 p-2">
           <button
             onClick={() => signOut()}
-            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${
-              !sidebarExpanded ? "justify-center" : ""
-            }`}
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+              }`}
             title="Sign Out"
           >
             <LogOut className="h-4 w-4" />
@@ -1793,13 +1861,13 @@ export default function Home() {
                   frameworkMetadata={
                     result.metadata?.frameworkMetadata
                       ? {
-                          language: result.metadata.frameworkMetadata.language,
-                          runtime: result.metadata.frameworkMetadata.runtime,
-                          packageManager:
-                            result.metadata.frameworkMetadata.packageManager,
-                          frameworks:
-                            result.metadata.frameworkMetadata.frameworks,
-                        }
+                        language: result.metadata.frameworkMetadata.language,
+                        runtime: result.metadata.frameworkMetadata.runtime,
+                        packageManager:
+                          result.metadata.frameworkMetadata.packageManager,
+                        frameworks:
+                          result.metadata.frameworkMetadata.frameworks,
+                      }
                       : undefined
                   }
                 />
@@ -1912,11 +1980,10 @@ export default function Home() {
                         <div
                           key={`${route.method}-${route.path}-${idx}`}
                           onClick={() => setTraceRoute(isTraced ? null : route)}
-                          className={`flex items-start gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all group ${
-                            isTraced
-                              ? "bg-primary/10 border-primary/40"
-                              : "bg-zinc-900/60 border-border/40 hover:border-zinc-600/60"
-                          }`}
+                          className={`flex items-start gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all group ${isTraced
+                            ? "bg-primary/10 border-primary/40"
+                            : "bg-zinc-900/60 border-border/40 hover:border-zinc-600/60"
+                            }`}
                         >
                           <span
                             className={`text-[10px] font-bold font-mono px-2 py-1 rounded-lg border shrink-0 ${mc}`}
@@ -2022,11 +2089,10 @@ export default function Home() {
                               : entity,
                           )
                         }
-                        className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                          selectedEntity?.entity === entity.entity
-                            ? "bg-primary/10 border-primary/40"
-                            : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
-                        }`}
+                        className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedEntity?.entity === entity.entity
+                          ? "bg-primary/10 border-primary/40"
+                          : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
+                          }`}
                       >
                         <div className="flex items-center gap-3 mb-2">
                           <Database className="w-4 h-4 text-primary shrink-0" />
@@ -2247,11 +2313,10 @@ export default function Home() {
                         <button
                           key={i}
                           onClick={() => setSelectedImpactFile(f.path)}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-mono transition-all ${
-                            selectedImpactFile === f.path
-                              ? "bg-primary/10 border border-primary/30 text-primary"
-                              : "bg-zinc-900/60 border border-border/40 text-zinc-400 hover:border-zinc-600"
-                          }`}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-mono transition-all ${selectedImpactFile === f.path
+                            ? "bg-primary/10 border border-primary/30 text-primary"
+                            : "bg-zinc-900/60 border border-border/40 text-zinc-400 hover:border-zinc-600"
+                            }`}
                         >
                           {f.path}
                         </button>
@@ -2407,13 +2472,12 @@ export default function Home() {
                               </span>
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${
-                                    file.status === "added"
-                                      ? "bg-emerald-500/10 text-emerald-400"
-                                      : file.status === "removed"
-                                        ? "bg-red-500/10 text-red-400"
-                                        : "bg-amber-500/10 text-amber-400"
-                                  }`}
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${file.status === "added"
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : file.status === "removed"
+                                      ? "bg-red-500/10 text-red-400"
+                                      : "bg-amber-500/10 text-amber-400"
+                                    }`}
                                 >
                                   {file.status}
                                 </span>
@@ -2475,11 +2539,10 @@ export default function Home() {
                               : envVar,
                           )
                         }
-                        className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                          selectedEnvVar?.name === envVar.name
-                            ? "bg-primary/10 border-primary/40"
-                            : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
-                        }`}
+                        className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedEnvVar?.name === envVar.name
+                          ? "bg-primary/10 border-primary/40"
+                          : "bg-zinc-900/60 border-border/40 hover:border-zinc-600"
+                          }`}
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <Settings className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -2783,7 +2846,26 @@ export default function Home() {
             )}
 
             {/* ─── BILLING TAB ─── */}
-            {activeResultTab === "billing" && <BillingPage />}
+            {/* ─── CONTACT SALES TAB ─── */}
+            {activeResultTab === "billing" && (
+              <div className="flex flex-col items-center justify-center py-20 max-w-5xl mx-auto">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto">
+                    <Mail className="w-8 h-8 text-amber-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white">Need More Scans?</h3>
+                  <p className="text-zinc-400 max-w-md mx-auto">
+                    You've reached your scan limit. Contact our sales team for additional capacity and enterprise pricing.
+                  </p>
+                  <button
+                    onClick={() => window.location.href = '/contact-sales'}
+                    className="px-6 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold hover:bg-amber-500/20 transition"
+                  >
+                    📧 Contact Sales
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -2841,11 +2923,10 @@ export default function Home() {
                             className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
                           >
                             <div
-                              className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
-                                isUser
-                                  ? "bg-primary text-neutral-950 font-medium rounded-tr-none"
-                                  : "bg-white/10 text-zinc-200 border border-white/5 rounded-tl-none"
-                              }`}
+                              className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${isUser
+                                ? "bg-primary text-neutral-950 font-medium rounded-tr-none"
+                                : "bg-white/10 text-zinc-200 border border-white/5 rounded-tl-none"
+                                }`}
                             >
                               <p className="whitespace-pre-wrap">
                                 {msg.content}

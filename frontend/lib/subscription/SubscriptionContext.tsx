@@ -351,7 +351,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
     return { error: error?.message || null };
   };
-
   const signOut = async () => {
     await supabase.auth.signOut();
     invalidateAuthCache();
@@ -360,6 +359,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     updateSubscription(null);
     updateUsage(null);
     updatePayments([]);
+
+    // Reset verification state
+    setNeedsVerification(false);
+    setScanUsage(null);
+    setUserStatus(null);
+    setIsVerifying(false);
   };
 
   // ✅ ADD NEW: OTP Verification Functions
@@ -373,20 +378,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const response = await verifyOtpApi(userId, otp);
 
       if (response.success) {
-        // Reload profile to get updated email_verified status
-        await loadProfile(userId);
+        // Reload profile with fresh data
+        const updatedProfile = await loadProfile(userId);
 
-        // Refresh scan usage
-        const updatedUsage = getScanUsage(profile);
-        setScanUsage(updatedUsage);
+        // Use updated profile for scan usage
+        if (updatedProfile) {
+          const usage = getScanUsage(updatedProfile);
+          setScanUsage(usage);
 
-        setNeedsVerification(false);
-
-        // Update user status
-        if (profile) {
-          const status = getUserStatus({ ...profile, email_verified: true });
+          const status = getUserStatus(updatedProfile);
           setUserStatus(status);
         }
+
+        // Clear verification state
+        setNeedsVerification(false);
 
         return { success: true };
       } else {
