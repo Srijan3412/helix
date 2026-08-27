@@ -1,6 +1,4 @@
 import { logger } from "../../core/logger/index.js";
-// @ts-ignore
-import nodemailer from 'nodemailer';
 
 export class EmailService {
   private static transporter: any = null;
@@ -33,22 +31,28 @@ export class EmailService {
 
     // Initialize transporter based on available configuration
     if (smtpHost && smtpUser && smtpPass) {
-      // SMTP configuration
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpSecure,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-        tls: {
-          rejectUnauthorized: process.env.NODE_ENV === 'production'
-        }
-      });
+      try {
+        // @ts-ignore
+        const nodemailerModule = await import('nodemailer');
+        const nodemailer = nodemailerModule.default || nodemailerModule;
+        this.transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpSecure,
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+          tls: {
+            rejectUnauthorized: process.env.NODE_ENV === 'production'
+          }
+        });
 
-      logger.info('SMTP transporter initialized');
-      return this.transporter;
+        logger.info('SMTP transporter initialized');
+        return this.transporter;
+      } catch (err) {
+        logger.warn(err as any, 'Failed to initialize nodemailer SMTP transporter');
+      }
     }
 
     // If no transporter, return null (will use console fallback)
