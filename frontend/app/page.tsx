@@ -676,7 +676,18 @@ export default function Home() {
     }
   }, [setJob]);
 
-  // ✅ ADD THIS - OTP Verification Check
+  // ── Subscription and Auth States ──
+  const {
+    session,
+    profile,
+    usage,
+    canUse,
+    recordUsage,
+    signOut,
+    loading: subLoading,
+  } = useSubscription();
+
+  // ✅ OTP Verification Check
   useEffect(() => {
     if (subLoading) return;
 
@@ -696,16 +707,6 @@ export default function Home() {
       }
     }
   }, [session, profile, subLoading, router]);
-  // ── Subscription and Auth States ──
-  const {
-    session,
-    profile,
-    usage,
-    canUse,
-    recordUsage,
-    signOut,
-    loading: subLoading,
-  } = useSubscription();
   const [view, setView] = useState<"dashboard" | "auth" | "payment">(
     "dashboard",
   );
@@ -1113,11 +1114,13 @@ export default function Home() {
 
       setIsProfileLoading(true);
       try {
-        const profile = await getUserProfile(user.id);
-        setUserProfile({
-          scan_limit: profile.scan_limit,
-          scans_used: profile.scans_used
-        });
+        const profileRes = await getUserProfile(user.id);
+        if (profileRes?.data) {
+          setUserProfile({
+            scan_limit: profileRes.data.scan_limit ?? 2,
+            scans_used: profileRes.data.scans_used ?? 0
+          });
+        }
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
       } finally {
@@ -1164,84 +1167,76 @@ export default function Home() {
   };
 
   // ─── Render Tabs ──────────────────────────────────────────────────────────────
+  // ─── Render Tabs ──────────────────────────────────────────────────────────────
 
-  // const resultTabs: {
-  //   id: ResultTab;
-  //   label: string;
-  //   icon: React.ReactNode;
-  //   show: boolean;
-  // }[] = [
-  //     {
-  //       id: "overview",
-  //       label: "Overview",
-  //       icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-  //       show: true,
-  //     },
-  //     {
-  //       id: "arch",
-  //       label: "Architecture",
-  //       icon: <Layers className="w-3.5 h-3.5" />,
-  //       show: !!result?.architecture?.graph,
-  //     },
-  //     {
-  //       id: "routes",
-  //       label: "Routes",
-  //       icon: <Network className="w-3.5 h-3.5" />,
-  //       show: !!result?.routes?.length,
-  //     },
-  //     {
-  //       id: "db",
-  //       label: "Database",
-  //       icon: <Database className="w-3.5 h-3.5" />,
-  //       show: !!(
-  //         result?.metadata?.databaseInfo?.entities?.length ||
-  //         result?.metadata?.databaseInfo?.orm
-  //       ),
-  //     },
-  //     {
-  //       id: "health",
-  //       label: "Health",
-  //       icon: <Heart className="w-3.5 h-3.5" />,
-  //       show: !!result?.graph?.metrics,
-  //     },
-  //     {
-  //       id: "impact",
-  //       label: "Impact Analysis",
-  //       icon: <Zap className="w-3.5 h-3.5" />,
-  //       show: !!result?.graph?.metrics,
-  //     },
-  //     {
-  //       id: "compare",
-  //       label: "Compare",
-  //       icon: <GitCompare className="w-3.5 h-3.5" />,
-  //       show: true,
-  //     },
-  //     {
-  //       id: "env",
-  //       label: "Environment",
-  //       icon: <Settings className="w-3.5 h-3.5" />,
-  //       show: !!result?.envVars?.length,
-  //     },
-  //     {
-  //       id: "ai-architect",
-  //       label: "AI Architect",
-  //       icon: <Sparkles className="w-3.5 h-3.5" />,
-  //       show: !!result?.aiSummary,
-  //     },
-  //     {
-  //       id: "onboarding",
-  //       label: "Onboarding",
-  //       icon: <Terminal className="w-3.5 h-3.5" />,
-  //       show: !!result?.onboarding,
-  //     },
-  //     {
-  //       id: "billing",
-  //       label: "Billing",
-  //       icon: <CreditCard className="w-3.5 h-3.5" />,
-  //       show: true,
-  //     },
-  //   ];
-
+  const resultTabs: {
+    id: ResultTab;
+    label: string;
+    icon: React.ReactNode;
+    show: boolean;
+  }[] = [
+      {
+        id: "overview",
+        label: "Overview",
+        icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+        show: true,
+      },
+      {
+        id: "arch",
+        label: "Architecture",
+        icon: <Layers className="w-3.5 h-3.5" />,
+        show: !!result?.architecture?.graph,
+      },
+      {
+        id: "routes",
+        label: "Routes",
+        icon: <Network className="w-3.5 h-3.5" />,
+        show: !!result?.routes?.length,
+      },
+      {
+        id: "db",
+        label: "Database",
+        icon: <Database className="w-3.5 h-3.5" />,
+        show: !!(result?.metadata?.databaseInfo?.entities?.length || result?.metadata?.databaseInfo?.orm),
+      },
+      {
+        id: "health",
+        label: "Health",
+        icon: <Heart className="w-3.5 h-3.5" />,
+        show: !!result?.graph?.metrics,
+      },
+      {
+        id: "impact",
+        label: "Impact Analysis",
+        icon: <Zap className="w-3.5 h-3.5" />,
+        show: !!result?.graph?.metrics,
+      },
+      {
+        id: "compare",
+        label: "Compare",
+        icon: <GitCompare className="w-3.5 h-3.5" />,
+        show: true,
+      },
+      {
+        id: "env",
+        label: "Environment",
+        icon: <Settings className="w-3.5 h-3.5" />,
+        show: !!result?.envVars?.length,
+      },
+      {
+        id: "ai-architect",
+        label: "AI Architect",
+        icon: <Sparkles className="w-3.5 h-3.5" />,
+        show: !!result?.aiSummary,
+      },
+      {
+        id: "onboarding",
+        label: "Onboarding",
+        icon: <Terminal className="w-3.5 h-3.5" />,
+        show: !!result?.onboarding,
+      },
+      // REMOVED: billing tab
+    ];
   // ─── Execution Trace Panel ────────────────────────────────────────────────────
 
   const renderExecutionTrace = () => {
@@ -1716,60 +1711,74 @@ export default function Home() {
                 Results
               </div>
             )}
-            {visibleTabs.map((tab) => {
-              const isActive = activeResultTab === tab.id;
-              const icons = {
-                overview: CheckCircle2,
-                arch: Layers,
-                routes: Network,
-                db: Database,
-                health: Heart,
-                impact: Zap,
-                compare: GitCompare,
-                env: Settings,
-                "ai-architect": Sparkles,
-                onboarding: Terminal,
-                billing: CreditCard,
-              };
-              const Icon = icons[tab.id as keyof typeof icons] || Layers;
+            {(() => {
+              const visibleTabs = [
+                { id: "overview", label: "Overview" },
+                { id: "arch", label: "Architecture" },
+                { id: "routes", label: "Routes & Trace" },
+                { id: "db", label: "Database" },
+                { id: "health", label: "Code Health" },
+                { id: "impact", label: "Impact & Risk" },
+                { id: "compare", label: "Compare Scans" },
+                { id: "env", label: "Environment" },
+                { id: "ai-architect", label: "AI Architect" },
+                { id: "onboarding", label: "Onboarding" },
+              ];
+              return visibleTabs.map((tab) => {
+                const isActive = activeResultTab === tab.id;
+                const icons = {
+                  overview: CheckCircle2,
+                  arch: Layers,
+                  routes: Network,
+                  db: Database,
+                  health: Heart,
+                  impact: Zap,
+                  compare: GitCompare,
+                  env: Settings,
+                  "ai-architect": Sparkles,
+                  onboarding: Terminal,
+                  billing: CreditCard,
+                };
+                const Icon = icons[tab.id as keyof typeof icons] || Layers;
 
-              return (
-                <motion.button
-                  key={tab.id}
-                  onClick={() => setActiveResultTab(tab.id)}
-                  whileHover={{ x: sidebarExpanded ? 3 : 0 }}
-                  title={!sidebarExpanded ? tab.label : undefined}
-                  className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${isActive
-                    ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
-                    : "text-white/50 hover:bg-white/5 hover:text-white/80"
-                    } ${!sidebarExpanded ? "justify-center" : ""}`}
-                >
-                  <div
-                    className={`rounded-md p-1.5 ${isActive
-                      ? "bg-blue-500/20 text-blue-400"
-                      : "text-white/30"
-                      }`}
+                return (
+                  <motion.button
+                    key={tab.id}
+                    onClick={() => setActiveResultTab(tab.id as ResultTab)}
+                    whileHover={{ x: sidebarExpanded ? 3 : 0 }}
+                    title={!sidebarExpanded ? tab.label : undefined}
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${isActive
+                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
+                      : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                      } ${!sidebarExpanded ? "justify-center" : ""}`}
                   >
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <AnimatePresence>
-                    {sidebarExpanded && (
-                      <motion.span
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -8 }}
-                        className="flex-1 text-left"
-                      >
-                        {tab.label}
-                      </motion.span>
+                    <div
+                      className={`rounded-md p-1.5 ${isActive
+                        ? "bg-blue-500/20 text-blue-400"
+                        : "text-white/30"
+                        }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <AnimatePresence>
+                      {sidebarExpanded && (
+                        <motion.span
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -8 }}
+                          className="flex-1 text-left"
+                        >
+                          {tab.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    {sidebarExpanded && tab.id === "overview" && result && (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                     )}
-                  </AnimatePresence>
-                  {sidebarExpanded && tab.id === "overview" && result && (
-                    <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                  )}
-                </motion.button>
-              );
-            })}
+                  </motion.button>
+                );
+              });
+            })()}
 
             {/* Token Counter */}
             {sidebarExpanded &&

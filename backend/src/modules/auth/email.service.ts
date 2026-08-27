@@ -1,14 +1,14 @@
 import { logger } from "../../core/logger/index.js";
+// @ts-ignore
 import nodemailer from 'nodemailer';
-import { createTransport } from 'nodemailer';
 
 export class EmailService {
-  private static transporter: nodemailer.Transporter | null = null;
+  private static transporter: any = null;
 
   /**
    * Initialize email transporter based on available configuration
    */
-  private static async getTransporter(): Promise<nodemailer.Transporter | null> {
+  private static async getTransporter(): Promise<any> {
     // If transporter is already initialized, return it
     if (this.transporter) {
       return this.transporter;
@@ -34,7 +34,7 @@ export class EmailService {
     // Initialize transporter based on available configuration
     if (smtpHost && smtpUser && smtpPass) {
       // SMTP configuration
-      this.transporter = createTransport({
+      this.transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
         secure: smtpSecure,

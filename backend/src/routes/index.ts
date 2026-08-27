@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import fs from "fs/promises";
+import { supabase } from "../core/supabase/index.js";
 import path from "path";
 import {
   analysisQueue,
@@ -1037,6 +1038,149 @@ export const apiRoutes: FastifyPluginAsync = async (
   // import { requireAdmin } from '../middleware/admin.middleware.js';
 
   // GET /api/admin/scans - Get all scans (admin only)
+
+  // ── ADMIN USER MANAGEMENT ──
+
+  // GET /api/admin/users - Get all users (admin only)
+  fastify.get(
+    '/api/admin/users',
+    { preHandler: [requireAuth, requireAdmin] },
+    async (request, reply) => {
+      try {
+        const { data, error } = await supabase
+          .from('helix_profiles')  // Changed from 'profiles' to 'helix_profiles'
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        return reply.send({
+          success: true,
+          data: data || [],
+          count: data?.length || 0,
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: 'Failed to fetch users',
+        });
+      }
+    }
+  );
+
+  // PATCH /api/admin/users/limit - Update user scan limit (admin only)
+  fastify.patch(
+    '/api/admin/users/limit',
+    { preHandler: [requireAuth, requireAdmin] },
+    async (request, reply) => {
+      try {
+        const { userId, scanLimit } = request.body as { userId: string; scanLimit: number };
+
+        if (!userId || typeof scanLimit !== 'number' || scanLimit < 0) {
+          return reply.status(400).send({
+            success: false,
+            error: 'Valid userId and scanLimit are required',
+          });
+        }
+
+        const { error } = await supabase
+          .from('helix_profiles')  // Changed from 'profiles' to 'helix_profiles'
+          .update({
+            scan_limit: scanLimit,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+
+        if (error) throw error;
+
+        return reply.send({
+          success: true,
+          message: `Scan limit updated to ${scanLimit}`,
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: 'Failed to update scan limit',
+        });
+      }
+    }
+  );
+
+  // PATCH /api/admin/users/role - Update user role (admin only)
+  fastify.patch(
+    '/api/admin/users/role',
+    { preHandler: [requireAuth, requireAdmin] },
+    async (request, reply) => {
+      try {
+        const { userId, role } = request.body as { userId: string; role: string };
+
+        if (!userId || !role) {
+          return reply.status(400).send({
+            success: false,
+            error: 'Valid userId and role are required',
+          });
+        }
+
+        const { error } = await supabase
+          .from('helix_profiles')
+          .update({
+            role: role,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+
+        if (error) throw error;
+
+        return reply.send({
+          success: true,
+          message: `Role updated to ${role}`,
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: 'Failed to update role',
+        });
+      }
+    }
+  );
+
+  // DELETE /api/admin/users/:userId - Delete a user (admin only)
+  fastify.delete(
+    '/api/admin/users/:userId',
+    { preHandler: [requireAuth, requireAdmin] },
+    async (request, reply) => {
+      try {
+        const { userId } = request.params as { userId: string };
+
+        if (!userId) {
+          return reply.status(400).send({
+            success: false,
+            error: 'User ID is required',
+          });
+        }
+
+        // Delete from auth users (this will cascade to profiles due to foreign key)
+        const { error } = await supabase.auth.admin.deleteUser(userId);
+
+        if (error) throw error;
+
+        return reply.send({
+          success: true,
+          message: 'User deleted successfully',
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: 'Failed to delete user',
+        });
+      }
+    }
+  );
+
   fastify.get(
     "/api/admin/scans",
     { preHandler: [requireAuth, requireAdmin] },

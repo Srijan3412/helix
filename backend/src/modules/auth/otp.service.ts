@@ -1,10 +1,9 @@
 import { randomInt, createHash } from 'crypto';
-import { supabase } from '../../core/db/supabase.client.js';
-import { Database } from '../../../types/supabase.js';
+import { supabase } from '../../core/supabase/index.js';
 
-type EmailVerification = Database['public']['Tables']['email_verifications']['Row'];
-type EmailVerificationInsert = Database['public']['Tables']['email_verifications']['Insert'];
-type EmailVerificationUpdate = Database['public']['Tables']['email_verifications']['Update'];
+type EmailVerification = any;
+type EmailVerificationInsert = any;
+type EmailVerificationUpdate = any;
 
 export class OTPService {
     private readonly OTP_LENGTH = 6;
@@ -42,7 +41,7 @@ export class OTPService {
     /**
      * Create or update verification record for a user
      */
-    async createVerification(userId: string, email: string): Promise<void> {
+    async createVerification(userId: string, email: string): Promise<string> {
         const otp = this.generateOTP();
         const otpHash = this.hashOTP(otp);
         const expiresAt = new Date();
@@ -202,6 +201,7 @@ export class OTPService {
         success: boolean;
         message: string;
         cooldownRemaining?: number;
+        otp?: string;
     }> {
         try {
             // Get verification record
@@ -262,7 +262,11 @@ export class OTPService {
             if (updateError) throw updateError;
 
             // Return new OTP for email sending
-            return newOTP;
+            return {
+                success: true,
+                message: 'OTP sent successfully!',
+                otp: newOTP
+            };
 
         } catch (error) {
             console.error('Error resending OTP:', error);

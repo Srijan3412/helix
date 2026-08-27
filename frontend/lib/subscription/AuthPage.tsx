@@ -7,9 +7,9 @@ import { validateEmail } from '../../lib/subscription/subscription';
 
 // Import your existing sign-in form
 // Import your new sign-up form and OTP verification components
-import SignInForm from '../auth/SignInForm';
-import SignupForm from '../auth/SignupForm';
-import OTPVerification from '../auth/OTPVerification';
+import SignInForm from '../../components/auth/SignInForm';
+import SignupForm from '../../components/auth/SignupForm';
+import OTPVerification from '../../components/auth/OTPVerification';
 
 // Types for the auth modes
 type AuthMode = 'signin' | 'signup' | 'verify-otp';

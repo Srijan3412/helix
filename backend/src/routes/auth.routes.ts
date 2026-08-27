@@ -1,9 +1,9 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { supabase } from "../../core/supabase/index.js";
-import { otpService } from "../../modules/auth/otp.service.js";
-import { EmailService } from "../../modules/auth/email.service.js";
-import { logger } from "../../core/logger/index.js";
+import { supabase } from "../core/supabase/index.js";
+import { otpService } from "../modules/auth/otp.service.js";
+import { EmailService } from "../modules/auth/email.service.js";
+import { logger } from "../core/logger/index.js";
 
 // Schema Validations
 const SignupSchema = z.object({
