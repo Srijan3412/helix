@@ -191,3 +191,22 @@ CREATE POLICY "Admins can soft delete any scan" ON public.scan_sessions
   FOR UPDATE USING (
     EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'ADMIN')
   ) WITH CHECK (deleted_at IS NOT NULL);
+
+-- ── 6. OTP Verification & Email Verification ──────────────
+CREATE TABLE IF NOT EXISTS public.email_verifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    otp_hash TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    attempts INTEGER DEFAULT 0,
+    verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, email)
+);
+
+ALTER TABLE public.helix_profiles ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.helix_profiles ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP WITH TIME ZONE;
+

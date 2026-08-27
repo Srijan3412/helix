@@ -32,6 +32,7 @@ export default function ScanHistoryPage() {
   
   const [scans, setScans] = useState<ScanSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedScans, setSelectedScans] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
   const { isAdmin } = useAuth();
@@ -41,11 +42,13 @@ export default function ScanHistoryPage() {
   const loadScanHistory = async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       if (!user) return;
       const history = await getScanHistory(user.id);
       setScans(history);
     } catch (error) {
       console.error("Failed to load scan history:", error);
+      setLoadError(error instanceof Error ? error.message : "Failed to load scan history");
     } finally {
       setIsLoading(false);
     }
@@ -205,7 +208,19 @@ export default function ScanHistoryPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {isLoading ? (
+              {loadError ? (
+                <div className="flex flex-col items-center justify-center py-20 border border-dashed border-rose-900/40 rounded-2xl bg-rose-950/10 mt-8 mx-auto max-w-xl text-center">
+                  <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-3" />
+                  <h3 className="text-sm font-semibold text-rose-300">Failed to load scan history</h3>
+                  <p className="text-xs text-zinc-500 mt-1 mb-4 max-w-sm">{loadError}</p>
+                  <button
+                    onClick={loadScanHistory}
+                    className="px-4 py-2 bg-zinc-900 border border-border/60 hover:border-zinc-700 text-white rounded-xl text-xs font-semibold transition"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : isLoading ? (
                 <div className="flex flex-col items-center justify-center py-24">
                   <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
                   <span className="text-xs text-zinc-500 font-semibold">Loading scan history...</span>

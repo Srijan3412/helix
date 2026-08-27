@@ -32,6 +32,7 @@ import { FeatureBuilderService } from "../modules/feature-map/feature-builder.se
 import { requireAuth } from "../core/auth/auth.middleware.js";
 import { ScanHistoryService } from "../modules/analysis/scan-history.service.js";
 import { requireAdmin } from "../middleware/admin.middleware.js";
+import { authRoutes } from "./auth.routes.js";
 
 const AnalyzeRequestSchema = z.object({
   url: z.string().url({ message: "Invalid GitHub repository URL" }).optional(),
@@ -42,8 +43,11 @@ const AnalyzeRequestSchema = z.object({
 export const apiRoutes: FastifyPluginAsync = async (
   fastify: FastifyInstance,
 ) => {
+  // Register authentication routes (/api/auth/signup, /api/auth/verify-otp, /api/auth/resend-otp)
+  await fastify.register(authRoutes);
+
   // Register authentication hook to protect all API endpoints
-  fastify.addHook("preHandler", requireAuth);
+
 
   // Register multipart support context if needed (handled in app.ts, but standard Fastify practice)
 
@@ -51,124 +55,137 @@ export const apiRoutes: FastifyPluginAsync = async (
    * POST /api/analyze
    * Enqueue a new analysis job for a GitHub URL, uploaded ZIP file, or local path.
    */
-  fastify.post("/api/analyze", async (request, reply) => {
-    logger.info("📩 Received POST /api/analyze request");
-    // Check if multipart request (ZIP file) or JSON request (GitHub URL or Local Path)
-    const contentType = request.headers["content-type"] || "";
-    logger.info({ contentType }, "Request content type parsed");
+  fastify.post("/api/analyze",
+    { preHandler: [requireAuth] }, async (request, reply) => {
+      logger.info("📩 Received POST /api/analyze request");
+      // Check if multipart request (ZIP file) or JSON request (GitHub URL or Local Path)
+      const contentType = request.headers["content-type"] || "";
+      logger.info({ contentType }, "Request content type parsed");
 
-    let repoId = Math.random().toString(36).substring(2, 11);
-    let jobId = Math.random().toString(36).substring(2, 11);
-    let repoName = `repo-${repoId}`;
-    let source: "github" | "zip" | "local" = "github";
-    let repoPath = "";
-    let gitUrl: string | undefined;
+      let repoId = Math.random().toString(36).substring(2, 11);
+      let jobId = Math.random().toString(36).substring(2, 11);
+      let repoName = `repo-${repoId}`;
+      let source: "github" | "zip" | "local" = "github";
+      let repoPath = "";
+      let gitUrl: string | undefined;
 
-    if (contentType.includes("multipart")) {
-      source = "zip";
-      const parts = request.parts();
-      let fileSaved = false;
+      if (contentType.includes("multipart")) {
+        source = "zip";
+        const parts = request.parts();
+        let fileSaved = false;
 
-      for await (const part of parts) {
-        if (part.type === "file") {
-          const buffer = await part.toBuffer();
-          repoName = part.filename.replace(/\.zip$/i, "");
-          // Save ZIP file to the workspace
-          repoPath = await StorageService.saveFileToWorkspace(
-            repoId,
-            part.filename,
-            buffer,
-          );
-          fileSaved = true;
-        }
-      }
-
-      if (!fileSaved) {
-        throw new UploadFailedError("No ZIP file uploaded");
-      }
-    } else {
-      // Parse JSON request
-      const body = request.body;
-      const result = AnalyzeRequestSchema.safeParse(body);
-      if (!result.success) {
-        reply.code(400);
-        return { error: "Validation failed", details: result.error.format() };
-      }
-
-      const reqData = result.data;
-
-      // Determine if local path scanning is requested
-      if (reqData.source === "local" || reqData.path) {
-        if (!reqData.path) {
-          reply.code(400);
-          return {
-            error: "Path parameter is required for local source analysis",
-          };
-        }
-
-        const resolvedPath = path.resolve(reqData.path);
-
-        // Security check: restrict path traversal outside approved folders
-        const normalized = resolvedPath.toLowerCase();
-        const isAllowed =
-          normalized.startsWith("c:\\users\\91798\\documents") ||
-          normalized.startsWith("c:/users/91798/documents");
-        if (!isAllowed) {
-          reply.code(403);
-          return {
-            error: "Access denied: Local path is outside authorized workspaces",
-          };
-        }
-
-        try {
-          const stats = await fs.stat(resolvedPath);
-          if (!stats.isDirectory()) {
-            reply.code(400);
-            return { error: "Provided path is not a directory" };
+        for await (const part of parts) {
+          if (part.type === "file") {
+            const buffer = await part.toBuffer();
+            repoName = part.filename.replace(/\.zip$/i, "");
+            // Save ZIP file to the workspace
+            repoPath = await StorageService.saveFileToWorkspace(
+              repoId,
+              part.filename,
+              buffer,
+            );
+            fileSaved = true;
           }
-        } catch (err) {
-          reply.code(400);
-          return { error: "Provided path does not exist on host machine" };
         }
 
-        source = "local";
-        repoPath = resolvedPath;
-        repoName = path.basename(resolvedPath) || "local-repo";
+        if (!fileSaved) {
+          throw new UploadFailedError("No ZIP file uploaded");
+        }
       } else {
-        // GitHub URL source
-        if (!reqData.url) {
+        // Parse JSON request
+        const body = request.body;
+        const result = AnalyzeRequestSchema.safeParse(body);
+        if (!result.success) {
           reply.code(400);
-          return {
-            error:
-              "Either url (for github) or path (for local) must be provided",
-          };
+          return { error: "Validation failed", details: result.error.format() };
         }
-        gitUrl = reqData.url;
-        const urlParts = gitUrl.split("/");
-        repoName = urlParts[urlParts.length - 1] || "github-repo";
-        source = "github";
-        logger.info({ repoId }, "Resolving workspace path...");
-        repoPath = StorageService.getWorkspacePath(repoId);
-        logger.info({ repoPath }, "Workspace path resolved");
+
+        const reqData = result.data;
+
+        // Determine if local path scanning is requested
+        if (reqData.source === "local" || reqData.path) {
+          if (!reqData.path) {
+            reply.code(400);
+            return {
+              error: "Path parameter is required for local source analysis",
+            };
+          }
+
+          const resolvedPath = path.resolve(reqData.path);
+
+          // Security check: restrict path traversal outside approved folders
+          const normalized = resolvedPath.toLowerCase();
+          const isAllowed =
+            normalized.startsWith("c:\\users\\91798\\documents") ||
+            normalized.startsWith("c:/users/91798/documents");
+          if (!isAllowed) {
+            reply.code(403);
+            return {
+              error: "Access denied: Local path is outside authorized workspaces",
+            };
+          }
+
+          try {
+            const stats = await fs.stat(resolvedPath);
+            if (!stats.isDirectory()) {
+              reply.code(400);
+              return { error: "Provided path is not a directory" };
+            }
+          } catch (err) {
+            reply.code(400);
+            return { error: "Provided path does not exist on host machine" };
+          }
+
+          source = "local";
+          repoPath = resolvedPath;
+          repoName = path.basename(resolvedPath) || "local-repo";
+        } else {
+          // GitHub URL source
+          if (!reqData.url) {
+            reply.code(400);
+            return {
+              error:
+                "Either url (for github) or path (for local) must be provided",
+            };
+          }
+          gitUrl = reqData.url;
+          const urlParts = gitUrl.split("/");
+          repoName = urlParts[urlParts.length - 1] || "github-repo";
+          source = "github";
+          logger.info({ repoId }, "Resolving workspace path...");
+          repoPath = StorageService.getWorkspacePath(repoId);
+          logger.info({ repoPath }, "Workspace path resolved");
+        }
       }
-    }
 
-    logger.info("Queuing background task...");
+      logger.info("Queuing background task...");
 
-    // Initialize repository path and metadata so they are immediately available to the jobs list query
-    await setJobRepoPath(jobId, repoPath);
-    await setJobMetadata(jobId, {
-      repoName,
-      repoPath,
-      totalFiles: 0,
-      totalRoutes: 0,
-    });
+      // Initialize repository path and metadata so they are immediately available to the jobs list query
+      await setJobRepoPath(jobId, repoPath);
+      await setJobMetadata(jobId, {
+        repoName,
+        repoPath,
+        totalFiles: 0,
+        totalRoutes: 0,
+      });
 
-    if (isInMemoryMode) {
-      logger.info("Running in in-memory fallback mode...");
-      await redisConnectionSetStatus(jobId, "uploaded");
-      setImmediate(() => {
-        runAnalysisJob({
+      if (isInMemoryMode) {
+        logger.info("Running in in-memory fallback mode...");
+        await redisConnectionSetStatus(jobId, "uploaded");
+        setImmediate(() => {
+          runAnalysisJob({
+            jobId,
+            repoId,
+            repoName,
+            source,
+            repoPath,
+            url: gitUrl,
+            userId: request.user?.id || "anonymous",
+          }).catch((err) => logger.error({ jobId, err }, "❌ Inline job failed"));
+        });
+      } else {
+        logger.info("Adding job to analysisQueue...");
+        await analysisQueue.add(jobId, {
           jobId,
           repoId,
           repoName,
@@ -176,37 +193,26 @@ export const apiRoutes: FastifyPluginAsync = async (
           repoPath,
           url: gitUrl,
           userId: request.user?.id || "anonymous",
-        }).catch((err) => logger.error({ jobId, err }, "❌ Inline job failed"));
-      });
-    } else {
-      logger.info("Adding job to analysisQueue...");
-      await analysisQueue.add(jobId, {
-        jobId,
-        repoId,
-        repoName,
-        source,
-        repoPath,
-        url: gitUrl,
-        userId: request.user?.id || "anonymous",
-      });
-      logger.info("Job added to analysisQueue, setting status in Redis...");
-      await redisConnectionSetStatus(jobId, "uploaded");
-    }
+        });
+        logger.info("Job added to analysisQueue, setting status in Redis...");
+        await redisConnectionSetStatus(jobId, "uploaded");
+      }
 
-    logger.info(
-      { jobId, repoId, repoName, source },
-      "🚀 Enqueued analysis job",
-    );
+      logger.info(
+        { jobId, repoId, repoName, source },
+        "🚀 Enqueued analysis job",
+      );
 
-    reply.code(202);
-    return { jobId };
-  });
+      reply.code(202);
+      return { jobId };
+    });
 
   /**
    * GET /api/analyze/:jobId/status
    */
   fastify.get<{ Params: { jobId: string } }>(
     "/api/analyze/:jobId/status",
+    { preHandler: [requireAuth] },
     async (request, reply) => {
       const { jobId } = request.params;
       const status = await getJobStatus(jobId);

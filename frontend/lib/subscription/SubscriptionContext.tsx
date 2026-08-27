@@ -1,8 +1,19 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
 import { supabase } from './supabase';
-import type { Profile, Subscription, UsageRecord, Payment, Plan } from './subscription';
-import { PLAN_CONFIG, daysLeft, isTrialActive } from './subscription';
 import { invalidateAuthCache } from '../api/client';
+
+import type { Profile, Subscription, UsageRecord, Payment, Plan, UserStatus, ScanUsage } from './subscription';
+import { PLAN_CONFIG, daysLeft, isTrialActive, getScanUsage, canPerformScan, getUserStatus, validateEmail } from './subscription';
+
+// ✅ ADD this import
+import {
+  signUpApi,
+  verifyOtpApi,
+  resendOtpApi,
+  checkVerificationStatus,
+  getScanUsage as getScanUsageApi,
+  submitContactRequest
+} from '../api/client';
 
 interface SubscriptionContextValue {
   session: any;
@@ -11,9 +22,22 @@ interface SubscriptionContextValue {
   usage: UsageRecord | null;
   payments: Payment[];
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+
+  // ✅ MODIFIED: Update signUp to return more info
+  signUp: (email: string, password: string) => Promise<{
+    error: string | null;
+    userId?: string;
+    needsVerification?: boolean;
+    email?: string;
+  }>;
+
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+
+  // ✅ NEW: OTP verification functions
+  verifyOtp: (userId: string, otp: string) => Promise<{ success: boolean; error?: string }>;
+  resendOtp: (userId: string) => Promise<{ success: boolean; error?: string; cooldownRemaining?: number }>;
+
   refreshUsage: () => Promise<void>;
   recordUsage: (field: keyof UsageRecord, amount?: number) => Promise<boolean>;
   canUse: (feature: keyof typeof PLAN_CONFIG.professional.limits, currentUsage?: number) => boolean;
@@ -21,6 +45,15 @@ interface SubscriptionContextValue {
   cancelSubscription: () => Promise<{ error: string | null }>;
   trialDaysLeft: number;
   isTrial: boolean;
+
+  // ✅ NEW: Scan limit functions
+  scanUsage: ScanUsage | null;
+  canScan: boolean;
+  refreshScanUsage: () => Promise<void>;
+
+  // ✅ NEW: User status
+  userStatus: UserStatus | null;
+  needsVerification: boolean;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined);
@@ -32,6 +65,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [usage, setUsage] = useState<UsageRecord | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ NEW STATE
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [scanUsage, setScanUsage] = useState<ScanUsage | null>(null);
+  const [userStatus, setUserStatus] = useState<UserStatus | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Load from sessionStorage only after mount (client-side only)
   // This avoids hydration mismatch (Error #418) since server and client start with identical state
@@ -99,52 +138,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     saveToCache('sb-payments-cache', pays);
   }, []);
 
-  const loadProfile = useCallback(async (userId: string, email?: string) => {
-    const { data: existing } = await supabase
-      .from('helix_profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
 
-    if (existing) {
-      updateProfile(existing as Profile);
-      return existing as Profile;
-    }
-
-    // Auto-create profile if authenticated but no profile exists
-    let userEmail = email;
-    if (!userEmail) {
-      const { data: { user } } = await supabase.auth.getUser();
-      userEmail = user?.email;
-    }
-
-    const newProfile = {
-      id: userId,
-      email: userEmail || '',
-      role: 'trial',
-      plan: 'trial',
-      trial_started_at: new Date().toISOString(),
-      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      subscription_status: 'trialing',
-    };
-
-    const { error: insertError } = await supabase
-      .from('helix_profiles')
-      .insert(newProfile);
-
-    if (!insertError) {
-      updateProfile(newProfile as unknown as Profile);
-      // Ensure usage records are also initialized
-      await supabase.from('helix_usage_records').insert({
-        user_id: userId,
-        period_start: new Date().toISOString(),
-      });
-      return newProfile as unknown as Profile;
-    } else {
-      console.error("Failed to auto-create profile:", insertError);
-    }
-    return null;
-  }, []);
 
   const loadSubscription = useCallback(async (userId: string) => {
     const { data } = await supabase
@@ -181,6 +175,81 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     if (session?.user?.id) await loadUsage(session.user.id);
   }, [session, loadUsage]);
 
+  const loadProfile = useCallback(async (userId: string, email?: string) => {
+    const { data: existing } = await supabase
+      .from('helix_profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (existing) {
+      updateProfile(existing as Profile);
+
+      // ✅ ADD: Check email verification status
+      if (existing.email_verified === false) {
+        setNeedsVerification(true);
+      } else {
+        setNeedsVerification(false);
+      }
+
+      // ✅ ADD: Update scan usage
+      const usage = getScanUsage(existing as Profile);
+      setScanUsage(usage);
+
+      // ✅ ADD: Update user status
+      const status = getUserStatus(existing as Profile);
+      setUserStatus(status);
+
+      return existing as Profile;
+    }
+
+    // Auto-create profile if authenticated but no profile exists
+    let userEmail = email;
+    if (!userEmail) {
+      const { data: { user } } = await supabase.auth.getUser();
+      userEmail = user?.email;
+    }
+
+    const newProfile = {
+      id: userId,
+      email: userEmail || '',
+      role: 'visitor' as const, // ✅ CHANGED: Start as visitor
+      plan: 'trial' as const,
+      trial_started_at: new Date().toISOString(),
+      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      subscription_status: 'trialing' as const,
+      // ✅ ADD: New fields
+      email_verified: false,
+      scan_limit: 2,
+      scans_used: 0,
+    };
+
+    const { error: insertError } = await supabase
+      .from('helix_profiles')
+      .insert(newProfile);
+
+    if (!insertError) {
+      updateProfile(newProfile as unknown as Profile);
+      // Ensure usage records are also initialized
+      await supabase.from('helix_usage_records').insert({
+        user_id: userId,
+        period_start: new Date().toISOString(),
+      });
+
+      // ✅ ADD: Set needs verification for new users
+      setNeedsVerification(true);
+      const usage = getScanUsage(newProfile as unknown as Profile);
+      setScanUsage(usage);
+      const status = getUserStatus(newProfile as unknown as Profile);
+      setUserStatus(status);
+
+      return newProfile as unknown as Profile;
+    } else {
+      console.error("Failed to auto-create profile:", insertError);
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
     mounted.current = true;
 
@@ -201,11 +270,22 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             loadUsage(sess.user.id),
             loadPayments(sess.user.id),
           ]);
+
+
+          // ✅ ADD: Check verification status after loading profile
+          if (profile && profile.email_verified === false) {
+            setNeedsVerification(true);
+          } else {
+            setNeedsVerification(false);
+          }
         } else {
           updateProfile(null);
           updateSubscription(null);
           updateUsage(null);
           updatePayments([]);
+          setNeedsVerification(false);
+          setScanUsage(null);
+          setUserStatus(null);
         }
         if (mounted.current) setLoading(false);
       })();
@@ -217,44 +297,58 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     };
   }, [loadProfile, loadSubscription, loadUsage, loadPayments]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && session?.user?.id) {
-      (window as any).makeAdmin = async () => {
-        console.log("Promoting user to org_admin/enterprise...");
-        const { error } = await supabase
-          .from('helix_profiles')
-          .update({
-            plan: 'enterprise',
-            role: 'org_admin',
-            subscription_status: 'active'
-          })
-          .eq('id', session.user.id);
 
-        if (error) {
-          console.error("Failed to promote user:", error.message);
-          return { error: error.message };
-        } else {
-          console.log("Successfully promoted user to org_admin/enterprise! Reloading profile...");
-          await loadProfile(session.user.id);
-          return { success: true };
-        }
-      };
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        delete (window as any).makeAdmin;
-      }
-    };
-  }, [session, loadProfile]);
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
-    return { error: null };
+    // Validate email format
+    const validation = validateEmail(email);
+    if (!validation.valid) {
+      return {
+        error: validation.message || 'Invalid email address',
+        userId: undefined,
+        needsVerification: false,
+        email: undefined
+      };
+    }
+
+    try {
+      const response = await signUpApi(email, password);
+
+      // ✅ Store userId for OTP verification
+      if (response.success) {
+        setNeedsVerification(true);
+        return {
+          error: null,
+          userId: response.userId,
+          needsVerification: true,
+          email: response.email
+        };
+      }
+
+      return {
+        error: response.message || 'Signup failed',
+        userId: undefined,
+        needsVerification: false,
+        email: undefined
+      };
+    } catch (err: any) {
+      return {
+        error: err.message || 'Signup failed',
+        userId: undefined,
+        needsVerification: false,
+        email: undefined
+      };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        await loadProfile(user.id, user.email);
+      }
+    }
     return { error: error?.message || null };
   };
 
@@ -266,6 +360,90 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     updateSubscription(null);
     updateUsage(null);
     updatePayments([]);
+  };
+
+  // ✅ ADD NEW: OTP Verification Functions
+  const verifyOtp = async (userId: string, otp: string) => {
+    if (isVerifying) {
+      return { success: false, error: 'Verification already in progress' };
+    }
+
+    setIsVerifying(true);
+    try {
+      const response = await verifyOtpApi(userId, otp);
+
+      if (response.success) {
+        // Reload profile to get updated email_verified status
+        await loadProfile(userId);
+
+        // Refresh scan usage
+        const updatedUsage = getScanUsage(profile);
+        setScanUsage(updatedUsage);
+
+        setNeedsVerification(false);
+
+        // Update user status
+        if (profile) {
+          const status = getUserStatus({ ...profile, email_verified: true });
+          setUserStatus(status);
+        }
+
+        return { success: true };
+      } else {
+        return { success: false, error: response.message };
+      }
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Verification failed' };
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // ✅ ADD NEW: Scan Limit Functions
+  const refreshScanUsage = useCallback(async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      const response = await getScanUsageApi(session.user.id);
+      if (response.success) {
+        setScanUsage(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to refresh scan usage:', err);
+    }
+  }, [session]);
+
+  const canScan = useCallback(() => {
+    if (!profile) return false;
+    if (!profile.email_verified) return false;
+
+    const usage = getScanUsage(profile);
+    return usage.can_scan;
+  }, [profile]);
+
+  const resendOtp = async (userId: string) => {
+    try {
+      const response = await resendOtpApi(userId);
+      if (response.success) {
+        return {
+          success: true,
+          error: undefined,
+          cooldownRemaining: response.resendCooldown || 60
+        };
+      } else {
+        return {
+          success: false,
+          error: response.message,
+          cooldownRemaining: response.cooldownRemaining
+        };
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Failed to resend OTP',
+        cooldownRemaining: undefined
+      };
+    }
   };
 
   const recordUsage = async (field: keyof UsageRecord, amount = 1): Promise<boolean> => {
@@ -381,8 +559,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     <SubscriptionContext.Provider
       value={{
         session, profile, subscription, usage, payments, loading,
-        signUp, signIn, signOut, refreshUsage, recordUsage, canUse,
+        signUp, signIn, signOut,
+        // ✅ ADD NEW FUNCTIONS
+        verifyOtp, resendOtp,
+        refreshUsage, recordUsage, canUse,
         upgradePlan, cancelSubscription, trialDaysLeft, isTrial,
+        // ✅ ADD NEW STATE
+        scanUsage,
+        canScan: canScan(),
+        refreshScanUsage,
+        userStatus,
+        needsVerification,
       }}
     >
       {children}

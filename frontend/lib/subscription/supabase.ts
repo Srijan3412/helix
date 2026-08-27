@@ -89,7 +89,7 @@ function getClient(): SupabaseClient {
 
 const ADMIN_EMAIL = 'admin@projectanalyser.com';
 const ADMIN_PASSWORD = 'admin123';
-const ADMIN_USER_ID = 'mock-admin-uuid-1111-2222-3333-444444444444';
+const ADMIN_USER_ID = '11111111-2222-3333-4444-444444444444';
 
 let mockSession: any = null;
 if (typeof window !== 'undefined') {
@@ -250,7 +250,7 @@ const getFrom = (table: string) => {
     }
     if (table === 'helix_usage_records') {
       const mockUsage = {
-        id: 'mock-usage-uuid-1111-2222-3333-444444444444',
+        id: '22222222-2222-3333-4444-444444444444',
         user_id: ADMIN_USER_ID,
         period_start: new Date().toISOString(),
         repositories_analyzed: 1,
@@ -269,7 +269,7 @@ const getFrom = (table: string) => {
     }
     if (table === 'helix_subscriptions') {
       const mockSub = {
-        id: 'mock-sub-uuid-1111-2222-3333-444444444444',
+        id: '33333333-2222-3333-4444-444444444444',
         user_id: ADMIN_USER_ID,
         plan: 'enterprise',
         status: 'active',

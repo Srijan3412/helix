@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { Profile } from "../subscription/subscription";
 import {
   AnalysisResult, ChatMessage, AiArchitectSummary, OnboardingGuide,
   ImpactAnalysis, StaticAnalysisReport, ArchitectureDiff, ExecutionTrace,
@@ -58,6 +59,15 @@ async function getAuthHeaders(headers: Record<string, string> = {}): Promise<Rec
   return headers;
 }
 
+// ✅ ADD: Helper function to get auth headers with user info
+export async function getAuthHeadersWithUser(): Promise<{
+  headers: Record<string, string>;
+  user: any;
+}> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const headers = await getAuthHeaders();
+  return { headers, user };
+}
 /**
  * Invalidate the cached session token.
  * Call this when the user signs out or the session changes.
@@ -285,7 +295,11 @@ export async function getScanHistory(userId: string): Promise<ScanSession[]> {
   const response = await fetch(`${API_BASE_URL}/api/scan-history/${userId}`, {
     headers: await getAuthHeaders(),
   });
-  if (!response.ok) throw new Error("Failed to fetch scan history");
+  if (!response.ok) {
+    // Surface the server's error message (if any) for easier debugging
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body?.error || "Failed to fetch scan history");
+  }
   const result = await response.json();
   return result.data;
 }
@@ -365,6 +379,347 @@ export async function adminPermanentDeleteScan(scanId: string): Promise<{ succes
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || 'Failed to permanently delete scan');
   }
+  return response.json();
+}
+
+// ─── Authentication API Functions ──────────────────────────────────────────
+
+/**
+ * Sign up a new user with email and password
+ * Sends OTP verification email
+ */
+export async function signUpApi(email: string, password: string): Promise<{
+  success: boolean;
+  userId: string;
+  email: string;
+  message: string;
+  needsVerification: boolean;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || "Signup failed");
+  }
+
+  return response.json();
+}
+
+/**
+ * Verify OTP code for email verification
+ */
+export async function verifyOtpApi(userId: string, otp: string): Promise<{
+  success: boolean;
+  message: string;
+  user?: {
+    id: string;
+    email: string;
+    email_verified: boolean;
+    email_verified_at: string;
+  };
+  redirectUrl?: string;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ userId, otp }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || "OTP verification failed");
+  }
+
+  return response.json();
+}
+
+/**
+ * Resend OTP code to user's email
+ */
+export async function resendOtpApi(userId: string): Promise<{
+  success: boolean;
+  message: string;
+  resendCooldown?: number;
+  cooldownRemaining?: number;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ userId }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || "Failed to resend OTP");
+  }
+
+  return response.json();
+}
+
+/**
+ * Check user's email verification status
+ */
+export async function checkVerificationStatus(userId: string): Promise<{
+  success: boolean;
+  data: {
+    verified: boolean;
+    status: {
+      exists: boolean;
+      verified: boolean;
+      attemptsUsed: number;
+      attemptsRemaining: number;
+      expiresAt?: string;
+      canResend: boolean;
+      cooldownSeconds?: number;
+    };
+  };
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/check-verification/${userId}`, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to check verification status");
+  }
+
+  return response.json();
+}
+
+/**
+ * Get detailed verification status for a user
+ */
+export async function getVerificationStatus(userId: string): Promise<{
+  success: boolean;
+  data: {
+    exists: boolean;
+    verified: boolean;
+    attemptsUsed: number;
+    attemptsRemaining: number;
+    expiresAt?: string;
+    canResend: boolean;
+    cooldownSeconds?: number;
+  };
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/verification-status/${userId}`, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to get verification status");
+  }
+
+  return response.json();
+}
+
+// ─── Scan Limit API Functions ─────────────────────────────────────────────
+
+/**
+ * Get user's scan usage information
+ */
+export async function getScanUsage(userId: string): Promise<{
+  success: boolean;
+  data: {
+    scan_limit: number;
+    scans_used: number;
+    scans_remaining: number;
+    limit_reached: boolean;
+    can_scan: boolean;
+    reset_at?: string | null;
+  };
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/user/${userId}/scan-usage`, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to fetch scan usage");
+  }
+
+  return response.json();
+}
+
+/**
+ * Check if user can perform a new scan
+ */
+export async function canPerformScan(userId: string): Promise<{
+  success: boolean;
+  data: {
+    can_scan: boolean;
+    scans_used: number;
+    scan_limit: number;
+    scans_remaining: number;
+    reason?: string;
+  };
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/user/${userId}/can-scan`, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to check scan permission");
+  }
+
+  return response.json();
+}
+
+// ─── Contact Form API Functions ────────────────────────────────────────────
+
+/**
+ * Submit a contact/sales inquiry
+ */
+export async function submitContactRequest(data: {
+  name: string;
+  email: string;
+  requestType: 'MORE_SCANS' | 'SUBSCRIPTION' | 'PROFESSIONAL' | 'ENTERPRISE' | 'GENERAL';
+  company?: string;
+  message: string;
+}): Promise<{
+  success: boolean;
+  message: string;
+  requestId?: string;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/contact`, {
+    method: "POST",
+    headers: await getAuthHeaders({
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || "Failed to submit contact request");
+  }
+
+  return response.json();
+}
+
+// ─── User Profile API Functions ─────────────────────────────────────────────
+
+/**
+ * Get user profile with email verification and scan limit info
+ */
+export async function getUserProfile(userId: string): Promise<{
+  success: boolean;
+  data: Profile;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/user/${userId}/profile`, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to fetch user profile");
+  }
+
+  return response.json();
+}
+
+/**
+ * Update user scan limit (Admin only)
+ */
+export async function updateUserScanLimit(userId: string, scanLimit: number): Promise<{
+  success: boolean;
+  message: string;
+  data?: Profile;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/scan-limit`, {
+    method: "PUT",
+    headers: await getAuthHeaders({
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify({ scanLimit }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to update scan limit");
+  }
+
+  return response.json();
+}
+
+// ─── Admin User Management API Functions ────────────────────────────────────
+
+/**
+ * Get all users (Admin only)
+ */
+export async function adminGetAllUsers(): Promise<{
+  success: boolean;
+  data: Profile[];
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to fetch users");
+  }
+
+  return response.json();
+}
+
+/**
+ * Get all contact requests (Admin only)
+ */
+export async function adminGetContactRequests(status?: string): Promise<{
+  success: boolean;
+  data: any[];
+}> {
+  const url = status
+    ? `${API_BASE_URL}/api/admin/contact-requests?status=${status}`
+    : `${API_BASE_URL}/api/admin/contact-requests`;
+
+  const response = await fetch(url, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to fetch contact requests");
+  }
+
+  return response.json();
+}
+
+/**
+ * Update contact request status (Admin only)
+ */
+export async function adminUpdateContactRequest(
+  requestId: string,
+  status: 'NEW' | 'READ' | 'CONTACTED' | 'CLOSED'
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/contact-requests/${requestId}`, {
+    method: "PUT",
+    headers: await getAuthHeaders({
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to update contact request");
+  }
+
   return response.json();
 }
 

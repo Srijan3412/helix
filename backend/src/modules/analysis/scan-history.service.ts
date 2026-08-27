@@ -109,24 +109,52 @@ export class ScanHistoryService {
         .is("deleted_at", null) // ✅ Exclude soft-deleted
         .order("scanned_at", { ascending: false });
 
-      if (error) throw error;
-      return (data || []).map((row: any) => ({
-        id: row.id,
-        userId: row.user_id,
-        jobId: row.job_id,
-        repoName: row.repo_name,
-        repoPath: row.repo_path,
-        totalFiles: row.total_files,
-        totalRoutes: row.total_routes,
-        healthScore: row.health_score,
-        status: row.status,
-        scannedAt: row.scanned_at,
-        metadata: row.metadata,
-      }));
+      if (error) {
+        logger.warn(
+          { error: error.message, code: error.code },
+          "Primary scan_sessions query failed, attempting fallback query without deleted_at filter"
+        );
+
+        // Fallback: production database may be missing deleted_at column or soft-delete schema
+        const fallback = await supabase
+          .from("scan_sessions")
+          .select("*")
+          .eq("user_id", userId)
+          .order("scanned_at", { ascending: false });
+
+        if (fallback.error) {
+          logger.error(
+            { error: fallback.error.message, code: fallback.error.code },
+            "Fallback scan_sessions query failed (table may not exist or database uninitialized). Returning empty scan history."
+          );
+          return [];
+        }
+        return (fallback.data || []).map(this.mapScanRow);
+      }
+
+      return (data || []).map(this.mapScanRow);
     } catch (error) {
-      logger.error(error as any, "❌ Failed to get scan history");
-      throw error;
+      logger.error(error as any, "❌ Failed to get scan history, returning empty list");
+      return [];
     }
+  }
+
+  private static mapScanRow(row: any): ScanSession {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      jobId: row.job_id,
+      repoName: row.repo_name,
+      repoPath: row.repo_path,
+      totalFiles: row.total_files,
+      totalRoutes: row.total_routes,
+      healthScore: row.health_score,
+      status: row.status,
+      scannedAt: row.scanned_at,
+      metadata: row.metadata,
+      deletedAt: row.deleted_at ?? undefined,
+      deletedBy: row.deleted_by ?? undefined,
+    };
   }
 
   /**
@@ -740,22 +768,23 @@ export class ScanHistoryService {
 
       const { data, error } = await query;
 
-      if (error) throw error;
-      return (data || []).map((row: any) => ({
-        id: row.id,
-        userId: row.user_id,
-        jobId: row.job_id,
-        repoName: row.repo_name,
-        repoPath: row.repo_path,
-        totalFiles: row.total_files,
-        totalRoutes: row.total_routes,
-        healthScore: row.health_score,
-        status: row.status,
-        scannedAt: row.scanned_at,
-        metadata: row.metadata,
-        deletedAt: row.deleted_at,
-        deletedBy: row.deleted_by,
-      }));
+      if (error) {
+        // Fallback for deployments where the soft-delete columns have not
+        // been migrated yet.
+        const missingColumn = (error.message || "").includes("deleted_at");
+        if (!missingColumn) throw error;
+
+        logger.warn("deleted_at column not found – skipping soft-delete filter for admin scans");
+        const fallback = await supabase
+          .from("scan_sessions")
+          .select("*")
+          .order("scanned_at", { ascending: false });
+
+        if (fallback.error) throw fallback.error;
+        return (fallback.data || []).map(this.mapScanRow);
+      }
+
+      return (data || []).map(this.mapScanRow);
     } catch (error) {
       logger.error({ error }, "Failed to get all scans");
       throw error;
