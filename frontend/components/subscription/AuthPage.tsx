@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useSubscription } from '../../lib/subscription/SubscriptionContext';
 import { Layers, Mail, Lock, Loader2, AlertCircle, Terminal } from 'lucide-react';
+import ForgotPasswordModal from '../auth/ForgotPasswordModal';
 
 export default function AuthPage() {
   const { signIn, signUp } = useSubscription();
@@ -9,6 +10,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false); // ✅ ADDED
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -95,6 +97,16 @@ export default function AuthPage() {
               {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </div>
+
+          {/* ✅ ADDED: Forgot Password Link */}
+          <div className="mt-3 text-center">
+            <button
+              onClick={() => setShowForgotPassword(true)}
+              className="text-xs text-zinc-500 hover:text-primary transition"
+            >
+              Forgot password?
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-6 text-xs text-neutral-600">
@@ -103,6 +115,16 @@ export default function AuthPage() {
           <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> 14 days</span>
         </div>
       </div>
+
+      {/* ✅ ADDED: Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        onSuccess={() => {
+          setShowForgotPassword(false);
+          // Optional: Show success toast
+        }}
+      />
     </div>
   );
 }
