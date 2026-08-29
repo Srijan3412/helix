@@ -82,6 +82,7 @@ export class StorageService {
     logger.info({ reposDir, maxAgeDays }, "🧹 Running storage cleanup process");
     
     try {
+      await fs.mkdir(reposDir, { recursive: true });
       const entries = await fs.readdir(reposDir, { withFileTypes: true });
       const now = Date.now();
       const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;

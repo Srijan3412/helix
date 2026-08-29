@@ -66,11 +66,20 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
 
       if (authError) {
         // Handle specific auth errors
-        if (authError.message.includes('already registered')) {
+        if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
           reply.code(409);
           return {
             success: false,
             error: "Email already registered. Please sign in instead."
+          };
+        }
+
+        if (authError.message.includes('Database error saving new user')) {
+          logger.error({ error: authError, email }, "Supabase database trigger error during signup");
+          reply.code(400);
+          return {
+            success: false,
+            error: "Database error on user registration. Please execute the updated SQL script in Supabase SQL Editor."
           };
         }
 

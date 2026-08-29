@@ -108,3 +108,83 @@ CREATE POLICY "Users can read own payments" ON public.helix_payments
 
 CREATE POLICY "Users can insert own payments" ON public.helix_payments
     FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+
+-- 5. Seed Default Admin Account (admin@projectanalyser.com)
+-- Note: UUID '11111111-2222-3333-4444-444444444444' matches ADMIN_USER_ID used across frontend & backend
+
+-- 5a. Seed into Supabase Auth Users
+INSERT INTO auth.users (
+    id,
+    instance_id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    role,
+    aud
+)
+VALUES (
+    '11111111-2222-3333-4444-444444444444',
+    '00000000-0000-0000-0000-000000000000',
+    'admin@projectanalyser.com',
+    crypt('admin123', gen_salt('bf')),
+    NOW(),
+    '{"provider": "email", "providers": ["email"]}',
+    '{}',
+    NOW(),
+    NOW(),
+    'authenticated',
+    'authenticated'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 5b. Seed Profile for Admin in public.helix_profiles
+INSERT INTO public.helix_profiles (
+    id,
+    email,
+    role,
+    plan,
+    subscription_status,
+    created_at,
+    updated_at
+)
+VALUES (
+    '11111111-2222-3333-4444-444444444444',
+    'admin@projectanalyser.com',
+    'org_admin',
+    'enterprise',
+    'active',
+    NOW(),
+    NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+    role = 'org_admin',
+    plan = 'enterprise',
+    subscription_status = 'active';
+
+-- 5c. Seed Profile for Admin in public.profiles (if profiles table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'profiles') THEN
+        INSERT INTO public.profiles (
+            id,
+            email,
+            role,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            '11111111-2222-3333-4444-444444444444',
+            'admin@projectanalyser.com',
+            'ADMIN',
+            NOW(),
+            NOW()
+        )
+        ON CONFLICT (id) DO UPDATE SET role = 'ADMIN';
+    END IF;
+END $$;
+

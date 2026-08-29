@@ -153,13 +153,30 @@ CREATE POLICY "Admins can update any profile" ON public.profiles
     EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'ADMIN')
   );
 
--- Auto-create a profile row on signup
+-- Auto-create a profile row on signup (Fail-safe for both helix_profiles and profiles)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, role)
-  VALUES (NEW.id, NEW.email, 'USER')
-  ON CONFLICT (id) DO NOTHING;
+  -- 1. Insert into public.helix_profiles safely
+  BEGIN
+    INSERT INTO public.helix_profiles (id, email, role, email_verified)
+    VALUES (NEW.id, NEW.email, 'USER', FALSE)
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    -- Ignore if columns or table differ
+    NULL;
+  END;
+
+  -- 2. Insert into public.profiles safely
+  BEGIN
+    INSERT INTO public.profiles (id, email, role, email_verified)
+    VALUES (NEW.id, NEW.email, 'USER', FALSE)
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    -- Ignore if columns or table differ
+    NULL;
+  END;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
