@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircle2, AlertCircle, Eye, EyeOff, Lock, ArrowLeft, Loader2 } from "lucide-react";
+import { supabase } from "../../../lib/subscription/supabase";
 
 export default function ResetPasswordPage() {
     const searchParams = useSearchParams();

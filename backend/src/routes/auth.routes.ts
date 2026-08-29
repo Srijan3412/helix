@@ -529,146 +529,128 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
       };
     }
   });
-};
 
-// ── Forgot Password ──
-fastify.post('/api/auth/forgot-password', async (request, reply) => {
-  try {
-    const { email } = request.body as { email: string };
+  // ── Forgot Password ──
+  fastify.post('/api/auth/forgot-password', async (request, reply) => {
+    try {
+      const { email } = request.body as { email: string };
 
-    if (!email) {
-      reply.code(400);
-      return {
-        success: false,
-        error: 'Email is required'
-      };
-    }
+      if (!email) {
+        reply.code(400);
+        return {
+          success: false,
+          error: 'Email is required'
+        };
+      }
 
-    // Send password reset email via Supabase
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.APP_URL || 'http://localhost:3000'}/auth/reset-password`,
-    });
+      // Send password reset OTP or link via Supabase
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.APP_URL || 'http://localhost:3000'}/auth/reset-password`,
+      });
 
-    if (error) {
-      logger.error({ error, email }, 'Failed to send password reset email');
-      // Don't reveal if user exists or not for security
+      if (error) {
+        logger.error({ error, email }, 'Failed to send password reset email');
+        // Don't reveal if user exists or not for security
+        return {
+          success: true,
+          message: 'If an account exists with this email, a password reset link has been sent.'
+        };
+      }
+
+      logger.info({ email }, 'Password reset email sent');
+
       return {
         success: true,
         message: 'If an account exists with this email, a password reset link has been sent.'
       };
-    }
-
-    logger.info({ email }, 'Password reset email sent');
-
-    return {
-      success: true,
-      message: 'If an account exists with this email, a password reset link has been sent.'
-    };
-  } catch (err: any) {
-    logger.error({ err }, 'Forgot password route exception');
-    reply.code(500);
-    return {
-      success: false,
-      error: err.message || 'Failed to send password reset email'
-    };
-  }
-});
-
-// ── Verify Reset Token ──
-fastify.get('/api/auth/verify-reset-token', async (request, reply) => {
-  try {
-    const { token } = request.query as { token: string };
-
-    if (!token) {
-      reply.code(400);
+    } catch (err: any) {
+      logger.error({ err }, 'Forgot password route exception');
+      reply.code(500);
       return {
         success: false,
-        error: 'Token is required'
+        error: err.message || 'Failed to send password reset email'
       };
     }
+  });
 
-    // Verify the token with Supabase
-    // We can try to get the user with the token
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+  // ── Verify Reset Token ──
+  fastify.get('/api/auth/verify-reset-token', async (request, reply) => {
+    try {
+      const { token } = request.query as { token: string };
 
-    if (error || !user) {
-      logger.warn({ token }, 'Invalid or expired reset token');
-      reply.code(400);
-      return {
-        success: false,
-        error: 'Invalid or expired reset token'
-      };
-    }
-
-    return {
-      success: true,
-      valid: true,
-      email: user.email
-    };
-  } catch (err: any) {
-    logger.error({ err }, 'Verify reset token route exception');
-    reply.code(500);
-    return {
-      success: false,
-      error: err.message || 'Failed to verify token'
-    };
-  }
-});
-
-// ── Reset Password ──
-fastify.post('/api/auth/reset-password', async (request, reply) => {
-  try {
-    const { token, password } = request.body as { token: string; password: string };
-
-    if (!token || !password) {
-      reply.code(400);
-      return {
-        success: false,
-        error: 'Token and password are required'
-      };
-    }
-
-    if (password.length < 8) {
-      reply.code(400);
-      return {
-        success: false,
-        error: 'Password must be at least 8 characters'
-      };
-    }
-
-    // Reset password via Supabase
-    const { error } = await supabase.auth.updateUser({
-      password: password,
-    }, {
-      // Pass the token for authentication
-      headers: {
-        Authorization: `Bearer ${token}`
+      if (!token) {
+        reply.code(400);
+        return {
+          success: false,
+          error: 'Token is required'
+        };
       }
-    });
 
-    if (error) {
-      logger.error({ error }, 'Failed to reset password');
+      // Verify reset token via otpService or Supabase auth
+      const isValid = await otpService.verifyResetToken(token);
+
+      if (!isValid) {
+        logger.warn({ token }, 'Invalid or expired reset token');
+        reply.code(400);
+        return {
+          success: false,
+          error: 'Invalid or expired reset token'
+        };
+      }
+
+      return {
+        success: true,
+        valid: true
+      };
+    } catch (err: any) {
+      logger.error({ err }, 'Verify reset token route exception');
+      reply.code(500);
+      return {
+        success: false,
+        error: err.message || 'Failed to verify token'
+      };
+    }
+  });
+
+  // ── Reset Password ──
+  fastify.post('/api/auth/reset-password', async (request, reply) => {
+    try {
+      const { token, password } = request.body as { token: string; password: string };
+
+      if (!token || !password) {
+        reply.code(400);
+        return {
+          success: false,
+          error: 'Token and password are required'
+        };
+      }
+
+      if (password.length < 8) {
+        reply.code(400);
+        return {
+          success: false,
+          error: 'Password must be at least 8 characters'
+        };
+      }
+
+      // Reset password using OTP service
+      await otpService.resetPassword(token, password);
+
+      logger.info({ token }, 'Password reset successfully');
+
+      return {
+        success: true,
+        message: 'Password reset successfully'
+      };
+    } catch (err: any) {
+      logger.error({ err }, 'Reset password route exception');
       reply.code(400);
       return {
         success: false,
-        error: error.message || 'Failed to reset password'
+        error: err.message || 'Failed to reset password'
       };
     }
-
-    logger.info({ token }, 'Password reset successfully');
-
-    return {
-      success: true,
-      message: 'Password reset successfully'
-    };
-  } catch (err: any) {
-    logger.error({ err }, 'Reset password route exception');
-    reply.code(500);
-    return {
-      success: false,
-      error: err.message || 'Failed to reset password'
-    };
-  }
-});
+  });
+};
 
 export default authRoutes;
