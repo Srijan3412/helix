@@ -190,11 +190,19 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
           };
         }
 
-        if (authError.message.includes('For security purposes') || authError.status === 429) {
+        if (
+          authError.message.includes('For security purposes') ||
+          authError.message.includes('email rate limit exceeded') ||
+          authError.message.includes('rate limit') ||
+          authError.status === 429
+        ) {
+          logger.warn({ email, authError: authError.message }, "Supabase auth signup rate limited");
           reply.code(429);
           return {
             success: false,
-            error: authError.message
+            error: authError.message.includes('email rate limit')
+              ? "Email rate limit reached on auth server. Please wait a few minutes or sign in if you already created an account."
+              : authError.message
           };
         }
 
