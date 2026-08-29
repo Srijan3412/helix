@@ -42,6 +42,9 @@ export class OTPService {
     /**
      * Create or update verification record for a user
      */
+    /**
+     * Create or update verification record for a user
+     */
     async createVerification(userId: string, email: string): Promise<string> {
         const otp = this.generateOTP();
         const otpHash = this.hashOTP(otp);
@@ -49,46 +52,29 @@ export class OTPService {
         expiresAt.setMinutes(expiresAt.getMinutes() + this.EXPIRY_MINUTES);
 
         try {
-            // Check if verification record exists
-            const { data: existing } = await supabase
+            // Atomic upsert into email_verifications table
+            const { error } = await supabase
                 .from('email_verifications')
-                .select('id')
-                .eq('user_id', userId)
-                .single();
+                .upsert({
+                    user_id: userId,
+                    email: email,
+                    otp_hash: otpHash,
+                    expires_at: expiresAt.toISOString(),
+                    attempts: 0,
+                    verified_at: null,
+                    created_at: new Date().toISOString()
+                }, { onConflict: 'user_id,email' });
 
-            if (existing) {
-                // Update existing record
-                const { error } = await supabase
-                    .from('email_verifications')
-                    .update({
-                        otp_hash: otpHash,
-                        expires_at: expiresAt.toISOString(),
-                        attempts: 0,
-                        created_at: new Date().toISOString()
-                    })
-                    .eq('user_id', userId);
-
-                if (error) throw error;
-            } else {
-                // Insert new record
-                const { error } = await supabase
-                    .from('email_verifications')
-                    .insert({
-                        user_id: userId,
-                        email: email,
-                        otp_hash: otpHash,
-                        expires_at: expiresAt.toISOString(),
-                        attempts: 0
-                    });
-
-                if (error) throw error;
+            if (error) {
+                logger.error({ error, userId, email }, "Supabase upsert into email_verifications failed");
+                throw error;
             }
 
             // Return OTP for email sending
             return otp;
-        } catch (error) {
-            logger.error({ error }, 'Error creating verification:');
-            throw new Error('Failed to create verification record');
+        } catch (error: any) {
+            logger.error({ error: error?.message || error, userId, email }, 'Error creating verification:');
+            throw new Error(`Failed to create verification record: ${error?.message || 'Database error'}`);
         }
     }
 
@@ -101,12 +87,12 @@ export class OTPService {
         emailVerified?: boolean;
     }> {
         try {
-            // Get verification record
+            // Get verification record safely
             const { data: verification, error } = await supabase
                 .from('email_verifications')
                 .select('*')
                 .eq('user_id', userId)
-                .single();
+                .maybeSingle();
 
             if (error || !verification) {
                 return {
@@ -205,19 +191,20 @@ export class OTPService {
         otp?: string;
     }> {
         try {
-            // Get verification record
+            // Get verification record safely
             const { data: verification, error } = await supabase
                 .from('email_verifications')
                 .select('*')
                 .eq('user_id', userId)
-                .single();
+                .maybeSingle();
 
             if (error || !verification) {
                 // Create new verification if none exists
-                await this.createVerification(userId, email);
+                const otp = await this.createVerification(userId, email);
                 return {
                     success: true,
-                    message: 'OTP sent successfully!'
+                    message: 'OTP sent successfully!',
+                    otp
                 };
             }
 
@@ -284,7 +271,7 @@ export class OTPService {
                 .from('helix_profiles')
                 .select('email_verified')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (error || !profile) {
                 return false;
@@ -332,7 +319,7 @@ export class OTPService {
                 .from('email_verifications')
                 .select('*')
                 .eq('user_id', userId)
-                .single();
+                .maybeSingle();
 
             if (error || !verification) {
                 return {

@@ -191,3 +191,27 @@ BEGIN
     END IF;
 END $$;
 
+
+-- 6. Email Verifications Table (email_verifications)
+CREATE TABLE IF NOT EXISTS public.email_verifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    otp_hash TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    attempts INTEGER DEFAULT 0,
+    verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, email)
+);
+
+ALTER TABLE public.helix_profiles ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.helix_profiles ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP WITH TIME ZONE;
+
+-- Enable RLS on email_verifications
+ALTER TABLE public.email_verifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role and users access email verifications" ON public.email_verifications
+    FOR ALL USING (TRUE) WITH CHECK (TRUE);
+
+

@@ -156,12 +156,12 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
     const { email, password } = parseResult.data;
 
     try {
-      // 1. Check if user already exists
+      // 1. Check if user already exists in profile table
       const { data: existingUser } = await supabase
         .from('helix_profiles')
         .select('id, email')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
       if (existingUser) {
         reply.code(409);
@@ -187,6 +187,14 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
           return {
             success: false,
             error: "Email already registered. Please sign in instead."
+          };
+        }
+
+        if (authError.message.includes('For security purposes') || authError.status === 429) {
+          reply.code(429);
+          return {
+            success: false,
+            error: authError.message
           };
         }
 
