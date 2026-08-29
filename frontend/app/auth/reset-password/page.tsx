@@ -39,10 +39,10 @@ export default function ResetPasswordPage() {
                 // If we have a session with the token, it's valid
                 // Otherwise, check if the token is valid via the API
                 const response = await fetch(`/api/auth/verify-reset-token?token=${encodeURIComponent(token)}`);
-                const data = await response.json();
+                const responseData = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || "Invalid or expired token");
+                    throw new Error(responseData.error || "Invalid or expired token");
                 }
 
                 setIsValidToken(true);
