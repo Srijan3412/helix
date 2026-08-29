@@ -131,7 +131,7 @@ VALUES (
     '11111111-2222-3333-4444-444444444444',
     '00000000-0000-0000-0000-000000000000',
     'admin@projectanalyser.com',
-    crypt('admin123', gen_salt('bf')),
+    crypt('Admin@Project2026!', gen_salt('bf')),
     NOW(),
     '{"provider": "email", "providers": ["email"]}',
     '{}',
@@ -140,7 +140,10 @@ VALUES (
     'authenticated',
     'authenticated'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    encrypted_password = EXCLUDED.encrypted_password,
+    email_confirmed_at = NOW(),
+    updated_at = NOW();
 
 -- 5b. Seed Profile for Admin in public.helix_profiles
 INSERT INTO public.helix_profiles (

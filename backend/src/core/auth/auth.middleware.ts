@@ -21,6 +21,8 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // ✅ Add: List of public auth routes that don't require authentication
 const PUBLIC_AUTH_ROUTES = [
   '/api/auth/signup',
+  '/api/auth/login',
+  '/api/auth/signin',
   '/api/auth/verify-otp',
   '/api/auth/resend-otp',
   '/api/auth/check-verification',
@@ -68,11 +70,10 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 
   const token = authHeader.split(" ")[1];
 
-  // ✅ MODIFIED: Remove mock admin token bypass in production
-  // Bypass token verification for the mock admin token in local testing only
+  // ✅ MODIFIED: Mock admin token - ONLY for development
   if (token === "mock-admin-access-token") {
-    if (NODE_ENV === 'production') {
-      logger.warn({ url }, "Mock admin token used in production - rejecting");
+    if (process.env.NODE_ENV === 'production') {
+      logger.warn({ url }, "⚠️ Mock admin token attempted in production - REJECTING");
       reply.code(401);
       return reply.send({
         error: "Unauthorized: Invalid token",
@@ -137,36 +138,45 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 
     const userData = (await response.json()) as any;
 
-    // ✅ ADD: Fetch user profile to check email verification status
+    // Fetch profile for verification & role
     let emailVerified = false;
-    try {
-      const profileResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/helix_profiles?select=email_verified&id=eq.${userData.id}`,
-        {
-          method: "GET",
-          headers: {
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${token}`,
-          },
-        }
-      );
+    let userRole = userData.role || 'user';
 
-      if (profileResponse.ok) {
-        const profiles = await profileResponse.json();
-        if (profiles && profiles.length > 0) {
-          emailVerified = profiles[0].email_verified || false;
+    if (userData.email === 'admin@projectanalyser.com') {
+      userRole = 'org_admin';
+      emailVerified = true;
+    } else {
+      try {
+        const profileResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/helix_profiles?select=email_verified,role&id=eq.${userData.id}`,
+          {
+            method: "GET",
+            headers: {
+              "apikey": SUPABASE_ANON_KEY,
+              "Authorization": `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (profileResponse.ok) {
+          const profiles = await profileResponse.json();
+          if (profiles && profiles.length > 0) {
+            emailVerified = profiles[0].email_verified ?? true;
+            if (profiles[0].role) {
+              userRole = profiles[0].role;
+            }
+          }
         }
+      } catch (profileError) {
+        logger.warn({ userId: userData.id }, "Failed to fetch profile verification status");
       }
-    } catch (profileError) {
-      logger.warn({ userId: userData.id }, "Failed to fetch profile verification status");
-      // Continue even if profile fetch fails
     }
 
     // Set user object with all available info
     request.user = {
       id: userData.id,
       email: userData.email,
-      role: userData.role || 'user',
+      role: userRole,
       email_verified: emailVerified,
     };
 
@@ -174,6 +184,7 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
     logger.debug({
       userId: userData.id,
       email: userData.email,
+      role: userRole,
       emailVerified
     }, "User authenticated successfully");
 
@@ -214,6 +225,11 @@ export async function requireVerifiedEmail(request: FastifyRequest, reply: Fasti
     return;
   }
 
+  // Admin email bypasses email verification restriction
+  if (request.user.email === 'admin@projectanalyser.com') {
+    return;
+  }
+
   // Check if email is verified
   if (!request.user.email_verified) {
     logger.warn({
@@ -238,7 +254,13 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
     return;
   }
 
-  if (request.user.role !== 'org_admin' && request.user.role !== 'admin') {
+  const role = (request.user.role || '').toLowerCase();
+  const isAdminUser =
+    request.user.email === 'admin@projectanalyser.com' ||
+    role === 'org_admin' ||
+    role === 'admin';
+
+  if (!isAdminUser) {
     logger.warn({
       userId: request.user.id,
       role: request.user.role

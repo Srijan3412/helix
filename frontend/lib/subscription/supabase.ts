@@ -88,7 +88,7 @@ function getClient(): SupabaseClient {
 // ─── ADMIN BYPASS & MOCK DB INTERCEPTOR ─────────────────────────
 
 const ADMIN_EMAIL = 'admin@projectanalyser.com';
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = 'Admin@Project2026!';
 const ADMIN_USER_ID = '11111111-2222-3333-4444-444444444444';
 
 let mockSession: any = null;

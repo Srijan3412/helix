@@ -1,5 +1,6 @@
 import { randomInt, createHash } from 'crypto';
 import { supabase } from '../../core/supabase/index.js';
+import { logger } from '../../core/logger/index.js';
 
 type EmailVerification = any;
 type EmailVerificationInsert = any;
@@ -86,7 +87,7 @@ export class OTPService {
             // Return OTP for email sending
             return otp;
         } catch (error) {
-            console.error('Error creating verification:', error);
+            logger.error({ error }, 'Error creating verification:');
             throw new Error('Failed to create verification record');
         }
     }
@@ -189,7 +190,7 @@ export class OTPService {
             };
 
         } catch (error) {
-            console.error('Error validating OTP:', error);
+            logger.error({ error }, 'Error validating OTP:');
             throw new Error('Failed to validate OTP');
         }
     }
@@ -269,7 +270,7 @@ export class OTPService {
             };
 
         } catch (error) {
-            console.error('Error resending OTP:', error);
+            logger.error({ error }, 'Error resending OTP:');
             throw new Error('Failed to resend OTP');
         }
     }
@@ -291,7 +292,7 @@ export class OTPService {
 
             return profile.email_verified || false;
         } catch (error) {
-            console.error('Error checking email verification:', error);
+            logger.error({ error }, 'Error checking email verification:');
             return false;
         }
     }
@@ -310,7 +311,7 @@ export class OTPService {
 
             if (error) throw error;
         } catch (error) {
-            console.error('Error cleaning up expired verifications:', error);
+            logger.error({ error }, 'Error cleaning up expired verifications:');
         }
     }
 
@@ -358,7 +359,7 @@ export class OTPService {
                 cooldownSeconds: canResend ? 0 : this.RESEND_COOLDOWN_SECONDS - secondsSinceCreation
             };
         } catch (error) {
-            console.error('Error getting verification status:', error);
+            logger.error({ error }, 'Error getting verification status:');
             throw new Error('Failed to get verification status');
         }
     }

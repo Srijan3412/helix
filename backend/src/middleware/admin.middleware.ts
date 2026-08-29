@@ -35,7 +35,7 @@ export async function requireAdmin(
 
     // Query the profiles table for user role
     const { data, error } = await supabase
-      .from("profiles")
+      .from("helix_profiles")
       .select("role")
       .eq("id", user.id)
       .single();
@@ -96,7 +96,7 @@ export async function requireSuperAdmin(
     }
 
     const { data, error } = await supabase
-      .from("profiles")
+      .from("helix_profiles")
       .select("role")
       .eq("id", user.id)
       .single();
@@ -151,7 +151,7 @@ export function requireRole(allowedRoles: string[]) {
       }
 
       const { data, error } = await supabase
-        .from("profiles")
+        .from("helix_profiles")
         .select("role")
         .eq("id", user.id)
         .single();
@@ -226,7 +226,7 @@ export async function isAdmin(request: FastifyRequest): Promise<boolean> {
     if (!user) return false;
 
     const { data, error } = await supabase
-      .from("profiles")
+      .from("helix_profiles")
       .select("role")
       .eq("id", user.id)
       .single();

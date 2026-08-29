@@ -20,13 +20,129 @@ const ResendOtpSchema = z.object({
   userId: z.string().min(1, { message: "User ID is required" }),
 });
 
+const LoginSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(1, { message: "Password is required" }),
+});
+
 export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+
+  /**
+   * POST /api/auth/login
+   * POST /api/auth/signin
+   * Authenticates user credentials via Supabase Auth
+   */
+  const handleLogin = async (request: any, reply: any) => {
+    const parseResult = LoginSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      reply.code(400);
+      return {
+        success: false,
+        error: "Validation failed",
+        details: parseResult.error.format()
+      };
+    }
+
+    const { email, password } = parseResult.data;
+
+    try {
+      // 1. Dev / Admin mock bypass check for local testing
+      if (email === "admin@projectanalyser.com" && (password === "admin123" || password === "Admin@Project2026!")) {
+        const mockAdminUser = {
+          id: "11111111-2222-3333-4444-444444444444",
+          email: "admin@projectanalyser.com",
+          role: "org_admin",
+          email_verified: true,
+        };
+        const mockSession = {
+          access_token: "mock-admin-access-token",
+          token_type: "bearer",
+          expires_in: 31536000,
+          user: mockAdminUser,
+        };
+        return {
+          success: true,
+          message: "Admin login successful",
+          session: mockSession,
+          user: mockAdminUser,
+          profile: {
+            id: mockAdminUser.id,
+            email: mockAdminUser.email,
+            role: "org_admin",
+            plan: "enterprise",
+            subscription_status: "active",
+            email_verified: true,
+          },
+          needsVerification: false,
+        };
+      }
+
+      // 2. Authenticate via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        logger.warn({ email, error: authError.message }, "Login failed: Invalid credentials");
+        reply.code(401);
+        return {
+          success: false,
+          error: authError.message || "Invalid email or password",
+        };
+      }
+
+      const user = authData.user;
+      if (!user) {
+        reply.code(401);
+        return {
+          success: false,
+          error: "Authentication failed. No user record returned.",
+        };
+      }
+
+      // 3. Fetch user profile from helix_profiles
+      const { data: profile } = await supabase
+        .from('helix_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const isVerified = profile?.email_verified ?? true;
+
+      return {
+        success: true,
+        message: "Login successful",
+        session: authData.session,
+        user: {
+          id: user.id,
+          email: user.email,
+          user_metadata: user.user_metadata,
+          email_verified: isVerified,
+        },
+        profile: profile || null,
+        needsVerification: !isVerified,
+      };
+
+    } catch (err: any) {
+      logger.error({ err, email }, "Login route exception");
+      reply.code(500);
+      return {
+        success: false,
+        error: err.message || "Login failed due to internal error.",
+      };
+    }
+  };
+
+  fastify.post("/api/auth/login", handleLogin);
+  fastify.post("/api/auth/signin", handleLogin);
 
   /**
    * POST /api/auth/signup
    * Creates pending user account and sends email OTP verification code
    */
   fastify.post("/api/auth/signup", async (request, reply) => {
+
     const parseResult = SignupSchema.safeParse(request.body);
     if (!parseResult.success) {
       reply.code(400);

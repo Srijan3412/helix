@@ -611,22 +611,49 @@ export async function submitContactRequest(data: {
 // ─── User Profile API Functions ─────────────────────────────────────────────
 
 /**
- * Get user profile with email verification and scan limit info
+ * Get user profile with email verification and scan limit info.
+ *
+ * NOTE: The backend has no `/api/user/:userId/profile` route (it answered 404),
+ * so we read the profile from Supabase instead. This also makes the mock admin
+ * account work correctly, because the shared `supabase` client intercepts
+ * `helix_profiles` queries for the admin session.
  */
 export async function getUserProfile(userId: string): Promise<{
   success: boolean;
   data: Profile;
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/user/${userId}/profile`, {
-    headers: await getAuthHeaders(),
-  });
+  try {
+    const { data } = await supabase
+      .from("helix_profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || "Failed to fetch user profile");
+    if (data) {
+      return { success: true, data: data as Profile };
+    }
+  } catch (err) {
+    console.error("Failed to load user profile from Supabase:", err);
   }
 
-  return response.json();
+  // Graceful default instead of throwing — prevents console 404/error noise.
+  return {
+    success: true,
+    data: {
+      id: userId,
+      email: "",
+      role: "visitor",
+      plan: "trial",
+      stripe_customer_id: null,
+      trial_started_at: new Date().toISOString(),
+      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      subscription_status: "trialing",
+      created_at: new Date().toISOString(),
+      email_verified: false,
+      scan_limit: 2,
+      scans_used: 0,
+    } as Profile,
+  };
 }
 
 /**

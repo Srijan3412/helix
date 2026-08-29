@@ -907,6 +907,162 @@ export const apiRoutes: FastifyPluginAsync = async (
       });
     }
   });
+  // ============================================================
+  // ── USER PROFILE & SCAN-LIMIT ROUTES ──
+  // ============================================================
+
+  /**
+   * GET /api/user/:userId/profile
+   * Get user profile (plan, role, scan limits, etc.).
+   */
+  fastify.get(
+    "/api/user/:userId/profile",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { userId } = request.params as { userId: string };
+      const isMockAdmin =
+        request.user?.id === "11111111-2222-3333-4444-444444444444" &&
+        request.user?.email === "admin@projectanalyser.com";
+
+      try {
+        if (isMockAdmin) {
+          return reply.send({ success: true, data: buildAdminProfile() });
+        }
+        const { data, error } = await supabase
+          .from("helix_profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+        if (error) throw error;
+        return reply.send({ success: true, data: data || null });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to fetch user profile",
+        });
+      }
+    },
+  );
+
+  /**
+   * GET /api/user/:userId/scan-usage
+   * Get the user's scan usage information.
+   */
+  fastify.get(
+    "/api/user/:userId/scan-usage",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { userId } = request.params as { userId: string };
+      const isMockAdmin =
+        request.user?.id === "11111111-2222-3333-4444-444444444444" &&
+        request.user?.email === "admin@projectanalyser.com";
+      try {
+        const profile = isMockAdmin
+          ? buildAdminProfile()
+          : (await supabase
+            .from("helix_profiles")
+            .select("*")
+            .eq("id", userId)
+            .maybeSingle())?.data;
+        const usage = computeScanUsage(profile);
+        return reply.send({ success: true, data: usage });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to fetch scan usage",
+        });
+      }
+    },
+  );
+
+  /**
+   * GET /api/user/:userId/can-scan
+   * Check whether the user may run a new scan.
+   */
+  fastify.get(
+    "/api/user/:userId/can-scan",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { userId } = request.params as { userId: string };
+      const isMockAdmin =
+        request.user?.id === "11111111-2222-3333-4444-444444444444" &&
+        request.user?.email === "admin@projectanalyser.com";
+      try {
+        const profile = isMockAdmin
+          ? buildAdminProfile()
+          : (await supabase
+            .from("helix_profiles")
+            .select("*")
+            .eq("id", userId)
+            .maybeSingle())?.data;
+        const usage = computeScanUsage(profile);
+        return reply.send({
+          success: true,
+          data: {
+            can_scan: usage.can_scan,
+            scans_used: usage.scans_used,
+            scan_limit: usage.scan_limit,
+            scans_remaining: usage.scans_remaining,
+            reason: usage.can_scan
+              ? undefined
+              : "Scan limit reached or email not verified",
+          },
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to check scan permission",
+        });
+      }
+    },
+  );
+
+  /**
+   * Build the mock admin profile (mirrors the frontend interceptor) so the
+   * admin account behaves consistently across the API, even when the admin is
+   * authenticated with the client-side mock bypass.
+   */
+  function buildAdminProfile() {
+    const now = Date.now();
+    return {
+      id: "11111111-2222-3333-4444-444444444444",
+      email: "admin@projectanalyser.com",
+      role: "org_admin",
+      plan: "enterprise",
+      subscription_status: "active",
+      email_verified: true,
+      trial_started_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      trial_ends_at: new Date(now + 12 * 24 * 60 * 60 * 1000).toISOString(),
+      scan_limit: 1000000,
+      scans_used: 0,
+      created_at: new Date(now).toISOString(),
+      updated_at: new Date(now).toISOString(),
+    };
+  }
+
+  /**
+   * Compute scan usage from a profile row (mirrors the frontend helper).
+   */
+  function computeScanUsage(profile: any) {
+    const scanLimit = profile?.scan_limit ?? 2;
+    const scansUsed = profile?.scans_used ?? 0;
+    const scansRemaining = Math.max(0, scanLimit - scansUsed);
+    const limitReached = scansRemaining <= 0;
+    const canScan = profile?.email_verified === true && !limitReached;
+    return {
+      scan_limit: scanLimit,
+      scans_used: scansUsed,
+      scans_remaining: scansRemaining,
+      limit_reached: limitReached,
+      can_scan: canScan,
+      reset_at: profile?.scan_limit_reset_at ?? null,
+    };
+  }
+
+
 
   /**
    * GET /api/analyze/:jobId/traces
@@ -1181,6 +1337,7 @@ export const apiRoutes: FastifyPluginAsync = async (
     }
   );
 
+  // GET /api/admin/scans - Get all scans (admin only)
   fastify.get(
     "/api/admin/scans",
     { preHandler: [requireAuth, requireAdmin] },
@@ -1304,7 +1461,6 @@ export const apiRoutes: FastifyPluginAsync = async (
       }
     },
   );
-
   /**
    * GET /health
    */
