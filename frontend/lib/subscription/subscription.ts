@@ -271,6 +271,23 @@ export function getScanUsage(profile: Profile | null): ScanUsage {
     };
   }
 
+  const isAdmin =
+    profile.role === 'org_admin' ||
+    profile.role === 'admin' ||
+    profile.role === 'ADMIN' as any ||
+    profile.email === 'admin@projectanalyser.com';
+
+  if (isAdmin) {
+    return {
+      scan_limit: Infinity,
+      scans_used: profile.scans_used ?? 0,
+      scans_remaining: Infinity,
+      limit_reached: false,
+      can_scan: true,
+      reset_at: null,
+    };
+  }
+
   const scanLimit = profile.scan_limit ?? 2; // Default to 2
   const scansUsed = profile.scans_used ?? 0;
   const scansRemaining = Math.max(0, scanLimit - scansUsed);
@@ -292,6 +309,12 @@ export function getScanUsage(profile: Profile | null): ScanUsage {
  */
 export function canPerformScan(profile: Profile | null): boolean {
   if (!profile) return false;
+  const isAdmin =
+    profile.role === 'org_admin' ||
+    profile.role === 'admin' ||
+    profile.role === 'ADMIN' as any ||
+    profile.email === 'admin@projectanalyser.com';
+  if (isAdmin) return true;
   if (!profile.email_verified) return false;
 
   const scanLimit = profile.scan_limit ?? 2;
@@ -304,6 +327,13 @@ export function canPerformScan(profile: Profile | null): boolean {
  */
 export function getScanUsagePercentage(profile: Profile | null): number {
   if (!profile) return 0;
+  const isAdmin =
+    profile.role === 'org_admin' ||
+    profile.role === 'admin' ||
+    profile.role === 'ADMIN' as any ||
+    profile.email === 'admin@projectanalyser.com';
+  if (isAdmin) return 0;
+
   const scanLimit = profile.scan_limit ?? 2;
   const scansUsed = profile.scans_used ?? 0;
 
@@ -319,11 +349,21 @@ export function getScanUsagePercentage(profile: Profile | null): number {
 export function getScanLimitDisplay(profile: Profile | null): string {
   if (!profile) return '0 / 0';
 
-  const scanLimit = profile.scan_limit ?? 2;
+  const isAdmin =
+    profile.role === 'org_admin' ||
+    profile.role === 'admin' ||
+    profile.role === 'ADMIN' as any ||
+    profile.email === 'admin@projectanalyser.com';
+
   const scansUsed = profile.scans_used ?? 0;
+  if (isAdmin) {
+    return `${scansUsed} / Unlimited`;
+  }
+
+  const scanLimit = profile.scan_limit ?? 2;
 
   if (scanLimit === Infinity) {
-    return `${scansUsed} / ∞`;
+    return `${scansUsed} / Unlimited`;
   }
 
   return `${scansUsed} / ${scanLimit}`;
@@ -334,6 +374,12 @@ export function getScanLimitDisplay(profile: Profile | null): string {
  */
 export function requiresEmailVerification(profile: Profile | null): boolean {
   if (!profile) return true;
+  const isAdmin =
+    profile.role === 'org_admin' ||
+    profile.role === 'admin' ||
+    profile.role === 'ADMIN' as any ||
+    profile.email === 'admin@projectanalyser.com';
+  if (isAdmin) return false;
   return !profile.email_verified;
 }
 
@@ -385,6 +431,25 @@ export function getUserStatus(profile: Profile | null): UserStatus {
     };
   }
 
+  const isAdmin =
+    profile.role === 'org_admin' ||
+    profile.role === 'admin' ||
+    profile.role === 'ADMIN' as any ||
+    profile.email === 'admin@projectanalyser.com';
+
+  if (isAdmin) {
+    return {
+      authenticated: true,
+      emailVerified: true,
+      canScan: true,
+      scansRemaining: Infinity,
+      plan: profile.plan || 'enterprise',
+      role: profile.role || 'org_admin',
+      accountActive: true,
+      requiresAction: 'none',
+    };
+  }
+
   const emailVerified = profile.email_verified || false;
   const scansRemaining = Math.max(0, (profile.scan_limit ?? 2) - (profile.scans_used ?? 0));
   const canScan = emailVerified && scansRemaining > 0;
@@ -414,6 +479,12 @@ export function getUserStatus(profile: Profile | null): UserStatus {
  */
 export function isScanLimitReached(profile: Profile | null): boolean {
   if (!profile) return true;
+  const isAdmin =
+    profile.role === 'org_admin' ||
+    profile.role === 'admin' ||
+    profile.role === 'ADMIN' as any ||
+    profile.email === 'admin@projectanalyser.com';
+  if (isAdmin) return false;
   const scanLimit = profile.scan_limit ?? 2;
   const scansUsed = profile.scans_used ?? 0;
   return scansUsed >= scanLimit;
@@ -424,8 +495,15 @@ export function isScanLimitReached(profile: Profile | null): boolean {
  */
 export function isPaidPlan(profile: Profile | null): boolean {
   if (!profile) return false;
+  const isAdmin =
+    profile.role === 'org_admin' ||
+    profile.role === 'admin' ||
+    profile.role === 'ADMIN' as any ||
+    profile.email === 'admin@projectanalyser.com';
+  if (isAdmin) return true;
   return profile.plan === 'professional' || profile.plan === 'enterprise';
 }
+
 
 // ============================================
 // ✅ NEW: Disposable Email Detection (Phase 3)

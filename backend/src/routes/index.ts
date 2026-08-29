@@ -1047,6 +1047,23 @@ export const apiRoutes: FastifyPluginAsync = async (
    * Compute scan usage from a profile row (mirrors the frontend helper).
    */
   function computeScanUsage(profile: any) {
+    const isAdmin =
+      profile?.role === "org_admin" ||
+      profile?.role === "admin" ||
+      profile?.role === "ADMIN" ||
+      profile?.email === "admin@projectanalyser.com";
+
+    if (isAdmin) {
+      return {
+        scan_limit: 1000000,
+        scans_used: profile?.scans_used ?? 0,
+        scans_remaining: 1000000,
+        limit_reached: false,
+        can_scan: true,
+        reset_at: null,
+      };
+    }
+
     const scanLimit = profile?.scan_limit ?? 2;
     const scansUsed = profile?.scans_used ?? 0;
     const scansRemaining = Math.max(0, scanLimit - scansUsed);
