@@ -1,6 +1,7 @@
 import { randomInt, createHash } from 'crypto';
 import { supabase } from '../../core/supabase/index.js';
 import { logger } from '../../core/logger/index.js';
+import { EmailService } from './email.service.js';
 
 type EmailVerification = any;
 type EmailVerificationInsert = any;
@@ -350,6 +351,135 @@ export class OTPService {
             throw new Error('Failed to get verification status');
         }
     }
+
+    /**
+ * ── Password Reset OTP ──
+ * Send password reset OTP to user's email
+ */
+    async sendPasswordResetOTP(email: string): Promise<void> {
+        try {
+            // Check if user exists in helix_profiles
+            const { data: user, error } = await supabase
+                .from('helix_profiles')
+                .select('id, email')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (error || !user) {
+                // Don't reveal if user exists or not (security)
+                logger.info(`Password reset requested for email: ${email} (user not found)`);
+                return; // Still return success to prevent email enumeration
+            }
+
+            // Generate OTP
+            const otp = this.generateOTP();
+            const otpHash = this.hashOTP(otp);
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+            // Save OTP to email_verifications table
+            const { error: saveError } = await supabase
+                .from('email_verifications')
+                .upsert({
+                    user_id: user.id,
+                    email: email,
+                    otp_hash: otpHash,
+                    expires_at: expiresAt.toISOString(),
+                    attempts: 0,
+                    verified_at: null,
+                    created_at: new Date().toISOString()
+                }, { onConflict: 'user_id,email' });
+
+            if (saveError) {
+                logger.error({ error: saveError, email }, 'Failed to save password reset OTP');
+                throw saveError;
+            }
+
+            // Send email with OTP
+            await EmailService.sendOTPEmail(email, otp);
+
+            logger.info({ email }, 'Password reset OTP sent successfully');
+        } catch (error: any) {
+            logger.error({ error: error?.message || error, email }, 'Error sending password reset OTP:');
+            throw new Error(`Failed to send password reset OTP: ${error?.message || 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * ── Verify Reset Token ──
+     * Verify if a password reset token is valid
+     */
+    async verifyResetToken(token: string): Promise<boolean> {
+        try {
+            const hashedToken = this.hashOTP(token);
+            const now = new Date().toISOString();
+
+            const { data, error } = await supabase
+                .from('email_verifications')
+                .select('id, user_id, expires_at, verified_at')
+                .eq('otp_hash', hashedToken)
+                .gt('expires_at', now)
+                .is('verified_at', null)
+                .maybeSingle();
+
+            if (error || !data) {
+                logger.warn({ token }, 'Invalid or expired reset token');
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            logger.error({ error }, 'Error verifying reset token:');
+            return false;
+        }
+    }
+
+    /**
+     * ── Reset Password ──
+     * Reset user password using a valid OTP token
+     */
+    async resetPassword(token: string, newPassword: string): Promise<void> {
+        try {
+            const hashedToken = this.hashOTP(token);
+            const now = new Date().toISOString();
+
+            // Verify token exists and is valid
+            const { data, error } = await supabase
+                .from('email_verifications')
+                .select('id, user_id')
+                .eq('otp_hash', hashedToken)
+                .gt('expires_at', now)
+                .is('verified_at', null)
+                .maybeSingle();
+
+            if (error || !data) {
+                logger.warn({ token }, 'Invalid or expired reset token for password reset');
+                throw new Error('Invalid or expired reset token');
+            }
+
+            // Update user password via Supabase Auth
+            const { error: updateError } = await supabase.auth.admin.updateUserById(
+                data.user_id,
+                { password: newPassword }
+            );
+
+            if (updateError) {
+                logger.error({ error: updateError, userId: data.user_id }, 'Failed to update user password');
+                throw new Error(updateError.message || 'Failed to update password');
+            }
+
+            // Mark OTP as used
+            await supabase
+                .from('email_verifications')
+                .update({ verified_at: new Date().toISOString() })
+                .eq('id', data.id);
+
+            logger.info({ userId: data.user_id }, 'Password reset successfully');
+        } catch (error: any) {
+            logger.error({ error: error?.message || error }, 'Error resetting password:');
+            throw new Error(error?.message || 'Failed to reset password');
+        }
+    }
+
 }
 
 // Singleton instance for app-wide use
