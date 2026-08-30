@@ -31,11 +31,26 @@ export default function ForgotPasswordModal({
         setSuccess(false);
 
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/reset-password`,
-            });
+            let resError: any = null;
+            if (supabase.auth && typeof supabase.auth.resetPasswordForEmail === 'function') {
+                const res = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/auth/reset-password`,
+                });
+                resError = res.error;
+            } else {
+                const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://project-analyser-api-jkj6.onrender.com';
+                const apiRes = await fetch(`${backendUrl}/api/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                });
+                const data = await apiRes.json();
+                if (!apiRes.ok || !data.success) {
+                    resError = new Error(data.error || 'Failed to send reset email');
+                }
+            }
 
-            if (error) throw error;
+            if (resError) throw resError;
 
             setSuccess(true);
             if (onSuccess) onSuccess();

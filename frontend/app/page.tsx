@@ -702,8 +702,8 @@ export default function Home() {
     // Regular user flow - check email verification
     if (session && profile) {
       if (!profile.email_verified) {
-        // If email not verified, redirect to OTP page
-        router.push('/auth?mode=verify-otp');
+        // If email not verified, redirect to OTP page with userId and email
+        router.push(`/auth?mode=verify-otp&userId=${encodeURIComponent(profile.id)}&email=${encodeURIComponent(profile.email || '')}`);
       }
     }
   }, [session, profile, subLoading, router]);

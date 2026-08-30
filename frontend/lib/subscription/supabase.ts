@@ -29,6 +29,8 @@ function createMockClient(): SupabaseClient {
             signUp: () => Promise.resolve({ data: { user: null }, error: null }),
             signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
             signOut: () => Promise.resolve({ error: null }),
+            resetPasswordForEmail: () => Promise.resolve({ data: {}, error: null }),
+            updateUser: () => Promise.resolve({ data: { user: null }, error: null }),
           };
         }
         if (prop === 'from') {
@@ -122,7 +124,7 @@ const authListeners = new Set<(event: string, session: any) => void>();
 
 const getAuth = () => {
   const realAuth = (getClient() as any).auth;
-  return {
+  const customAuth: any = {
     getSession: () => {
       if (mockSession) return Promise.resolve({ data: { session: mockSession }, error: null });
       if (realAuth && realAuth.getSession) return realAuth.getSession();
@@ -215,6 +217,19 @@ const getAuth = () => {
       return Promise.resolve({ error: null });
     },
   };
+
+  return new Proxy(customAuth, {
+    get(target, prop) {
+      if (prop in target) {
+        return target[prop];
+      }
+      if (realAuth && prop in realAuth) {
+        const value = realAuth[prop];
+        return typeof value === 'function' ? value.bind(realAuth) : value;
+      }
+      return undefined;
+    },
+  });
 };
 
 const createMockQueryBuilder = (data: any) => {

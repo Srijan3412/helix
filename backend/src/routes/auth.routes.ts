@@ -392,10 +392,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
       // 2. Resend OTP with cooldown check
       const result = await otpService.resendOTP(userId, profile.email);
 
-      // Check if result is a string (OTP) or an object (error)
-      if (typeof result === 'string') {
-        // result is the OTP
-        const emailSent = await EmailService.sendOTPEmail(profile.email, result);
+      if (result.success && result.otp) {
+        const emailSent = await EmailService.sendOTPEmail(profile.email, result.otp);
 
         if (!emailSent && process.env.NODE_ENV === 'production') {
           logger.error({ email: profile.email, userId }, "Failed to resend OTP email");
@@ -411,16 +409,13 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
           message: "A new 6-digit verification code has been sent to your email.",
           resendCooldown: 60 // seconds
         };
-      } else if (typeof result === 'object' && 'success' in result) {
-        // result is an error response from resendOTP
+      } else {
         reply.code(400);
         return {
           success: false,
-          error: result.message,
+          error: result.message || "Failed to resend verification code",
           cooldownRemaining: result.cooldownRemaining
         };
-      } else {
-        throw new Error("Unexpected response from OTP service");
       }
 
     } catch (err: any) {
@@ -543,25 +538,27 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         };
       }
 
-      // Send password reset OTP or link via Supabase
+      // 1. Dispatch password reset email / OTP via backend OTP service & EmailService
+      try {
+        await otpService.sendPasswordResetOTP(email);
+      } catch (otpErr) {
+        logger.warn({ otpErr, email }, 'otpService.sendPasswordResetOTP failed, falling back to Supabase auth reset');
+      }
+
+      // 2. Also trigger Supabase auth reset if available
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${process.env.APP_URL || 'http://localhost:3000'}/auth/reset-password`,
       });
 
       if (error) {
-        logger.error({ error, email }, 'Failed to send password reset email');
-        // Don't reveal if user exists or not for security
-        return {
-          success: true,
-          message: 'If an account exists with this email, a password reset link has been sent.'
-        };
+        logger.warn({ error, email }, 'Supabase auth resetPasswordForEmail warning');
       }
 
-      logger.info({ email }, 'Password reset email sent');
+      logger.info({ email }, 'Password reset request processed');
 
       return {
         success: true,
-        message: 'If an account exists with this email, a password reset link has been sent.'
+        message: 'If an account exists with this email, a password reset link/code has been sent to your email.'
       };
     } catch (err: any) {
       logger.error({ err }, 'Forgot password route exception');
