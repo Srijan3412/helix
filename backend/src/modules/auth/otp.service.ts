@@ -394,10 +394,13 @@ export class OTPService {
                 throw saveError;
             }
 
-            // Send email with OTP
-            await EmailService.sendOTPEmail(email, otp);
+            const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+            const resetLink = `${baseUrl}/auth/reset-password?token=${otp}`;
 
-            logger.info({ email }, 'Password reset OTP sent successfully');
+            // Send email with direct reset link & OTP
+            await EmailService.sendPasswordResetEmail(email, otp, resetLink);
+
+            logger.info({ email, resetLink }, 'Password reset email & OTP sent successfully');
         } catch (error: any) {
             logger.error({ error: error?.message || error, email }, 'Error sending password reset OTP:');
             throw new Error(`Failed to send password reset OTP: ${error?.message || 'Unknown error'}`);

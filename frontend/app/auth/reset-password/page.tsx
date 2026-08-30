@@ -5,56 +5,107 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle2, AlertCircle, Eye, EyeOff, Lock, ArrowLeft, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Eye, EyeOff, Lock, ArrowLeft, Loader2, KeyRound } from "lucide-react";
 import { supabase } from "../../../lib/subscription/supabase";
 
 function ResetPasswordForm() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const token = searchParams.get("token");
 
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [manualToken, setManualToken] = useState("");
+    const [resetToken, setResetToken] = useState<string | null>(null);
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
+    const [needsTokenInput, setNeedsTokenInput] = useState(false);
 
-    // Validate token on load
+    // Validate token / session on load
     useEffect(() => {
-        if (!token) {
-            setError("Invalid or missing reset token");
-            setIsValidToken(false);
-            return;
-        }
+        let mounted = true;
 
-        // Verify token with Supabase
-        const verifyToken = async () => {
+        const checkRecoveryState = async () => {
             try {
-                // Supabase automatically validates the token via the reset password flow
-                // We just need to check if the token is valid by trying to get the session
-                const { data, error } = await supabase.auth.getSession();
-
-                // If we have a session with the token, it's valid
-                // Otherwise, check if the token is valid via the API
-                const response = await fetch(`/api/auth/verify-reset-token?token=${encodeURIComponent(token)}`);
-                const responseData = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(responseData.error || "Invalid or expired token");
+                // 1. Check for PKCE code in query
+                const code = searchParams.get("code");
+                if (code) {
+                    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+                    if (!error && data?.session) {
+                        if (mounted) setIsValidToken(true);
+                        return;
+                    }
                 }
 
-                setIsValidToken(true);
+                // 2. Check for token in query
+                const queryToken = searchParams.get("token");
+                if (queryToken) {
+                    try {
+                        const response = await fetch(`/api/auth/verify-reset-token?token=${encodeURIComponent(queryToken)}`);
+                        const responseData = await response.json();
+                        if (response.ok && responseData.valid) {
+                            if (mounted) {
+                                setResetToken(queryToken);
+                                setIsValidToken(true);
+                            }
+                            return;
+                        }
+                    } catch (e) {
+                        // Fallback to accepting query token directly
+                        if (mounted) {
+                            setResetToken(queryToken);
+                            setIsValidToken(true);
+                        }
+                        return;
+                    }
+                }
+
+                // 3. Check for active Supabase session (Implicit flow / Hash token processed by SDK)
+                const { data: sessionData } = await supabase.auth.getSession();
+                if (sessionData?.session) {
+                    if (mounted) setIsValidToken(true);
+                    return;
+                }
+
+                // 4. Check location hash for access_token or type=recovery
+                if (typeof window !== "undefined" && window.location.hash) {
+                    if (window.location.hash.includes("access_token") || window.location.hash.includes("type=recovery")) {
+                        if (mounted) setIsValidToken(true);
+                        return;
+                    }
+                }
+
+                // 5. If no automatic token detected, prompt for 6-digit OTP code / token
+                if (mounted) {
+                    setNeedsTokenInput(true);
+                    setIsValidToken(true);
+                }
             } catch (err: any) {
-                setError(err.message || "This reset link is invalid or has expired");
-                setIsValidToken(false);
+                if (mounted) {
+                    setNeedsTokenInput(true);
+                    setIsValidToken(true);
+                }
             }
         };
 
-        verifyToken();
-    }, [token]);
+        // Listen for Supabase auth state change (e.g. PASSWORD_RECOVERY)
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === "PASSWORD_RECOVERY" || (session && event === "SIGNED_IN")) {
+                if (mounted) setIsValidToken(true);
+            }
+        });
+
+        checkRecoveryState();
+
+        return () => {
+            mounted = false;
+            authListener?.subscription?.unsubscribe();
+        };
+    }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -71,21 +122,56 @@ function ResetPasswordForm() {
             return;
         }
 
+        const tokenToUse = resetToken || searchParams.get("token") || manualToken.trim();
+
+        if (needsTokenInput && !tokenToUse) {
+            setError("Please enter the 6-digit verification code or reset token from your email");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
-            // Use Supabase to update password
-            const { error } = await supabase.auth.updateUser({
+            // Option A: If custom token is available, use backend API
+            if (tokenToUse) {
+                const apiRes = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: tokenToUse, password }),
+                });
+
+                const apiData = await apiRes.json();
+
+                if (apiRes.ok && apiData.success) {
+                    setSuccess(true);
+                    setTimeout(() => {
+                        router.push("/auth?mode=signin");
+                    }, 2500);
+                    return;
+                } else if (!apiRes.ok && apiData.error) {
+                    // Try Supabase auth fallback if backend reset returns error
+                    const { error: supabaseError } = await supabase.auth.updateUser({ password });
+                    if (!supabaseError) {
+                        setSuccess(true);
+                        setTimeout(() => {
+                            router.push("/auth?mode=signin");
+                        }, 2500);
+                        return;
+                    }
+                    throw new Error(apiData.error || supabaseError.message);
+                }
+            }
+
+            // Option B: Supabase Auth updateUser
+            const { error: updateError } = await supabase.auth.updateUser({
                 password: password,
             });
 
-            if (error) {
-                throw new Error(error.message);
+            if (updateError) {
+                throw new Error(updateError.message);
             }
 
             setSuccess(true);
-
-            // Redirect to sign in after 2 seconds
             setTimeout(() => {
                 router.push("/auth?mode=signin");
             }, 2500);
@@ -109,37 +195,6 @@ function ResetPasswordForm() {
         );
     }
 
-    // Invalid token state
-    if (isValidToken === false) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="max-w-md w-full bg-zinc-900/80 border border-zinc-800/60 rounded-2xl p-6 text-center"
-                >
-                    <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                        <AlertCircle className="w-8 h-8 text-red-400" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white">Invalid Reset Link</h3>
-                    <p className="text-sm text-zinc-400 mt-2">
-                        {error || "This password reset link is invalid or has expired."}
-                    </p>
-                    <p className="text-xs text-zinc-500 mt-1">
-                        Please request a new password reset link.
-                    </p>
-                    <button
-                        onClick={() => router.push("/auth?mode=signin")}
-                        className="mt-4 px-6 py-2.5 rounded-xl bg-primary text-black font-medium hover:bg-primary/90 transition flex items-center gap-2 mx-auto"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Sign In
-                    </button>
-                </motion.div>
-            </div>
-        );
-    }
-
     // Success state
     if (success) {
         return (
@@ -154,7 +209,7 @@ function ResetPasswordForm() {
                     </div>
                     <h3 className="text-lg font-bold text-white">Password Reset Successful!</h3>
                     <p className="text-sm text-zinc-400 mt-2">
-                        Your password has been reset successfully.
+                        Your password has been updated successfully.
                     </p>
                     <p className="text-xs text-emerald-400/70 mt-1">
                         Redirecting to sign in...
@@ -191,6 +246,27 @@ function ResetPasswordForm() {
                 </p>
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                    {/* Optional Verification Code / Token input if needed */}
+                    {needsTokenInput && (
+                        <div>
+                            <label className="text-xs font-medium text-zinc-400 block mb-1.5">
+                                Verification Code / Token
+                            </label>
+                            <div className="relative">
+                                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                <input
+                                    type="text"
+                                    value={manualToken}
+                                    onChange={(e) => setManualToken(e.target.value)}
+                                    placeholder="Enter 6-digit OTP code or reset token"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/60 border border-zinc-700/60 focus:border-primary/40 rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-primary/20 transition"
+                                    required
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {/* New Password */}
                     <div>
                         <label className="text-xs font-medium text-zinc-400 block mb-1.5">
@@ -285,7 +361,7 @@ function ResetPasswordForm() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-black font-medium hover:shadow-lg hover:shadow-primary/30 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-black font-medium hover:shadow-lg hover:shadow-primary/30 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                     >
                         {isLoading ? (
                             <>
@@ -302,7 +378,7 @@ function ResetPasswordForm() {
                         <button
                             type="button"
                             onClick={() => router.push("/auth?mode=signin")}
-                            className="text-xs text-zinc-500 hover:text-primary transition flex items-center gap-1 mx-auto"
+                            className="text-xs text-zinc-500 hover:text-primary transition flex items-center gap-1 mx-auto cursor-pointer"
                             disabled={isLoading}
                         >
                             <ArrowLeft className="w-3 h-3" />

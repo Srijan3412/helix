@@ -504,6 +504,135 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
   }
 
   /**
+   * Send Password Reset Email with clickable link and OTP code
+   */
+  static async sendPasswordResetEmail(email: string, otp: string, resetLink: string): Promise<boolean> {
+    try {
+      if (!email || !otp) {
+        logger.error({ email, otp }, 'Invalid email or OTP provided for reset');
+        return false;
+      }
+
+      const appName = process.env.APP_NAME || 'Repository Intelligence Platform';
+      const fromEmail = process.env.EMAIL_FROM || `Auth <noreply@${process.env.EMAIL_DOMAIN || 'projectanalyser.com'}>`;
+      const currentYear = new Date().getFullYear();
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Reset Your Password</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f5; padding: 20px; line-height: 1.6; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); overflow: hidden; }
+            .header { background: linear-gradient(135deg, #09090b 0%, #1a1a1a 100%); color: #ffffff; padding: 32px 40px; text-align: center; }
+            .header h1 { font-size: 24px; font-weight: 600; }
+            .content { padding: 40px; background-color: #ffffff; }
+            .message { color: #3f3f46; font-size: 14px; margin-bottom: 24px; }
+            .btn-container { text-align: center; margin: 28px 0; }
+            .btn { display: inline-block; background-color: #10b981; color: #000000; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 32px; border-radius: 10px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3); }
+            .otp-container { background-color: #fafafa; border: 1px dashed #d4d4d8; border-radius: 10px; padding: 16px; text-align: center; margin: 20px 0; }
+            .otp-code { font-family: monospace; font-size: 28px; font-weight: 700; letter-spacing: 6px; color: #18181b; }
+            .footer { background-color: #fafafa; padding: 20px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 12px; color: #71717a; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 ${appName}</h1>
+              <p>Password Reset Request</p>
+            </div>
+            <div class="content">
+              <p class="message">We received a request to reset your password. Click the button below to set a new password:</p>
+              <div class="btn-container">
+                <a href="${resetLink}" class="btn">Reset Password</a>
+              </div>
+              <p class="message" style="font-size: 12px; color: #71717a; text-align: center;">Or copy & paste this link in your browser:</p>
+              <p style="font-size: 11px; word-break: break-all; text-align: center; color: #10b981; margin-bottom: 24px;">
+                <a href="${resetLink}">${resetLink}</a>
+              </p>
+              <div class="otp-container">
+                <div style="font-size: 12px; color: #71717a; margin-bottom: 4px;">Alternatively, use this verification code:</div>
+                <span class="otp-code">${otp}</span>
+              </div>
+              <div style="font-size: 12px; color: #a1a1aa; text-align: center; margin-top: 20px;">
+                This link and code will expire in 10 minutes. If you did not request a password reset, please ignore this email.
+              </div>
+            </div>
+            <div class="footer">
+              <p>© ${currentYear} ${appName}. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const plainText = `RESET YOUR PASSWORD\n\nClick here to reset your password: ${resetLink}\n\nAlternatively, enter code: ${otp}\n\nExpires in 10 minutes.`;
+
+      logger.info(`
+┌─────────────────────────────────────────────┐
+│  🔐 PASSWORD RESET EMAIL                     │
+├─────────────────────────────────────────────┤
+│  To: ${email.padEnd(35)} │
+│  Link: ${resetLink.padEnd(33)} │
+│  OTP: ${otp.padEnd(34)} │
+└─────────────────────────────────────────────┘
+      `);
+
+      // Try SMTP transporter
+      const transporter = await this.getTransporter();
+      if (transporter) {
+        await transporter.sendMail({
+          from: fromEmail,
+          to: email,
+          subject: `Reset Your Password - ${appName}`,
+          html: htmlContent,
+          text: plainText,
+        });
+        logger.info({ email }, '✅ Password reset email delivered via SMTP');
+        return true;
+      }
+
+      // Try Resend API
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (resendApiKey) {
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: [email],
+            subject: `Reset Your Password - ${appName}`,
+            html: htmlContent,
+            text: plainText,
+          }),
+        });
+
+        if (response.ok) {
+          logger.info({ email }, '✅ Password reset email delivered via Resend');
+          return true;
+        }
+      }
+
+      if (process.env.NODE_ENV !== 'production') {
+        logger.warn({ email }, '⚠️ Password reset logged to console.');
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      logger.error({ error, email }, 'Failed to send password reset email');
+      return false;
+    }
+  }
+
+  /**
    * Send a test email to verify configuration
    */
   static async sendTestEmail(email: string): Promise<boolean> {
