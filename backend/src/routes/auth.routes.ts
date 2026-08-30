@@ -171,58 +171,80 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         };
       }
 
-      // 2. Create account via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${process.env.APP_URL || 'http://localhost:3000'}/auth/callback`,
-        }
-      });
+      // 2. Create account via Supabase Auth (prefer admin.createUser to bypass built-in email rate limit)
+      let userId: string | undefined;
+      let authError: any;
 
-      if (authError) {
-        // Handle specific auth errors
-        if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
-          reply.code(409);
-          return {
-            success: false,
-            error: "Email already registered. Please sign in instead."
-          };
-        }
+      try {
+        const { data: adminData, error: adminErr } = await supabase.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+        });
 
-        if (
-          authError.message.includes('For security purposes') ||
-          authError.message.includes('email rate limit exceeded') ||
-          authError.message.includes('rate limit') ||
-          authError.status === 429
-        ) {
-          logger.warn({ email, authError: authError.message }, "Supabase auth signup rate limited");
-          reply.code(429);
-          return {
-            success: false,
-            error: authError.message.includes('email rate limit')
-              ? "Email rate limit reached on auth server. Please wait a few minutes or sign in if you already created an account."
-              : authError.message
-          };
+        if (!adminErr && adminData?.user?.id) {
+          userId = adminData.user.id;
+        } else {
+          authError = adminErr;
         }
-
-        if (authError.message.includes('Database error saving new user')) {
-          logger.error({ error: authError, email }, "Supabase database trigger error during signup");
-          reply.code(400);
-          return {
-            success: false,
-            error: "Database error on user registration. Please execute the updated SQL script in Supabase SQL Editor."
-          };
-        }
-
-        logger.error({ error: authError, email }, "Supabase auth signup failed");
-        reply.code(400);
-        return { success: false, error: authError.message };
+      } catch (err) {
+        // Fallback to standard signUp
       }
 
-      const userId = authData.user?.id;
       if (!userId) {
-        logger.error({ authData }, "No user ID returned from Supabase auth");
+        const { data: authData, error: signupErr } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${process.env.APP_URL || 'http://localhost:3000'}/auth/callback`,
+          }
+        });
+
+        if (!signupErr && authData?.user?.id) {
+          userId = authData.user.id;
+        } else {
+          authError = signupErr || authError;
+        }
+      }
+
+      if (!userId) {
+        if (authError) {
+          if (authError.message?.includes('already registered') || authError.message?.includes('already exists')) {
+            reply.code(409);
+            return {
+              success: false,
+              error: "Email already registered. Please sign in instead."
+            };
+          }
+
+          if (
+            authError.message?.includes('For security purposes') ||
+            authError.message?.includes('email rate limit exceeded') ||
+            authError.message?.includes('rate limit') ||
+            authError.status === 429
+          ) {
+            logger.warn({ email, authError: authError.message }, "Supabase auth signup rate limited");
+            reply.code(429);
+            return {
+              success: false,
+              error: "Email rate limit reached on auth server. Please wait a few minutes or sign in if you already created an account."
+            };
+          }
+
+          if (authError.message?.includes('Database error saving new user')) {
+            logger.error({ error: authError, email }, "Supabase database trigger error during signup");
+            reply.code(400);
+            return {
+              success: false,
+              error: "Database error on user registration. Please execute the updated SQL script in Supabase SQL Editor."
+            };
+          }
+
+          logger.error({ error: authError, email }, "Supabase auth signup failed");
+          reply.code(400);
+          return { success: false, error: authError.message || "User creation failed on auth provider." };
+        }
+
         reply.code(500);
         return {
           success: false,
