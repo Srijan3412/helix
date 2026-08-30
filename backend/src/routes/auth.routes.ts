@@ -538,27 +538,14 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         };
       }
 
-      // 1. Dispatch password reset email / OTP via backend OTP service & EmailService
-      try {
-        await otpService.sendPasswordResetOTP(email);
-      } catch (otpErr) {
-        logger.warn({ otpErr, email }, 'otpService.sendPasswordResetOTP failed, falling back to Supabase auth reset');
-      }
+      // ✅ ONLY send your custom OTP email
+      await otpService.sendPasswordResetOTP(email);
 
-      // 2. Also trigger Supabase auth reset if available
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.APP_URL || 'http://localhost:3000'}/auth/reset-password`,
-      });
-
-      if (error) {
-        logger.warn({ error, email }, 'Supabase auth resetPasswordForEmail warning');
-      }
-
-      logger.info({ email }, 'Password reset request processed');
+      logger.info({ email }, 'Password reset OTP email sent');
 
       return {
         success: true,
-        message: 'If an account exists with this email, a password reset link/code has been sent to your email.'
+        message: 'If an account exists with this email, a verification code has been sent to your email.'
       };
     } catch (err: any) {
       logger.error({ err }, 'Forgot password route exception');

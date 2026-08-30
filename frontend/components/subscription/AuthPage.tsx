@@ -9,12 +9,16 @@ interface AuthPageProps {
   initialMode?: 'signin' | 'signup' | 'verify-otp';
   initialEmail?: string;
   initialUserId?: string;
+  initialToken?: string;
+  initialError?: string;
 }
 
 export default function AuthPage({
   initialMode = 'signup',
   initialEmail = '',
   initialUserId = '',
+  initialToken = '',
+  initialError = '',
 }: AuthPageProps) {
   const router = useRouter();
   const { signIn, signUp, verifyOtp, resendOtp } = useSubscription();
@@ -23,8 +27,9 @@ export default function AuthPage({
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [unverifiedUserId, setUnverifiedUserId] = useState(initialUserId);
+  const [otpToken, setOtpToken] = useState(initialToken);  // ✅ ADDED
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError || null);  // ✅ MODIFIED
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
@@ -34,7 +39,9 @@ export default function AuthPage({
     if (initialMode) setMode(initialMode);
     if (initialEmail) setEmail(initialEmail);
     if (initialUserId) setUnverifiedUserId(initialUserId);
-  }, [initialMode, initialEmail, initialUserId]);
+    if (initialToken) setOtpToken(initialToken);  // ✅ ADDED
+    if (initialError) setError(initialError);     // ✅ ADDED
+  }, [initialMode, initialEmail, initialUserId, initialToken, initialError]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -125,15 +132,15 @@ export default function AuthPage({
             {mode === 'signin'
               ? 'Welcome back'
               : mode === 'signup'
-              ? 'Start your free trial'
-              : 'Verify your email'}
+                ? 'Start your free trial'
+                : 'Verify your email'}
           </h1>
           <p className="text-sm text-neutral-500">
             {mode === 'signin'
               ? 'Sign in to access your dashboard'
               : mode === 'signup'
-              ? '14 days free. No credit card required.'
-              : 'Enter the 6-digit verification code sent to your email'}
+                ? '14 days free. No credit card required.'
+                : 'Enter the 6-digit verification code sent to your email'}
           </p>
         </div>
 
