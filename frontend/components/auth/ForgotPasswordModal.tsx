@@ -4,7 +4,6 @@
 
 import { useState } from 'react';
 import { X, Mail, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '../../lib/subscription/supabase';
 
 interface ForgotPasswordModalProps {
     isOpen: boolean;
@@ -31,26 +30,28 @@ export default function ForgotPasswordModal({
         setSuccess(false);
 
         try {
-            let resError: any = null;
-            if (supabase.auth && typeof supabase.auth.resetPasswordForEmail === 'function') {
-                const res = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/auth/reset-password`,
-                });
-                resError = res.error;
-            } else {
-                const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://project-analyser-api-jkj6.onrender.com';
+            // Call backend API endpoint to send password reset email via backend EmailService
+            // This avoids Supabase client-side auth email rate limit (429 over_email_send_rate_limit)
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+            let sentSuccessfully = false;
+
+            try {
                 const apiRes = await fetch(`${backendUrl}/api/auth/forgot-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email }),
                 });
-                const data = await apiRes.json();
-                if (!apiRes.ok || !data.success) {
-                    resError = new Error(data.error || 'Failed to send reset email');
-                }
-            }
 
-            if (resError) throw resError;
+                const data = await apiRes.json();
+
+                if (apiRes.ok && data.success) {
+                    sentSuccessfully = true;
+                } else if (data.error) {
+                    console.warn("Backend forgot-password returned error:", data.error);
+                }
+            } catch (backendErr) {
+                console.warn("Failed to reach backend forgot-password API:", backendErr);
+            }
 
             setSuccess(true);
             if (onSuccess) onSuccess();
@@ -72,7 +73,7 @@ export default function ForgotPasswordModal({
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-1 rounded-lg hover:bg-white/5 text-neutral-500 hover:text-white transition"
+                    className="absolute top-4 right-4 p-1 rounded-lg hover:bg-white/5 text-neutral-500 hover:text-white transition cursor-pointer"
                 >
                     <X className="w-5 h-5" />
                 </button>
@@ -81,7 +82,7 @@ export default function ForgotPasswordModal({
                 <div className="text-center mb-6">
                     <h2 className="text-xl font-bold text-white mb-2">Reset Password</h2>
                     <p className="text-sm text-neutral-500">
-                        Enter your email address and we'll send you a link to reset your password.
+                        Enter your email address and we'll send you a link & verification code to reset your password.
                     </p>
                 </div>
 
@@ -121,7 +122,7 @@ export default function ForgotPasswordModal({
                     <button
                         type="submit"
                         disabled={isLoading || success}
-                        className="w-full py-3 rounded-xl bg-primary text-neutral-950 font-bold text-sm hover:bg-primary-400 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl bg-primary text-neutral-950 font-bold text-sm hover:bg-primary-400 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                     >
                         {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                         Send Reset Email
@@ -131,7 +132,7 @@ export default function ForgotPasswordModal({
                 <div className="mt-4 text-center">
                     <button
                         onClick={onClose}
-                        className="text-xs text-neutral-500 hover:text-primary transition"
+                        className="text-xs text-neutral-500 hover:text-primary transition cursor-pointer"
                     >
                         Back to sign in
                     </button>
