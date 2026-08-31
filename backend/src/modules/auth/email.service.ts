@@ -4,6 +4,37 @@ export class EmailService {
   private static transporter: any = null;
 
   /**
+   * Logs active email configuration at startup.
+   * Call this once when the server starts to diagnose missing email config.
+   */
+  static logEmailConfig(): void {
+    const smtp = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
+    const resend = !!process.env.RESEND_API_KEY;
+    const sendgrid = !!process.env.SENDGRID_API_KEY;
+    const mailgun = !!(process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN);
+
+    if (smtp) {
+      logger.info(`📧 Email provider: SMTP (host=${process.env.SMTP_HOST}, user=${process.env.SMTP_USER})`);
+    } else if (resend) {
+      logger.info('📧 Email provider: Resend API');
+    } else if (sendgrid) {
+      logger.info('📧 Email provider: SendGrid API');
+    } else if (mailgun) {
+      logger.info('📧 Email provider: Mailgun API');
+    } else {
+      logger.warn(
+        '⚠️  NO EMAIL PROVIDER CONFIGURED. Emails will only print to console.\n' +
+        '   To fix this, add ONE of the following to your backend .env file:\n' +
+        '   • Gmail SMTP: SMTP_HOST=smtp.gmail.com  SMTP_PORT=587  SMTP_USER=you@gmail.com  SMTP_PASS=app-password\n' +
+        '   • Resend:     RESEND_API_KEY=re_xxxx\n' +
+        '   • SendGrid:   SENDGRID_API_KEY=SG.xxxx\n' +
+        '   • Mailgun:    MAILGUN_API_KEY=xxx  MAILGUN_DOMAIN=mg.yourdomain.com\n' +
+        '   See backend/.env.example for full instructions.'
+      );
+    }
+  }
+
+  /**
    * Initialize email transporter based on available configuration
    */
   private static async getTransporter(): Promise<any> {

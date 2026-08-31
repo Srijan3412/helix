@@ -4,6 +4,7 @@ import { logger } from "./core/logger/index.js";
 import { redisConnection, connectionReady } from "./jobs/analysis.queue.js";
 import { startAnalysisWorker, analysisWorker } from "./jobs/analysis.worker.js";
 import { startCleanupWorker } from "./jobs/cleanup.worker.js";
+import { EmailService } from "./modules/auth/email.service.js";
 
 async function start() {
   try {
@@ -14,6 +15,9 @@ async function start() {
     startAnalysisWorker();
     startCleanupWorker();
     logger.info("⚙️ Background queue workers initialized alongside the server.");
+
+    // Log email provider configuration status
+    EmailService.logEmailConfig();
 
     const app = await buildApp();
 
