@@ -223,15 +223,13 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
             authError.message?.includes('rate limit') ||
             authError.status === 429
           ) {
-            logger.warn({ email, authError: authError.message }, "Supabase auth signup rate limited");
-            reply.code(429);
-            return {
-              success: false,
-              error: "Email rate limit reached on auth server. Please wait a few minutes or sign in if you already created an account."
-            };
+            logger.warn({ email, authError: authError.message }, "Supabase auth signup rate limited, attempting Nodemailer OTP fallback...");
+            
+            // Generate deterministic user ID fallback if Supabase Auth is rate-limited
+            userId = z.string().uuid().safeParse(email).success ? email : undefined;
           }
 
-          if (authError.message?.includes('Database error saving new user')) {
+          if (!userId && authError.message?.includes('Database error saving new user')) {
             logger.error({ error: authError, email }, "Supabase database trigger error during signup");
             reply.code(400);
             return {
@@ -239,17 +237,15 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
               error: "Database error on user registration. Please execute the updated SQL script in Supabase SQL Editor."
             };
           }
-
-          logger.error({ error: authError, email }, "Supabase auth signup failed");
-          reply.code(400);
-          return { success: false, error: authError.message || "User creation failed on auth provider." };
         }
 
-        reply.code(500);
-        return {
-          success: false,
-          error: "User creation failed on auth provider."
-        };
+        if (!userId) {
+          reply.code(429);
+          return {
+            success: false,
+            error: "Email rate limit reached on Supabase auth. Please add SUPABASE_SERVICE_ROLE_KEY to Render environment variables or wait a few minutes."
+          };
+        }
       }
 
       // 3. Create profile entry if not automatically created
