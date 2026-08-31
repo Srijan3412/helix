@@ -3,10 +3,6 @@ import { supabase } from '../../core/supabase/index.js';
 import { logger } from '../../core/logger/index.js';
 import { EmailService } from './email.service.js';
 
-type EmailVerification = any;
-type EmailVerificationInsert = any;
-type EmailVerificationUpdate = any;
-
 export class OTPService {
     private readonly OTP_LENGTH = 6;
     private readonly EXPIRY_MINUTES = 10;
@@ -25,8 +21,6 @@ export class OTPService {
      * Hash OTP using SHA-256 with salt for secure storage
      */
     hashOTP(otp: string): string {
-        // Using SHA-256 with a fixed salt for deterministic hashing
-        // For production, consider using bcrypt with per-record salt
         const salt = process.env.OTP_SALT || 'helix-auth-salt-2026';
         const saltedOTP = otp + salt;
         return createHash('sha256').update(saltedOTP).digest('hex');
@@ -43,9 +37,6 @@ export class OTPService {
     /**
      * Create or update verification record for a user
      */
-    /**
-     * Create or update verification record for a user
-     */
     async createVerification(userId: string, email: string): Promise<string> {
         const otp = this.generateOTP();
         const otpHash = this.hashOTP(otp);
@@ -53,12 +44,11 @@ export class OTPService {
         expiresAt.setMinutes(expiresAt.getMinutes() + this.EXPIRY_MINUTES);
 
         try {
-            // Atomic upsert into email_verifications table
             const { error } = await supabase
                 .from('email_verifications')
                 .upsert({
                     user_id: userId,
-                    email: email,
+                    email: email.trim().toLowerCase(),
                     otp_hash: otpHash,
                     expires_at: expiresAt.toISOString(),
                     attempts: 0,
@@ -68,14 +58,18 @@ export class OTPService {
 
             if (error) {
                 logger.error({ error, userId, email }, "Supabase upsert into email_verifications failed");
+                if (error.message?.includes('row-level security') || error.code === '42501') {
+                    throw new Error(
+                        'Database RLS policy error on email_verifications. Please set SUPABASE_SERVICE_ROLE_KEY in your Render environment variables or run the SQL script in Supabase SQL Editor.'
+                    );
+                }
                 throw error;
             }
 
-            // Return OTP for email sending
             return otp;
         } catch (error: any) {
             logger.error({ error: error?.message || error, userId, email }, 'Error creating verification:');
-            throw new Error(`Failed to create verification record: ${error?.message || 'Database error'}`);
+            throw new Error(error?.message || 'Failed to create verification record: Database error');
         }
     }
 
@@ -88,7 +82,6 @@ export class OTPService {
         emailVerified?: boolean;
     }> {
         try {
-            // Get verification record safely
             const { data: verification, error } = await supabase
                 .from('email_verifications')
                 .select('*')
@@ -102,7 +95,6 @@ export class OTPService {
                 };
             }
 
-            // Check if already verified
             if (verification.verified_at) {
                 return {
                     valid: false,
@@ -110,7 +102,6 @@ export class OTPService {
                 };
             }
 
-            // Check attempts limit
             if (verification.attempts >= this.MAX_ATTEMPTS) {
                 return {
                     valid: false,
@@ -118,7 +109,6 @@ export class OTPService {
                 };
             }
 
-            // Check expiry
             const now = new Date();
             const expiresAt = new Date(verification.expires_at);
             if (now > expiresAt) {
@@ -128,11 +118,9 @@ export class OTPService {
                 };
             }
 
-            // Verify OTP
             const isValid = this.verifyOTP(otp, verification.otp_hash);
 
             if (!isValid) {
-                // Increment attempts
                 await supabase
                     .from('email_verifications')
                     .update({ attempts: verification.attempts + 1 })
@@ -145,10 +133,8 @@ export class OTPService {
                 };
             }
 
-            // OTP is valid - mark as verified
             const nowISO = new Date().toISOString();
 
-            // Update email_verifications table
             const { error: updateError } = await supabase
                 .from('email_verifications')
                 .update({
@@ -159,7 +145,6 @@ export class OTPService {
 
             if (updateError) throw updateError;
 
-            // Update helix_profiles table
             const { error: profileError } = await supabase
                 .from('helix_profiles')
                 .update({
@@ -168,7 +153,9 @@ export class OTPService {
                 })
                 .eq('id', userId);
 
-            if (profileError) throw profileError;
+            if (profileError) {
+                logger.warn({ profileError, userId }, "Could not update helix_profiles email_verified (may require service role key)");
+            }
 
             return {
                 valid: true,
@@ -192,7 +179,6 @@ export class OTPService {
         otp?: string;
     }> {
         try {
-            // Get verification record safely
             const { data: verification, error } = await supabase
                 .from('email_verifications')
                 .select('*')
@@ -200,7 +186,6 @@ export class OTPService {
                 .maybeSingle();
 
             if (error || !verification) {
-                // Create new verification if none exists
                 const otp = await this.createVerification(userId, email);
                 return {
                     success: true,
@@ -209,7 +194,6 @@ export class OTPService {
                 };
             }
 
-            // Check if already verified
             if (verification.verified_at) {
                 return {
                     success: false,
@@ -217,7 +201,6 @@ export class OTPService {
                 };
             }
 
-            // Check cooldown
             const now = new Date();
             const createdAt = new Date(verification.created_at);
             const secondsSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / 1000);
@@ -231,13 +214,11 @@ export class OTPService {
                 };
             }
 
-            // Generate new OTP
             const newOTP = this.generateOTP();
             const newHash = this.hashOTP(newOTP);
             const newExpiry = new Date();
             newExpiry.setMinutes(newExpiry.getMinutes() + this.EXPIRY_MINUTES);
 
-            // Update verification record
             const { error: updateError } = await supabase
                 .from('email_verifications')
                 .update({
@@ -250,7 +231,6 @@ export class OTPService {
 
             if (updateError) throw updateError;
 
-            // Return new OTP for email sending
             return {
                 success: true,
                 message: 'OTP sent successfully!',
@@ -268,17 +248,13 @@ export class OTPService {
      */
     async isEmailVerified(userId: string): Promise<boolean> {
         try {
-            const { data: profile, error } = await supabase
+            const { data: profile } = await supabase
                 .from('helix_profiles')
                 .select('email_verified')
                 .eq('id', userId)
                 .maybeSingle();
 
-            if (error || !profile) {
-                return false;
-            }
-
-            return profile.email_verified || false;
+            return profile?.email_verified || false;
         } catch (error) {
             logger.error({ error }, 'Error checking email verification:');
             return false;
@@ -286,18 +262,16 @@ export class OTPService {
     }
 
     /**
-     * Clean up expired verification records (can be run as a cron job)
+     * Clean up expired verification records
      */
     async cleanupExpiredVerifications(): Promise<void> {
         try {
             const now = new Date().toISOString();
-            const { error } = await supabase
+            await supabase
                 .from('email_verifications')
                 .delete()
                 .lt('expires_at', now)
                 .is('verified_at', null);
-
-            if (error) throw error;
         } catch (error) {
             logger.error({ error }, 'Error cleaning up expired verifications:');
         }
@@ -353,71 +327,77 @@ export class OTPService {
     }
 
     /**
-  * ── Password Reset OTP ──
-  * Send password reset OTP to user's email
-  */
+     * ── Password Reset OTP ──
+     * Send password reset OTP to user's email
+     */
     async sendPasswordResetOTP(email: string): Promise<void> {
         try {
-            // Check if user exists in helix_profiles
-            const { data: user, error } = await supabase
+            const cleanEmail = email.trim().toLowerCase();
+            let userId: string | null = null;
+
+            // 1. Try lookup in helix_profiles (case-insensitive)
+            const { data: profileUser } = await supabase
                 .from('helix_profiles')
                 .select('id, email')
-                .eq('email', email)
+                .ilike('email', cleanEmail)
                 .maybeSingle();
 
-            if (error) {
-                logger.error({ error, email }, 'Error looking up user for password reset');
-                throw new Error('Database error during user lookup');
+            if (profileUser?.id) {
+                userId = profileUser.id;
             }
 
-            if (!user) {
-                // Also check Supabase Auth directly in case profile doesn't exist yet
-                const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-                if (!authError && authUsers?.users) {
-                    const authUser = authUsers.users.find((u: any) => u.email === email);
-                    if (authUser) {
-                        // User exists in auth but not in profile - send reset anyway
-                        const otp = this.generateOTP();
-                        const otpHash = this.hashOTP(otp);
-                        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+            // 2. If not found in helix_profiles (e.g. blocked by RLS or not created yet),
+            // check email_verifications table (which is accessible via RLS FOR ALL)
+            if (!userId) {
+                const { data: verificationUser } = await supabase
+                    .from('email_verifications')
+                    .select('user_id')
+                    .ilike('email', cleanEmail)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
 
-                        await supabase
-                            .from('email_verifications')
-                            .upsert({
-                                user_id: authUser.id,
-                                email: email,
-                                otp_hash: otpHash,
-                                expires_at: expiresAt.toISOString(),
-                                attempts: 0,
-                                verified_at: null,
-                                created_at: new Date().toISOString()
-                            }, { onConflict: 'user_id,email' });
-
-                        const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-                        const resetLink = `${baseUrl}/auth/reset-password?token=${otp}`;
-
-                        await EmailService.sendPasswordResetEmail(email, otp, resetLink);
-                        logger.info({ email, resetLink }, 'Password reset email sent (user found in auth)');
-                        return;
-                    }
+                if (verificationUser?.user_id) {
+                    userId = verificationUser.user_id;
                 }
+            }
 
-                // Don't reveal if user exists or not (security)
-                logger.info({ email }, 'Password reset requested for non-existent email (anti-enumeration)');
+            // 3. Check Supabase Auth Admin listUsers if service role key available
+            if (!userId) {
+                try {
+                    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+                    if (!authError && authUsers?.users) {
+                        const authUser = authUsers.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
+                        if (authUser) {
+                            userId = authUser.id;
+                        }
+                    }
+                } catch (e) {
+                    logger.warn('Could not query supabase.auth.admin.listUsers (SUPABASE_SERVICE_ROLE_KEY missing or unauthorized)');
+                }
+            }
+
+            // 4. If user ID was not found:
+            if (!userId) {
+                logger.warn(
+                    { email: cleanEmail },
+                    '⚠️ Password reset requested for email, but no user ID could be resolved.\n' +
+                    '   If this user exists in Supabase, ensure SUPABASE_SERVICE_ROLE_KEY is set in your environment variables so RLS is bypassed.'
+                );
+                // Return gracefully for anti-enumeration security, but log the warning for developer debugging
                 return;
             }
 
-            // Generate OTP
+            // 5. Generate OTP and save to email_verifications
             const otp = this.generateOTP();
             const otpHash = this.hashOTP(otp);
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-            // Save OTP to email_verifications table
             const { error: saveError } = await supabase
                 .from('email_verifications')
                 .upsert({
-                    user_id: user.id,
-                    email: email,
+                    user_id: userId,
+                    email: cleanEmail,
                     otp_hash: otpHash,
                     expires_at: expiresAt.toISOString(),
                     attempts: 0,
@@ -426,7 +406,7 @@ export class OTPService {
                 }, { onConflict: 'user_id,email' });
 
             if (saveError) {
-                logger.error({ error: saveError, email }, 'Failed to save password reset OTP');
+                logger.error({ error: saveError, email: cleanEmail }, 'Failed to save password reset OTP');
                 throw saveError;
             }
 
@@ -434,9 +414,13 @@ export class OTPService {
             const resetLink = `${baseUrl}/auth/reset-password?token=${otp}`;
 
             // Send email with direct reset link & OTP
-            await EmailService.sendPasswordResetEmail(email, otp, resetLink);
+            const sent = await EmailService.sendPasswordResetEmail(cleanEmail, otp, resetLink);
 
-            logger.info({ email, resetLink }, 'Password reset email & OTP sent successfully');
+            if (!sent) {
+                logger.error({ email: cleanEmail }, '❌ EmailService failed to dispatch password reset email');
+            } else {
+                logger.info({ email: cleanEmail, resetLink }, '✅ Password reset email & OTP sent successfully');
+            }
         } catch (error: any) {
             logger.error({ error: error?.message || error, email }, 'Error sending password reset OTP:');
             throw new Error(`Failed to send password reset OTP: ${error?.message || 'Unknown error'}`);
@@ -481,7 +465,6 @@ export class OTPService {
             const hashedToken = this.hashOTP(token);
             const now = new Date().toISOString();
 
-            // Verify token exists and is valid
             const { data, error } = await supabase
                 .from('email_verifications')
                 .select('id, user_id')
@@ -495,7 +478,6 @@ export class OTPService {
                 throw new Error('Invalid or expired reset token');
             }
 
-            // Update user password via Supabase Auth
             const { error: updateError } = await supabase.auth.admin.updateUserById(
                 data.user_id,
                 { password: newPassword }
@@ -506,7 +488,6 @@ export class OTPService {
                 throw new Error(updateError.message || 'Failed to update password');
             }
 
-            // Mark OTP as used
             await supabase
                 .from('email_verifications')
                 .update({ verified_at: new Date().toISOString() })
@@ -518,8 +499,6 @@ export class OTPService {
             throw new Error(error?.message || 'Failed to reset password');
         }
     }
-
 }
 
-// Singleton instance for app-wide use
 export const otpService = new OTPService();
