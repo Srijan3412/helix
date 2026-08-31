@@ -560,14 +560,27 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         };
       }
 
-      // ✅ ONLY send your custom OTP email
-      await otpService.sendPasswordResetOTP(email);
+      // ✅ Use Supabase Auth resetPasswordForEmail so Supabase sends the email
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${process.env.APP_URL || 'http://localhost:3000'}/auth/reset-password`,
+      });
 
-      logger.info({ email }, 'Password reset OTP email sent');
+      if (error) {
+        logger.warn({ error, email }, 'Supabase resetPasswordForEmail returned error');
+        if (error.status === 429 || error.message?.includes('rate limit')) {
+          reply.code(429);
+          return {
+            success: false,
+            error: 'Email send rate limit reached on Supabase. Please wait a few minutes before trying again.'
+          };
+        }
+      }
+
+      logger.info({ email }, 'Password reset email requested via Supabase Auth');
 
       return {
         success: true,
-        message: 'If an account exists with this email, a verification code has been sent to your email.'
+        message: 'If an account exists with this email, a verification link has been sent to your email.'
       };
     } catch (err: any) {
       logger.error({ err }, 'Forgot password route exception');

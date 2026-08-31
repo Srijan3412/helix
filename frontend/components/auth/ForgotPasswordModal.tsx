@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Mail, Loader2, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { supabase } from '../../lib/subscription/supabase';
 
 interface ForgotPasswordModalProps {
     isOpen: boolean;
@@ -32,32 +33,34 @@ export default function ForgotPasswordModal({
         setSuccess(false);
 
         try {
-            const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+            const siteUrl = typeof window !== 'undefined'
+                ? window.location.origin
+                : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
 
-            const apiRes = await fetch(`${backendUrl}/api/auth/forgot-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
+            // ✅ Call Supabase Auth directly so Supabase sends the reset email
+            const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+                redirectTo: `${siteUrl}/auth/reset-password`,
             });
 
-            const data = await apiRes.json();
-
-            if (!apiRes.ok && data.error) {
-                // Only surface hard errors (not "user not found" — we keep that vague for security)
-                setError(data.error || 'Failed to send reset email. Please try again.');
+            if (resetErr) {
+                // If rate limited or invalid email, surface the error
+                if (resetErr.status === 429 || resetErr.message?.includes('rate limit')) {
+                    setError('Email send rate limit reached. Please wait a few minutes before requesting another email.');
+                } else {
+                    setError(resetErr.message || 'Failed to send reset email via Supabase.');
+                }
                 return;
             }
 
-            // Show success state regardless (anti-enumeration: don't reveal if email exists)
             setSuccess(true);
             if (onSuccess) onSuccess();
 
-            // Auto-redirect to reset-password page after 3 seconds
+            // Auto-redirect after 4 seconds
             setTimeout(() => {
                 router.push('/auth/reset-password');
-            }, 3000);
+            }, 4000);
         } catch (err: any) {
-            setError('Could not reach the server. Please check your connection and try again.');
+            setError(err.message || 'Failed to send reset email. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -83,7 +86,7 @@ export default function ForgotPasswordModal({
                 <div className="text-center mb-6">
                     <h2 className="text-xl font-bold text-white mb-2">Reset Password</h2>
                     <p className="text-sm text-neutral-500">
-                        Enter your email address and we&apos;ll send you a verification code to reset your password.
+                        Enter your email address and Supabase will send you a password reset link.
                     </p>
                 </div>
 
@@ -120,7 +123,7 @@ export default function ForgotPasswordModal({
                             className="w-full py-3 rounded-xl bg-primary text-neutral-950 font-bold text-sm hover:bg-primary-400 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                         >
                             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {isLoading ? 'Sending...' : 'Send Reset Code'}
+                            {isLoading ? 'Sending via Supabase...' : 'Send Password Reset Email'}
                         </button>
                     </form>
                 ) : (
@@ -128,9 +131,9 @@ export default function ForgotPasswordModal({
                         <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
                             <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" />
                             <div>
-                                <p className="font-semibold text-sm mb-1">Check your inbox!</p>
+                                <p className="font-semibold text-sm mb-1">Check your email!</p>
                                 <p className="text-emerald-400/80">
-                                    If an account exists for <strong>{email}</strong>, a 6-digit OTP code and reset link have been sent.
+                                    Supabase has sent a password reset email to <strong>{email}</strong>. Click the link in the email to set a new password.
                                 </p>
                             </div>
                         </div>
@@ -139,12 +142,12 @@ export default function ForgotPasswordModal({
                             onClick={handleGoToResetPage}
                             className="w-full py-3 rounded-xl bg-primary text-neutral-950 font-bold text-sm hover:bg-primary-400 transition flex items-center justify-center gap-2 cursor-pointer"
                         >
-                            Enter OTP &amp; Reset Password
+                            Go to Reset Password Page
                             <ArrowRight className="w-4 h-4" />
                         </button>
 
                         <p className="text-center text-xs text-neutral-600">
-                            Redirecting automatically in 3 seconds...
+                            Redirecting automatically in 4 seconds...
                         </p>
                     </div>
                 )}
