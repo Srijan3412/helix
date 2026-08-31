@@ -205,21 +205,25 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     // Auto-create profile if authenticated but no profile exists
     let userEmail = email;
-    if (!userEmail) {
-      const { data: { user } } = await supabase.auth.getUser();
-      userEmail = user?.email;
+    let isGoogleUser = false;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      if (!userEmail) userEmail = user.email;
+      isGoogleUser = user.app_metadata?.provider === 'google' ||
+                     user.app_metadata?.providers?.includes('google') ||
+                     !!user.email_confirmed_at;
     }
 
     const newProfile = {
       id: userId,
       email: userEmail || '',
-      role: 'visitor' as const, // ✅ CHANGED: Start as visitor
+      role: 'visitor' as const,
       plan: 'trial' as const,
       trial_started_at: new Date().toISOString(),
       trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
       subscription_status: 'trialing' as const,
-      // ✅ ADD: New fields
-      email_verified: false,
+      email_verified: isGoogleUser,
       scan_limit: 2,
       scans_used: 0,
     };
@@ -230,14 +234,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     if (!insertError) {
       updateProfile(newProfile as unknown as Profile);
-      // Ensure usage records are also initialized
       await supabase.from('helix_usage_records').insert({
         user_id: userId,
         period_start: new Date().toISOString(),
       });
 
-      // ✅ ADD: Set needs verification for new users
-      setNeedsVerification(true);
+      setNeedsVerification(!isGoogleUser);
       const usage = getScanUsage(newProfile as unknown as Profile);
       setScanUsage(usage);
       const status = getUserStatus(newProfile as unknown as Profile);
