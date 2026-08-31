@@ -353,9 +353,9 @@ export class OTPService {
     }
 
     /**
- * ── Password Reset OTP ──
- * Send password reset OTP to user's email
- */
+  * ── Password Reset OTP ──
+  * Send password reset OTP to user's email
+  */
     async sendPasswordResetOTP(email: string): Promise<void> {
         try {
             // Check if user exists in helix_profiles
@@ -365,10 +365,46 @@ export class OTPService {
                 .eq('email', email)
                 .maybeSingle();
 
-            if (error || !user) {
+            if (error) {
+                logger.error({ error, email }, 'Error looking up user for password reset');
+                throw new Error('Database error during user lookup');
+            }
+
+            if (!user) {
+                // Also check Supabase Auth directly in case profile doesn't exist yet
+                const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+                if (!authError && authUsers?.users) {
+                    const authUser = authUsers.users.find((u: any) => u.email === email);
+                    if (authUser) {
+                        // User exists in auth but not in profile - send reset anyway
+                        const otp = this.generateOTP();
+                        const otpHash = this.hashOTP(otp);
+                        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+                        await supabase
+                            .from('email_verifications')
+                            .upsert({
+                                user_id: authUser.id,
+                                email: email,
+                                otp_hash: otpHash,
+                                expires_at: expiresAt.toISOString(),
+                                attempts: 0,
+                                verified_at: null,
+                                created_at: new Date().toISOString()
+                            }, { onConflict: 'user_id,email' });
+
+                        const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+                        const resetLink = `${baseUrl}/auth/reset-password?token=${otp}`;
+
+                        await EmailService.sendPasswordResetEmail(email, otp, resetLink);
+                        logger.info({ email, resetLink }, 'Password reset email sent (user found in auth)');
+                        return;
+                    }
+                }
+
                 // Don't reveal if user exists or not (security)
-                logger.info(`Password reset requested for email: ${email} (user not found)`);
-                return; // Still return success to prevent email enumeration
+                logger.info({ email }, 'Password reset requested for non-existent email (anti-enumeration)');
+                return;
             }
 
             // Generate OTP

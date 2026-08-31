@@ -27,6 +27,9 @@ const PUBLIC_AUTH_ROUTES = [
   '/api/auth/resend-otp',
   '/api/auth/check-verification',
   '/api/auth/verification-status',
+  '/api/auth/forgot-password',
+  '/api/auth/verify-reset-token',
+  '/api/auth/reset-password',
 ];
 
 // ✅ Add: Health check routes

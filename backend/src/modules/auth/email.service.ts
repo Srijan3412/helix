@@ -38,29 +38,16 @@ export class EmailService {
    * Initialize email transporter based on available configuration
    */
   private static async getTransporter(): Promise<any> {
-    // If transporter is already initialized, return it
     if (this.transporter) {
       return this.transporter;
     }
 
-    // Check for SMTP configuration first
     const smtpHost = process.env.SMTP_HOST;
     const smtpPort = parseInt(process.env.SMTP_PORT || '587');
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
     const smtpSecure = process.env.SMTP_SECURE === 'true';
 
-    // Check for Resend API key
-    const resendApiKey = process.env.RESEND_API_KEY;
-
-    // Check for SendGrid API key
-    const sendgridApiKey = process.env.SENDGRID_API_KEY;
-
-    // Check for Mailgun API key
-    const mailgunApiKey = process.env.MAILGUN_API_KEY;
-    const mailgunDomain = process.env.MAILGUN_DOMAIN;
-
-    // Initialize transporter based on available configuration
     if (smtpHost && smtpUser && smtpPass) {
       try {
         // @ts-ignore
@@ -75,7 +62,9 @@ export class EmailService {
             pass: smtpPass,
           },
           tls: {
-            rejectUnauthorized: process.env.NODE_ENV === 'production'
+            // Must be false for Gmail SMTP — Gmail uses intermediate certs
+            // that nodemailer won't trust if this is set to true.
+            rejectUnauthorized: false
           }
         });
 
@@ -86,13 +75,16 @@ export class EmailService {
       }
     }
 
-    // If no transporter, return null (will use console fallback)
     logger.warn('No email provider configured. Emails will be logged to console only.');
     return null;
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // OTP Verification Email
+  // ─────────────────────────────────────────────────────────────────────────────
+
   /**
-   * Generate HTML email template for OTP
+   * Generate HTML email template for OTP verification
    */
   private static generateOTPEmailHTML(otp: string, appName: string = 'Repository Intelligence Platform'): string {
     const currentYear = new Date().getFullYear();
@@ -105,125 +97,28 @@ export class EmailService {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Verify Your Email</title>
         <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f4f4f5;
-            line-height: 1.6;
-            padding: 20px;
-          }
-          .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-          }
-          .header {
-            background: linear-gradient(135deg, #09090b 0%, #1a1a1a 100%);
-            color: #ffffff;
-            padding: 32px 40px;
-            text-align: center;
-          }
-          .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-          }
-          .header p {
-            color: #a1a1aa;
-            font-size: 14px;
-            margin-top: 8px;
-          }
-          .content {
-            padding: 40px;
-            background-color: #ffffff;
-          }
-          .greeting {
-            font-size: 16px;
-            color: #18181b;
-            margin-bottom: 16px;
-          }
-          .message {
-            color: #3f3f46;
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 24px;
-          }
-          .otp-container {
-            background-color: #f4f4f5;
-            border: 2px dashed #10b981;
-            border-radius: 12px;
-            padding: 24px 20px;
-            text-align: center;
-            margin: 24px 0;
-            position: relative;
-          }
-          .otp-code {
-            font-family: 'Courier New', monospace;
-            font-size: 48px;
-            font-weight: 700;
-            letter-spacing: 12px;
-            color: #10b981;
-            display: block;
-            padding: 8px 0;
-          }
-          .otp-label {
-            font-size: 12px;
-            color: #71717a;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 8px;
-          }
-          .expiry-info {
-            color: #71717a;
-            font-size: 13px;
-            text-align: center;
-            margin: 16px 0 24px 0;
-            padding: 12px;
-            background-color: #fafafa;
-            border-radius: 8px;
-          }
-          .security-note {
-            border-top: 1px solid #e4e4e7;
-            padding-top: 20px;
-            margin-top: 20px;
-            color: #71717a;
-            font-size: 12px;
-          }
-          .security-note p {
-            margin-bottom: 6px;
-          }
-          .footer {
-            background-color: #fafafa;
-            padding: 20px 40px;
-            text-align: center;
-            border-top: 1px solid #e4e4e7;
-          }
-          .footer p {
-            color: #71717a;
-            font-size: 12px;
-          }
-          .footer a {
-            color: #10b981;
-            text-decoration: none;
-          }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; line-height: 1.6; padding: 20px; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); overflow: hidden; }
+          .header { background: linear-gradient(135deg, #09090b 0%, #1a1a1a 100%); color: #ffffff; padding: 32px 40px; text-align: center; }
+          .header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
+          .header p { color: #a1a1aa; font-size: 14px; margin-top: 8px; }
+          .content { padding: 40px; background-color: #ffffff; }
+          .greeting { font-size: 16px; color: #18181b; margin-bottom: 16px; }
+          .message { color: #3f3f46; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+          .otp-container { background-color: #f4f4f5; border: 2px dashed #10b981; border-radius: 12px; padding: 24px 20px; text-align: center; margin: 24px 0; }
+          .otp-code { font-family: 'Courier New', monospace; font-size: 48px; font-weight: 700; letter-spacing: 12px; color: #10b981; display: block; padding: 8px 0; }
+          .otp-label { font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+          .expiry-info { color: #71717a; font-size: 13px; text-align: center; margin: 16px 0 24px 0; padding: 12px; background-color: #fafafa; border-radius: 8px; }
+          .security-note { border-top: 1px solid #e4e4e7; padding-top: 20px; margin-top: 20px; color: #71717a; font-size: 12px; }
+          .security-note p { margin-bottom: 6px; }
+          .footer { background-color: #fafafa; padding: 20px 40px; text-align: center; border-top: 1px solid #e4e4e7; }
+          .footer p { color: #71717a; font-size: 12px; }
+          .footer a { color: #10b981; text-decoration: none; }
           @media (max-width: 600px) {
-            .content {
-              padding: 24px;
-            }
-            .otp-code {
-              font-size: 36px;
-              letter-spacing: 8px;
-            }
-            .header {
-              padding: 24px;
-            }
+            .content { padding: 24px; }
+            .otp-code { font-size: 36px; letter-spacing: 8px; }
+            .header { padding: 24px; }
           }
         </style>
       </head>
@@ -234,11 +129,9 @@ export class EmailService {
             <p>Secure Email Verification</p>
           </div>
           <div class="content">
-            <div class="greeting">
-              <strong>Hello!</strong>
-            </div>
+            <div class="greeting"><strong>Hello!</strong></div>
             <div class="message">
-              Welcome to ${appName}. Please use the verification code below to complete your email verification process. 
+              Welcome to ${appName}. Please use the verification code below to complete your email verification process.
               This code is valid for <strong>10 minutes</strong>.
             </div>
             <div class="otp-container">
@@ -256,7 +149,7 @@ export class EmailService {
             </div>
           </div>
           <div class="footer">
-            <p>© ${currentYear} ${appName}. All rights reserved.</p>
+            <p>&copy; ${currentYear} ${appName}. All rights reserved.</p>
             <p style="margin-top: 4px;">
               <a href="${process.env.APP_URL || 'https://app.projectanalyser.com'}">${process.env.APP_URL || 'https://app.projectanalyser.com'}</a>
             </p>
@@ -268,7 +161,7 @@ export class EmailService {
   }
 
   /**
-   * Generate plain text fallback for email
+   * Generate plain text fallback for OTP email
    */
   private static generateOTPPlainText(otp: string): string {
     return `
@@ -321,11 +214,7 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        logger.error({
-          status: response.status,
-          statusText: response.statusText,
-          error: errData
-        }, "Resend email dispatch failed");
+        logger.error({ status: response.status, statusText: response.statusText, error: errData }, "Resend email dispatch failed");
         return false;
       }
 
@@ -401,11 +290,7 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        logger.error({
-          status: response.status,
-          statusText: response.statusText,
-          error: errData
-        }, "SendGrid email dispatch failed");
+        logger.error({ status: response.status, statusText: response.statusText, error: errData }, "SendGrid email dispatch failed");
         return false;
       }
 
@@ -451,11 +336,7 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        logger.error({
-          status: response.status,
-          statusText: response.statusText,
-          error: errData
-        }, "Mailgun email dispatch failed");
+        logger.error({ status: response.status, statusText: response.statusText, error: errData }, "Mailgun email dispatch failed");
         return false;
       }
 
@@ -484,12 +365,11 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
   }
 
   /**
-   * Send OTP email using the best available provider
+   * Send OTP email using the best available provider.
    * Priority: Resend > SendGrid > Mailgun > SMTP > Console (fallback)
    */
   static async sendOTPEmail(email: string, otp: string): Promise<boolean> {
     try {
-      // Validate inputs
       if (!email || !otp) {
         logger.error({ email, otp }, 'Invalid email or OTP provided');
         return false;
@@ -498,7 +378,6 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
       // Always log for development/testing visibility
       this.logOTPToConsole(email, otp);
 
-      // Try providers in order of preference
       const providers = [
         { name: 'Resend', fn: () => this.sendViaResend(email, otp) },
         { name: 'SendGrid', fn: () => this.sendViaSendGrid(email, otp) },
@@ -518,37 +397,30 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
         }
       }
 
-      // If all providers fail, still consider it a success in development
       if (process.env.NODE_ENV !== 'production') {
         logger.warn({ email }, '⚠️ No email provider configured. OTP logged to console only.');
         return true;
       }
 
-      // In production, log an error if all providers fail
       logger.error({ email }, '❌ All email providers failed to send OTP');
       return false;
-
     } catch (error) {
       logger.error({ error, email }, 'Unexpected error in sendOTPEmail');
       return false;
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Password Reset Email
+  // ─────────────────────────────────────────────────────────────────────────────
+
   /**
-   * Send Password Reset Email with clickable link and OTP code
+   * Generate HTML email template for password reset
    */
-  static async sendPasswordResetEmail(email: string, otp: string, resetLink: string): Promise<boolean> {
-    try {
-      if (!email || !otp) {
-        logger.error({ email, otp }, 'Invalid email or OTP provided for reset');
-        return false;
-      }
+  private static generatePasswordResetHTML(otp: string, resetLink: string, appName: string = 'Repository Intelligence Platform'): string {
+    const currentYear = new Date().getFullYear();
 
-      const appName = process.env.APP_NAME || 'Repository Intelligence Platform';
-      const fromEmail = process.env.EMAIL_FROM || `Auth <noreply@${process.env.EMAIL_DOMAIN || 'projectanalyser.com'}>`;
-      const currentYear = new Date().getFullYear();
-
-      const htmlContent = `
+    return `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -581,7 +453,7 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
               <div class="btn-container">
                 <a href="${resetLink}" class="btn">Reset Password</a>
               </div>
-              <p class="message" style="font-size: 12px; color: #71717a; text-align: center;">Or copy & paste this link in your browser:</p>
+              <p class="message" style="font-size: 12px; color: #71717a; text-align: center;">Or copy &amp; paste this link in your browser:</p>
               <p style="font-size: 11px; word-break: break-all; text-align: center; color: #10b981; margin-bottom: 24px;">
                 <a href="${resetLink}">${resetLink}</a>
               </p>
@@ -594,74 +466,102 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
               </div>
             </div>
             <div class="footer">
-              <p>© ${currentYear} ${appName}. All rights reserved.</p>
+              <p>&copy; ${currentYear} ${appName}. All rights reserved.</p>
             </div>
           </div>
         </body>
         </html>
       `;
+  }
 
-      const plainText = `RESET YOUR PASSWORD\n\nClick here to reset your password: ${resetLink}\n\nAlternatively, enter code: ${otp}\n\nExpires in 10 minutes.`;
+  /**
+   * Send password reset email with OTP code and direct reset link.
+   * Called by otp.service.ts → sendPasswordResetOTP()
+   * Priority: SMTP > Resend > Console fallback (dev only)
+   */
+  static async sendPasswordResetEmail(email: string, otp: string, resetLink: string): Promise<boolean> {
+    try {
+      const appName = process.env.APP_NAME || 'Repository Intelligence Platform';
+      const fromEmail = process.env.EMAIL_FROM || `Auth <noreply@${process.env.EMAIL_DOMAIN || 'projectanalyser.com'}>`;
 
+      const htmlContent = this.generatePasswordResetHTML(otp, resetLink, appName);
+      const plainText = `RESET YOUR PASSWORD\n\nClick here to reset your password: ${resetLink}\n\nAlternatively, enter code: ${otp}\n\nExpires in 10 minutes.\n\nIf you didn't request this, please ignore this email.`;
+
+      // Always log for visibility
       logger.info(`
 ┌─────────────────────────────────────────────┐
-│  🔐 PASSWORD RESET EMAIL                     │
+│  🔐 PASSWORD RESET EMAIL                    │
 ├─────────────────────────────────────────────┤
 │  To: ${email.padEnd(35)} │
-│  Link: ${resetLink.padEnd(33)} │
 │  OTP: ${otp.padEnd(34)} │
 └─────────────────────────────────────────────┘
       `);
 
-      // Try SMTP transporter
-      const transporter = await this.getTransporter();
-      if (transporter) {
-        await transporter.sendMail({
-          from: fromEmail,
-          to: email,
-          subject: `Reset Your Password - ${appName}`,
-          html: htmlContent,
-          text: plainText,
-        });
-        logger.info({ email }, '✅ Password reset email delivered via SMTP');
-        return true;
+      // Try SMTP first
+      try {
+        const transporter = await this.getTransporter();
+        if (transporter) {
+          await transporter.sendMail({
+            from: fromEmail,
+            to: email,
+            subject: `Reset Your Password - ${appName}`,
+            html: htmlContent,
+            text: plainText,
+          });
+          logger.info({ email }, '✅ Password reset email delivered via SMTP');
+          return true;
+        }
+      } catch (smtpError) {
+        logger.warn({ error: smtpError, email }, 'SMTP send failed, trying next provider...');
       }
 
       // Try Resend API
       const resendApiKey = process.env.RESEND_API_KEY;
       if (resendApiKey) {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fromEmail,
-            to: [email],
-            subject: `Reset Your Password - ${appName}`,
-            html: htmlContent,
-            text: plainText,
-          }),
-        });
+        try {
+          const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${resendApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: [email],
+              subject: `Reset Your Password - ${appName}`,
+              html: htmlContent,
+              text: plainText,
+            }),
+          });
 
-        if (response.ok) {
-          logger.info({ email }, '✅ Password reset email delivered via Resend');
-          return true;
+          if (response.ok) {
+            logger.info({ email }, '✅ Password reset email delivered via Resend');
+            return true;
+          }
+          const errData = await response.json().catch(() => ({}));
+          logger.warn({ status: response.status, error: errData, email }, 'Resend send failed...');
+        } catch (resendError) {
+          logger.warn({ error: resendError, email }, 'Resend exception...');
         }
       }
 
+      // Development fallback — log OTP to console
       if (process.env.NODE_ENV !== 'production') {
-        logger.warn({ email }, '⚠️ Password reset logged to console.');
+        logger.warn({ email }, '⚠️ Password reset email logged to console (dev mode). Check logs for OTP.');
         return true;
       }
 
+      logger.error({ email }, '❌ All email providers failed to send password reset');
       return false;
     } catch (error) {
       logger.error({ error, email }, 'Failed to send password reset email');
       return false;
     }
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Utilities
+  // ─────────────────────────────────────────────────────────────────────────────
 
   /**
    * Send a test email to verify configuration
@@ -694,7 +594,6 @@ ${process.env.APP_URL || 'https://app.projectanalyser.com'}
         })
       );
 
-      // Delay between batches to avoid rate limiting
       if (i + BATCH_SIZE < emails.length) {
         await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
       }
