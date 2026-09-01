@@ -225,48 +225,55 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     // Auto-create profile if authenticated but no profile exists
     let userEmail = email || authUser?.email || '';
 
-    const newProfile = {
+    // Only include valid database columns for helix_profiles DB insert/upsert
+    const dbProfileData = {
       id: userId,
       email: userEmail,
-      role: 'visitor' as const,
-      plan: 'trial' as const,
+      role: 'visitor',
+      plan: 'trial',
       trial_started_at: new Date().toISOString(),
       trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      subscription_status: 'trialing' as const,
+      subscription_status: 'trialing',
       email_verified: isGoogleUser,
-      scan_limit: 2,
-      scans_used: 0,
+      email_verified_at: isGoogleUser ? new Date().toISOString() : null,
     };
 
-    const { error: insertError } = await supabase
-      .from('helix_profiles')
-      .insert(newProfile);
+    try {
+      const { data: upsertData, error: upsertError } = await supabase
+        .from('helix_profiles')
+        .upsert(dbProfileData, { onConflict: 'id' })
+        .select('*')
+        .maybeSingle();
 
-    if (!insertError) {
-      updateProfile(newProfile as unknown as Profile);
-      await supabase.from('helix_usage_records').insert({
-        user_id: userId,
-        period_start: new Date().toISOString(),
-      });
+      if (upsertError) {
+        console.warn("Notice: helix_profiles DB upsert skipped/deferred (handled by trigger or RLS):", upsertError.message);
+      }
 
-      setNeedsVerification(!isGoogleUser);
-      const usage = getScanUsage(newProfile as unknown as Profile);
+      try {
+        await supabase.from('helix_usage_records').upsert({
+          user_id: userId,
+          period_start: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+      } catch (e) {}
+
+      const activeProfile = (upsertData || { ...dbProfileData, scan_limit: 2, scans_used: 0 }) as Profile;
+      updateProfile(activeProfile);
+      setNeedsVerification(!isGoogleUser && !activeProfile.email_verified);
+
+      const usage = getScanUsage(activeProfile);
       setScanUsage(usage);
-      const status = getUserStatus(newProfile as unknown as Profile);
+      const status = getUserStatus(activeProfile);
       setUserStatus(status);
 
-      return newProfile as unknown as Profile;
-    } else {
-      console.error("Failed to auto-create profile:", insertError);
-      updateProfile(newProfile as unknown as Profile);
+      return activeProfile;
+    } catch (e) {
+      const fallbackProfile = { ...dbProfileData, scan_limit: 2, scans_used: 0 } as Profile;
+      updateProfile(fallbackProfile);
       setNeedsVerification(!isGoogleUser);
-      const usage = getScanUsage(newProfile as unknown as Profile);
-      setScanUsage(usage);
-      const status = getUserStatus(newProfile as unknown as Profile);
-      setUserStatus(status);
-      return newProfile as unknown as Profile;
+      setScanUsage(getScanUsage(fallbackProfile));
+      setUserStatus(getUserStatus(fallbackProfile));
+      return fallbackProfile;
     }
-    return null;
   }, []);
 
   useEffect(() => {

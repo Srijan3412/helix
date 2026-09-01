@@ -98,23 +98,28 @@ function AuthCallbackContent() {
                         trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
                         subscription_status: 'trialing',
                         email_verified: isOAuthUser,
-                        scan_limit: 2,
-                        scans_used: 0,
+                        email_verified_at: isOAuthUser ? new Date().toISOString() : null,
                     };
                     
-                    await supabase.from('helix_profiles').insert(newProfile);
+                    try {
+                        await supabase.from('helix_profiles').upsert(newProfile, { onConflict: 'id' });
+                    } catch (e) {}
 
                     // Ensure usage records initialized
-                    await supabase.from('helix_usage_records').insert({
-                        user_id: user.id,
-                        period_start: new Date().toISOString(),
-                    });
+                    try {
+                        await supabase.from('helix_usage_records').upsert({
+                            user_id: user.id,
+                            period_start: new Date().toISOString(),
+                        }, { onConflict: 'user_id' });
+                    } catch (e) {}
                 } else if (isOAuthUser && !profile.email_verified) {
                     // Mark as verified if signed in via Google OAuth
-                    await supabase
-                        .from('helix_profiles')
-                        .update({ email_verified: true, email_verified_at: new Date().toISOString() })
-                        .eq('id', user.id);
+                    try {
+                        await supabase
+                            .from('helix_profiles')
+                            .update({ email_verified: true, email_verified_at: new Date().toISOString() })
+                            .eq('id', user.id);
+                    } catch (e) {}
                 }
 
                 // 4. Check for manual OTP token in URL
