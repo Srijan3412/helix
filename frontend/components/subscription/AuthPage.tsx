@@ -22,7 +22,7 @@ export default function AuthPage({
   initialError = '',
 }: AuthPageProps) {
   const router = useRouter();
-  const { session, signIn, signUp, verifyOtp, resendOtp } = useSubscription();
+  const { session, profile, signIn, signUp, verifyOtp, resendOtp } = useSubscription();
 
   const [mode, setMode] = useState<'signin' | 'signup' | 'verify-otp'>(initialMode);
   const [email, setEmail] = useState(initialEmail);
@@ -38,7 +38,8 @@ export default function AuthPage({
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   useEffect(() => {
-    if (session?.user) {
+    // Only redirect authenticated user to dashboard if email is verified and not in OTP verification mode
+    if (session?.user && profile?.email_verified && mode !== 'verify-otp' && initialMode !== 'verify-otp') {
       router.push('/');
       return;
     }
@@ -52,7 +53,7 @@ export default function AuthPage({
     if (initialUserId) setUnverifiedUserId(initialUserId);
     if (initialToken) setOtpToken(initialToken);
     if (initialError) setError(initialError);
-  }, [session, router, initialMode, initialEmail, initialUserId, initialToken, initialError]);
+  }, [session, profile, mode, router, initialMode, initialEmail, initialUserId, initialToken, initialError]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -90,15 +91,46 @@ export default function AuthPage({
       setGoogleLoading(true);
       setError(null);
       const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-      const { error } = await supabase.auth.signInWithOAuth({
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${siteUrl}/auth/callback`,
+          skipBrowserRedirect: true,
         },
       });
 
       if (error) {
         setError(error.message);
+        setGoogleLoading(false);
+        return;
+      }
+
+      if (data?.url) {
+        const width = 550;
+        const height = 650;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+
+        const popup = window.open(
+          data.url,
+          'GoogleAuthPopup',
+          `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+        );
+
+        if (!popup) {
+          // Popup blocked fallback: redirect main page directly
+          window.location.href = data.url;
+          return;
+        }
+
+        const checkPopupClosed = setInterval(() => {
+          if (!popup || popup.closed) {
+            clearInterval(checkPopupClosed);
+            setGoogleLoading(false);
+          }
+        }, 500);
+      } else {
         setGoogleLoading(false);
       }
     } catch (err: any) {

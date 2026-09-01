@@ -97,6 +97,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.error("Cache hydration error:", e);
     }
+
+    // Safety fallback: Ensure loading boolean resolves within 2 seconds
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   const mounted = useRef(true);
@@ -248,6 +254,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       return newProfile as unknown as Profile;
     } else {
       console.error("Failed to auto-create profile:", insertError);
+      updateProfile(newProfile as unknown as Profile);
+      setNeedsVerification(!isGoogleUser);
+      const usage = getScanUsage(newProfile as unknown as Profile);
+      setScanUsage(usage);
+      const status = getUserStatus(newProfile as unknown as Profile);
+      setUserStatus(status);
+      return newProfile as unknown as Profile;
     }
     return null;
   }, []);
@@ -256,38 +269,56 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     mounted.current = true;
 
     const initSession = async () => {
-      let { data: { session } } = await supabase.auth.getSession();
+      try {
+        let { data: { session: sess } } = await supabase.auth.getSession();
 
-      if (!session && typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
-        try {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          if (accessToken) {
-            const payloadBase64 = accessToken.split('.')[1];
-            if (payloadBase64) {
-              const payload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
-              if (payload && payload.sub) {
-                session = {
-                  access_token: accessToken,
-                  user: {
-                    id: payload.sub,
-                    email: payload.email || payload.user_metadata?.email || '',
-                    app_metadata: payload.app_metadata || { provider: 'google' },
-                    user_metadata: payload.user_metadata || {},
-                    email_confirmed_at: payload.email_confirmed_at || new Date().toISOString(),
-                  }
-                } as any;
+        if (!sess && typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+          try {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            if (accessToken) {
+              const payloadBase64 = accessToken.split('.')[1];
+              if (payloadBase64) {
+                const payload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+                if (payload && payload.sub) {
+                  sess = {
+                    access_token: accessToken,
+                    user: {
+                      id: payload.sub,
+                      email: payload.email || payload.user_metadata?.email || '',
+                      app_metadata: payload.app_metadata || { provider: 'google' },
+                      user_metadata: payload.user_metadata || {},
+                      email_confirmed_at: payload.email_confirmed_at || new Date().toISOString(),
+                    }
+                  } as any;
+                }
               }
             }
+          } catch (e) {
+            console.error("Failed parsing hash token in SubscriptionContext:", e);
           }
-        } catch (e) {
-          console.error("Failed parsing hash token in SubscriptionContext:", e);
         }
-      }
 
-      if (!mounted.current) return;
-      updateSession(session);
-      if (!session) setLoading(false);
+        if (!mounted.current) return;
+        updateSession(sess);
+
+        if (sess?.user?.id) {
+          try {
+            await Promise.all([
+              loadProfile(sess.user.id, sess.user.email),
+              loadSubscription(sess.user.id),
+              loadUsage(sess.user.id),
+              loadPayments(sess.user.id),
+            ]);
+          } catch (err) {
+            console.error("Failed loading user data in initSession:", err);
+          }
+        }
+      } catch (err) {
+        console.error("Failed initializing session:", err);
+      } finally {
+        if (mounted.current) setLoading(false);
+      }
     };
 
     initSession();
@@ -297,15 +328,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         if (!mounted.current) return;
         updateSession(sess);
         if (sess?.user?.id) {
-          await Promise.all([
-            loadProfile(sess.user.id, sess.user.email),
-            loadSubscription(sess.user.id),
-            loadUsage(sess.user.id),
-            loadPayments(sess.user.id),
-          ]);
+          try {
+            await Promise.all([
+              loadProfile(sess.user.id, sess.user.email),
+              loadSubscription(sess.user.id),
+              loadUsage(sess.user.id),
+              loadPayments(sess.user.id),
+            ]);
+          } catch (err) {
+            console.error("Failed loading user data in onAuthStateChange:", err);
+          }
 
-
-          // ✅ ADD: Check verification status after loading profile
           if (profile && profile.email_verified === false) {
             setNeedsVerification(true);
           } else {
@@ -324,9 +357,38 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       })();
     });
 
+    const handleAuthMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'SUPABASE_AUTH_COMPLETE') {
+        const sess = event.data.session;
+        if (sess) {
+          updateSession(sess);
+          if (sess.user?.id) {
+            try {
+              await Promise.all([
+                loadProfile(sess.user.id, sess.user.email),
+                loadSubscription(sess.user.id),
+                loadUsage(sess.user.id),
+                loadPayments(sess.user.id),
+              ]);
+            } catch (e) {
+              console.error("Failed loading data from popup auth:", e);
+            }
+          }
+          if (mounted.current) setLoading(false);
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('message', handleAuthMessage);
+    }
+
     return () => {
       mounted.current = false;
       authListener.subscription.unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('message', handleAuthMessage);
+      }
     };
   }, [loadProfile, loadSubscription, loadUsage, loadPayments]);
 

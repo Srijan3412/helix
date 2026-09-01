@@ -45,12 +45,40 @@ export default function SignupForm({
         try {
             setGoogleLoading(true);
             const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-            await supabase.auth.signInWithOAuth({
+            const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     redirectTo: `${siteUrl}/auth/callback`,
+                    skipBrowserRedirect: true,
                 },
             });
+
+            if (!error && data?.url) {
+                const width = 550;
+                const height = 650;
+                const left = window.screenX + (window.outerWidth - width) / 2;
+                const top = window.screenY + (window.outerHeight - height) / 2;
+
+                const popup = window.open(
+                    data.url,
+                    'GoogleAuthPopup',
+                    `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+                );
+
+                if (!popup) {
+                    window.location.href = data.url;
+                    return;
+                }
+
+                const checkPopupClosed = setInterval(() => {
+                    if (!popup || popup.closed) {
+                        clearInterval(checkPopupClosed);
+                        setGoogleLoading(false);
+                    }
+                }, 500);
+            } else {
+                setGoogleLoading(false);
+            }
         } catch (e) {
             setGoogleLoading(false);
         }

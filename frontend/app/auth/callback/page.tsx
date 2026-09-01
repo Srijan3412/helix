@@ -127,6 +127,17 @@ function AuthCallbackContent() {
                     return;
                 }
 
+                // Check if running inside a Google OAuth Popup window
+                if (typeof window !== 'undefined' && window.opener && !window.opener.closed) {
+                    try {
+                        window.opener.postMessage({ type: 'SUPABASE_AUTH_COMPLETE', session }, '*');
+                        window.close();
+                        return;
+                    } catch (e) {
+                        console.error('Error posting message to opener window:', e);
+                    }
+                }
+
                 // 5. If Google OAuth user or email confirmed -> Redirect straight to dashboard
                 if (isOAuthUser || profile?.email_verified) {
                     router.push('/');
