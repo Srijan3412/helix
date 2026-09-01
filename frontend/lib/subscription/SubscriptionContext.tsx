@@ -182,6 +182,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [session, loadUsage]);
 
   const loadProfile = useCallback(async (userId: string, email?: string) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const isGoogleUser = authUser?.app_metadata?.provider === 'google' ||
+                         authUser?.app_metadata?.providers?.includes('google') ||
+                         !!authUser?.email_confirmed_at ||
+                         !!authUser?.user_metadata?.email_verified;
+
     const { data: existing } = await supabase
       .from('helix_profiles')
       .select('*')
@@ -189,10 +195,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (existing) {
+      if (isGoogleUser && !existing.email_verified) {
+        await supabase
+          .from('helix_profiles')
+          .update({ email_verified: true, email_verified_at: new Date().toISOString() })
+          .eq('id', userId);
+        existing.email_verified = true;
+      }
+
       updateProfile(existing as Profile);
 
-      // ✅ ADD: Check email verification status
-      if (existing.email_verified === false) {
+      if (existing.email_verified === false && !isGoogleUser) {
         setNeedsVerification(true);
       } else {
         setNeedsVerification(false);
@@ -210,20 +223,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
 
     // Auto-create profile if authenticated but no profile exists
-    let userEmail = email;
-    let isGoogleUser = false;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      if (!userEmail) userEmail = user.email;
-      isGoogleUser = user.app_metadata?.provider === 'google' ||
-                     user.app_metadata?.providers?.includes('google') ||
-                     !!user.email_confirmed_at;
-    }
+    let userEmail = email || authUser?.email || '';
 
     const newProfile = {
       id: userId,
-      email: userEmail || '',
+      email: userEmail,
       role: 'visitor' as const,
       plan: 'trial' as const,
       trial_started_at: new Date().toISOString(),
@@ -301,6 +305,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
         if (!mounted.current) return;
         updateSession(sess);
+
+        if (sess && typeof window !== 'undefined' && window.opener && !window.opener.closed) {
+          try {
+            window.opener.postMessage({ type: 'SUPABASE_AUTH_COMPLETE', session: sess }, '*');
+            window.close();
+            return;
+          } catch (e) {
+            console.error('Error posting message from SubscriptionContext to opener:', e);
+          }
+        }
 
         if (sess?.user?.id) {
           try {

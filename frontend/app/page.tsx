@@ -693,16 +693,18 @@ export default function Home() {
 
     // Check if user is admin (mock bypass)
     const isAdmin = session?.user?.email === 'admin@projectanalyser.com';
+    if (isAdmin) return;
 
-    if (isAdmin) {
-      // Admin bypass: Skip OTP verification
-      return;
-    }
+    // Check if user logged in via Google OAuth
+    const isGoogleUser = session?.user?.app_metadata?.provider === 'google' ||
+      session?.user?.app_metadata?.providers?.includes('google') ||
+      !!session?.user?.email_confirmed_at ||
+      !!session?.user?.user_metadata?.email_verified;
 
-    // Regular user flow - check email verification
+    // Regular password user flow - check email verification
     if (session && profile) {
-      if (!profile.email_verified) {
-        // If email not verified, redirect to OTP page with userId and email
+      if (!profile.email_verified && !isGoogleUser) {
+        // If email not verified and not Google OAuth, redirect to OTP page
         router.push(`/auth?mode=verify-otp&userId=${encodeURIComponent(profile.id)}&email=${encodeURIComponent(profile.email || '')}`);
       }
     }
