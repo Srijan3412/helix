@@ -255,11 +255,42 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     mounted.current = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initSession = async () => {
+      let { data: { session } } = await supabase.auth.getSession();
+
+      if (!session && typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+        try {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          if (accessToken) {
+            const payloadBase64 = accessToken.split('.')[1];
+            if (payloadBase64) {
+              const payload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+              if (payload && payload.sub) {
+                session = {
+                  access_token: accessToken,
+                  user: {
+                    id: payload.sub,
+                    email: payload.email || payload.user_metadata?.email || '',
+                    app_metadata: payload.app_metadata || { provider: 'google' },
+                    user_metadata: payload.user_metadata || {},
+                    email_confirmed_at: payload.email_confirmed_at || new Date().toISOString(),
+                  }
+                } as any;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Failed parsing hash token in SubscriptionContext:", e);
+        }
+      }
+
       if (!mounted.current) return;
       updateSession(session);
       if (!session) setLoading(false);
-    });
+    };
+
+    initSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, sess) => {
       (async () => {

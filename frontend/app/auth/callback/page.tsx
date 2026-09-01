@@ -13,19 +13,74 @@ function AuthCallbackContent() {
     useEffect(() => {
         const handleCallback = async () => {
             try {
-                // 1. Get the session after OAuth or email confirmation
-                const { data, error } = await supabase.auth.getSession();
+                // 1. Extract session from URL hash or getSession()
+                let session: any = null;
 
-                if (error || !data?.session) {
-                    console.error('Auth callback error or no session:', error);
+                if (typeof window !== 'undefined' && window.location.hash) {
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    const accessToken = hashParams.get('access_token');
+                    const refreshToken = hashParams.get('refresh_token');
+
+                    if (accessToken) {
+                        if (refreshToken && supabase.auth.setSession) {
+                            try {
+                                const { data: setSessionData } = await supabase.auth.setSession({
+                                    access_token: accessToken,
+                                    refresh_token: refreshToken,
+                                });
+                                if (setSessionData?.session) {
+                                    session = setSessionData.session;
+                                }
+                            } catch (e) {
+                                console.warn('setSession error, decoding JWT directly:', e);
+                            }
+                        }
+
+                        // If session not set via supabase SDK, decode JWT directly
+                        if (!session) {
+                            try {
+                                const payloadBase64 = accessToken.split('.')[1];
+                                if (payloadBase64) {
+                                    const payload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+                                    if (payload && payload.sub) {
+                                        session = {
+                                            access_token: accessToken,
+                                            user: {
+                                                id: payload.sub,
+                                                email: payload.email || payload.user_metadata?.email || '',
+                                                app_metadata: payload.app_metadata || { provider: 'google' },
+                                                user_metadata: payload.user_metadata || {},
+                                                email_confirmed_at: payload.email_confirmed_at || new Date().toISOString(),
+                                            }
+                                        };
+                                    }
+                                }
+                            } catch (jwtError) {
+                                console.error('JWT decode error:', jwtError);
+                            }
+                        }
+                    }
+                }
+
+                // 2. If session still not found, try getSession()
+                if (!session) {
+                    const { data } = await supabase.auth.getSession();
+                    session = data?.session || null;
+                }
+
+                if (!session) {
+                    console.error('Auth callback error or no session');
                     router.push('/auth?mode=signin');
                     return;
                 }
 
-                const user = data.session.user;
-                const isOAuthUser = user?.app_metadata?.provider === 'google' || user?.app_metadata?.providers?.includes('google') || !!user?.email_confirmed_at;
+                const user = session.user;
+                const isOAuthUser = user?.app_metadata?.provider === 'google' || 
+                                    user?.app_metadata?.providers?.includes('google') || 
+                                    !!user?.email_confirmed_at ||
+                                    !!user?.user_metadata?.email_verified;
 
-                // 2. Fetch or auto-create profile in helix_profiles table
+                // 3. Fetch or auto-create profile in helix_profiles table
                 const { data: profile } = await supabase
                     .from('helix_profiles')
                     .select('*')
@@ -62,7 +117,7 @@ function AuthCallbackContent() {
                         .eq('id', user.id);
                 }
 
-                // 3. Check for manual OTP token in URL
+                // 4. Check for manual OTP token in URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const otpToken = urlParams.get('token');
                 const userId = urlParams.get('userId');
@@ -72,7 +127,7 @@ function AuthCallbackContent() {
                     return;
                 }
 
-                // 4. If Google OAuth user or email confirmed -> Redirect straight to dashboard
+                // 5. If Google OAuth user or email confirmed -> Redirect straight to dashboard
                 if (isOAuthUser || profile?.email_verified) {
                     router.push('/');
                 } else {
