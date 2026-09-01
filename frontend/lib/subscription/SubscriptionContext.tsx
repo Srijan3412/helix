@@ -270,10 +270,18 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await supabase.from('helix_usage_records').upsert({
-          user_id: userId,
-          period_start: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+        const { data: existingUsage } = await supabase
+          .from('helix_usage_records')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!existingUsage) {
+          await supabase.from('helix_usage_records').insert({
+            user_id: userId,
+            period_start: new Date().toISOString(),
+          });
+        }
       } catch (e) {}
 
       const activeProfile = (upsertData || { ...dbProfileData, scan_limit: isUserAdmin ? Infinity : 2, scans_used: 0 }) as Profile;
@@ -672,20 +680,38 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         }
       } else {
         try {
-          const newRecord = {
-            user_id: session.user.id,
-            period_start: new Date().toISOString(),
-            [field]: amount,
-            updated_at: new Date().toISOString(),
-          };
-          const { data } = await supabase
+          const { data: existingUsage } = await supabase
             .from('helix_usage_records')
-            .upsert(newRecord, { onConflict: 'user_id' })
             .select('*')
+            .eq('user_id', session.user.id)
             .maybeSingle();
 
-          if (data) {
-            updateUsage(data as UsageRecord);
+          if (existingUsage) {
+            const update: Record<string, number | string> = { updated_at: new Date().toISOString() };
+            update[field as string] = ((existingUsage[field] as number) || 0) + amount;
+
+            const { data } = await supabase
+              .from('helix_usage_records')
+              .update(update)
+              .eq('id', existingUsage.id)
+              .select('*')
+              .maybeSingle();
+
+            if (data) updateUsage(data as UsageRecord);
+          } else {
+            const newRecord = {
+              user_id: session.user.id,
+              period_start: new Date().toISOString(),
+              [field]: amount,
+              updated_at: new Date().toISOString(),
+            };
+            const { data } = await supabase
+              .from('helix_usage_records')
+              .insert(newRecord)
+              .select('*')
+              .maybeSingle();
+
+            if (data) updateUsage(data as UsageRecord);
           }
         } catch (e) {}
       }

@@ -107,10 +107,18 @@ function AuthCallbackContent() {
 
                     // Ensure usage records initialized
                     try {
-                        await supabase.from('helix_usage_records').upsert({
-                            user_id: user.id,
-                            period_start: new Date().toISOString(),
-                        }, { onConflict: 'user_id' });
+                        const { data: existingUsage } = await supabase
+                            .from('helix_usage_records')
+                            .select('id')
+                            .eq('user_id', user.id)
+                            .maybeSingle();
+
+                        if (!existingUsage) {
+                            await supabase.from('helix_usage_records').insert({
+                                user_id: user.id,
+                                period_start: new Date().toISOString(),
+                            });
+                        }
                     } catch (e) {}
                 } else if (isOAuthUser && !profile.email_verified) {
                     // Mark as verified if signed in via Google OAuth
