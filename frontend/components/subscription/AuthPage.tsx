@@ -125,11 +125,15 @@ export default function AuthPage({
         }
 
         const checkPopupClosed = setInterval(() => {
-          if (!popup || popup.closed) {
-            clearInterval(checkPopupClosed);
-            setGoogleLoading(false);
+          try {
+            if (!popup || popup.closed) {
+              clearInterval(checkPopupClosed);
+              setGoogleLoading(false);
+            }
+          } catch (e) {
+            // COOP policy blocks accessing popup.closed cross-origin; safely ignore
           }
-        }, 500);
+        }, 1000);
       } else {
         setGoogleLoading(false);
       }

@@ -147,34 +147,46 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
 
   const loadSubscription = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('helix_subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    updateSubscription(data as Subscription | null);
+    try {
+      const { data } = await supabase
+        .from('helix_subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      updateSubscription(data as Subscription | null);
+    } catch (e) {
+      updateSubscription(null);
+    }
   }, []);
 
   const loadUsage = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('helix_usage_records')
-      .select('*')
-      .eq('user_id', userId)
-      .order('period_start', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    updateUsage(data as UsageRecord | null);
+    try {
+      const { data } = await supabase
+        .from('helix_usage_records')
+        .select('*')
+        .eq('user_id', userId)
+        .order('period_start', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      updateUsage(data as UsageRecord | null);
+    } catch (e) {
+      updateUsage(null);
+    }
   }, []);
 
   const loadPayments = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('helix_payments')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    updatePayments((data as Payment[]) || []);
+    try {
+      const { data } = await supabase
+        .from('helix_payments')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      updatePayments((data as Payment[]) || []);
+    } catch (e) {
+      updatePayments([]);
+    }
   }, []);
 
   const refreshUsage = useCallback(async () => {
