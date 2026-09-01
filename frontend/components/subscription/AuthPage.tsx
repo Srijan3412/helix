@@ -47,13 +47,7 @@ export default function AuthPage({
       router.push(`/auth/callback${window.location.hash}`);
       return;
     }
-
-    if (initialMode) setMode(initialMode);
-    if (initialEmail) setEmail(initialEmail);
-    if (initialUserId) setUnverifiedUserId(initialUserId);
-    if (initialToken) setOtpToken(initialToken);
-    if (initialError) setError(initialError);
-  }, [session, profile, mode, router, initialMode, initialEmail, initialUserId, initialToken, initialError]);
+  }, [session, profile, mode, router, initialMode]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -302,6 +296,7 @@ export default function AuthPage({
 
               <div className="mt-6 text-center">
                 <button
+                  type="button"
                   onClick={() => {
                     setMode(mode === 'signin' ? 'signup' : 'signin');
                     setError(null);
