@@ -28,6 +28,7 @@ function createMockClient(): SupabaseClient {
             onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
             signUp: () => Promise.resolve({ data: { user: null }, error: null }),
             signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
+            signInWithOAuth: (credentials: any) => Promise.resolve({ data: { provider: credentials?.provider, url: null }, error: null }),
             signOut: () => Promise.resolve({ error: null }),
             resetPasswordForEmail: () => Promise.resolve({ data: {}, error: null }),
             updateUser: () => Promise.resolve({ data: { user: null }, error: null }),
@@ -198,6 +199,12 @@ const getAuth = () => {
         return realAuth.signInWithPassword(credentials);
       }
       return Promise.resolve({ data: { user: null, session: null }, error: new Error('Auth not available') });
+    },
+    signInWithOAuth: async (options: any) => {
+      if (realAuth && typeof realAuth.signInWithOAuth === 'function') {
+        return realAuth.signInWithOAuth(options);
+      }
+      return Promise.resolve({ data: { provider: options?.provider, url: null }, error: new Error('Supabase Auth is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment variables.') });
     },
     signOut: async () => {
       if (mockSession) {

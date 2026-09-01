@@ -22,7 +22,7 @@ export default function AuthPage({
   initialError = '',
 }: AuthPageProps) {
   const router = useRouter();
-  const { signIn, signUp, verifyOtp, resendOtp } = useSubscription();
+  const { session, signIn, signUp, verifyOtp, resendOtp } = useSubscription();
 
   const [mode, setMode] = useState<'signin' | 'signup' | 'verify-otp'>(initialMode);
   const [email, setEmail] = useState(initialEmail);
@@ -38,12 +38,21 @@ export default function AuthPage({
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   useEffect(() => {
+    if (session?.user) {
+      router.push('/');
+      return;
+    }
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+      router.push(`/auth/callback${window.location.hash}`);
+      return;
+    }
+
     if (initialMode) setMode(initialMode);
     if (initialEmail) setEmail(initialEmail);
     if (initialUserId) setUnverifiedUserId(initialUserId);
     if (initialToken) setOtpToken(initialToken);
     if (initialError) setError(initialError);
-  }, [initialMode, initialEmail, initialUserId, initialToken, initialError]);
+  }, [session, router, initialMode, initialEmail, initialUserId, initialToken, initialError]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
