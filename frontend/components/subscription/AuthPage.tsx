@@ -112,9 +112,10 @@ export default function AuthPage({
     setOtpLoading(false);
 
     if (result.success) {
-      setSuccessMessage('Email verified successfully! Redirecting to dashboard...');
+      setSuccessMessage('Email verified successfully! Redirecting to sign in...');
       setTimeout(() => {
-        router.push('/');
+        setMode('signin');
+        setSuccessMessage('Email verified! Please sign in with your password. (2 free trial scans activated)');
       }, 1500);
     } else {
       setError(result.error || 'Invalid verification code. Please try again.');
