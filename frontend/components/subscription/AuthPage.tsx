@@ -92,56 +92,15 @@ export default function AuthPage({
       setError(null);
       const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${siteUrl}/auth/callback`,
-          skipBrowserRedirect: true,
         },
       });
 
       if (error) {
         setError(error.message);
-        setGoogleLoading(false);
-        return;
-      }
-
-      if (data?.url) {
-        const width = 550;
-        const height = 650;
-        const left = window.screenX + (window.outerWidth - width) / 2;
-        const top = window.screenY + (window.outerHeight - height) / 2;
-
-        const popup = window.open(
-          data.url,
-          'GoogleAuthPopup',
-          `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
-        );
-
-        if (!popup) {
-          // Popup blocked fallback: redirect main page directly
-          window.location.href = data.url;
-          return;
-        }
-
-        const timer = setTimeout(() => {
-          setGoogleLoading(false);
-        }, 15000);
-
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data?.type === 'SUPABASE_AUTH_COMPLETE') {
-            clearTimeout(timer);
-            setGoogleLoading(false);
-            if (typeof window !== 'undefined') {
-              window.removeEventListener('message', handleMessage);
-            }
-          }
-        };
-
-        if (typeof window !== 'undefined') {
-          window.addEventListener('message', handleMessage);
-        }
-      } else {
         setGoogleLoading(false);
       }
     } catch (err: any) {

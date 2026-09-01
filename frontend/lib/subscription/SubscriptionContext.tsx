@@ -325,13 +325,23 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         if (!mounted.current) return;
         updateSession(sess);
 
-        if (sess && typeof window !== 'undefined' && window.opener && !window.opener.closed) {
+        if (sess && typeof window !== 'undefined' && (window.name === 'GoogleAuthPopup' || window.opener)) {
           try {
-            window.opener.postMessage({ type: 'SUPABASE_AUTH_COMPLETE', session: sess }, '*');
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage({ type: 'SUPABASE_AUTH_COMPLETE', session: sess }, '*');
+            }
             window.close();
+            // If window.close() fails due to cross-origin popup isolation, navigate to home
+            setTimeout(() => {
+              if (typeof window !== 'undefined' && !window.closed) {
+                window.location.href = window.location.origin + '/';
+              }
+            }, 300);
             return;
           } catch (e) {
-            console.error('Error posting message from SubscriptionContext to opener:', e);
+            if (typeof window !== 'undefined') {
+              window.location.href = window.location.origin + '/';
+            }
           }
         }
 
