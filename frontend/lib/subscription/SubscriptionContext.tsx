@@ -207,7 +207,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (existing) {
-      if (isGoogleUser && !existing.email_verified) {
+      const isUserAdmin = existing.email === 'admin@projectanalyser.com' || (email && email === 'admin@projectanalyser.com');
+      if (isUserAdmin) {
+        existing.role = 'org_admin';
+        existing.plan = 'enterprise';
+        existing.subscription_status = 'active';
+        existing.email_verified = true;
+        existing.email_verified_at = existing.email_verified_at || new Date().toISOString();
+      } else if (isGoogleUser && !existing.email_verified) {
         await supabase
           .from('helix_profiles')
           .update({ email_verified: true, email_verified_at: new Date().toISOString() })
@@ -217,7 +224,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       updateProfile(existing as Profile);
 
-      if (existing.email_verified === false && !isGoogleUser) {
+      if (existing.email_verified === false && !isGoogleUser && !isUserAdmin) {
         setNeedsVerification(true);
       } else {
         setNeedsVerification(false);
@@ -236,18 +243,19 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     // Auto-create profile if authenticated but no profile exists
     let userEmail = email || authUser?.email || '';
+    const isUserAdmin = userEmail === 'admin@projectanalyser.com';
 
     // Only include valid database columns for helix_profiles DB insert/upsert
     const dbProfileData = {
       id: userId,
       email: userEmail,
-      role: 'visitor',
-      plan: 'trial',
+      role: isUserAdmin ? 'org_admin' : 'visitor',
+      plan: isUserAdmin ? 'enterprise' : 'trial',
       trial_started_at: new Date().toISOString(),
       trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      subscription_status: 'trialing',
-      email_verified: isGoogleUser,
-      email_verified_at: isGoogleUser ? new Date().toISOString() : null,
+      subscription_status: isUserAdmin ? 'active' : 'trialing',
+      email_verified: isUserAdmin || isGoogleUser,
+      email_verified_at: (isUserAdmin || isGoogleUser) ? new Date().toISOString() : null,
     };
 
     try {
@@ -268,9 +276,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         }, { onConflict: 'user_id' });
       } catch (e) {}
 
-      const activeProfile = (upsertData || { ...dbProfileData, scan_limit: 2, scans_used: 0 }) as Profile;
+      const activeProfile = (upsertData || { ...dbProfileData, scan_limit: isUserAdmin ? Infinity : 2, scans_used: 0 }) as Profile;
+      if (isUserAdmin) {
+        activeProfile.role = 'org_admin';
+        activeProfile.plan = 'enterprise';
+        activeProfile.email_verified = true;
+      }
       updateProfile(activeProfile);
-      setNeedsVerification(!isGoogleUser && !activeProfile.email_verified);
+      setNeedsVerification(!isUserAdmin && !isGoogleUser && !activeProfile.email_verified);
 
       const usage = getScanUsage(activeProfile);
       setScanUsage(usage);
@@ -279,9 +292,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       return activeProfile;
     } catch (e) {
-      const fallbackProfile = { ...dbProfileData, scan_limit: 2, scans_used: 0 } as Profile;
+      const fallbackProfile = { ...dbProfileData, scan_limit: isUserAdmin ? Infinity : 2, scans_used: 0 } as Profile;
+      if (isUserAdmin) {
+        fallbackProfile.role = 'org_admin';
+        fallbackProfile.plan = 'enterprise';
+        fallbackProfile.email_verified = true;
+      }
       updateProfile(fallbackProfile);
-      setNeedsVerification(!isGoogleUser);
+      setNeedsVerification(!isUserAdmin && !isGoogleUser);
       setScanUsage(getScanUsage(fallbackProfile));
       setUserStatus(getUserStatus(fallbackProfile));
       return fallbackProfile;
@@ -557,12 +575,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const canScan = useCallback(() => {
+    if (session?.user?.email === 'admin@projectanalyser.com') return true;
     if (!profile) return false;
+    if (profile.role === 'org_admin' || profile.role === 'admin' || (profile.role as any) === 'ADMIN' || profile.email === 'admin@projectanalyser.com') {
+      return true;
+    }
     if (!profile.email_verified) return false;
 
     const usage = getScanUsage(profile);
     return usage.can_scan;
-  }, [profile]);
+  }, [profile, session]);
 
   const resendOtp = async (userId: string) => {
     try {
@@ -590,36 +612,93 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   };
 
   const recordUsage = async (field: keyof UsageRecord, amount = 1): Promise<boolean> => {
-    // Admin does not consume or record tokens/usage limits
-    if (profile?.role === 'org_admin' || profile?.email === 'admin@projectanalyser.com') {
-      return true;
+    if (!session?.user?.id) return false;
+
+    // 1. If recording a repository scan, update scans_used in helix_profiles DB & local state
+    if (field === 'repositories_analyzed') {
+      const currentScansUsed = profile?.scans_used ?? 0;
+      const newScansUsed = currentScansUsed + amount;
+
+      const isUserAdmin =
+        profile?.email === 'admin@projectanalyser.com' ||
+        session?.user?.email === 'admin@projectanalyser.com' ||
+        profile?.role === 'org_admin';
+
+      if (profile) {
+        const updatedProfile: Profile = {
+          ...profile,
+          scans_used: newScansUsed,
+          scan_limit: isUserAdmin ? Infinity : (profile.scan_limit ?? 2),
+        };
+        updateProfile(updatedProfile);
+        setScanUsage(getScanUsage(updatedProfile));
+      }
+
+      try {
+        await supabase
+          .from('helix_profiles')
+          .update({
+            scans_used: newScansUsed,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', session.user.id);
+      } catch (e) {
+        console.warn('Failed to sync scans_used to helix_profiles DB:', e);
+      }
     }
-    if (!session?.user?.id || !usage) return false;
+
+    // 2. Update helix_usage_records DB & local state
     const numericFields: Array<keyof UsageRecord> = [
       'repositories_analyzed', 'ai_chats', 'architecture_graphs',
       'impact_reports', 'database_reports', 'exports', 'compare_reports', 'tokens_used', 'storage_used_mb',
     ];
-    if (!numericFields.includes(field)) return false;
 
-    const update: Record<string, number | string> = { updated_at: new Date().toISOString() };
-    update[field as string] = (usage[field] as number) + amount;
+    if (numericFields.includes(field)) {
+      if (usage) {
+        const update: Record<string, number | string> = { updated_at: new Date().toISOString() };
+        update[field as string] = ((usage[field] as number) || 0) + amount;
 
-    const { error } = await supabase
-      .from('helix_usage_records')
-      .update(update)
-      .eq('id', usage.id);
+        try {
+          const { error } = await supabase
+            .from('helix_usage_records')
+            .update(update)
+            .eq('id', usage.id);
 
-    if (!error) {
-      updateUsage({ ...usage, ...update } as UsageRecord);
-      return true;
+          if (!error) {
+            updateUsage({ ...usage, ...update } as UsageRecord);
+          }
+        } catch (e) {
+          console.warn('Failed to sync usage record to DB:', e);
+        }
+      } else {
+        try {
+          const newRecord = {
+            user_id: session.user.id,
+            period_start: new Date().toISOString(),
+            [field]: amount,
+            updated_at: new Date().toISOString(),
+          };
+          const { data } = await supabase
+            .from('helix_usage_records')
+            .upsert(newRecord, { onConflict: 'user_id' })
+            .select('*')
+            .maybeSingle();
+
+          if (data) {
+            updateUsage(data as UsageRecord);
+          }
+        } catch (e) {}
+      }
     }
-    return false;
+
+    return true;
   };
 
   const canUse = (feature: keyof typeof PLAN_CONFIG.professional.limits, currentUsage?: number): boolean => {
+    if (session?.user?.email === 'admin@projectanalyser.com') return true;
     if (!profile) return false;
     // Admin can use everything as much as they want
-    if (profile.role === 'org_admin' || profile.email === 'admin@projectanalyser.com') {
+    if (profile.role === 'org_admin' || profile.role === 'admin' || (profile.role as any) === 'ADMIN' || profile.email === 'admin@projectanalyser.com') {
       return true;
     }
     const config = PLAN_CONFIG[profile.plan];

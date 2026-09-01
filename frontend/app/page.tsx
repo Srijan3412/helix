@@ -1006,6 +1006,7 @@ export default function Home() {
       setErrorMessage("");
       recordUsage("repositories_analyzed");
       recordUsage("tokens_used", 100);
+      setUserProfile((prev) => (prev ? { ...prev, scans_used: (prev.scans_used || 0) + 1 } : null));
     },
     onError: (error: Error) =>
       setErrorMessage(error.message || "Failed to submit repository URL"),
@@ -1017,6 +1018,7 @@ export default function Home() {
       setErrorMessage("");
       recordUsage("repositories_analyzed");
       recordUsage("tokens_used", 100);
+      setUserProfile((prev) => (prev ? { ...prev, scans_used: (prev.scans_used || 0) + 1 } : null));
     },
     onError: (error: Error) =>
       setErrorMessage(error.message || "Failed to upload ZIP file"),
@@ -1028,6 +1030,7 @@ export default function Home() {
       setErrorMessage("");
       recordUsage("repositories_analyzed");
       recordUsage("tokens_used", 100);
+      setUserProfile((prev) => (prev ? { ...prev, scans_used: (prev.scans_used || 0) + 1 } : null));
     },
     onError: (error: Error) =>
       setErrorMessage(error.message || "Failed to submit local path"),
@@ -1117,21 +1120,30 @@ export default function Home() {
       setIsProfileLoading(true);
       try {
         const profileRes = await getUserProfile(user.id);
+        const isAdmin = user.email === 'admin@projectanalyser.com' || profileRes?.data?.role === 'org_admin' || profileRes?.data?.role === 'admin';
         if (profileRes?.data) {
           setUserProfile({
-            scan_limit: profileRes.data.scan_limit ?? 2,
+            scan_limit: isAdmin ? Infinity : (profileRes.data.scan_limit ?? 2),
             scans_used: profileRes.data.scans_used ?? 0
+          });
+        } else if (isAdmin) {
+          setUserProfile({
+            scan_limit: Infinity,
+            scans_used: 0
           });
         }
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
+        if (user.email === 'admin@projectanalyser.com') {
+          setUserProfile({ scan_limit: Infinity, scans_used: 0 });
+        }
       } finally {
         setIsProfileLoading(false);
       }
     };
 
     fetchProfile();
-  }, [user?.id]);
+  }, [user?.id, user?.email]);
 
 
   const handleFileDrop = (file: File) => {

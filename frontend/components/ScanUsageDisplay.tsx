@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { BarChart3, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 
 interface ScanUsageDisplayProps {
     scansUsed: number;
@@ -19,14 +19,24 @@ export default function ScanUsageDisplay({
     onStartScan,
     isLoading = false
 }: ScanUsageDisplayProps) {
-    const remaining = Math.max(0, scanLimit - scansUsed);
-    const isAtLimit = remaining === 0;
-    const percentage = Math.min(100, (scansUsed / scanLimit) * 100);
+    const isUnlimited = scanLimit === Infinity || scanLimit >= 999;
+    const remaining = isUnlimited ? Infinity : Math.max(0, scanLimit - scansUsed);
+    const isAtLimit = !isUnlimited && remaining === 0;
+    const percentage = isUnlimited ? 0 : Math.min(100, (scansUsed / scanLimit) * 100);
 
     // Generate dots for visual representation
     const renderDots = () => {
+        if (isUnlimited) {
+            return (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                    <span>Unlimited Scanner Access</span>
+                </div>
+            );
+        }
         const dots = [];
-        for (let i = 0; i < scanLimit; i++) {
+        const maxDots = Math.min(scanLimit, 10);
+        for (let i = 0; i < maxDots; i++) {
             const isUsed = i < scansUsed;
             dots.push(
                 <div
@@ -53,7 +63,7 @@ export default function ScanUsageDisplay({
                     ? 'bg-red-500/10 text-red-400 border border-red-500/20'
                     : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                     }`}>
-                    {scansUsed} / {scanLimit} used
+                    {scansUsed} / {isUnlimited ? 'Unlimited' : scanLimit} used
                 </span>
             </div>
 
@@ -68,7 +78,7 @@ export default function ScanUsageDisplay({
                 />
             </div>
 
-            {/* Dots */}
+            {/* Dots / Badge */}
             <div className="flex items-center gap-2 mb-4">
                 {renderDots()}
             </div>
@@ -85,7 +95,7 @@ export default function ScanUsageDisplay({
                         <div className="flex items-center gap-2 text-emerald-400">
                             <CheckCircle2 className="w-4 h-4" />
                             <span className="text-xs font-bold">
-                                {remaining} scan{remaining !== 1 ? 's' : ''} remaining
+                                {isUnlimited ? 'Unlimited scans remaining' : `${remaining} scan${remaining !== 1 ? 's' : ''} remaining`}
                             </span>
                         </div>
                     )}

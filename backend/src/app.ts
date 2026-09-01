@@ -23,10 +23,36 @@ export async function buildApp(): Promise<FastifyInstance> {
     methods: ["GET", "POST", "OPTIONS"],
   });
 
-  // Enable Rate Limiting (150 requests per minute to allow status polling without 429)
+  // Enable Rate Limiting (150 requests per minute, bypassed for admin@projectanalyser.com)
   await app.register(rateLimit, {
     max: 150,
     timeWindow: "1 minute",
+    allowList: (req) => {
+      // Health checks bypass rate limiting
+      if (req.url === "/health" || req.url === "/api/health" || req.url?.startsWith("/health")) return true;
+      // Admin user / token bypasses rate limiting completely
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        if (authHeader.includes("11111111-2222-3333-4444-444444444444") || authHeader.includes("mock-admin-access-token")) {
+          return true;
+        }
+        try {
+          const token = authHeader.split(" ")[1];
+          if (token) {
+            const payloadBase64 = token.split(".")[1];
+            if (payloadBase64) {
+              const payload = JSON.parse(Buffer.from(payloadBase64.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString());
+              if (payload?.email === "admin@projectanalyser.com" || payload?.role === "org_admin" || payload?.sub === "11111111-2222-3333-4444-444444444444") {
+                return true;
+              }
+            }
+          }
+        } catch (e) {
+          // ignore token decode errors
+        }
+      }
+      return false;
+    },
   });
 
   // Enable multipart support for file uploads (ZIP files)

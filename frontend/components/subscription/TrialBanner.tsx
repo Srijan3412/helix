@@ -8,9 +8,16 @@ interface TrialBannerProps {
 }
 
 export default function TrialBanner({ onUpgrade, onDismiss }: TrialBannerProps) {
-  const { profile, usage, trialDaysLeft, isTrial } = useSubscription();
+  const { profile, usage, trialDaysLeft, isTrial, session } = useSubscription();
 
-  if (!profile || !isTrial) return null;
+  const isAdmin =
+    profile?.role === 'org_admin' ||
+    profile?.role === 'admin' ||
+    (profile?.role as any) === 'ADMIN' ||
+    profile?.email === 'admin@projectanalyser.com' ||
+    session?.user?.email === 'admin@projectanalyser.com';
+
+  if (!profile || !isTrial || isAdmin || profile.plan === 'enterprise') return null;
 
   const config = PLAN_CONFIG.trial.limits;
   const repoUsage = usage?.repositories_analyzed ?? 0;
