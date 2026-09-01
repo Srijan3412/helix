@@ -70,16 +70,23 @@ export default function SignupForm({
                     return;
                 }
 
-                const checkPopupClosed = setInterval(() => {
-                    try {
-                        if (!popup || popup.closed) {
-                            clearInterval(checkPopupClosed);
-                            setGoogleLoading(false);
+                const timer = setTimeout(() => {
+                    setGoogleLoading(false);
+                }, 15000);
+
+                const handleMessage = (event: MessageEvent) => {
+                    if (event.data?.type === 'SUPABASE_AUTH_COMPLETE') {
+                        clearTimeout(timer);
+                        setGoogleLoading(false);
+                        if (typeof window !== 'undefined') {
+                            window.removeEventListener('message', handleMessage);
                         }
-                    } catch (e) {
-                        // COOP policy blocks accessing popup.closed cross-origin; safely ignore
                     }
-                }, 1000);
+                };
+
+                if (typeof window !== 'undefined') {
+                    window.addEventListener('message', handleMessage);
+                }
             } else {
                 setGoogleLoading(false);
             }

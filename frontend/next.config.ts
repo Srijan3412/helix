@@ -12,6 +12,20 @@ const nextConfig: NextConfig = {
       "framer-motion",
     ],
   },
+  // Configure Cross-Origin headers for OAuth popup support
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
+        ],
+      },
+    ];
+  },
   // Turbopack for faster builds (Next.js 16+)
   turbopack: {
     rules: {
