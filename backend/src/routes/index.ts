@@ -59,6 +59,33 @@ export const apiRoutes: FastifyPluginAsync = async (
   fastify.post("/api/analyze",
     { preHandler: [requireAuth] }, async (request, reply) => {
       logger.info("📩 Received POST /api/analyze request");
+
+      // Check scan limit for non-admin users
+      if (request.user && request.user.email !== "admin@projectanalyser.com" && request.user.role !== "org_admin" && request.user.role !== "admin") {
+        try {
+          const { data: userProf } = await supabase
+            .from("helix_profiles")
+            .select("scan_limit, scans_used, email_verified")
+            .eq("id", request.user.id)
+            .maybeSingle();
+
+          if (userProf) {
+            const limit = userProf.scan_limit ?? 2;
+            const used = userProf.scans_used ?? 0;
+            if (used >= limit) {
+              logger.warn({ userId: request.user.id, used, limit }, "Scan rejected: scan limit reached");
+              reply.code(403);
+              return {
+                error: "Scan limit reached. Please upgrade your plan to run more repository scans.",
+                code: "SCAN_LIMIT_REACHED"
+              };
+            }
+          }
+        } catch (e) {
+          logger.warn({ err: e }, "Scan limit check exception");
+        }
+      }
+
       // Check if multipart request (ZIP file) or JSON request (GitHub URL or Local Path)
       const contentType = request.headers["content-type"] || "";
       logger.info({ contentType }, "Request content type parsed");

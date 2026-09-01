@@ -51,6 +51,7 @@ interface IngestionControlProps {
   onSubmitLocal: (path: string) => void;
   isLoading: boolean;
   error: string | null;
+  isLimitReached?: boolean;
 }
 
 export default function IngestionControl({
@@ -58,7 +59,8 @@ export default function IngestionControl({
   onSubmitZip,
   onSubmitLocal,
   isLoading,
-  error
+  error,
+  isLimitReached = false
 }: IngestionControlProps) {
   const [activeTab, setActiveTab] = useState<TabId>("github");
   const [githubUrl, setGithubUrl] = useState("");
@@ -68,7 +70,7 @@ export default function IngestionControl({
   const handleSubmit = useCallback(
     (e?: React.FormEvent) => {
       if (e) e.preventDefault();
-      if (isLoading) return;
+      if (isLoading || isLimitReached) return;
 
       if (activeTab === "github" && githubUrl.trim()) {
         onSubmitGithub(githubUrl.trim());
@@ -78,15 +80,17 @@ export default function IngestionControl({
         onSubmitZip(selectedFile);
       }
     },
-    [activeTab, githubUrl, localPath, selectedFile, onSubmitGithub, onSubmitZip, onSubmitLocal, isLoading]
+    [activeTab, githubUrl, localPath, selectedFile, onSubmitGithub, onSubmitZip, onSubmitLocal, isLoading, isLimitReached]
   );
 
   const handleFileDrop = (file: File) => {
+    if (isLimitReached) return;
     setSelectedFile(file);
     onSubmitZip(file);
   };
 
   const isValid = () => {
+    if (isLimitReached) return false;
     if (activeTab === "github") return githubUrl.trim().length > 0;
     if (activeTab === "local") return localPath.trim().length > 0;
     if (activeTab === "zip") return selectedFile !== null;
@@ -95,6 +99,35 @@ export default function IngestionControl({
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
+      {/* Scan Limit Reached Banner */}
+      {isLimitReached && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-300 shadow-xl"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <div className="text-xs font-extrabold uppercase tracking-wider text-amber-200">
+                Scan Limit Reached
+              </div>
+              <div className="text-xs text-amber-300/80">
+                You have used all available repository scans for your plan.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => window.location.href = '/contact-sales'}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-neutral-950 text-xs font-extrabold hover:shadow-lg hover:shadow-amber-500/20 transition cursor-pointer shrink-0"
+          >
+            Upgrade Plan →
+          </button>
+        </motion.div>
+      )}
+
       {/* Tab Header - daadd-main styling with projectAnalyser structure */}
       <div className="flex justify-center bg-zinc-900/60 p-1.5 rounded-2xl border border-border/60 max-w-md mx-auto backdrop-blur-md">
         {tabs.map((tab) => {
@@ -119,7 +152,7 @@ export default function IngestionControl({
       </div>
 
       {/* Tab Content - from daadd-main with projectAnalyser components */}
-      <div className="glass-card rounded-2xl p-6 shadow-2xl">
+      <div className={`glass-card rounded-2xl p-6 shadow-2xl transition-all ${isLimitReached ? 'opacity-70 border-amber-500/20' : ''}`}>
         <AnimatePresence mode="wait">
           {/* GitHub Tab */}
           {activeTab === "github" && (
@@ -149,11 +182,11 @@ export default function IngestionControl({
                     placeholder="https://github.com/owner/repository"
                     icon={<Github className="w-5 h-5 text-muted-foreground" />}
                     required
-                    disabled={isLoading}
+                    disabled={isLoading || isLimitReached}
                   />
                 </div>
-                <Button type="submit" isLoading={isLoading} disabled={!githubUrl.trim()} className="px-8 py-4">
-                  Analyze Repo
+                <Button type="submit" isLoading={isLoading} disabled={!githubUrl.trim() || isLimitReached} className="px-8 py-4">
+                  {isLimitReached ? '🔒 Limit Reached' : 'Analyze Repo'}
                 </Button>
               </form>
 
@@ -183,7 +216,7 @@ export default function IngestionControl({
                 </div>
               </div>
 
-              <FileDropzone onFileDrop={handleFileDrop} disabled={isLoading} />
+              <FileDropzone onFileDrop={handleFileDrop} disabled={isLoading || isLimitReached} />
               
               {selectedFile && (
                 <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/50">
@@ -225,11 +258,11 @@ export default function IngestionControl({
                     placeholder="c:\Users\..."
                     icon={<FolderOpen className="w-5 h-5 text-muted-foreground" />}
                     required
-                    disabled={isLoading}
+                    disabled={isLoading || isLimitReached}
                   />
                 </div>
-                <Button type="submit" isLoading={isLoading} disabled={!localPath.trim()} className="px-8 py-4">
-                  Scan Directory
+                <Button type="submit" isLoading={isLoading} disabled={!localPath.trim() || isLimitReached} className="px-8 py-4">
+                  {isLimitReached ? '🔒 Limit Reached' : 'Scan Directory'}
                 </Button>
               </form>
 

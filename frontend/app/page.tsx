@@ -682,6 +682,7 @@ export default function Home() {
     profile,
     usage,
     canUse,
+    canScan,
     recordUsage,
     signOut,
     loading: subLoading,
@@ -1515,46 +1516,81 @@ export default function Home() {
             </div>
           )}
 
-          <IngestionControl
-            onSubmitGithub={(url) => {
-              const currentRepos = usage?.repositories_analyzed ?? 0;
-              if (!canUse("repositories", currentRepos)) {
-                setShowLimit({
-                  open: true,
-                  title: "Repository Limit Reached",
-                  message: `You have already analyzed ${plan.limits.repositories} repositories on the Free Trial. Upgrade to Professional for unlimited repositories.`,
-                });
-                return;
-              }
-              urlMutation.mutate(url);
-            }}
-            onSubmitZip={(file) => {
-              const currentRepos = usage?.repositories_analyzed ?? 0;
-              if (!canUse("repositories", currentRepos)) {
-                setShowLimit({
-                  open: true,
-                  title: "Repository Limit Reached",
-                  message: `You have already analyzed ${plan.limits.repositories} repositories on the Free Trial. Upgrade to Professional for unlimited repositories.`,
-                });
-                return;
-              }
-              fileMutation.mutate(file);
-            }}
-            onSubmitLocal={(path) => {
-              const currentRepos = usage?.repositories_analyzed ?? 0;
-              if (!canUse("repositories", currentRepos)) {
-                setShowLimit({
-                  open: true,
-                  title: "Repository Limit Reached",
-                  message: `You have already analyzed ${plan.limits.repositories} repositories on the Free Trial. Upgrade to Professional for unlimited repositories.`,
-                });
-                return;
-              }
-              localMutation.mutate(path);
-            }}
-            isLoading={isPending}
-            error={errorMessage}
-          />
+          {(() => {
+            const isUserAdmin = isAdmin || session?.user?.email === 'admin@projectanalyser.com' || profile?.role === 'org_admin';
+            const isScanLimitReached = !isUserAdmin && (
+              !canScan ||
+              (userProfile ? userProfile.scans_used >= userProfile.scan_limit : false)
+            );
+
+            return (
+              <IngestionControl
+                isLimitReached={isScanLimitReached}
+                onSubmitGithub={(url) => {
+                  if (isScanLimitReached) {
+                    setShowLimit({
+                      open: true,
+                      title: "Scan Limit Reached",
+                      message: `You have reached your limit of ${userProfile?.scan_limit ?? 2} scans. Upgrade to Professional for unlimited scans or contact sales.`,
+                    });
+                    return;
+                  }
+                  const currentRepos = usage?.repositories_analyzed ?? 0;
+                  if (!canUse("repositories", currentRepos)) {
+                    setShowLimit({
+                      open: true,
+                      title: "Repository Limit Reached",
+                      message: `You have already analyzed ${userProfile?.scan_limit ?? 2} repositories. Upgrade to Professional for unlimited repositories.`,
+                    });
+                    return;
+                  }
+                  urlMutation.mutate(url);
+                }}
+                onSubmitZip={(file) => {
+                  if (isScanLimitReached) {
+                    setShowLimit({
+                      open: true,
+                      title: "Scan Limit Reached",
+                      message: `You have reached your limit of ${userProfile?.scan_limit ?? 2} scans. Upgrade to Professional for unlimited scans or contact sales.`,
+                    });
+                    return;
+                  }
+                  const currentRepos = usage?.repositories_analyzed ?? 0;
+                  if (!canUse("repositories", currentRepos)) {
+                    setShowLimit({
+                      open: true,
+                      title: "Repository Limit Reached",
+                      message: `You have already analyzed ${userProfile?.scan_limit ?? 2} repositories. Upgrade to Professional for unlimited repositories.`,
+                    });
+                    return;
+                  }
+                  fileMutation.mutate(file);
+                }}
+                onSubmitLocal={(path) => {
+                  if (isScanLimitReached) {
+                    setShowLimit({
+                      open: true,
+                      title: "Scan Limit Reached",
+                      message: `You have reached your limit of ${userProfile?.scan_limit ?? 2} scans. Upgrade to Professional for unlimited scans or contact sales.`,
+                    });
+                    return;
+                  }
+                  const currentRepos = usage?.repositories_analyzed ?? 0;
+                  if (!canUse("repositories", currentRepos)) {
+                    setShowLimit({
+                      open: true,
+                      title: "Repository Limit Reached",
+                      message: `You have already analyzed ${userProfile?.scan_limit ?? 2} repositories. Upgrade to Professional for unlimited repositories.`,
+                    });
+                    return;
+                  }
+                  localMutation.mutate(path);
+                }}
+                isLoading={isPending}
+                error={errorMessage}
+              />
+            );
+          })()}
         </div>
 
         {/* Modals for uncompleted job state */}
