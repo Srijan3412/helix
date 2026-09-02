@@ -184,7 +184,7 @@ export class EmailService {
      * Send admin notification for new contact request
      */
     async sendAdminContactNotification(data: AdminContactData): Promise<void> {
-        const adminEmail = process.env.ADMIN_EMAIL || 'admin@projectanalyser.com';
+        const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER || 'admin@projectanalyser.com';
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
 
         const requestTypeLabels: Record<string, string> = {
