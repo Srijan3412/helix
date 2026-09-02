@@ -111,6 +111,8 @@ export class EmailService {
         const fromEmail = options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@projectanalyser.com';
         const appName = process.env.APP_NAME || 'Helix';
 
+        logger.info({ to: options.to, from: fromEmail, subject: options.subject }, '🚀 [EmailService.sendEmail] Sending email...');
+
         try {
             // Development mode - just log
             if (process.env.NODE_ENV === 'development' && !process.env.SENDGRID_API_KEY && !process.env.SMTP_HOST) {

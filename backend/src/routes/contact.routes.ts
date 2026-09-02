@@ -33,8 +33,11 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
      */
     fastify.post('/api/contact', async (request, reply) => {
         try {
+            logger.info({ body: request.body }, '📩 [POST /api/contact] Received incoming contact request');
+
             const validation = ContactRequestSchema.safeParse(request.body);
             if (!validation.success) {
+                logger.warn({ errors: validation.error.format(), body: request.body }, '⚠️ [POST /api/contact] Validation failed');
                 return reply.code(400).send({
                     success: false,
                     error: 'Validation failed',
@@ -48,10 +51,14 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
             const user = (request as any).user;
             const userId = user?.id;
 
+            logger.info({ name: data.name, email: data.email, requestType: data.requestType, userId }, '🚀 [POST /api/contact] Processing contact request');
+
             const result = await contactService.createRequest({
                 ...data,
                 userId,
             });
+
+            logger.info({ requestId: result.id, email: result.email }, '✅ [POST /api/contact] Contact request created and response sent');
 
             return reply.code(201).send({
                 success: true,
@@ -59,7 +66,7 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
                 message: 'Request submitted successfully',
             });
         } catch (error: any) {
-            logger.error(error as any, 'Contact request error:');
+            logger.error({ error: error?.message || error, body: request.body }, '❌ [POST /api/contact] Error processing request:');
 
             // Handle specific errors
             if (error.message === 'Name is required' ||

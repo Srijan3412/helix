@@ -134,6 +134,8 @@ export class ContactService {
      * Send email notifications for a new request
      */
     private async sendNotifications(request: any): Promise<void> {
+        logger.info({ requestId: request.id, email: request.email, requestType: request.request_type }, '📬 [ContactService] Initiating email notifications dispatch');
+
         // 1. Send admin notification
         try {
             await emailService.sendAdminContactNotification({
