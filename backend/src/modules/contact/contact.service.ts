@@ -7,7 +7,7 @@ import { emailService } from '../notification/email.service.js';
 export interface ContactRequestInput {
     name: string;
     email: string;
-    requestType: 'MORE_SCANS' | 'PROFESSIONAL' | 'ENTERPRISE' | 'TEAM' | 'GENERAL';
+    requestType: 'MORE_SCANS' | 'SUBSCRIPTION' | 'PROFESSIONAL' | 'ENTERPRISE' | 'TEAM' | 'GENERAL';
     company?: string;
     message?: string;
     userId?: string;

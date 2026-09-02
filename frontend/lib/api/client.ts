@@ -584,9 +584,9 @@ export async function canPerformScan(userId: string): Promise<{
 export async function submitContactRequest(data: {
   name: string;
   email: string;
-  requestType: 'MORE_SCANS' | 'SUBSCRIPTION' | 'PROFESSIONAL' | 'ENTERPRISE' | 'GENERAL';
+  requestType: 'MORE_SCANS' | 'SUBSCRIPTION' | 'PROFESSIONAL' | 'ENTERPRISE' | 'TEAM' | 'GENERAL';
   company?: string;
-  message: string;
+  message?: string;
 }): Promise<{
   success: boolean;
   message: string;

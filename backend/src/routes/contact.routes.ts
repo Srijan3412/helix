@@ -11,7 +11,7 @@ import { logger } from '../core/logger/index.js';
 const ContactRequestSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     email: z.string().email('Invalid email format'),
-    requestType: z.enum(['MORE_SCANS', 'PROFESSIONAL', 'ENTERPRISE', 'TEAM', 'GENERAL']),
+    requestType: z.enum(['MORE_SCANS', 'SUBSCRIPTION', 'PROFESSIONAL', 'ENTERPRISE', 'TEAM', 'GENERAL']),
     company: z.string().optional(),
     message: z.string().optional(),
 });

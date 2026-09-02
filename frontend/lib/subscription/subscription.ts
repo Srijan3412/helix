@@ -38,6 +38,7 @@ export type ContactRequestType =
   | 'SUBSCRIPTION'
   | 'PROFESSIONAL'
   | 'ENTERPRISE'
+  | 'TEAM'
   | 'GENERAL';
 
 export type ContactRequestStatus =
