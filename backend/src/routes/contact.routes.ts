@@ -80,7 +80,7 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
 
             return reply.code(500).send({
                 success: false,
-                error: 'Failed to submit contact request. Please try again.',
+                error: error?.message || 'Failed to submit contact request. Please try again.',
             });
         }
     });
