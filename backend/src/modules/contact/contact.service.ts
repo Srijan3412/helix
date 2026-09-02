@@ -134,8 +134,8 @@ export class ContactService {
      * Send email notifications for a new request
      */
     private async sendNotifications(request: any): Promise<void> {
+        // 1. Send admin notification
         try {
-            // Send admin notification
             await emailService.sendAdminContactNotification({
                 name: request.name,
                 email: request.email,
@@ -144,18 +144,21 @@ export class ContactService {
                 message: request.message,
                 requestId: request.id,
             });
+            logger.info(`✅ Admin notification email sent for request ${request.id}`);
+        } catch (error) {
+            logger.error(error as any, `Failed to send admin notification email for request ${request.id}:`);
+        }
 
-            // Send user confirmation
+        // 2. Send user confirmation
+        try {
             await emailService.sendUserConfirmation({
                 name: request.name,
                 email: request.email,
                 requestType: request.request_type,
             });
-
-            logger.info(`✅ Email notifications sent for request ${request.id}`);
+            logger.info(`✅ User confirmation email sent to ${request.email} for request ${request.id}`);
         } catch (error) {
-            logger.error(error as any, 'Failed to send email notifications:');
-            throw error;
+            logger.error(error as any, `Failed to send user confirmation email to ${request.email}:`);
         }
     }
 
