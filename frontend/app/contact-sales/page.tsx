@@ -53,7 +53,7 @@ export default function ContactSalesPage() {
                         <ContactForm
                             userEmail={user?.email || ''}
                             userName={user?.user_metadata?.full_name || ''}
-                            redirectTo="/dashboard"
+                            redirectTo="/"
                         />
                     </div>
 

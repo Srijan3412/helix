@@ -28,7 +28,7 @@ export default function ContactForm({
     userEmail,
     userName,
     onSuccess,
-    redirectTo = '/dashboard'
+    redirectTo = '/'
 }: ContactFormProps) {
     const [formData, setFormData] = useState<ContactFormData>({
         name: userName || '',
