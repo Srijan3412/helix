@@ -606,7 +606,14 @@ export async function submitContactRequest(data: {
     throw new Error(errorData.error || errorData.message || "Failed to submit contact request");
   }
 
-  return response.json();
+  const result = await response.json();
+
+  return {
+    success: result.success,
+    message: result.message,
+    requestId: result.data?.id || result.requestId,
+    error: result.error,
+  };
 }
 
 // ─── User Profile API Functions ─────────────────────────────────────────────

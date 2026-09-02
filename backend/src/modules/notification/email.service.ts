@@ -189,6 +189,7 @@ export class EmailService {
 
         const requestTypeLabels: Record<string, string> = {
             MORE_SCANS: 'Request More Scans',
+            SUBSCRIPTION: 'Subscription Inquiry',
             PROFESSIONAL: 'Professional Access',
             ENTERPRISE: 'Enterprise Access',
             TEAM: 'Team Plan',
@@ -304,6 +305,7 @@ export class EmailService {
 
         const requestTypeLabels: Record<string, string> = {
             MORE_SCANS: 'More Repository Scans',
+            SUBSCRIPTION: 'Subscription Inquiry',
             PROFESSIONAL: 'Professional Access',
             ENTERPRISE: 'Enterprise Access',
             TEAM: 'Team Plan',
