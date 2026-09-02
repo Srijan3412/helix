@@ -111,11 +111,13 @@ export class EmailService {
         const fromEmail = options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@projectanalyser.com';
         const appName = process.env.APP_NAME || 'Helix';
 
+        console.log(`🚀 [EmailService.sendEmail] Attempting to send email to "${options.to}" (From: "${fromEmail}", Subject: "${options.subject}")`);
         logger.info({ to: options.to, from: fromEmail, subject: options.subject }, '🚀 [EmailService.sendEmail] Sending email...');
 
         try {
             // Development mode - just log
             if (process.env.NODE_ENV === 'development' && !process.env.SENDGRID_API_KEY && !process.env.SMTP_HOST) {
+                console.log(`📧 [DEV MODE] Email target: ${options.to}`);
                 logger.info('📧 [DEV MODE] Email would be sent:');
                 logger.info(`  To: ${options.to}`);
                 logger.info(`  From: ${fromEmail}`);
@@ -134,13 +136,14 @@ export class EmailService {
                     text: options.text,
                     replyTo: options.replyTo,
                 });
+                console.log(`✅ [EmailService] Email successfully sent to "${options.to}" via SendGrid`);
                 logger.info(`✅ Email sent to ${options.to} via SendGrid`);
                 return;
             }
 
             // Nodemailer (SMTP)
             if (this.transporter && this.transporter.sendMail) {
-                await this.transporter.sendMail({
+                const info = await this.transporter.sendMail({
                     to: options.to,
                     from: fromEmail,
                     subject: options.subject,
@@ -148,6 +151,7 @@ export class EmailService {
                     text: options.text,
                     replyTo: options.replyTo,
                 });
+                console.log(`✅ [EmailService] Email successfully sent to "${options.to}" via SMTP (MessageId: ${info?.messageId || 'ok'})`);
                 logger.info(`✅ Email sent to ${options.to} via SMTP`);
                 return;
             }
@@ -162,17 +166,20 @@ export class EmailService {
                     text: options.text,
                     reply_to: options.replyTo,
                 });
+                console.log(`✅ [EmailService] Email successfully sent to "${options.to}" via Resend`);
                 logger.info(`✅ Email sent to ${options.to} via Resend`);
                 return;
             }
 
             // Fallback: log the email
+            console.warn(`⚠️ [EmailService] No active email provider found. Logging email for "${options.to}"`);
             logger.warn('⚠️ No email provider available. Logging email:');
             logger.info(`  To: ${options.to}`);
             logger.info(`  Subject: ${options.subject}`);
             logger.info(`  Body: ${options.text || options.html}`);
 
-        } catch (error) {
+        } catch (error: any) {
+            console.error(`❌ [EmailService] Failed to send email to "${options.to}":`, error?.message || error);
             logger.error(error as any, `Failed to send email to ${options.to}:`);
             throw error;
         }

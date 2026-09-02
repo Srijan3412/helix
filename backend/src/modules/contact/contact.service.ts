@@ -134,10 +134,12 @@ export class ContactService {
      * Send email notifications for a new request
      */
     private async sendNotifications(request: any): Promise<void> {
+        console.log(`📬 [ContactService] Initiating email notifications for request "${request.id}" (user: ${request.email})`);
         logger.info({ requestId: request.id, email: request.email, requestType: request.request_type }, '📬 [ContactService] Initiating email notifications dispatch');
 
         // 1. Send admin notification
         try {
+            console.log(`📧 [ContactService] Dispatching Admin Contact Notification email for request "${request.id}"...`);
             await emailService.sendAdminContactNotification({
                 name: request.name,
                 email: request.email,
@@ -146,20 +148,25 @@ export class ContactService {
                 message: request.message,
                 requestId: request.id,
             });
+            console.log(`✅ [ContactService] Admin notification email sent for request ${request.id}`);
             logger.info(`✅ Admin notification email sent for request ${request.id}`);
-        } catch (error) {
+        } catch (error: any) {
+            console.error(`❌ [ContactService] Failed to send admin notification email:`, error?.message || error);
             logger.error(error as any, `Failed to send admin notification email for request ${request.id}:`);
         }
 
         // 2. Send user confirmation
         try {
+            console.log(`📧 [ContactService] Dispatching User Confirmation email to "${request.email}"...`);
             await emailService.sendUserConfirmation({
                 name: request.name,
                 email: request.email,
                 requestType: request.request_type,
             });
+            console.log(`✅ [ContactService] User confirmation email sent to ${request.email} for request ${request.id}`);
             logger.info(`✅ User confirmation email sent to ${request.email} for request ${request.id}`);
-        } catch (error) {
+        } catch (error: any) {
+            console.error(`❌ [ContactService] Failed to send user confirmation email to ${request.email}:`, error?.message || error);
             logger.error(error as any, `Failed to send user confirmation email to ${request.email}:`);
         }
     }

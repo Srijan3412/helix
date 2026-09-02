@@ -33,10 +33,13 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
      */
     fastify.post('/api/contact', async (request, reply) => {
         try {
+            console.log('===========================================================');
+            console.log('📩 [POST /api/contact] Incoming payload:', JSON.stringify(request.body));
             logger.info({ body: request.body }, '📩 [POST /api/contact] Received incoming contact request');
 
             const validation = ContactRequestSchema.safeParse(request.body);
             if (!validation.success) {
+                console.warn('⚠️ [POST /api/contact] Validation failed:', JSON.stringify(validation.error.format()));
                 logger.warn({ errors: validation.error.format(), body: request.body }, '⚠️ [POST /api/contact] Validation failed');
                 return reply.code(400).send({
                     success: false,
@@ -51,6 +54,7 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
             const user = (request as any).user;
             const userId = user?.id;
 
+            console.log(`🚀 [POST /api/contact] Processing request from "${data.name}" (${data.email}), type: ${data.requestType}`);
             logger.info({ name: data.name, email: data.email, requestType: data.requestType, userId }, '🚀 [POST /api/contact] Processing contact request');
 
             const result = await contactService.createRequest({
@@ -58,6 +62,7 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
                 userId,
             });
 
+            console.log(`✅ [POST /api/contact] Request created successfully ID: ${result.id}`);
             logger.info({ requestId: result.id, email: result.email }, '✅ [POST /api/contact] Contact request created and response sent');
 
             return reply.code(201).send({
@@ -66,6 +71,7 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
                 message: 'Request submitted successfully',
             });
         } catch (error: any) {
+            console.error('❌ [POST /api/contact] Error processing request:', error?.message || error);
             logger.error({ error: error?.message || error, body: request.body }, '❌ [POST /api/contact] Error processing request:');
 
             // Handle specific errors
