@@ -34,6 +34,7 @@ import { requireAuth } from "../core/auth/auth.middleware.js";
 import { ScanHistoryService } from "../modules/analysis/scan-history.service.js";
 import { requireAdmin } from "../middleware/admin.middleware.js";
 import { authRoutes } from "./auth.routes.js";
+import { contactRoutes } from "./contact.routes.js";
 
 const AnalyzeRequestSchema = z.object({
   url: z.string().url({ message: "Invalid GitHub repository URL" }).optional(),
@@ -47,8 +48,10 @@ export const apiRoutes: FastifyPluginAsync = async (
   // Register authentication routes (/api/auth/signup, /api/auth/verify-otp, /api/auth/resend-otp)
   await fastify.register(authRoutes);
 
-  // Register authentication hook to protect all API endpoints
+  // ✅ Register contact routes
+  await fastify.register(contactRoutes);
 
+  // Register authentication hook to protect all API endpoints
 
   // Register multipart support context if needed (handled in app.ts, but standard Fastify practice)
 
@@ -143,10 +146,20 @@ export const apiRoutes: FastifyPluginAsync = async (
 
           // Security check: restrict path traversal outside approved folders
           const normalized = resolvedPath.toLowerCase();
-          const isAllowed =
-            normalized.startsWith("c:\\users\\91798\\documents") ||
-            normalized.startsWith("c:/users/91798/documents");
+
+          // ✅ Get allowed paths from environment variable
+          const allowedPaths = (process.env.ALLOWED_SCAN_PATHS || '/tmp,/var/tmp')
+            .split(',')
+            .map(p => p.trim().toLowerCase());
+
+          const isAllowed = allowedPaths.some(path => normalized.startsWith(path));
+
           if (!isAllowed) {
+            logger.warn({
+              path: resolvedPath,
+              allowedPaths
+            }, "Access denied: Local path is outside authorized workspaces");
+
             reply.code(403);
             return {
               error: "Access denied: Local path is outside authorized workspaces",

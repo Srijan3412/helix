@@ -21,7 +21,6 @@ import { OpenApiExporter } from "../modules/routes/openapi-exporter.js";
 import { ScanHistoryService } from "../modules/analysis/scan-history.service.js";
 import { EnvironmentAnalyzerService } from "../modules/environment/environment-analyzer.service.js";
 import { DatabaseDetectorService } from "../modules/database/database-detector.service.js";
-import { DatabaseFlowService } from "../modules/database/database-flow.service.js";
 import { TransactionFlowService } from "../modules/database/transaction-flow.service.js";
 import { ArchitectureGeneratorService } from "../modules/architecture/architecture-generator.service.js";
 import { GraphValidatorService } from "../modules/graph/graph-validator.service.js";

@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { z } from "zod";
+import { logger } from "../logger/index.js";
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -18,12 +19,24 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error("❌ Invalid environment variables configuration:", JSON.stringify(parsed.error.format(), null, 2));
+  // ✅ Use logger with fallback to console
+  const errorMsg = `❌ Invalid environment variables configuration: ${JSON.stringify(parsed.error.format(), null, 2)}`;
+  if (typeof logger !== 'undefined' && logger.error) {
+    logger.error(errorMsg);
+  } else {
+    console.error(errorMsg);
+  }
   process.exit(1);
 }
 
 if (parsed.data.NODE_ENV === "production" && !parsed.data.GEMINI_API_KEY) {
-  console.warn("⚠️ Warning: GEMINI_API_KEY is not set in production. AI features will run in fallback/mock mode.");
+  // ✅ Use logger with fallback to console
+  const warningMsg = "⚠️ Warning: GEMINI_API_KEY is not set in production. AI features will run in fallback/mock mode.";
+  if (typeof logger !== 'undefined' && logger.warn) {
+    logger.warn(warningMsg);
+  } else {
+    console.warn(warningMsg);
+  }
 }
 
 export const config = parsed.data;

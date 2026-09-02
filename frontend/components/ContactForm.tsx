@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, CheckCircle2, AlertCircle, Mail, Users, Building, Briefcase, HelpCircle } from 'lucide-react';
+import { submitContactRequest } from '../lib/api/client';
 
 interface ContactFormProps {
     userEmail?: string;
@@ -107,39 +108,38 @@ export default function ContactForm({
         setSubmitStatus('idle');
 
         try {
-            const response = await fetch('/api/contact', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
+            // ✅ USE API CLIENT WITH AUTHENTICATION
+            const result = await submitContactRequest({
+                name: formData.name,
+                email: formData.email,
+                requestType: formData.requestType,
+                company: formData.company,
+                message: formData.message,
             });
 
-            const result = await response.json();
+            if (result.success) {
+                setSubmitStatus('success');
 
-            if (!response.ok) {
-                throw new Error(result.error || result.message || 'Failed to submit request');
+                // Reset form on success
+                setFormData({
+                    name: '',
+                    email: '',
+                    company: '',
+                    requestType: 'MORE_SCANS',
+                    message: '',
+                });
+
+                if (onSuccess) {
+                    onSuccess();
+                }
+
+                // Auto redirect after success
+                setTimeout(() => {
+                    window.location.href = redirectTo;
+                }, 3000);
+            } else {
+                throw new Error(result.error || 'Failed to submit request');
             }
-
-            setSubmitStatus('success');
-
-            // Reset form on success
-            setFormData({
-                name: '',
-                email: '',
-                company: '',
-                requestType: 'MORE_SCANS',
-                message: '',
-            });
-
-            if (onSuccess) {
-                onSuccess();
-            }
-
-            // Auto redirect after success
-            setTimeout(() => {
-                window.location.href = redirectTo;
-            }, 3000);
 
         } catch (error) {
             setSubmitStatus('error');
@@ -220,13 +220,13 @@ export default function ContactForm({
                                 onClick={() => setFormData({ ...formData, requestType: type.value as RequestType })}
                                 disabled={isSubmitting}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${formData.requestType === type.value
-                                        ? 'bg-primary/20 border-primary/50 text-primary shadow-lg shadow-primary/10'
-                                        : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:bg-zinc-800/50'
+                                    ? 'bg-primary/20 border-primary/50 text-primary shadow-lg shadow-primary/10'
+                                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:bg-zinc-800/50'
                                     }`}
                             >
                                 <span className={`p-1.5 rounded-lg ${formData.requestType === type.value
-                                        ? 'bg-primary/20 text-primary'
-                                        : 'bg-zinc-800/50 text-zinc-500'
+                                    ? 'bg-primary/20 text-primary'
+                                    : 'bg-zinc-800/50 text-zinc-500'
                                     }`}>
                                     {type.icon}
                                 </span>

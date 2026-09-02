@@ -354,6 +354,164 @@ export class ContactService {
             throw error;
         }
     }
+
+    // ============================================================
+    // ✅ NEW METHODS: Scan Granting on Request Approval
+    // ============================================================
+
+    /**
+     * Approve a contact request and grant additional scans
+     */
+    async approveRequest(requestId: string, additionalScans: number = 10): Promise<any> {
+        try {
+            // Get the request first
+            const request = await this.getRequestById(requestId);
+
+            if (!request) {
+                throw new Error('Request not found');
+            }
+
+            if (!request.user_id) {
+                throw new Error('User not associated with this request');
+            }
+
+            // Update user's scan limit using raw SQL increment
+            // First, get current profile
+            const { data: currentProfile, error: fetchError } = await supabase
+                .from('helix_profiles')
+                .select('scan_limit')
+                .eq('id', request.user_id)
+                .single();
+
+            if (fetchError) {
+                logger.error({ error: fetchError, userId: request.user_id }, 'Failed to fetch current profile');
+                throw new Error(`Failed to fetch profile: ${fetchError.message}`);
+            }
+
+            // Calculate new scan limit
+            const currentLimit = currentProfile?.scan_limit ?? 0;
+            const newLimit = currentLimit + additionalScans;
+
+            // Update user's scan limit
+            const { data: profile, error: profileError } = await supabase
+                .from('helix_profiles')
+                .update({
+                    scan_limit: newLimit,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', request.user_id)
+                .select()
+                .single();
+
+            if (profileError) {
+                logger.error({ error: profileError, requestId, userId: request.user_id }, 'Failed to update scan limit');
+                throw new Error(`Failed to update scan limit: ${profileError.message}`);
+            }
+
+            // Update request status to CONTACTED
+            await this.updateRequestStatus(requestId, 'CONTACTED');
+
+            logger.info({
+                requestId,
+                userId: request.user_id,
+                additionalScans,
+                newScanLimit: profile?.scan_limit
+            }, '✅ Request approved and scans granted');
+
+            return {
+                success: true,
+                userId: request.user_id,
+                additionalScans,
+                newScanLimit: profile?.scan_limit,
+                request
+            };
+        } catch (error) {
+            logger.error({ error, requestId }, 'Failed to approve request');
+            throw error;
+        }
+    }
+
+    /**
+     * Reject a contact request
+     */
+    async rejectRequest(requestId: string, reason?: string): Promise<any> {
+        try {
+            // Get the request first
+            const request = await this.getRequestById(requestId);
+
+            if (!request) {
+                throw new Error('Request not found');
+            }
+
+            // Update request status to CLOSED
+            await this.updateRequestStatus(requestId, 'CLOSED');
+
+            logger.info({
+                requestId,
+                userId: request.user_id,
+                reason
+            }, '❌ Request rejected and closed');
+
+            return {
+                success: true,
+                requestId,
+                status: 'CLOSED',
+                reason
+            };
+        } catch (error) {
+            logger.error({ error, requestId }, 'Failed to reject request');
+            throw error;
+        }
+    }
+
+    /**
+     * Grant scans to a user without a contact request (admin override)
+     */
+    async grantScansDirectly(userId: string, additionalScans: number = 10, reason?: string): Promise<any> {
+        try {
+            if (!userId) {
+                throw new Error('User ID is required');
+            }
+
+            if (additionalScans <= 0) {
+                throw new Error('Additional scans must be greater than 0');
+            }
+
+            // Update user's scan limit using raw SQL increment
+            const { data: profile, error: profileError } = await supabase
+                .from('helix_profiles')
+                .update({
+                    scan_limit: supabase.raw('scan_limit + ?', [additionalScans]),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId)
+                .select()
+                .single();
+
+            if (profileError) {
+                logger.error({ error: profileError, userId }, 'Failed to grant scans directly');
+                throw new Error(`Failed to update scan limit: ${profileError.message}`);
+            }
+
+            logger.info({
+                userId,
+                additionalScans,
+                newScanLimit: profile?.scan_limit,
+                reason
+            }, '✅ Scans granted directly by admin');
+
+            return {
+                success: true,
+                userId,
+                additionalScans,
+                newScanLimit: profile?.scan_limit,
+                reason
+            };
+        } catch (error) {
+            logger.error({ error, userId }, 'Failed to grant scans directly');
+            throw error;
+        }
+    }
 }
 
 // Export singleton instance
