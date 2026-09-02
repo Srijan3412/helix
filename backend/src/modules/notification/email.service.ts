@@ -1,5 +1,4 @@
-// backend/src/modules/notification/email.service.ts
-
+import nodemailer from 'nodemailer';
 import { logger } from '../../core/logger/index.js';
 
 interface EmailOptions {
@@ -14,8 +13,6 @@ interface EmailOptions {
 // Ambient module declarations for optional email packages
 // @ts-ignore
 declare module '@sendgrid/mail';
-// @ts-ignore
-declare module 'nodemailer';
 // @ts-ignore
 declare module 'resend';
 
@@ -73,8 +70,7 @@ export class EmailService {
             const smtpPass = process.env.SMTP_PASS;
 
             if (smtpHost && smtpUser && smtpPass) {
-                const nodemailer = await import('nodemailer');
-                this.transporter = nodemailer.default.createTransport({
+                this.transporter = nodemailer.createTransport({
                     host: smtpHost,
                     port: smtpPort,
                     secure: process.env.SMTP_SECURE === 'true',
