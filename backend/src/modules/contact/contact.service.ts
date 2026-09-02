@@ -477,11 +477,26 @@ export class ContactService {
                 throw new Error('Additional scans must be greater than 0');
             }
 
-            // Update user's scan limit using raw SQL increment
+            // Fetch current profile scan_limit
+            const { data: currentProfile, error: fetchError } = await supabase
+                .from('helix_profiles')
+                .select('scan_limit')
+                .eq('id', userId)
+                .single();
+
+            if (fetchError) {
+                logger.error({ error: fetchError, userId }, 'Failed to fetch current profile');
+                throw new Error(`Failed to fetch profile: ${fetchError.message}`);
+            }
+
+            const currentLimit = currentProfile?.scan_limit ?? 0;
+            const newLimit = currentLimit + additionalScans;
+
+            // Update user's scan limit
             const { data: profile, error: profileError } = await supabase
                 .from('helix_profiles')
                 .update({
-                    scan_limit: supabase.raw('scan_limit + ?', [additionalScans]),
+                    scan_limit: newLimit,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', userId)
