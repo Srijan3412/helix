@@ -112,7 +112,7 @@ export class EmailService {
     async sendEmail(options: EmailOptions): Promise<void> {
         await this.initializeTransporter();
 
-        const fromEmail = options.from || process.env.FROM_EMAIL || 'noreply@projectanalyser.com';
+        const fromEmail = options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@projectanalyser.com';
         const appName = process.env.APP_NAME || 'Helix';
 
         try {
