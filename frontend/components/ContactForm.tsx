@@ -138,7 +138,7 @@ export default function ContactForm({
                     window.location.href = redirectTo;
                 }, 3000);
             } else {
-                throw new Error(result.error || 'Failed to submit request');
+                throw new Error(result.error || result.message || 'Failed to submit request');
             }
 
         } catch (error) {

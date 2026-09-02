@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   // Enable React strict mode for better development experience
@@ -28,6 +29,7 @@ const nextConfig: NextConfig = {
   },
   // Turbopack for faster builds (Next.js 16+)
   turbopack: {
+    root: path.resolve(__dirname, ".."),
     rules: {
       // Ensure CSS is handled properly
     },

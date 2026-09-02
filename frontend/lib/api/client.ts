@@ -591,6 +591,7 @@ export async function submitContactRequest(data: {
   success: boolean;
   message: string;
   requestId?: string;
+  error?: string;
 }> {
   const response = await fetch(`${API_BASE_URL}/api/contact`, {
     method: "POST",
