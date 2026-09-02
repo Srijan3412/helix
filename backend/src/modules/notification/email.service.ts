@@ -70,15 +70,23 @@ export class EmailService {
             const smtpPass = process.env.SMTP_PASS;
 
             if (smtpHost && smtpUser && smtpPass) {
+                const isSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
                 this.transporter = nodemailer.createTransport({
                     host: smtpHost,
                     port: smtpPort,
-                    secure: process.env.SMTP_SECURE === 'true',
+                    secure: isSecure,
                     auth: {
                         user: smtpUser,
                         pass: smtpPass,
                     },
+                    connectionTimeout: 10000,
+                    greetingTimeout: 10000,
+                    socketTimeout: 15000,
+                    tls: {
+                        rejectUnauthorized: false,
+                    },
                 });
+                console.log(`📧 [EmailService] SMTP Transporter configured (${smtpHost}:${smtpPort}, secure=${isSecure}, user=${smtpUser})`);
                 logger.info('📧 SMTP email service initialized');
                 this.initialized = true;
                 return;
