@@ -1,11 +1,61 @@
 import { Project, SyntaxKind, PropertyAccessExpression } from "ts-morph";
 import { DatabaseDiscoveryInfo, EntityOperationInfo, EntityRelationInfo, DatabaseMetricsInfo } from "./types.js";
-import { ORM_PACKAGES, DB_PACKAGES, CONNECTION_TRIGGERS } from "./database-rules.js";
+import { ORM_PACKAGES as STATIC_ORM_PACKAGES, DB_PACKAGES as STATIC_DB_PACKAGES, CONNECTION_TRIGGERS as STATIC_TRIGGERS } from "./database-rules.js";
 import fs from "fs/promises";
 import path from "path";
 import { logger } from "../../core/logger/index.js";
+import { supabase } from "../../core/supabase/index.js";
 
 export class DatabaseDetectorService {
+  private static cachedRules: { orms: Record<string, string>; dbs: Record<string, string>; triggers: any[]; cachedAt: number } | null = null;
+
+  /**
+   * Load database detection rules from database with in-memory caching and fallback to static rules.
+   */
+  private static async getRules() {
+    const now = Date.now();
+    if (this.cachedRules && (now - this.cachedRules.cachedAt) < 10 * 60 * 1000) {
+      return this.cachedRules;
+    }
+
+    const orms = { ...STATIC_ORM_PACKAGES };
+    const dbs = { ...STATIC_DB_PACKAGES };
+    const triggers = [...STATIC_TRIGGERS];
+
+    try {
+      const { data: dbRules, error } = await supabase
+        .from("detection_rules")
+        .select("category, name, patterns")
+        .eq("enabled", true);
+
+      if (!error && dbRules) {
+        for (const rule of dbRules) {
+          const patterns = rule.patterns as any;
+          if (rule.category === "orm" && patterns?.packages) {
+            for (const pkg of patterns.packages) {
+              orms[pkg] = rule.name;
+            }
+          }
+          if (rule.category === "database" && patterns?.packages) {
+            for (const pkg of patterns.packages) {
+              dbs[pkg] = rule.name;
+            }
+          }
+          if (rule.category === "orm" && patterns?.triggers) {
+            for (const trg of patterns.triggers) {
+              triggers.push({ trigger: trg, orm: rule.name, db: "Database" });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn({ err }, "Could not fetch dynamic detection_rules from database, using static fallback");
+    }
+
+    this.cachedRules = { orms, dbs, triggers, cachedAt: now };
+    return this.cachedRules;
+  }
+
   /**
    * Discovers database type, ORM/ODM setup, connection files, entities, and query patterns in a repo.
    */
@@ -15,6 +65,11 @@ export class DatabaseDetectorService {
     parsedPkg: any
   ): Promise<DatabaseDiscoveryInfo> {
     logger.info({ repoPath }, "🔍 Initiating Database Discovery Engine");
+
+    const rules = await this.getRules();
+    const ORM_PACKAGES = rules.orms;
+    const DB_PACKAGES = rules.dbs;
+    const CONNECTION_TRIGGERS = rules.triggers;
 
     let detectedOrm: string | undefined;
     let detectedDb: string | undefined;

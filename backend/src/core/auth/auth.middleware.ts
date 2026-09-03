@@ -73,18 +73,6 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 
   const token = authHeader.split(" ")[1];
 
-  // Accept the mock admin token for admin@projectanalyser.com
-  if (token === "mock-admin-access-token") {
-    logger.info({ url }, "Admin token authenticated for admin@projectanalyser.com");
-    request.user = {
-      id: "11111111-2222-3333-4444-444444444444",
-      email: "admin@projectanalyser.com",
-      role: "org_admin",
-      email_verified: true,
-    };
-    return;
-  }
-
   // Check Supabase configuration
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     logger.error("Supabase environment configuration is missing on backend server.");
@@ -96,7 +84,6 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
 
   try {
-    // ✅ ADD: Optional - Check if token is expired or malformed before calling Supabase
     if (token.length < 20) {
       logger.warn({ url }, "Token appears malformed (too short)");
       reply.code(401);
@@ -106,7 +93,7 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
       });
     }
 
-    // Verify token with Supabase
+    // Verify token with Supabase Auth
     const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       method: "GET",
       headers: {
@@ -132,38 +119,33 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 
     const userData = (await response.json()) as any;
 
-    // Fetch profile for verification & role
+    // Fetch profile for verification & role from database
     let emailVerified = false;
     let userRole = userData.role || 'user';
 
-    if (userData.email === 'admin@projectanalyser.com') {
-      userRole = 'org_admin';
-      emailVerified = true;
-    } else {
-      try {
-        const profileResponse = await fetch(
-          `${SUPABASE_URL}/rest/v1/helix_profiles?select=email_verified,role&id=eq.${userData.id}`,
-          {
-            method: "GET",
-            headers: {
-              "apikey": SUPABASE_ANON_KEY,
-              "Authorization": `Bearer ${token}`,
-            },
-          }
-        );
+    try {
+      const profileResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/helix_profiles?select=email_verified,role,plan_id,scan_limit&id=eq.${userData.id}`,
+        {
+          method: "GET",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
 
-        if (profileResponse.ok) {
-          const profiles = await profileResponse.json();
-          if (profiles && profiles.length > 0) {
-            emailVerified = profiles[0].email_verified ?? true;
-            if (profiles[0].role) {
-              userRole = profiles[0].role;
-            }
+      if (profileResponse.ok) {
+        const profiles = await profileResponse.json();
+        if (profiles && profiles.length > 0) {
+          emailVerified = profiles[0].email_verified ?? true;
+          if (profiles[0].role) {
+            userRole = profiles[0].role;
           }
         }
-      } catch (profileError) {
-        logger.warn({ userId: userData.id }, "Failed to fetch profile verification status");
       }
+    } catch (profileError) {
+      logger.warn({ userId: userData.id }, "Failed to fetch profile verification status from database");
     }
 
     // Set user object with all available info
@@ -219,8 +201,9 @@ export async function requireVerifiedEmail(request: FastifyRequest, reply: Fasti
     return;
   }
 
-  // Admin email bypasses email verification restriction
-  if (request.user.email === 'admin@projectanalyser.com') {
+  // Admin roles bypass email verification restriction
+  const userRole = (request.user.role || '').toLowerCase();
+  if (userRole === 'org_admin' || userRole === 'admin') {
     return;
   }
 
@@ -249,10 +232,7 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
   }
 
   const role = (request.user.role || '').toLowerCase();
-  const isAdminUser =
-    request.user.email === 'admin@projectanalyser.com' ||
-    role === 'org_admin' ||
-    role === 'admin';
+  const isAdminUser = role === 'org_admin' || role === 'admin';
 
   if (!isAdminUser) {
     logger.warn({

@@ -63,19 +63,20 @@ export const apiRoutes: FastifyPluginAsync = async (
     { preHandler: [requireAuth] }, async (request, reply) => {
       logger.info("📩 Received POST /api/analyze request");
 
-      // Check scan limit for non-admin users
-      if (request.user && request.user.email !== "admin@projectanalyser.com" && request.user.role !== "org_admin" && request.user.role !== "admin") {
+      // Check scan limit for non-admin users against database profile and plan
+      if (request.user && request.user.role !== "org_admin" && request.user.role !== "admin") {
         try {
           const { data: userProf } = await supabase
             .from("helix_profiles")
-            .select("scan_limit, scans_used, email_verified")
+            .select("scan_limit, scans_used, email_verified, plan_id")
             .eq("id", request.user.id)
             .maybeSingle();
 
           if (userProf) {
             const limit = userProf.scan_limit ?? 2;
             const used = userProf.scans_used ?? 0;
-            if (used >= limit) {
+            // -1 means unlimited scans
+            if (limit !== -1 && used >= limit) {
               logger.warn({ userId: request.user.id, used, limit }, "Scan rejected: scan limit reached");
               reply.code(403);
               return {
@@ -681,50 +682,74 @@ export const apiRoutes: FastifyPluginAsync = async (
 
   /**
    * GET /api/analyze/jobs
-   * Lists all past enqueued analysis runs from Redis.
+   * Lists past enqueued analysis runs from Database (scan_sessions) and active Redis jobs.
    */
   fastify.get("/api/analyze/jobs", async (request, reply) => {
-    const keys = await redisConnection.keys("job:*:status");
-    const jobs = [];
-    for (const key of keys) {
-      const jobId = key.split(":")[1];
-      const status = await redisConnection.get(key);
-      const repoPath = await redisConnection.get(`job:${jobId}:repoPath`);
+    const jobsMap = new Map<string, any>();
 
-      let repoName = "Unknown";
-      let totalFiles = 0;
-      let totalRoutes = 0;
+    // 1. Fetch persistent jobs from Supabase scan_sessions
+    try {
+      const { data: dbSessions, error } = await supabase
+        .from("scan_sessions")
+        .select("job_id, repo_name, repo_path, total_files, total_routes, status, health_score, scanned_at")
+        .is("deleted_at", null)
+        .order("scanned_at", { ascending: false })
+        .limit(50);
 
-      // Try to fetch optimized metadata first
-      const metadata = await getJobMetadata(jobId);
-      if (metadata) {
-        repoName = metadata.repoName || repoName;
-        totalFiles = metadata.totalFiles || 0;
-        totalRoutes = metadata.totalRoutes || 0;
-      } else {
-        // Fallback for older jobs to prevent breaking compatibility
-        const resultData = await redisConnection.get(`job:${jobId}:result`);
-        if (resultData) {
-          try {
-            const res = JSON.parse(resultData);
-            repoName = res.tree?.name || res.overview?.repoName || repoName;
-            totalFiles = res.overview?.totalFiles || 0;
-          } catch {
-            // Ignore JSON parsing errors for compatibility fallback
-          }
+      if (!error && dbSessions) {
+        for (const session of dbSessions) {
+          jobsMap.set(session.job_id, {
+            jobId: session.job_id,
+            status: session.status || "completed",
+            repoName: session.repo_name || "Unknown",
+            repoPath: session.repo_path || "",
+            totalFiles: session.total_files || 0,
+            totalRoutes: session.total_routes || 0,
+            healthScore: session.health_score || 0,
+            scannedAt: session.scanned_at,
+          });
         }
       }
-
-      jobs.push({
-        jobId,
-        status,
-        repoName,
-        repoPath,
-        totalFiles,
-        totalRoutes,
-      });
+    } catch (dbErr) {
+      logger.warn({ dbErr }, "Failed to fetch scan_sessions from database, falling back to Redis");
     }
-    return { jobs };
+
+    // 2. Fetch live active jobs from Redis to include in-flight/recent scans
+    try {
+      const keys = await redisConnection.keys("job:*:status");
+      for (const key of keys) {
+        const jobId = key.split(":")[1];
+        if (!jobId) continue;
+        const status = await redisConnection.get(key);
+        const repoPath = (await redisConnection.get(`job:${jobId}:repoPath`)) || "";
+
+        let repoName = "Unknown";
+        let totalFiles = 0;
+        let totalRoutes = 0;
+
+        const metadata = await getJobMetadata(jobId);
+        if (metadata) {
+          repoName = metadata.repoName || repoName;
+          totalFiles = metadata.totalFiles || 0;
+          totalRoutes = metadata.totalRoutes || 0;
+        }
+
+        const existing = jobsMap.get(jobId);
+        jobsMap.set(jobId, {
+          jobId,
+          status: status || existing?.status || "unknown",
+          repoName: repoName !== "Unknown" ? repoName : (existing?.repoName || "Unknown"),
+          repoPath: repoPath || existing?.repoPath || "",
+          totalFiles: totalFiles || existing?.totalFiles || 0,
+          totalRoutes: totalRoutes || existing?.totalRoutes || 0,
+          scannedAt: existing?.scannedAt || new Date().toISOString(),
+        });
+      }
+    } catch (redisErr) {
+      logger.warn({ redisErr }, "Redis jobs scan warning");
+    }
+
+    return { jobs: Array.from(jobsMap.values()) };
   });
 
   /**
@@ -960,19 +985,14 @@ export const apiRoutes: FastifyPluginAsync = async (
     { preHandler: [requireAuth] },
     async (request, reply) => {
       const { userId } = request.params as { userId: string };
-      const isMockAdmin =
-        request.user?.id === "11111111-2222-3333-4444-444444444444" &&
-        request.user?.email === "admin@projectanalyser.com";
 
       try {
-        if (isMockAdmin) {
-          return reply.send({ success: true, data: buildAdminProfile() });
-        }
         const { data, error } = await supabase
           .from("helix_profiles")
           .select("*")
           .eq("id", userId)
           .maybeSingle();
+
         if (error) throw error;
         return reply.send({ success: true, data: data || null });
       } catch (error) {
@@ -994,17 +1014,13 @@ export const apiRoutes: FastifyPluginAsync = async (
     { preHandler: [requireAuth] },
     async (request, reply) => {
       const { userId } = request.params as { userId: string };
-      const isMockAdmin =
-        request.user?.id === "11111111-2222-3333-4444-444444444444" &&
-        request.user?.email === "admin@projectanalyser.com";
       try {
-        const profile = isMockAdmin
-          ? buildAdminProfile()
-          : (await supabase
-            .from("helix_profiles")
-            .select("*")
-            .eq("id", userId)
-            .maybeSingle())?.data;
+        const { data: profile } = await supabase
+          .from("helix_profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+
         const usage = computeScanUsage(profile);
         return reply.send({ success: true, data: usage });
       } catch (error) {
@@ -1026,17 +1042,13 @@ export const apiRoutes: FastifyPluginAsync = async (
     { preHandler: [requireAuth] },
     async (request, reply) => {
       const { userId } = request.params as { userId: string };
-      const isMockAdmin =
-        request.user?.id === "11111111-2222-3333-4444-444444444444" &&
-        request.user?.email === "admin@projectanalyser.com";
       try {
-        const profile = isMockAdmin
-          ? buildAdminProfile()
-          : (await supabase
-            .from("helix_profiles")
-            .select("*")
-            .eq("id", userId)
-            .maybeSingle())?.data;
+        const { data: profile } = await supabase
+          .from("helix_profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+
         const usage = computeScanUsage(profile);
         return reply.send({
           success: true,
@@ -1061,51 +1073,26 @@ export const apiRoutes: FastifyPluginAsync = async (
   );
 
   /**
-   * Build the mock admin profile (mirrors the frontend interceptor) so the
-   * admin account behaves consistently across the API, even when the admin is
-   * authenticated with the client-side mock bypass.
-   */
-  function buildAdminProfile() {
-    const now = Date.now();
-    return {
-      id: "11111111-2222-3333-4444-444444444444",
-      email: "admin@projectanalyser.com",
-      role: "org_admin",
-      plan: "enterprise",
-      subscription_status: "active",
-      email_verified: true,
-      trial_started_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      trial_ends_at: new Date(now + 12 * 24 * 60 * 60 * 1000).toISOString(),
-      scan_limit: 1000000,
-      scans_used: 0,
-      created_at: new Date(now).toISOString(),
-      updated_at: new Date(now).toISOString(),
-    };
-  }
-
-  /**
-   * Compute scan usage from a profile row (mirrors the frontend helper).
+   * Compute scan usage dynamically from a database profile row.
+   * -1 represents unlimited scans.
    */
   function computeScanUsage(profile: any) {
-    const isAdmin =
-      profile?.role === "org_admin" ||
-      profile?.role === "admin" ||
-      profile?.role === "ADMIN" ||
-      profile?.email === "admin@projectanalyser.com";
+    const role = (profile?.role || "").toLowerCase();
+    const isAdmin = role === "org_admin" || role === "admin";
+    const scanLimit = profile?.scan_limit ?? 2;
+    const scansUsed = profile?.scans_used ?? 0;
 
-    if (isAdmin) {
+    if (isAdmin || scanLimit === -1 || profile?.plan_id === "enterprise" || profile?.plan === "enterprise") {
       return {
-        scan_limit: 1000000,
-        scans_used: profile?.scans_used ?? 0,
-        scans_remaining: 1000000,
+        scan_limit: -1,
+        scans_used: scansUsed,
+        scans_remaining: -1,
         limit_reached: false,
         can_scan: true,
         reset_at: null,
       };
     }
 
-    const scanLimit = profile?.scan_limit ?? 2;
-    const scansUsed = profile?.scans_used ?? 0;
     const scansRemaining = Math.max(0, scanLimit - scansUsed);
     const limitReached = scansRemaining <= 0;
     const canScan = profile?.email_verified === true && !limitReached;

@@ -30,19 +30,16 @@ export async function buildApp(): Promise<FastifyInstance> {
     allowList: (req) => {
       // Health checks bypass rate limiting
       if (req.url === "/health" || req.url === "/api/health" || req.url?.startsWith("/health")) return true;
-      // Admin user / token bypasses rate limiting completely
+      // Admin roles bypass standard rate limiting
       const authHeader = req.headers.authorization;
-      if (authHeader) {
-        if (authHeader.includes("11111111-2222-3333-4444-444444444444") || authHeader.includes("mock-admin-access-token")) {
-          return true;
-        }
+      if (authHeader && authHeader.startsWith("Bearer ")) {
         try {
           const token = authHeader.split(" ")[1];
           if (token) {
             const payloadBase64 = token.split(".")[1];
             if (payloadBase64) {
               const payload = JSON.parse(Buffer.from(payloadBase64.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString());
-              if (payload?.email === "admin@projectanalyser.com" || payload?.role === "org_admin" || payload?.sub === "11111111-2222-3333-4444-444444444444") {
+              if (payload?.role === "org_admin" || payload?.role === "admin" || payload?.app_metadata?.role === "org_admin" || payload?.user_metadata?.role === "org_admin") {
                 return true;
               }
             }

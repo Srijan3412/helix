@@ -46,38 +46,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
     const { email, password } = parseResult.data;
 
     try {
-      // 1. Dev / Admin mock bypass check for local testing
-      if (email === "admin@projectanalyser.com" && (password === "admin123" || password === "Admin@Project2026!")) {
-        const mockAdminUser = {
-          id: "11111111-2222-3333-4444-444444444444",
-          email: "admin@projectanalyser.com",
-          role: "org_admin",
-          email_verified: true,
-        };
-        const mockSession = {
-          access_token: "mock-admin-access-token",
-          token_type: "bearer",
-          expires_in: 31536000,
-          user: mockAdminUser,
-        };
-        return {
-          success: true,
-          message: "Admin login successful",
-          session: mockSession,
-          user: mockAdminUser,
-          profile: {
-            id: mockAdminUser.id,
-            email: mockAdminUser.email,
-            role: "org_admin",
-            plan: "enterprise",
-            subscription_status: "active",
-            email_verified: true,
-          },
-          needsVerification: false,
-        };
-      }
-
-      // 2. Authenticate via Supabase Auth
+      // 1. Authenticate via Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,

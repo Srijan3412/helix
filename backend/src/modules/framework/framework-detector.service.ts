@@ -1,11 +1,53 @@
 import fs from "fs/promises";
 import path from "path";
 import { PackageAnalyzer } from "./package-analyzer.js";
-import { FRAMEWORK_RULES } from "./framework-rules.js";
-import { FrameworkInfo, FrameworkMetadata } from "./types.js";
+import { FRAMEWORK_RULES as STATIC_FRAMEWORK_RULES } from "./framework-rules.js";
+import { FrameworkInfo, FrameworkMetadata, FrameworkRule } from "./types.js";
 import { logger } from "../../core/logger/index.js";
+import { supabase } from "../../core/supabase/index.js";
 
 export class FrameworkDetectorService {
+  private static cachedRules: { rules: FrameworkRule[]; cachedAt: number } | null = null;
+
+  /**
+   * Load framework detection rules from database with in-memory caching and fallback to static rules.
+   */
+  private static async getRules(): Promise<FrameworkRule[]> {
+    const now = Date.now();
+    if (this.cachedRules && (now - this.cachedRules.cachedAt) < 10 * 60 * 1000) {
+      return this.cachedRules.rules;
+    }
+
+    const rules = [...STATIC_FRAMEWORK_RULES];
+
+    try {
+      const { data: dbRules, error } = await supabase
+        .from("detection_rules")
+        .select("name, patterns")
+        .eq("category", "framework")
+        .eq("enabled", true);
+
+      if (!error && dbRules) {
+        for (const r of dbRules) {
+          const patterns = r.patterns as any;
+          if (patterns?.dependencies) {
+            rules.push({
+              name: r.name,
+              dependencies: patterns.dependencies,
+              fileCues: patterns.fileCues,
+              codeCues: patterns.codeCues,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn({ err }, "Could not fetch dynamic framework rules from database, using static fallback");
+    }
+
+    this.cachedRules = { rules, cachedAt: now };
+    return rules;
+  }
+
   /**
    * Evaluates the repository to extract frameworks, runtime, package manager, and monorepo configurations.
    * 
@@ -53,8 +95,9 @@ export class FrameworkDetectorService {
 
     // 3. Match Frameworks using rules engine
     const frameworks: FrameworkInfo[] = [];
+    const frameworkRules = await this.getRules();
 
-    for (const rule of FRAMEWORK_RULES) {
+    for (const rule of frameworkRules) {
       let detected = false;
       let confidence = 0;
 

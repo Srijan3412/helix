@@ -1,7 +1,58 @@
 import { logger } from "../../core/logger/index.js";
+import { supabase } from "../../core/supabase/index.js";
 
 export class EmailService {
   private static transporter: any = null;
+  private static templateCache: Map<string, { subject: string; html: string; cachedAt: number }> = new Map();
+  private static readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+
+  /**
+   * Fetch an email template from the database or fall back to default template.
+   */
+  private static async getDbTemplate(
+    templateKey: string,
+    variables: Record<string, string>,
+    defaultSubject: string,
+    defaultHtml: string
+  ): Promise<{ subject: string; html: string }> {
+    try {
+      const now = Date.now();
+      const cached = this.templateCache.get(templateKey);
+      if (cached && (now - cached.cachedAt) < this.CACHE_TTL_MS) {
+        return this.interpolateTemplate(cached.subject, cached.html, variables);
+      }
+
+      const { data, error } = await supabase
+        .from("email_templates")
+        .select("subject, html_body")
+        .eq("template_key", templateKey)
+        .maybeSingle();
+
+      if (!error && data && data.html_body) {
+        this.templateCache.set(templateKey, {
+          subject: data.subject || defaultSubject,
+          html: data.html_body,
+          cachedAt: now,
+        });
+        return this.interpolateTemplate(data.subject || defaultSubject, data.html_body, variables);
+      }
+    } catch (err) {
+      logger.warn({ templateKey, err }, "Failed to fetch email template from DB, using fallback");
+    }
+
+    return this.interpolateTemplate(defaultSubject, defaultHtml, variables);
+  }
+
+  private static interpolateTemplate(subject: string, html: string, variables: Record<string, string>): { subject: string; html: string } {
+    let interpolatedSubject = subject;
+    let interpolatedHtml = html;
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
+      interpolatedSubject = interpolatedSubject.replace(regex, value);
+      interpolatedHtml = interpolatedHtml.replace(regex, value);
+    }
+    return { subject: interpolatedSubject, html: interpolatedHtml };
+  }
 
   /**
    * Logs active email configuration at startup.
