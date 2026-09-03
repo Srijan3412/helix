@@ -158,13 +158,13 @@ function MetroStationNode({ data }: MetroStationNodeProps) {
           <div className="flex items-center gap-1.5">
             <span className="text-[5px] text-zinc-500">HEALTH</span>
             <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-               <div
-                 className="h-full transition-all duration-500"
-                 style={{
-                   width: `${health}%`,
-                   backgroundColor: health > HEALTH_GOOD_THRESHOLD ? '#34d399' : health > HEALTH_WARNING_THRESHOLD ? '#f59e0b' : '#ef4444'
-                 }}
-               />
+              <div
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${health}%`,
+                  backgroundColor: health > HEALTH_GOOD_THRESHOLD ? '#34d399' : health > HEALTH_WARNING_THRESHOLD ? '#f59e0b' : '#ef4444'
+                }}
+              />
             </div>
             <span className="text-[7px] font-bold text-zinc-300">{health}%</span>
           </div>
@@ -325,6 +325,18 @@ export default function MetroMap({
     );
   };
 
+  // Add this after the toggleFilter function
+  const handleFilterChange = (featureId: string) => {
+    setIsFiltering(true);
+    toggleFilter(featureId);
+
+    setTimeout(() => {
+      if (reactFlowInstance && nodes.length > 0) {
+        reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
+      }
+      setIsFiltering(false);
+    }, 200);
+  };
   // ─────────────────────────────────────────────────────────────
   // SCROLL CONTROLS
   // ─────────────────────────────────────────────────────────────
@@ -360,7 +372,8 @@ export default function MetroMap({
   const [isAtEnd, setIsAtEnd] = useState(false);
 
   // Interactive UI State
-
+  // Add this with other useState declarations
+  const [isFiltering, setIsFiltering] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
@@ -599,7 +612,6 @@ export default function MetroMap({
     const FEATURE_SPACING = Math.max(200, Math.min(280, 600 / linesCount));
     return 80 + linesCount * FEATURE_SPACING + 100;
   }, [filteredFeatures, features]);
-
 
 
   // ── Context Footer Calculation ──
@@ -1026,7 +1038,7 @@ export default function MetroMap({
     });
 
     const validNodeIds = new Set(flowNodes.map(n => n.id));
-    const filteredFlowEdges = flowEdges.filter(e => 
+    const filteredFlowEdges = flowEdges.filter(e =>
       validNodeIds.has(e.source) && validNodeIds.has(e.target)
     );
 
@@ -1034,6 +1046,21 @@ export default function MetroMap({
   }, [filteredFeatures, featureLines, positions, hoveredFeature, selectedFeature,
     selectedStationId, healthGlowActive, journeyActive, journeyNodeId, result,
     activeFilters, searchQuery, expandedStation]);
+
+  // Add this effect after the nodes/edges are computed
+  useEffect(() => {
+    if (reactFlowInstance && nodes.length > 0) {
+      // Fit view to show all nodes with padding
+      setTimeout(() => {
+        reactFlowInstance.fitView({
+          padding: 0.2,
+          duration: 300
+        });
+      }, 100);
+    }
+  }, [activeFilters, searchQuery, nodes.length]);
+
+
   // Journey Controller Engine
   const startJourney = (featureId: string) => {
     if (journeyTimerRef.current) clearInterval(journeyTimerRef.current);
@@ -1189,11 +1216,10 @@ export default function MetroMap({
       {/* ── FILTER CONTROLS ── */}
       <div className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900/40 border-b border-border/30 shrink-0">
         <button
-          className={`px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border ${
-            activeFilters.length === 0 
-              ? 'bg-primary/20 text-primary border-primary/30' 
-              : 'bg-zinc-800/60 text-zinc-400 border-transparent hover:border-white/10'
-          }`}
+          className={`px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border ${activeFilters.length === 0
+            ? 'bg-primary/20 text-primary border-primary/30'
+            : 'bg-zinc-800/60 text-zinc-400 border-transparent hover:border-white/10'
+            }`}
           onClick={() => setActiveFilters([])}
         >
           All
@@ -1208,7 +1234,7 @@ export default function MetroMap({
               color: activeFilters.includes(f.id) ? 'white' : '#a1a1aa',
               borderColor: activeFilters.includes(f.id) ? f.color : 'transparent',
             }}
-            onClick={() => toggleFilter(f.id)}
+            onClick={() => handleFilterChange(f.id)}
           >
             {f.name}
           </button>
@@ -1253,6 +1279,12 @@ export default function MetroMap({
             className="w-full h-full overflow-auto scrollbar-hide px-10"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
+            {/* Show loading overlay during filter transition */}
+            {isFiltering && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-zinc-950/50 backdrop-blur-sm">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            )}
             <div style={{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }}>
               <ReactFlow
                 nodes={nodes}
@@ -1270,7 +1302,7 @@ export default function MetroMap({
                 style={{ width: '100%', height: '100%' }}
               >
                 <Background color="#222" gap={20} />
-                
+
               </ReactFlow>
             </div>
           </div>
@@ -1364,12 +1396,7 @@ export default function MetroMap({
             </button>
           </div>
 
-          {/* Legend Hint overlay */}
-          <div className="absolute top-3 left-3 z-10 px-3 py-1.5 rounded-lg bg-zinc-900/95 border border-border/60 text-[9.5px] font-bold text-zinc-400 pointer-events-none flex items-center gap-1.5">
-            <HelpCircle className="w-3.5 h-3.5 text-zinc-550 shrink-0" />
-            <span>Software Metro Map Dashboard</span>
-          </div>
-
+          {/* Map Control Buttons */}
           {/* Floating Details/Inspector Overlay Card */}
           <div className={`absolute top-3 right-3 bottom-3 z-20 w-80 sm:w-96 transition-all duration-300 transform ${activeDetailsScope ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}`}>
             <AnimatePresence>
@@ -1405,6 +1432,13 @@ export default function MetroMap({
               />
             )}
           </div>
+
+          {/* Legend Hint overlay */}
+          <div className="absolute top-3 left-3 z-10 px-3 py-1.5 rounded-lg bg-zinc-900/95 border border-border/60 text-[9.5px] font-bold text-zinc-400 pointer-events-none flex items-center gap-1.5">
+            <HelpCircle className="w-3.5 h-3.5 text-zinc-550 shrink-0" />
+            <span>Software Metro Map Dashboard</span>
+          </div>
+
         </div>
       </div>
 
