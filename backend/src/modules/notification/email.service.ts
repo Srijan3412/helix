@@ -95,8 +95,7 @@ export class EmailService {
             // Check for Resend API Key
             const resendApiKey = process.env.RESEND_API_KEY;
             if (resendApiKey) {
-                const { Resend } = await import('resend');
-                this.transporter = new Resend(resendApiKey);
+                this.transporter = { type: 'resend', apiKey: resendApiKey };
                 logger.info('📧 Resend email service initialized');
                 this.initialized = true;
                 return;
@@ -116,21 +115,52 @@ export class EmailService {
     async sendEmail(options: EmailOptions): Promise<void> {
         await this.initializeTransporter();
 
-        const fromEmail = options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@projectanalyser.com';
+        const fromEmail = options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM || process.env.SMTP_USER || 'onboarding@resend.dev';
         const appName = process.env.APP_NAME || 'Helix';
+        const formattedFrom = fromEmail.includes('<') ? fromEmail : `${appName} <${fromEmail}>`;
 
-        console.log(`🚀 [EmailService.sendEmail] Attempting to send email to "${options.to}" (From: "${fromEmail}", Subject: "${options.subject}")`);
-        logger.info({ to: options.to, from: fromEmail, subject: options.subject }, '🚀 [EmailService.sendEmail] Sending email...');
+        console.log(`🚀 [EmailService.sendEmail] Attempting to send email to "${options.to}" (From: "${formattedFrom}", Subject: "${options.subject}")`);
+        logger.info({ to: options.to, from: formattedFrom, subject: options.subject }, '🚀 [EmailService.sendEmail] Sending email...');
 
         try {
             // Development mode - just log
-            if (process.env.NODE_ENV === 'development' && !process.env.SENDGRID_API_KEY && !process.env.SMTP_HOST) {
+            if (process.env.NODE_ENV === 'development' && !process.env.SENDGRID_API_KEY && !process.env.SMTP_HOST && !process.env.RESEND_API_KEY) {
                 console.log(`📧 [DEV MODE] Email target: ${options.to}`);
                 logger.info('📧 [DEV MODE] Email would be sent:');
                 logger.info(`  To: ${options.to}`);
-                logger.info(`  From: ${fromEmail}`);
+                logger.info(`  From: ${formattedFrom}`);
                 logger.info(`  Subject: ${options.subject}`);
                 logger.info(`  Body: ${options.text || options.html}`);
+                return;
+            }
+
+            // Resend (REST API via fetch - robust on Render)
+            if (this.transporter?.type === 'resend' || process.env.RESEND_API_KEY) {
+                const apiKey = this.transporter?.apiKey || process.env.RESEND_API_KEY;
+                const response = await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        from: formattedFrom,
+                        to: [options.to],
+                        subject: options.subject,
+                        html: options.html,
+                        text: options.text,
+                        reply_to: options.replyTo,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(`Resend API error (${response.status}): ${JSON.stringify(errData)}`);
+                }
+
+                const result = await response.json().catch(() => ({ id: 'ok' }));
+                console.log(`✅ [EmailService] Email successfully sent to "${options.to}" via Resend (ID: ${result.id || 'ok'})`);
+                logger.info({ email: options.to, id: result.id }, '✅ Email sent via Resend');
                 return;
             }
 
@@ -138,7 +168,7 @@ export class EmailService {
             if (this.transporter && this.transporter.send) {
                 await this.transporter.send({
                     to: options.to,
-                    from: fromEmail,
+                    from: formattedFrom,
                     subject: options.subject,
                     html: options.html,
                     text: options.text,
@@ -153,7 +183,7 @@ export class EmailService {
             if (this.transporter && this.transporter.sendMail) {
                 const info = await this.transporter.sendMail({
                     to: options.to,
-                    from: fromEmail,
+                    from: formattedFrom,
                     subject: options.subject,
                     html: options.html,
                     text: options.text,
@@ -161,21 +191,6 @@ export class EmailService {
                 });
                 console.log(`✅ [EmailService] Email successfully sent to "${options.to}" via SMTP (MessageId: ${info?.messageId || 'ok'})`);
                 logger.info(`✅ Email sent to ${options.to} via SMTP`);
-                return;
-            }
-
-            // Resend
-            if (this.transporter && this.transporter.emails) {
-                await this.transporter.emails.send({
-                    from: `${appName} <${fromEmail}>`,
-                    to: [options.to],
-                    subject: options.subject,
-                    html: options.html,
-                    text: options.text,
-                    reply_to: options.replyTo,
-                });
-                console.log(`✅ [EmailService] Email successfully sent to "${options.to}" via Resend`);
-                logger.info(`✅ Email sent to ${options.to} via Resend`);
                 return;
             }
 

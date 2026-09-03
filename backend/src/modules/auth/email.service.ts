@@ -8,19 +8,19 @@ export class EmailService {
    * Call this once when the server starts to diagnose missing email config.
    */
   static logEmailConfig(): void {
-    const smtp = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
     const resend = !!process.env.RESEND_API_KEY;
     const sendgrid = !!process.env.SENDGRID_API_KEY;
     const mailgun = !!(process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN);
+    const smtp = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
 
-    if (smtp) {
-      logger.info(`📧 Email provider: SMTP (host=${process.env.SMTP_HOST}, user=${process.env.SMTP_USER})`);
-    } else if (resend) {
+    if (resend) {
       logger.info('📧 Email provider: Resend API');
     } else if (sendgrid) {
       logger.info('📧 Email provider: SendGrid API');
     } else if (mailgun) {
       logger.info('📧 Email provider: Mailgun API');
+    } else if (smtp) {
+      logger.info(`📧 Email provider: SMTP (host=${process.env.SMTP_HOST}, user=${process.env.SMTP_USER})`);
     } else {
       logger.warn(
         '⚠️  NO EMAIL PROVIDER CONFIGURED. Emails will only print to console.\n' +
