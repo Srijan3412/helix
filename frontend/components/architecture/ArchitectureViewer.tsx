@@ -293,7 +293,7 @@ export default function ArchitectureViewer({
                   result={result}
                   onSwitchTab={onSwitchTab}
                   onSetImpactFile={onSetImpactFile}
-                  onSelectTraceRouteId={(routeId) => {
+                  onSelectTraceRouteId={(routeId: string) => {
                     onSelectTraceRouteId?.(routeId);
                     setActiveMode("trace");
                   }}
