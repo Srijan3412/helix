@@ -4,6 +4,7 @@ import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { contactService } from '../modules/contact/contact.service.js';
 import { requireAuth } from '../core/auth/auth.middleware.js';
+import { verifyTurnstile } from '../core/auth/turnstile.middleware.js';
 import { requireAdmin } from '../middleware/admin.middleware.js';
 import { logger } from '../core/logger/index.js';
 
@@ -14,6 +15,7 @@ const ContactRequestSchema = z.object({
     requestType: z.enum(['MORE_SCANS', 'SUBSCRIPTION', 'PROFESSIONAL', 'ENTERPRISE', 'TEAM', 'GENERAL']),
     company: z.string().optional(),
     message: z.string().optional(),
+    turnstileToken: z.string().optional(),
 });
 
 const UpdateStatusSchema = z.object({
@@ -29,9 +31,9 @@ export const contactRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
 
     /**
      * POST /api/contact
-     * Submit a contact request (public)
+     * Submit a contact request (protected with Turnstile)
      */
-    fastify.post('/api/contact', async (request, reply) => {
+    fastify.post('/api/contact', { preHandler: [verifyTurnstile] }, async (request, reply) => {
         try {
             console.log('===========================================================');
             console.log('📩 [POST /api/contact] Incoming payload:', JSON.stringify(request.body));

@@ -8,12 +8,16 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z.string().transform((val) => parseInt(val, 10)).default("4000"),
   REDIS_URL: z.string().url().default("redis://localhost:6379"),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z.enum(["development", "production", "staging", "test"]).default("development"),
   STORAGE_DIR: z.string().default("./storage"),
   GEMINI_API_KEY: z.string().optional(),
   ALLOWED_ORIGINS: z.string().optional(),
   FRONTEND_URL: z.string().url().optional(),
   IN_MEMORY: z.string().transform((val) => val === "true").default("false"),
+  CLOUDFLARE_TURNSTILE_SITE_KEY: z.string().optional(),
+  CLOUDFLARE_TURNSTILE_SECRET_KEY: z.string().optional(),
+  CLOUDFLARE_API_TOKEN: z.string().optional(),
+  CLOUDFLARE_ZONE_ID: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

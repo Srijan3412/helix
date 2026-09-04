@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ReactFlow, Background, Controls, Handle, Position, MarkerType, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
+import { ReactFlow, Background, Controls, Handle, Position, MarkerType, PanOnScrollMode, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
 import { useAnalysisStore } from "../../../store/analysis.store";
 import { getFeaturesMap } from "../../../lib/api/client";
 import FeatureLegend from "./FeatureLegend";
@@ -267,9 +267,32 @@ function LineHeaderNode({ data }: { data: { label: string; color: string; count:
   const emoji = getCircleEmoji(data.color);
   const name = data.label.toUpperCase() + (data.label.toLowerCase().includes("line") ? "" : " LINE");
   return (
-    <div className="flex items-center gap-2 font-mono font-bold text-xs uppercase select-none pb-1" style={{ color: data.color }}>
-      <span>{emoji}</span>
-      <span>{name} ({data.count} stations)</span>
+    <div 
+      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-zinc-950/90 border-2 shadow-lg select-none w-full"
+      style={{ 
+        borderColor: data.color,
+        minWidth: '300px',
+      }}
+    >
+      <div 
+        className="w-3 h-8 rounded-full shrink-0"
+        style={{ backgroundColor: data.color }}
+      />
+      <span className="text-xs font-bold text-white tracking-wider uppercase">
+        {name}
+      </span>
+      <span 
+        className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+        style={{ 
+          backgroundColor: `${data.color}30`,
+          color: data.color,
+        }}
+      >
+        {data.count} stations
+      </span>
+      <span className="text-[9px] text-zinc-500 ml-auto font-mono">
+        LINE {String(data.count).padStart(2, '0')}
+      </span>
     </div>
   );
 }
@@ -314,21 +337,20 @@ export default function MetroMap({
 
 
   // ── Filter Controls ──
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const toggleFilter = (featureId: string) => {
-    setActiveFilters(prev =>
+  const toggleFeature = (featureId: string) => {
+    setSelectedFeatures(prev =>
       prev.includes(featureId)
         ? prev.filter(id => id !== featureId)
         : [...prev, featureId]
     );
   };
 
-  // Add this after the toggleFilter function
   const handleFilterChange = (featureId: string) => {
     setIsFiltering(true);
-    toggleFilter(featureId);
+    toggleFeature(featureId);
 
     setTimeout(() => {
       if (reactFlowInstance && nodes.length > 0) {
@@ -337,6 +359,7 @@ export default function MetroMap({
       setIsFiltering(false);
     }, 200);
   };
+
   // ─────────────────────────────────────────────────────────────
   // SCROLL CONTROLS
   // ─────────────────────────────────────────────────────────────
@@ -344,7 +367,6 @@ export default function MetroMap({
     if (!scrollContainerRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
     const maxScroll = scrollWidth - clientWidth;
-    // ✅ This should work if scrollContainerRef is attached
     setScrollProgress(maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0);
     setIsAtStart(scrollLeft === 0);
     setIsAtEnd(scrollLeft >= maxScroll - 1);
@@ -359,9 +381,6 @@ export default function MetroMap({
     });
   };
 
-
-
-
   // ── Current Station Context ──
   const [currentStation, setCurrentStation] = useState<{ featureId: string, index: number } | null>(null);
 
@@ -371,11 +390,29 @@ export default function MetroMap({
   const [isAtStart, setIsAtStart] = useState(true);
   const [isAtEnd, setIsAtEnd] = useState(false);
 
+  // ── Custom Wheel Handler for Horizontal Scrolling ──
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // If shift key is held, use default horizontal scroll
+      if (e.shiftKey) return;
+      
+      // Convert vertical wheel to horizontal scroll
+      if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
   // Interactive UI State
-  // Add this with other useState declarations
   const [isFiltering, setIsFiltering] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
-  const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [healthGlowActive, setHealthGlowActive] = useState<boolean>(false);
 
@@ -574,19 +611,36 @@ export default function MetroMap({
   const filteredFeatures = useMemo(() => {
     let result = features;
 
-    // Filter by active filters
-    if (activeFilters.length > 0) {
-      result = result.filter(f => activeFilters.includes(f.id));
+    // ✅ If no features selected, show ALL (full map)
+    if (selectedFeatures.length === 0) {
+      // Still apply search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        result = result.filter(f => {
+          if (f.name.toLowerCase().includes(query)) return true;
+          const stations = featureLines[f.id] || [];
+          return stations.some(s =>
+            s.label.toLowerCase().includes(query) ||
+            s.raw?.toLowerCase().includes(query)
+          );
+        });
+      }
+      return result;
     }
 
-    // Filter by search query
+    // ✅ Filter by selected features
+    result = result.filter(f => selectedFeatures.includes(f.id));
+
+    // ✅ If no matches, show ALL (safety fallback)
+    if (result.length === 0) {
+      return features;
+    }
+
+    // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(f => {
-        // Check feature name
         if (f.name.toLowerCase().includes(query)) return true;
-
-        // Check stations in this feature
         const stations = featureLines[f.id] || [];
         return stations.some(s =>
           s.label.toLowerCase().includes(query) ||
@@ -596,20 +650,20 @@ export default function MetroMap({
     }
 
     return result;
-  }, [features, activeFilters, searchQuery, featureLines]);
+  }, [features, selectedFeatures, searchQuery, featureLines]);
 
   const canvasWidth = useMemo(() => {
     const padding = 200;
-    const linesCount = filteredFeatures.length || features.length || 1;
     const maxStations = maxStationsCount || 1;
-    const STATION_SPACING = Math.max(150, Math.min(200, 1200 / maxStations));
+    // ✅ Fixed natural spacing - stations maintain readable size
+    const STATION_SPACING = 220;  // Fixed pixel spacing between stations
     const visibleCount = Math.min(STATIONS_PER_PAGE, maxStationsCount);
     return 80 + visibleCount * STATION_SPACING + padding;
-  }, [maxStationsCount, features, filteredFeatures]);
+  }, [maxStationsCount]);
 
   const canvasHeight = useMemo(() => {
     const linesCount = filteredFeatures.length || features.length || 1;
-    const FEATURE_SPACING = Math.max(200, Math.min(280, 600 / linesCount));
+    const FEATURE_SPACING = 260;
     return 80 + linesCount * FEATURE_SPACING + 100;
   }, [filteredFeatures, features]);
 
@@ -667,8 +721,8 @@ export default function MetroMap({
     const linesCount = filteredFeatures.length || features.length || 1;
     const maxStations = maxStationsCount || 1;
 
-    const FEATURE_SPACING = Math.max(200, Math.min(280, 600 / linesCount));
-    const STATION_SPACING = Math.max(150, Math.min(200, 1200 / maxStations));
+    const FEATURE_SPACING = 260;  // ✅ Fixed spacing
+    const STATION_SPACING = 220;
     const START_X = 80;
     const START_Y = 80;
 
@@ -781,6 +835,7 @@ export default function MetroMap({
 
     const flowNodes: ReactFlowNode[] = [];
     const flowEdges: ReactFlowEdge[] = [];
+    const visibleFeatureIds = new Set(filteredFeatures.map(f => f.id));
 
     // Find shared keys index for transfer/highlight
     const keyToInstances: Record<string, { featureId: string; stationId: string }[]> = {};
@@ -799,18 +854,15 @@ export default function MetroMap({
       });
     });
 
-    // ── Expanded Details for selected station ──
-
-
-    const hasHighlight = hoveredFeature !== null || selectedFeature !== null;
-    const activeFeatureId = selectedFeature || hoveredFeature;
+    const hasHighlight = hoveredFeature !== null || selectedFeatures.length > 0;
+    const activeFeatureId = hoveredFeature || (selectedFeatures.length === 1 ? selectedFeatures[0] : null);
 
     // Build Station Nodes
     filteredFeatures.forEach((feature, fIdx) => {
       const allStations = featureLines[feature.id] || [];
       const stations = getPaginatedStations(allStations, currentPage);
-      const isActiveLine = activeFeatureId === feature.id;
-      const FEATURE_SPACING = 240;
+      const isActiveLine = selectedFeatures.length > 0 ? selectedFeatures.includes(feature.id) : (activeFeatureId ? activeFeatureId === feature.id : true);
+      const FEATURE_SPACING = 260;
       const baseY = 80 + fIdx * FEATURE_SPACING;
 
       // ── Inject Line Header Node ──
@@ -822,13 +874,18 @@ export default function MetroMap({
           color: feature.color,
           count: allStations.length,
         },
-        position: { x: 80, y: baseY - 35 },
+        position: { 
+          x: 80, 
+          y: baseY - 55  // ✅ More clearance from station handles
+        },
         draggable: false,
         selectable: false,
         style: {
           background: "transparent",
           border: "none",
           padding: 0,
+          width: '400px',  // ✅ Ensure header spans track width
+          minWidth: '300px',
         },
       });
 
@@ -838,7 +895,7 @@ export default function MetroMap({
         if (!pos) return;
 
         const instances = keyToInstances[station.key] || [];
-        const isSharedActive = instances.some(inst => inst.featureId === activeFeatureId);
+        const isSharedActive = instances.some(inst => selectedFeatures.includes(inst.featureId) || (activeFeatureId ? inst.featureId === activeFeatureId : false));
         const isNodeActive = hasHighlight ? (isActiveLine || isSharedActive) : true;
 
         const complexity = station.type === "route" || station.type === "database" ? 0 : getComplexityScore(station.raw);
@@ -870,7 +927,6 @@ export default function MetroMap({
               setSelectedStationId(station.id);
               setInspectorStation(station.raw || station.label);
               setInspectorFeature(feature);
-              setSelectedFeature(null);
             },
           },
           position: pos,
@@ -952,11 +1008,8 @@ export default function MetroMap({
     filteredFeatures.forEach((feature) => {
       const allStations = featureLines[feature.id] || [];
       const stations = getPaginatedStations(allStations, currentPage);
-      const isActiveLine = activeFeatureId === feature.id;
+      const isActiveLine = selectedFeatures.length > 0 ? selectedFeatures.includes(feature.id) : (activeFeatureId ? activeFeatureId === feature.id : true);
       const isLineDimmed = hasHighlight && !isActiveLine;
-
-      // Calculate Line Thickness based on file count
-      const lineThickness = Math.max(3, Math.min(8, 3 + (feature.files.length + feature.routes.length) * 0.25));
 
       // ── Thick Line Connections with 🚇 Label ──
       for (let i = 0; i < stations.length - 1; i++) {
@@ -976,7 +1029,7 @@ export default function MetroMap({
           animated: isActiveEdge,
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: isEdgeDimmed ? `${feature.color}30` : feature.color,
+            color: feature.color,  // ✅ Always use full color
             width: 12,
             height: 12,
           },
@@ -1004,9 +1057,17 @@ export default function MetroMap({
     // Build Vertical Interchange Dash Lines
     Object.entries(keyToInstances).forEach(([_, instances]) => {
       if (instances.length > 1) {
-        const sortedInst = [...instances].sort((a: any, b: any) => {
-          const fIdxA = features.findIndex((f: FeatureFlow) => f.id === a.featureId);
-          const fIdxB = features.findIndex((f: FeatureFlow) => f.id === b.featureId);
+        // ✅ Only include visible feature instances
+        const visibleInstances = instances.filter(inst => 
+          visibleFeatureIds.has(inst.featureId)
+        );
+        
+        // ✅ Need at least 2 visible features to create transfer edge
+        if (visibleInstances.length < 2) return;
+
+        const sortedInst = [...visibleInstances].sort((a: any, b: any) => {
+          const fIdxA = filteredFeatures.findIndex((f: FeatureFlow) => f.id === a.featureId);
+          const fIdxB = filteredFeatures.findIndex((f: FeatureFlow) => f.id === b.featureId);
           return fIdxA - fIdxB;
         });
 
@@ -1014,7 +1075,7 @@ export default function MetroMap({
           const src = sortedInst[i];
           const dest = sortedInst[i + 1];
 
-          const isSharedActive = activeFeatureId === src.featureId || activeFeatureId === dest.featureId;
+          const isSharedActive = selectedFeatures.length > 0 ? (selectedFeatures.includes(src.featureId) && selectedFeatures.includes(dest.featureId)) : (activeFeatureId === src.featureId || activeFeatureId === dest.featureId);
           const isDimmed = hasHighlight && !isSharedActive;
 
           flowEdges.push({
@@ -1037,15 +1098,28 @@ export default function MetroMap({
       }
     });
 
+    // ✅ Create a set of visible feature IDs and validate edges
     const validNodeIds = new Set(flowNodes.map(n => n.id));
-    const filteredFlowEdges = flowEdges.filter(e =>
-      validNodeIds.has(e.source) && validNodeIds.has(e.target)
-    );
+    const filteredFlowEdges = flowEdges.filter(e => {
+      // Check if source and target exist
+      if (!validNodeIds.has(e.source) || !validNodeIds.has(e.target)) return false;
+      
+      // Check if edge belongs to a visible feature
+      const sourceFeatureId = e.source?.split(':')[1];
+      const targetFeatureId = e.target?.split(':')[1];
+      
+      // Transfer edges between features
+      if (sourceFeatureId && targetFeatureId) {
+        return visibleFeatureIds.has(sourceFeatureId) && visibleFeatureIds.has(targetFeatureId);
+      }
+      
+      return true;
+    });
 
     return { nodes: flowNodes, edges: filteredFlowEdges };
-  }, [filteredFeatures, featureLines, positions, hoveredFeature, selectedFeature,
+  }, [filteredFeatures, featureLines, positions, hoveredFeature, selectedFeatures,
     selectedStationId, healthGlowActive, journeyActive, journeyNodeId, result,
-    activeFilters, searchQuery, expandedStation]);
+    searchQuery, expandedStation]);
 
   // Add this effect after the nodes/edges are computed
   useEffect(() => {
@@ -1058,7 +1132,7 @@ export default function MetroMap({
         });
       }, 100);
     }
-  }, [activeFilters, searchQuery, nodes.length]);
+  }, [selectedFeatures, searchQuery, nodes.length]);
 
 
   // Journey Controller Engine
@@ -1070,7 +1144,7 @@ export default function MetroMap({
 
     setJourneyActive(true);
     setJourneyFeatureId(featureId);
-    setSelectedFeature(featureId);
+    setSelectedFeatures([featureId]);
     setSelectedStationId(stations[0].id);
 
     let index = 0;
@@ -1208,7 +1282,7 @@ export default function MetroMap({
   }
 
   // Handle selected items for Details scope
-  const activeDetailsScope = selectedStationId || selectedFeature;
+  const activeDetailsScope = selectedStationId || (selectedFeatures.length === 1 ? selectedFeatures[0] : null);
 
   return (
     <div className="h-full w-full text-left relative flex flex-col">
@@ -1216,11 +1290,11 @@ export default function MetroMap({
       {/* ── FILTER CONTROLS ── */}
       <div className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900/40 border-b border-border/30 shrink-0">
         <button
-          className={`px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border ${activeFilters.length === 0
+          className={`px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border ${selectedFeatures.length === 0
             ? 'bg-primary/20 text-primary border-primary/30'
             : 'bg-zinc-800/60 text-zinc-400 border-transparent hover:border-white/10'
             }`}
-          onClick={() => setActiveFilters([])}
+          onClick={() => setSelectedFeatures([])}
         >
           All
         </button>
@@ -1230,11 +1304,20 @@ export default function MetroMap({
             key={f.id}
             className="px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border"
             style={{
-              backgroundColor: activeFilters.includes(f.id) ? f.color : '#27272a',
-              color: activeFilters.includes(f.id) ? 'white' : '#a1a1aa',
-              borderColor: activeFilters.includes(f.id) ? f.color : 'transparent',
+              backgroundColor: selectedFeatures.includes(f.id) ? f.color : '#27272a',
+              color: selectedFeatures.includes(f.id) ? 'white' : '#a1a1aa',
+              borderColor: selectedFeatures.includes(f.id) ? f.color : 'transparent',
             }}
-            onClick={() => handleFilterChange(f.id)}
+            onClick={() => {
+              setIsFiltering(true);
+              toggleFeature(f.id);
+              setTimeout(() => {
+                if (reactFlowInstance && nodes.length > 0) {
+                  reactFlowInstance.fitView({ padding: 0.2, duration: 400 });
+                }
+                setIsFiltering(false);
+              }, 200);
+            }}
           >
             {f.name}
           </button>
@@ -1249,14 +1332,14 @@ export default function MetroMap({
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── FEATURE LEGEND (Left Sidebar) ── */}
-        <aside className="w-56 shrink-0 border-r border-border/30 bg-zinc-900/60 p-4 overflow-y-auto">
+        <aside className="w-52 shrink-0 flex flex-col border-r border-border/30 bg-zinc-900/60 overflow-hidden">
           <FeatureLegend
             features={features}
             result={result}
             hoveredFeature={hoveredFeature}
             setHoveredFeature={setHoveredFeature}
-            selectedFeature={selectedFeature}
-            setSelectedFeature={setSelectedFeature}
+            selectedFeatures={selectedFeatures}
+            setSelectedFeatures={setSelectedFeatures}
           />
         </aside>
 
@@ -1293,8 +1376,12 @@ export default function MetroMap({
                 onInit={(instance) => setReactFlowInstance(instance)}
                 fitView={false}
                 defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-                panOnDrag={false}
-                zoomOnScroll={false}
+                panOnDrag={[0, 1, 2]}    // ✅ Allow all mouse buttons to drag
+                panOnScroll={true}        // ✅ Enable scroll panning
+                panOnScrollMode={PanOnScrollMode.Horizontal}  // ✅ Convert vertical scroll to horizontal pan
+                zoomOnScroll={false}      // Keep zoom disabled for now
+                minZoom={0.6}            // ✅ Prevent zooming out too far
+                maxZoom={1.5}            // ✅ Prevent zooming in too far
                 nodesDraggable={false}
                 nodesConnectable={false}
                 elementsSelectable={false}
@@ -1339,7 +1426,7 @@ export default function MetroMap({
                           setInspectorStation(targetNode.raw || targetNode.label);
                           const featureObj = features.find(f => f.id === targetNode.featureId);
                           if (featureObj) setInspectorFeature(featureObj);
-                          setSelectedFeature(null);
+                          setSelectedFeatures([]);
                         }
                       }}
                     >
@@ -1415,12 +1502,12 @@ export default function MetroMap({
             {activeDetailsScope && (
               <FeatureDetails
                 stationId={selectedStationId}
-                featureId={selectedFeature}
+                featureId={selectedFeatures.length === 1 ? selectedFeatures[0] : null}
                 result={result}
                 features={features}
                 onClose={() => {
                   setSelectedStationId(null);
-                  setSelectedFeature(null);
+                  setSelectedFeatures([]);
                 }}
                 onSwitchTab={onSwitchTab}
                 onSetImpactFile={onSetImpactFile}

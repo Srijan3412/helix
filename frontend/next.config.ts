@@ -13,6 +13,17 @@ const nextConfig: NextConfig = {
       "framer-motion",
     ],
   },
+  // Reverse proxy rewrites to shield backend Render URL from direct client exposure
+  async rewrites() {
+    const backendUrl = process.env.INTERNAL_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+    if (!backendUrl) return [];
+    return [
+      {
+        source: "/api/backend/:path*",
+        destination: `${backendUrl}/api/:path*`,
+      },
+    ];
+  },
   // Configure Cross-Origin headers for OAuth popup support
   async headers() {
     return [

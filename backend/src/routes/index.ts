@@ -31,6 +31,7 @@ import { ArchitectureGeneratorService } from "../modules/architecture/architectu
 import { TraceBuilderService } from "../modules/execution-trace/trace-builder.service.js";
 import { FeatureBuilderService } from "../modules/feature-map/feature-builder.service.js";
 import { requireAuth } from "../core/auth/auth.middleware.js";
+import { verifyTurnstile } from "../core/auth/turnstile.middleware.js";
 import { ScanHistoryService } from "../modules/analysis/scan-history.service.js";
 import { requireAdmin } from "../middleware/admin.middleware.js";
 import { authRoutes } from "./auth.routes.js";
@@ -60,7 +61,7 @@ export const apiRoutes: FastifyPluginAsync = async (
    * Enqueue a new analysis job for a GitHub URL, uploaded ZIP file, or local path.
    */
   fastify.post("/api/analyze",
-    { preHandler: [requireAuth] }, async (request, reply) => {
+    { preHandler: [requireAuth, verifyTurnstile] }, async (request, reply) => {
       logger.info("📩 Received POST /api/analyze request");
 
       // Check scan limit for non-admin users against database profile and plan

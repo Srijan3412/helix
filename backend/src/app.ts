@@ -13,7 +13,19 @@ export async function buildApp(): Promise<FastifyInstance> {
     logger: false, // Disabling default logger to use our Pino implementation
   });
 
-  // Enable CORS
+  // Security Response Headers (Phase 1 Security Hardening)
+  app.addHook("onSend", async (request, reply) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("X-XSS-Protection", "1; mode=block");
+    reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+    reply.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    if (config.NODE_ENV === "production" || config.NODE_ENV === "staging") {
+      reply.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    }
+  });
+
+  // Enable CORS with credentials and preflight caching
   const corsOrigins = config.ALLOWED_ORIGINS
     ? config.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
     : (config.FRONTEND_URL ? [config.FRONTEND_URL] : "*");
@@ -21,6 +33,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(cors, {
     origin: corsOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Turnstile-Token", "cf-turnstile-response"],
+    credentials: true,
+    maxAge: 86400, // 24 hour preflight caching
   });
 
   // Enable Rate Limiting (150 requests per minute, bypassed for admin@projectanalyser.com)
