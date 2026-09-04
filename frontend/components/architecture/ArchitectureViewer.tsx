@@ -138,15 +138,11 @@ export default function ArchitectureViewer({
   const totalFiles = result?.overview?.totalFiles || result?.files?.length || 0;
   const totalRoutes = result?.overview?.totalRoutes || result?.routes?.length || 0;
 
-  const sidebarTitle = activeMode === "metro"
-    ? "TRANSIT NETWORK LINES"
-    : activeMode === "layer"
+  const sidebarTitle = activeMode === "layer"
     ? "ARCHITECTURE LAYERS"
     : "CODEBASE FEATURES";
 
-  const sidebarDesc = activeMode === "metro"
-    ? "Hover/click a metro line to highlight domains or inspect details."
-    : activeMode === "layer"
+  const sidebarDesc = activeMode === "layer"
     ? "Click tier box to expand file listings or start a tier tour."
     : "Click any node to inspect file details and dependencies.";
 
