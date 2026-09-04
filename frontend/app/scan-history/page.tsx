@@ -110,13 +110,13 @@ export default function ScanHistoryPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0f] text-zinc-400 px-4">
         <AlertTriangle className="w-12 h-12 text-amber-500 mb-4 animate-pulse" />
-        <h3 className="text-lg font-semibold text-white">Authentication Required</h3>
-        <p className="text-sm text-zinc-500 mt-1 mb-4 text-center max-w-xs">
+        <h3 className="dash-title text-white">Authentication Required</h3>
+        <p className="dash-subtitle text-zinc-500 mt-1 mb-4 text-center max-w-xs">
           Please sign in to view your repository scan history.
         </p>
         <button
           onClick={() => router.push("/")}
-          className="px-4 py-2 bg-primary text-background rounded-xl font-semibold text-xs tracking-wide transition-all hover:opacity-90"
+          className="px-4 py-2 bg-primary text-background rounded-xl dash-btn transition-all hover:opacity-90"
         >
           Go to Sign In
         </button>
@@ -212,11 +212,11 @@ export default function ScanHistoryPage() {
               {loadError ? (
                 <div className="flex flex-col items-center justify-center py-20 border border-dashed border-rose-900/40 rounded-2xl bg-rose-950/10 mt-8 mx-auto max-w-xl text-center">
                   <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-3" />
-                  <h3 className="text-sm font-semibold text-rose-300">Failed to load scan history</h3>
-                  <p className="text-xs text-zinc-500 mt-1 mb-4 max-w-sm">{loadError}</p>
+                  <h3 className="dash-card-title text-rose-300">Failed to load scan history</h3>
+                  <p className="dash-body text-zinc-500 mt-1 mb-4 max-w-sm">{loadError}</p>
                   <button
                     onClick={loadScanHistory}
-                    className="px-4 py-2 bg-zinc-900 border border-border/60 hover:border-zinc-700 text-white rounded-xl text-xs font-semibold transition"
+                    className="px-4 py-2 bg-zinc-900 border border-border/60 hover:border-zinc-700 text-white rounded-xl dash-btn-sm transition"
                   >
                     Try again
                   </button>
@@ -224,16 +224,16 @@ export default function ScanHistoryPage() {
               ) : isLoading ? (
                 <div className="flex flex-col items-center justify-center py-24">
                   <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-                  <span className="text-xs text-zinc-500 font-semibold">Loading scan history...</span>
+                  <span className="dash-metadata text-zinc-500 font-semibold">Loading scan history...</span>
                 </div>
               ) : scans.length === 0 ? (
                 <div className="text-center py-20 border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/20 max-w-xl mx-auto mt-8">
                   <History className="w-10 h-10 text-zinc-700 mx-auto mb-4" />
-                  <h3 className="text-sm font-semibold text-zinc-400">No scans found</h3>
-                  <p className="text-xs text-zinc-600 mt-1 mb-6">Upload or scan a repository on the home dashboard to get started.</p>
+                  <h3 className="dash-card-title text-zinc-400">No scans found</h3>
+                  <p className="dash-body text-zinc-500 mt-1 mb-6">Upload or scan a repository on the home dashboard to get started.</p>
                   <button
                     onClick={() => router.push("/")}
-                    className="px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-white rounded-xl text-xs font-semibold transition"
+                    className="px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-white rounded-xl dash-btn transition"
                   >
                     Go to Home
                   </button>

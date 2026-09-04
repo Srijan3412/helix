@@ -1274,10 +1274,10 @@ export default function Home() {
         <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/60 border-b border-border/50">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-primary" />
-            <span className="text-xs font-bold text-primary uppercase tracking-widest">
+            <span className="dash-eyebrow text-primary">
               Execution Trace
             </span>
-            <code className="text-[10px] font-mono text-zinc-400 ml-1">
+            <code className="dash-filepath text-zinc-400 ml-1">
               {traceRoute.method} {traceRoute.path}
             </code>
           </div>
@@ -1287,7 +1287,7 @@ export default function Home() {
                 setTraceAnimStep(-1);
                 setTimeout(() => playTrace(steps), 50);
               }}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold hover:bg-primary/20 transition"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/30 text-primary dash-btn-sm hover:bg-primary/20 transition"
             >
               <Play className="w-3 h-3" /> Play
             </button>
@@ -1318,16 +1318,16 @@ export default function Home() {
                       className={`p-3 rounded-xl border flex items-start gap-3 ${typeStyles[step.type] ?? typeStyles.service}`}
                     >
                       <div className="flex flex-col items-center gap-1 shrink-0 mt-0.5">
-                        <div className="w-5 h-5 rounded-full bg-current/20 flex items-center justify-center text-[9px] font-bold">
+                        <div className="w-5 h-5 rounded-full bg-current/20 flex items-center justify-center dash-metadata font-bold">
                           {i + 1}
                         </div>
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-bold font-mono truncate">
+                        <div className="dash-card-title font-mono truncate">
                           {step.label}
                         </div>
                         {step.sublabel && (
-                          <div className="text-[9px] opacity-60 mt-0.5">
+                          <div className="dash-metadata opacity-60 mt-0.5">
                             {step.sublabel}
                           </div>
                         )}
@@ -1349,14 +1349,14 @@ export default function Home() {
             {/* Env Used */}
             {envUsed.length > 0 && (
               <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-800/40">
-                <div className="text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-2">
+                <div className="dash-metadata font-semibold text-amber-400 uppercase tracking-widest mb-2">
                   Environment Used
                 </div>
                 <div className="space-y-1">
                   {envUsed.map((e) => (
                     <code
                       key={e}
-                      className="block text-[10px] font-mono text-amber-300"
+                      className="block dash-filepath text-amber-300"
                     >
                       {e}
                     </code>
@@ -1368,12 +1368,12 @@ export default function Home() {
             {/* Auth guard */}
             {(traceRoute.middleware?.length ?? 0) > 0 ? (
               <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-800/40">
-                <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">
+                <div className="dash-metadata font-semibold text-emerald-400 uppercase tracking-widest mb-1">
                   Auth Protected
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {traceRoute.middleware!.map((m) => (
-                    <Badge key={m} variant="primary" className="text-[9px]">
+                    <Badge key={m} variant="primary" className="dash-badge">
                       {m}
                     </Badge>
                   ))}
@@ -1383,11 +1383,11 @@ export default function Home() {
               <div className="p-3 rounded-xl bg-red-950/20 border border-red-800/40">
                 <div className="flex items-center gap-1.5">
                   <AlertTriangle className="w-3 h-3 text-red-400" />
-                  <span className="text-[9px] font-bold text-red-400">
+                  <span className="dash-metadata font-semibold text-red-400">
                     No Auth Middleware
                   </span>
                 </div>
-                <p className="text-[9px] text-red-300/70 mt-1">
+                <p className="dash-metadata text-red-300/70 mt-1">
                   This route has no detected middleware.
                 </p>
               </div>
@@ -1395,10 +1395,10 @@ export default function Home() {
 
             {/* Method info */}
             <div className="p-3 rounded-xl bg-zinc-900/60 border border-border/50">
-              <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
+              <div className="dash-metadata font-semibold text-zinc-400 uppercase tracking-widest mb-2">
                 Route Info
               </div>
-              <div className="space-y-1 text-[10px]">
+              <div className="space-y-1 dash-metadata">
                 <div>
                   <span className="text-zinc-500">Method:</span>{" "}
                   <span className="text-zinc-200 font-mono font-bold">
@@ -1407,7 +1407,7 @@ export default function Home() {
                 </div>
                 <div>
                   <span className="text-zinc-500">File:</span>{" "}
-                  <code className="text-emerald-400 text-[9px]">
+                  <code className="text-emerald-400 dash-filepath">
                     {(traceRoute.file ?? "").split(/[\\/]/).pop()}
                   </code>
                 </div>
@@ -1430,7 +1430,7 @@ export default function Home() {
   if (subLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <div className="text-zinc-500 text-xs animate-pulse font-mono">
+        <div className="text-zinc-500 dash-metadata animate-pulse font-mono">
           Loading subscription...
         </div>
       </div>
@@ -1489,7 +1489,7 @@ export default function Home() {
         <div className="text-center mb-16 z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/50 backdrop-blur-md mb-6 hover:border-primary/20 transition duration-300">
             <Terminal className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            <span className="dash-eyebrow text-muted-foreground">
               Repository Intelligence Platform
             </span>
           </div>
@@ -1664,7 +1664,7 @@ export default function Home() {
                 exit={{ opacity: 0, x: -10 }}
                 className="min-w-0 overflow-hidden flex items-center gap-2"
               >
-                <span className="text-2xl font-bold text-white tracking-tight">Helix</span>
+                <span className="dash-sidebar-logo text-white">Helix</span>
                 <span className="rounded-full bg-white/5 px-2 py-0.5 dash-badge text-white/40">
                   v2.0
                 </span>
@@ -1678,7 +1678,7 @@ export default function Home() {
           {/* Section: Analysis */}
           <div>
             {sidebarExpanded && (
-              <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">
+              <div className="mb-2 px-3 dash-sidebar-cat text-white/30">
                 Analysis
               </div>
             )}
@@ -1686,9 +1686,9 @@ export default function Home() {
               onClick={() => reset()}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Upload Repository" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav transition-all ${!currentJobId
-                ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white font-semibold"
-                : "text-white/50 hover:bg-white/5 hover:text-white/80 font-medium"
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all ${!currentJobId
+                ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white dash-sidebar-nav-active"
+                : "text-white/50 hover:bg-white/5 hover:text-white/80 dash-sidebar-nav"
                 } ${!sidebarExpanded ? "justify-center" : ""}`}
             >
               <div
@@ -1725,7 +1725,7 @@ export default function Home() {
           {/* Section: History */}
           <div className="mt-4">
             {sidebarExpanded && (
-              <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">
+              <div className="mb-2 px-3 dash-sidebar-cat text-white/30">
                 History
               </div>
             )}
@@ -1733,7 +1733,7 @@ export default function Home() {
               onClick={() => router.push("/scan-history")}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Scan History" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav font-medium transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
                 }`}
             >
               <div className="rounded-md p-1.5 text-white/30">
@@ -1757,7 +1757,7 @@ export default function Home() {
           {/* Section: Results */}
           <div>
             {sidebarExpanded && (
-              <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">
+              <div className="mb-2 px-3 dash-sidebar-cat text-white/30">
                 Results
               </div>
             )}
@@ -1797,9 +1797,9 @@ export default function Home() {
                     onClick={() => setActiveResultTab(tab.id as ResultTab)}
                     whileHover={{ x: sidebarExpanded ? 3 : 0 }}
                     title={!sidebarExpanded ? tab.label : undefined}
-                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav transition-all ${isActive
-                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white font-semibold"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/80 font-medium"
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all ${isActive
+                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white dash-sidebar-nav-active"
+                      : "text-white/50 hover:bg-white/5 hover:text-white/80 dash-sidebar-nav"
                       } ${!sidebarExpanded ? "justify-center" : ""}`}
                   >
                     <div
@@ -1844,8 +1844,8 @@ export default function Home() {
         {/* Repository Info - Premium */}
         <div className="border-t border-white/5 p-4">
           <div className="rounded-lg bg-white/5 px-3 py-2">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-white/40">Repository</div>
-            <div className="truncate text-sm font-semibold text-white/80 mt-0.5">
+            <div className="dash-repo-label text-white/40">Repository</div>
+            <div className="truncate dash-repo-name text-white/80 mt-0.5">
               {result?.tree?.name || "No repository loaded"}
             </div>
           </div>
@@ -1855,7 +1855,7 @@ export default function Home() {
         <div className="border-t border-white/5 p-2">
           <button
             onClick={() => signOut()}
-            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav font-medium text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
               }`}
             title="Sign Out"
           >
@@ -1884,8 +1884,8 @@ export default function Home() {
               exit={{ opacity: 0 }}
               className="border-t border-white/5 px-4 py-3 text-left"
             >
-              <p className="text-[11px] text-white/50">Built by <span className="text-white font-semibold">Shriniwas Srijan Bajpai</span></p>
-              <a href="mailto:srijanbajpai1447@gmail.com" className="text-[10px] text-white/30 hover:text-primary transition truncate block mt-0.5">
+              <p className="dash-metadata text-white/50">Built by <span className="text-white font-semibold">Shriniwas Srijan Bajpai</span></p>
+              <a href="mailto:srijanbajpai1447@gmail.com" className="dash-metadata text-white/30 hover:text-primary transition truncate block mt-0.5">
                 srijanbajpai1447@gmail.com
               </a>
             </motion.div>
@@ -2928,13 +2928,13 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto">
                     <Mail className="w-8 h-8 text-amber-400" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white">Need More Scans?</h3>
-                  <p className="text-zinc-400 max-w-md mx-auto">
+                  <h3 className="dash-title text-white">Need More Scans?</h3>
+                  <p className="dash-subtitle text-zinc-400 max-w-md mx-auto">
                     You've reached your scan limit. Contact our sales team for additional capacity and enterprise pricing.
                   </p>
                   <button
                     onClick={() => window.location.href = '/contact-sales'}
-                    className="px-6 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold hover:bg-amber-500/20 transition"
+                    className="px-6 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 dash-btn hover:bg-amber-500/20 transition"
                   >
                     📧 Contact Sales
                   </button>

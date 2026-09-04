@@ -121,7 +121,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
       <div className="flex items-center justify-between pb-3 border-b border-border/50">
         <div className="flex items-center gap-2 min-w-0">
           {getFileIcon()}
-          <h3 className="text-sm font-bold text-zinc-100 truncate" title={filename}>{filename}</h3>
+          <h3 className="dash-card-title text-zinc-100 truncate" title={filename}>{filename}</h3>
         </div>
         <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition">
           <X className="w-4 h-4" />
@@ -130,25 +130,25 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
 
       {/* ── Status Badges (Single Row with Icons) ── */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Badge variant="primary" className="text-[10px] uppercase font-bold tracking-wider">
+        <Badge variant="primary" className="dash-badge uppercase">
           {layerName}
         </Badge>
         {godInfo && (
-          <Badge variant="error" className="text-[9px] font-bold flex items-center gap-1">
+          <Badge variant="error" className="dash-badge flex items-center gap-1">
             🔥 God Service
           </Badge>
         )}
         {isTopFile && (
-          <Badge variant="primary" className="text-[9px] font-bold flex items-center gap-1">
+          <Badge variant="primary" className="dash-badge flex items-center gap-1">
             ⭐ Top File
           </Badge>
         )}
         {isDead && (
-          <Badge variant="secondary" className="text-[9px] bg-zinc-700 text-white font-bold flex items-center gap-1">
+          <Badge variant="secondary" className="dash-badge bg-zinc-700 text-white flex items-center gap-1">
             💀 Dead Code
           </Badge>
         )}
-        <Badge variant="outline" className="text-[9px] border-zinc-700 text-zinc-400 font-bold">
+        <Badge variant="outline" className="dash-badge border-zinc-700 text-zinc-400">
           {getFileTypeLabel()}
         </Badge>
       </div>
@@ -157,40 +157,40 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
       <div className="grid grid-cols-5 gap-1.5">
         {/* File Size */}
         <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
-          <div className="text-[10px] text-zinc-500">📄 Size</div>
-          <div className="text-[11px] font-extrabold text-white mt-0.5">
+          <div className="dash-metadata text-zinc-400">📄 Size</div>
+          <div className="dash-card-title text-white mt-0.5">
             {fileNode ? formatBytes(fileNode.size) : "—"}
           </div>
         </div>
 
         {/* LOC */}
         <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
-          <div className="text-[10px] text-zinc-500">📊 LOC</div>
-          <div className="text-[11px] font-extrabold text-white mt-0.5">
+          <div className="dash-metadata text-zinc-400">📊 LOC</div>
+          <div className="dash-card-title text-white mt-0.5">
             {fileNode ? fileNode.lineCount : "—"}
           </div>
         </div>
 
         {/* Dependencies */}
         <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
-          <div className="text-[10px] text-zinc-500">🔗 Deps</div>
-          <div className="text-[11px] font-extrabold text-white mt-0.5">
+          <div className="dash-metadata text-zinc-400">🔗 Deps</div>
+          <div className="dash-card-title text-white mt-0.5">
             {fileNode?.internalImports?.length || 0}
           </div>
         </div>
 
         {/* Referenced By */}
         <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
-          <div className="text-[10px] text-zinc-500">📤 Ref</div>
-          <div className="text-[11px] font-extrabold text-white mt-0.5">
+          <div className="dash-metadata text-zinc-400">📤 Ref</div>
+          <div className="dash-card-title text-white mt-0.5">
             {fileNode?.referencedBy?.length || 0}
           </div>
         </div>
 
         {/* Complexity */}
         <div className="p-2 rounded-xl bg-zinc-900/60 border border-border/50 text-center">
-          <div className="text-[10px] text-zinc-500">🧠 Comp</div>
-          <div className="text-[11px] font-extrabold text-white mt-0.5">
+          <div className="dash-metadata text-zinc-400">🧠 Comp</div>
+          <div className="dash-card-title text-white mt-0.5">
             {complexityInfo?.score !== undefined ? complexityInfo.score : "—"}
           </div>
         </div>
@@ -200,10 +200,10 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
       {isRouteFile && (
         <div className="p-3 rounded-xl bg-zinc-900/60 border border-border/50 text-center sm:text-left flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-[8px] text-muted-foreground uppercase font-semibold text-blue-400">Request Rate</span>
-            <span className="text-[10px] text-zinc-500 mt-0.5">Estimated throughput</span>
+            <span className="dash-sidebar-cat text-blue-400">Request Rate</span>
+            <span className="dash-metadata text-zinc-500 mt-0.5">Estimated throughput</span>
           </div>
-          <div className="text-xs font-extrabold text-white">
+          <div className="dash-value text-white">
             {getDeterministicRate(filePath)} req/s
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
           {!showDependencyGraph ? (
             <button
               onClick={() => setShowDependencyGraph(true)}
-              className="w-full text-[10px] text-primary hover:text-primary/80 font-medium flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-primary/5 hover:bg-primary/10 transition border border-primary/20 hover:border-primary/30"
+              className="w-full dash-btn-sm text-primary hover:text-primary/80 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-primary/5 hover:bg-primary/10 transition border border-primary/20 hover:border-primary/30"
             >
               <Zap className="w-3 h-3" />
               View Dependency Graph
@@ -223,13 +223,13 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
           ) : (
             <div className="p-3 rounded-xl bg-zinc-950/80 border border-border/60 space-y-3">
               <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1">
+                <span className="dash-sidebar-cat text-zinc-300 flex items-center gap-1">
                   <Zap className="w-3.5 h-3.5 text-primary shrink-0 animate-pulse" />
                   Dependency Diagram
                 </span>
                 <button
                   onClick={() => setShowDependencyGraph(false)}
-                  className="text-[9px] text-zinc-400 hover:text-white underline transition"
+                  className="dash-metadata text-zinc-400 hover:text-white underline transition"
                 >
                   Close Graph
                 </button>
@@ -238,14 +238,14 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
               <div className="flex items-center justify-between gap-2 py-4 relative overflow-x-auto min-h-[140px] px-1">
                 {/* Incoming references list on the left */}
                 <div className="flex flex-col gap-2 max-w-[80px] shrink-0">
-                  <span className="text-[7.5px] text-zinc-550 font-bold uppercase tracking-wider text-center">Incoming</span>
+                  <span className="dash-sidebar-cat text-zinc-400 text-center">Incoming</span>
                   {fileNode?.referencedBy && fileNode.referencedBy.length > 0 ? (
                     fileNode.referencedBy.slice(0, 3).map((ref) => {
                       const name = ref.split(/[\\/]/).pop() || ref;
                       return (
                         <div
                           key={ref}
-                          className="px-1.5 py-1 rounded bg-purple-950/30 border border-purple-900/30 text-[8.5px] font-mono text-purple-300 truncate text-center"
+                          className="px-1.5 py-1 rounded bg-purple-950/30 border border-purple-900/30 dash-filepath text-purple-300 truncate text-center"
                           title={ref}
                         >
                           {name}
@@ -253,7 +253,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
                       );
                     })
                   ) : (
-                    <div className="text-[8px] text-zinc-650 italic text-center">—</div>
+                    <div className="dash-metadata text-zinc-600 italic text-center">—</div>
                   )}
                 </div>
 
@@ -267,7 +267,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
                   <div className="flex items-center justify-center gap-1 mb-1">
                     {getFileIcon()}
                   </div>
-                  <div className="text-[9.5px] font-bold text-zinc-200 truncate max-w-[80px]" title={filename}>
+                  <div className="dash-filepath-medium text-zinc-200 truncate max-w-[80px]" title={filename}>
                     {filename}
                   </div>
                 </div>
@@ -279,14 +279,14 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
 
                 {/* Outbound dependencies (imports) on the right */}
                 <div className="flex flex-col gap-2 max-w-[80px] shrink-0">
-                  <span className="text-[7.5px] text-zinc-550 font-bold uppercase tracking-wider text-center">Imports</span>
+                  <span className="dash-sidebar-cat text-zinc-400 text-center">Imports</span>
                   {fileNode?.internalImports && fileNode.internalImports.length > 0 ? (
                     fileNode.internalImports.slice(0, 3).map((imp) => {
                       const name = imp.split(/[\\/]/).pop() || imp;
                       return (
                         <div
                           key={imp}
-                          className="px-1.5 py-1 rounded bg-blue-950/30 border border-blue-900/30 text-[8.5px] font-mono text-blue-300 truncate text-center"
+                          className="px-1.5 py-1 rounded bg-blue-950/30 border border-blue-900/30 dash-filepath text-blue-300 truncate text-center"
                           title={imp}
                         >
                           {name}
@@ -294,7 +294,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
                       );
                     })
                   ) : (
-                    <div className="text-[8px] text-zinc-650 italic text-center">—</div>
+                    <div className="dash-metadata text-zinc-600 italic text-center">—</div>
                   )}
                 </div>
               </div>
@@ -308,23 +308,23 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
         <div className="p-3 rounded-xl bg-rose-950/10 border border-rose-900/30 space-y-2">
           <div className="flex items-center gap-1.5 text-rose-400">
             <Zap className="w-4 h-4" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Complexity Analyzer</span>
+            <span className="dash-sidebar-cat text-rose-400">Complexity Analyzer</span>
           </div>
 
-          <div className="space-y-1.5 text-xs">
+          <div className="space-y-1.5">
             {complexityInfo && (
-              <div className="flex justify-between items-center text-[11px]">
+              <div className="flex justify-between items-center dash-metadata">
                 <span className="text-zinc-400">Complexity Score:</span>
-                <Badge variant={complexityInfo.rating === "risky" ? "error" : "warning"} className="text-[9px] font-bold">
+                <Badge variant={complexityInfo.rating === "risky" ? "error" : "warning"} className="dash-badge">
                   {complexityInfo.score} ({complexityInfo.rating})
                 </Badge>
               </div>
             )}
 
             {godInfo && (
-              <div className="flex justify-between items-center text-[11px]">
+              <div className="flex justify-between items-center dash-metadata">
                 <span className="text-zinc-400">God Service Status:</span>
-                <span className="text-purple-400 font-semibold text-[10px]">GOD SERVICE</span>
+                <span className="text-purple-400 font-semibold dash-badge">GOD SERVICE</span>
               </div>
             )}
           </div>
@@ -335,18 +335,18 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
       {/* ── Dependencies Section with Bullets ── */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">📥 Dependencies ({fileNode?.internalImports?.length ?? 0})</span>
+          <span className="dash-sidebar-cat text-zinc-400">📥 Dependencies ({fileNode?.internalImports?.length ?? 0})</span>
         </div>
         <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
           {fileNode?.internalImports && fileNode.internalImports.length > 0 ? (
             fileNode.internalImports.map(imp => (
-              <div key={imp} className="flex items-center gap-1.5 p-1 rounded bg-zinc-900/60 border border-border/40 text-[10px] font-mono text-zinc-300 truncate hover:bg-zinc-800/60 transition" title={imp}>
-                <span className="text-[8px] text-blue-400">●</span>
+              <div key={imp} className="flex items-center gap-1.5 p-1 rounded bg-zinc-900/60 border border-border/40 dash-filepath text-zinc-300 truncate hover:bg-zinc-800/60 transition" title={imp}>
+                <span className="text-blue-400">●</span>
                 {imp.split(/[\\/]/).pop()}
               </div>
             ))
           ) : (
-            <span className="text-[10px] text-zinc-550 italic block pl-1">No internal module imports</span>
+            <span className="dash-metadata text-zinc-500 italic block pl-1">No internal module imports</span>
           )}
         </div>
       </div>
@@ -355,18 +355,18 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
       {/* ── References Section with Bullets ── */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">📤 Referenced By ({fileNode?.referencedBy?.length ?? 0})</span>
+          <span className="dash-sidebar-cat text-zinc-400">📤 Referenced By ({fileNode?.referencedBy?.length ?? 0})</span>
         </div>
         <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
           {fileNode?.referencedBy && fileNode.referencedBy.length > 0 ? (
             fileNode.referencedBy.map(ref => (
-              <div key={ref} className="flex items-center gap-1.5 p-1 rounded bg-zinc-900/60 border border-border/40 text-[10px] font-mono text-zinc-300 truncate hover:bg-zinc-800/60 transition" title={ref}>
-                <span className="text-[8px] text-purple-400">●</span>
+              <div key={ref} className="flex items-center gap-1.5 p-1 rounded bg-zinc-900/60 border border-border/40 dash-filepath text-zinc-300 truncate hover:bg-zinc-800/60 transition" title={ref}>
+                <span className="text-purple-400">●</span>
                 {ref.split(/[\\/]/).pop()}
               </div>
             ))
           ) : (
-            <span className="text-[10px] text-zinc-550 italic block pl-1">No incoming references found</span>
+            <span className="dash-metadata text-zinc-500 italic block pl-1">No incoming references found</span>
           )}
         </div>
       </div>
@@ -374,7 +374,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
 
       {/* ── Path Section ── */}
       <div className="p-2 rounded-xl bg-zinc-900/40 border border-border/40">
-        <code className="block text-[9.5px] font-mono text-zinc-400 truncate" title={filePath}>
+        <code className="block dash-filepath text-zinc-400 truncate" title={filePath}>
           📁 {filePath}
         </code>
       </div>

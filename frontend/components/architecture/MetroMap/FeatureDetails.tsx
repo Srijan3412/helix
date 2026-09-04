@@ -73,7 +73,7 @@ export default function FeatureDetails({
         <div className="flex items-center justify-between pb-3 border-b border-border/50">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: selectedFeature.color }} />
-            <h3 className="text-sm font-bold text-zinc-100 truncate" title={selectedFeature.name}>
+            <h3 className="dash-card-title text-zinc-100 truncate" title={selectedFeature.name}>
               {selectedFeature.name}
             </h3>
           </div>
@@ -85,13 +85,13 @@ export default function FeatureDetails({
         {/* Feature Journey Controller */}
         {onStartJourney && onStopJourney && (
           <Card className="p-3 bg-zinc-900/40 border border-border/60 space-y-2 shrink-0">
-            <div className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest text-center">
+            <div className="dash-sidebar-cat text-zinc-400 text-center">
               Feature Journey Controller
             </div>
             {journeyActive ? (
               <Button
                 onClick={onStopJourney}
-                className="w-full text-[10px] font-bold py-2 h-auto bg-red-650 hover:bg-red-700 text-white flex items-center justify-center gap-1.5"
+                className="w-full dash-btn-sm py-2 h-auto bg-red-650 hover:bg-red-700 text-white flex items-center justify-center gap-1.5"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
                 Stop Transit Journey
@@ -99,14 +99,14 @@ export default function FeatureDetails({
             ) : (
               <Button
                 onClick={() => onStartJourney(selectedFeature.id)}
-                className="w-full text-[10px] font-bold py-2 h-auto bg-primary text-background hover:bg-primary/90 flex items-center justify-center gap-1.5"
+                className="w-full dash-btn-sm py-2 h-auto bg-primary text-background hover:bg-primary/90 flex items-center justify-center gap-1.5"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 Play Transit Journey
               </Button>
             )}
             {journeyActive && journeyNodeId && (
-              <div className="text-[8.5px] text-zinc-400 text-center font-mono animate-pulse">
+              <div className="dash-filepath text-zinc-400 text-center animate-pulse">
                 Arriving at: <span className="text-primary font-bold">{journeyNodeId.split(":").pop()?.split(/[\\/]/).pop()}</span>
               </div>
             )}
@@ -115,23 +115,23 @@ export default function FeatureDetails({
 
         {/* Metrics Grid */}
         <div className="space-y-1">
-          <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest block">Feature Metrics</span>
+          <span className="dash-sidebar-cat text-zinc-400 block">Feature Metrics</span>
           <div className="grid grid-cols-2 gap-2">
             <div className="p-2.5 rounded-lg bg-zinc-900/50 border border-border/40 text-center sm:text-left">
-              <span className="text-[8px] text-zinc-500 uppercase font-semibold">Routes</span>
-              <div className="text-sm font-extrabold text-white mt-0.5">{selectedFeature.metrics.routes}</div>
+              <span className="dash-metadata text-zinc-400 uppercase">Routes</span>
+              <div className="dash-card-title text-white mt-0.5">{selectedFeature.metrics.routes}</div>
             </div>
             <div className="p-2.5 rounded-lg bg-zinc-900/50 border border-border/40 text-center sm:text-left">
-              <span className="text-[8px] text-zinc-550 uppercase font-semibold">Services</span>
-              <div className="text-sm font-extrabold text-white mt-0.5">{selectedFeature.metrics.services}</div>
+              <span className="dash-metadata text-zinc-400 uppercase">Services</span>
+              <div className="dash-card-title text-white mt-0.5">{selectedFeature.metrics.services}</div>
             </div>
             <div className="p-2.5 rounded-lg bg-zinc-900/50 border border-border/40 text-center sm:text-left">
-              <span className="text-[8px] text-zinc-505 uppercase font-semibold">Repositories</span>
-              <div className="text-sm font-extrabold text-white mt-0.5">{selectedFeature.metrics.repositories}</div>
+              <span className="dash-metadata text-zinc-400 uppercase">Repositories</span>
+              <div className="dash-card-title text-white mt-0.5">{selectedFeature.metrics.repositories}</div>
             </div>
             <div className="p-2.5 rounded-lg bg-zinc-900/50 border border-border/40 text-center sm:text-left">
-              <span className="text-[8px] text-zinc-550 uppercase font-semibold">DB Tables</span>
-              <div className="text-sm font-extrabold text-white mt-0.5">{selectedFeature.metrics.tables}</div>
+              <span className="dash-metadata text-zinc-400 uppercase">DB Tables</span>
+              <div className="dash-card-title text-white mt-0.5">{selectedFeature.metrics.tables}</div>
             </div>
           </div>
         </div>
@@ -139,14 +139,14 @@ export default function FeatureDetails({
         {/* Domain Health & Confidence */}
         <div className="grid grid-cols-2 gap-2">
           <div className="p-2.5 rounded-lg bg-zinc-900/50 border border-border/40">
-            <span className="text-[8px] text-zinc-550 uppercase font-semibold block mb-0.5">Feature Health</span>
-            <Badge variant={selectedFeature.health >= 90 ? "success" : selectedFeature.health >= 70 ? "warning" : "error"} className="text-[9px] font-bold">
+            <span className="dash-metadata text-zinc-400 uppercase block mb-0.5">Feature Health</span>
+            <Badge variant={selectedFeature.health >= 90 ? "success" : selectedFeature.health >= 70 ? "warning" : "error"} className="dash-badge">
               {selectedFeature.health}/100
             </Badge>
           </div>
           <div className="p-2.5 rounded-lg bg-zinc-900/50 border border-border/40">
-            <span className="text-[8px] text-zinc-550 uppercase font-semibold block mb-0.5">Confidence</span>
-            <div className="text-xs font-bold text-zinc-350">{selectedFeature.confidence <= 1 ? Math.round(selectedFeature.confidence * 100) : Math.round(selectedFeature.confidence)}% Conf</div>
+            <span className="dash-metadata text-zinc-400 uppercase block mb-0.5">Confidence</span>
+            <div className="dash-metadata font-bold text-zinc-300">{selectedFeature.confidence <= 1 ? Math.round(selectedFeature.confidence * 100) : Math.round(selectedFeature.confidence)}% Conf</div>
           </div>
         </div>
 
@@ -154,9 +154,9 @@ export default function FeatureDetails({
         <div className="p-3 rounded-xl bg-zinc-900/50 border border-border/40 flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Zap className="w-3.5 h-3.5 text-rose-400" />
-            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Complexity Index Sum</span>
+            <span className="dash-sidebar-cat text-zinc-400">Complexity Index Sum</span>
           </div>
-          <span className="text-xs font-mono font-extrabold text-rose-400">
+          <span className="dash-filepath-medium text-rose-400">
             Σ {selectedFeature.metrics.complexity}
           </span>
         </div>
@@ -165,17 +165,17 @@ export default function FeatureDetails({
         <div className="space-y-1.5">
           <div className="flex items-center gap-1">
             <ArrowRight className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-            <span className="text-[8.5px] font-bold text-zinc-400 uppercase tracking-widest">Depends On Features ({selectedFeature.dependencies.length})</span>
+            <span className="dash-sidebar-cat text-zinc-400">Depends On Features ({selectedFeature.dependencies.length})</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {selectedFeature.dependencies.length > 0 ? (
               selectedFeature.dependencies.map(depId => (
-                <Badge key={depId} variant="secondary" className="text-[9px] bg-zinc-900 border border-border/60 text-zinc-300 font-medium">
+                <Badge key={depId} variant="secondary" className="dash-badge bg-zinc-900 border border-border/60 text-zinc-300">
                   {featureNames[depId] || depId}
                 </Badge>
               ))
             ) : (
-              <span className="text-[9.5px] text-zinc-650 italic pl-1">No feature dependencies</span>
+              <span className="dash-metadata text-zinc-500 italic pl-1">No feature dependencies</span>
             )}
           </div>
         </div>
@@ -184,17 +184,17 @@ export default function FeatureDetails({
         <div className="space-y-1.5">
           <div className="flex items-center gap-1">
             <ArrowLeft className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-            <span className="text-[8.5px] font-bold text-zinc-400 uppercase tracking-widest">Used By Features ({dependents.length})</span>
+            <span className="dash-sidebar-cat text-zinc-400">Used By Features ({dependents.length})</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {dependents.length > 0 ? (
               dependents.map(dep => (
-                <Badge key={dep.id} variant="secondary" className="text-[9px] bg-zinc-900 border border-border/60 text-zinc-300 font-medium">
+                <Badge key={dep.id} variant="secondary" className="dash-badge bg-zinc-900 border border-border/60 text-zinc-300">
                   {dep.name}
                 </Badge>
               ))
             ) : (
-              <span className="text-[9.5px] text-zinc-650 italic pl-1">Not used by other domains</span>
+              <span className="dash-metadata text-zinc-500 italic pl-1">Not used by other domains</span>
             )}
           </div>
         </div>
@@ -283,7 +283,7 @@ export default function FeatureDetails({
           {type === "route" && <Globe className="w-4 h-4 text-emerald-400 shrink-0" />}
           {type === "file" && <FileText className="w-4 h-4 text-blue-400 shrink-0" />}
           {type === "db" && <Database className="w-4 h-4 text-rose-400 shrink-0" />}
-          <h3 className="text-sm font-bold text-zinc-100 truncate" title={labelName}>
+          <h3 className="dash-card-title text-zinc-100 truncate" title={labelName}>
             {labelName}
           </h3>
         </div>
@@ -295,14 +295,14 @@ export default function FeatureDetails({
       {/* Feature & Station Type badges */}
       <div className="flex gap-2">
         <div className="space-y-1 flex-1">
-          <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest block">Feature</span>
-          <Badge variant="primary" className="text-[9px] uppercase font-bold tracking-wider">
+          <span className="dash-sidebar-cat text-zinc-400 block">Feature</span>
+          <Badge variant="primary" className="dash-badge uppercase">
             {featureNames[featureIdOfNode] || "Core Module"}
           </Badge>
         </div>
         <div className="space-y-1 flex-1">
-          <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest block">Station Type</span>
-          <Badge variant="secondary" className="text-[9px] uppercase font-bold tracking-wider">
+          <span className="dash-sidebar-cat text-zinc-400 block">Station Type</span>
+          <Badge variant="secondary" className="dash-badge uppercase">
             {type === "route" ? "API Route" : type === "db" ? "DB Table" : "Code Module"}
           </Badge>
         </div>
@@ -311,7 +311,7 @@ export default function FeatureDetails({
       {/* Action panel for Route Station */}
       {type === "route" && (
         <Card className="p-3 bg-zinc-900/40 border border-border/60 space-y-2 shrink-0">
-          <div className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest text-center mb-1">
+          <div className="dash-sidebar-cat text-zinc-400 text-center mb-1">
             Station Action
           </div>
           <Button
@@ -321,7 +321,7 @@ export default function FeatureDetails({
                 onSwitchTab("arch");
               }
             }}
-            className="w-full text-[10px] font-bold py-2 h-auto bg-primary text-background hover:bg-primary/90 flex items-center justify-center gap-1.5"
+            className="w-full dash-btn-sm py-2 h-auto bg-primary text-background hover:bg-primary/90 flex items-center justify-center gap-1.5"
           >
             <Zap className="w-3.5 h-3.5 fill-background stroke-background animate-pulse" />
             View Execution Trace
@@ -332,7 +332,7 @@ export default function FeatureDetails({
       {/* Action panel for File Station */}
       {type === "file" && onSwitchTab && onSetImpactFile && (
         <Card className="p-3 bg-zinc-900/40 border border-border/60 space-y-2 shrink-0">
-          <div className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest text-center mb-1">
+          <div className="dash-sidebar-cat text-zinc-400 text-center mb-1">
             Station Actions
           </div>
           <div className="flex gap-2">
@@ -343,7 +343,7 @@ export default function FeatureDetails({
                   onSwitchTab("impact");
                 }
               }}
-              className="flex-1 text-[9.5px] font-bold py-1.5 h-auto bg-primary text-background hover:bg-primary/90"
+              className="flex-1 dash-btn-sm py-1.5 h-auto bg-primary text-background hover:bg-primary/90"
             >
               Change Impact
             </Button>
@@ -357,12 +357,12 @@ export default function FeatureDetails({
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-2">
             <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-border/50 text-center sm:text-left">
-              <span className="text-[8px] text-muted-foreground uppercase font-semibold">Size</span>
-              <div className="text-xs font-extrabold text-white mt-0.5">{formatBytes(fileNode.size)}</div>
+              <span className="dash-metadata text-muted-foreground uppercase">Size</span>
+              <div className="dash-card-title text-white mt-0.5">{formatBytes(fileNode.size)}</div>
             </div>
             <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-border/50 text-center sm:text-left">
-              <span className="text-[8px] text-muted-foreground uppercase font-semibold">Lines</span>
-              <div className="text-xs font-extrabold text-white mt-0.5">{fileNode.lineCount}</div>
+              <span className="dash-metadata text-muted-foreground uppercase">Lines</span>
+              <div className="dash-card-title text-white mt-0.5">{fileNode.lineCount}</div>
             </div>
           </div>
 
@@ -371,19 +371,19 @@ export default function FeatureDetails({
             <div className="p-3 rounded-xl bg-rose-950/10 border border-rose-900/30 space-y-1.5">
               <div className="flex items-center gap-1.5 text-rose-400">
                 <Zap className="w-3.5 h-3.5 animate-pulse" />
-                <span className="text-[9px] font-bold uppercase tracking-wider">Complexity Status</span>
+                <span className="dash-sidebar-cat text-rose-400">Complexity Status</span>
               </div>
-              <div className="space-y-1 text-xs">
+              <div className="space-y-1">
                 {complexityInfo && (
-                  <div className="flex justify-between items-center text-[10.5px]">
+                  <div className="flex justify-between items-center dash-metadata">
                     <span className="text-zinc-400">Complexity Index:</span>
-                    <Badge variant={complexityInfo.rating === "risky" ? "error" : "warning"} className="text-[8.5px] font-bold">
+                    <Badge variant={complexityInfo.rating === "risky" ? "error" : "warning"} className="dash-badge">
                       {complexityInfo.score} ({complexityInfo.rating.toUpperCase()})
                     </Badge>
                   </div>
                 )}
                 {godInfo && (
-                  <div className="flex justify-between items-center text-[10.5px] text-purple-400 font-bold mt-1">
+                  <div className="flex justify-between items-center dash-metadata text-purple-400 font-bold mt-1">
                     <span>Code Design Risk:</span>
                     <span>GOD SERVICE DETECTED</span>
                   </div>
@@ -395,11 +395,11 @@ export default function FeatureDetails({
           {/* Routes Using It */}
           {routesUsingIt.length > 0 && (
             <div className="space-y-1.5">
-              <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest block">Routes Using This File ({routesUsingIt.length})</span>
+              <span className="dash-sidebar-cat text-zinc-400 block">Routes Using This File ({routesUsingIt.length})</span>
               <div className="space-y-1 max-h-[100px] overflow-y-auto pr-1">
                 {routesUsingIt.map((r, ri) => (
-                  <div key={ri} className="flex items-center gap-1.5 p-1.5 rounded bg-zinc-900/60 border border-border/40 text-[9.5px] font-mono text-zinc-300">
-                    <span className="text-[8.5px] font-bold text-primary shrink-0">{r.method}</span>
+                  <div key={ri} className="flex items-center gap-1.5 p-1.5 rounded bg-zinc-900/60 border border-border/40 dash-filepath text-zinc-300">
+                    <span className="dash-badge text-primary shrink-0">{r.method}</span>
                     <span className="truncate">{r.path}</span>
                   </div>
                 ))}
@@ -411,17 +411,17 @@ export default function FeatureDetails({
           <div className="space-y-1.5">
             <div className="flex items-center gap-1">
               <ArrowRight className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-              <span className="text-[8px] font-bold text-zinc-450 uppercase tracking-widest">Imports ({fileNode.internalImports?.length ?? 0})</span>
+              <span className="dash-sidebar-cat text-zinc-400">Imports ({fileNode.internalImports?.length ?? 0})</span>
             </div>
             <div className="space-y-1 max-h-[100px] overflow-y-auto pr-1">
               {fileNode.internalImports && fileNode.internalImports.length > 0 ? (
                 fileNode.internalImports.map((imp) => (
-                  <div key={imp} className="p-1.5 rounded bg-zinc-900/60 border border-border/40 text-[9.5px] font-mono text-zinc-300 truncate" title={imp}>
+                  <div key={imp} className="p-1.5 rounded bg-zinc-900/60 border border-border/40 dash-filepath text-zinc-300 truncate" title={imp}>
                     {imp.split(/[\\/]/).pop()}
                   </div>
                 ))
               ) : (
-                <span className="text-[9.5px] text-zinc-650 italic block pl-1">No local imports</span>
+                <span className="dash-metadata text-zinc-500 italic block pl-1">No local imports</span>
               )}
             </div>
           </div>
@@ -430,17 +430,17 @@ export default function FeatureDetails({
           <div className="space-y-1.5">
             <div className="flex items-center gap-1">
               <ArrowLeft className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-              <span className="text-[8px] font-bold text-zinc-450 uppercase tracking-widest">Referenced By ({fileNode.referencedBy?.length ?? 0})</span>
+              <span className="dash-sidebar-cat text-zinc-400">Referenced By ({fileNode.referencedBy?.length ?? 0})</span>
             </div>
             <div className="space-y-1 max-h-[100px] overflow-y-auto pr-1">
               {fileNode.referencedBy && fileNode.referencedBy.length > 0 ? (
                 fileNode.referencedBy.map((ref) => (
-                  <div key={ref} className="p-1.5 rounded bg-zinc-900/60 border border-border/40 text-[9.5px] font-mono text-zinc-300 truncate" title={ref}>
+                  <div key={ref} className="p-1.5 rounded bg-zinc-900/60 border border-border/40 dash-filepath text-zinc-300 truncate" title={ref}>
                     {ref.split(/[\\/]/).pop()}
                   </div>
                 ))
               ) : (
-                <span className="text-[9.5px] text-zinc-650 italic block pl-1">No incoming references</span>
+                <span className="dash-metadata text-zinc-500 italic block pl-1">No incoming references</span>
               )}
             </div>
           </div>
@@ -452,11 +452,11 @@ export default function FeatureDetails({
         <div className="space-y-1.5">
           <div className="flex items-center gap-1">
             <Database className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-            <span className="text-[8px] font-bold text-zinc-450 uppercase tracking-widest">Database Tables Accessed</span>
+            <span className="dash-sidebar-cat text-zinc-400">Database Tables Accessed</span>
           </div>
           <div className="flex flex-wrap gap-1">
             {dbEntitiesAccessed.map((ent) => (
-              <Badge key={ent} variant="secondary" className="text-[9px] font-mono px-2 py-0.5 bg-rose-950/20 text-rose-450 border border-rose-900/30">
+              <Badge key={ent} variant="secondary" className="dash-filepath px-2 py-0.5 bg-rose-950/20 text-rose-400 border border-rose-900/30">
                 {ent}
               </Badge>
             ))}
@@ -467,11 +467,11 @@ export default function FeatureDetails({
       {/* Path Info */}
       {filePath && (
         <div className="p-3 rounded-xl bg-zinc-900/40 border border-border/40 space-y-1">
-          <div className="flex items-center gap-1.5 text-zinc-450">
+          <div className="flex items-center gap-1.5 text-zinc-400">
             <Info className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-[8px] font-bold uppercase tracking-wider">File Path</span>
+            <span className="dash-sidebar-cat">File Path</span>
           </div>
-          <code className="block text-[9.5px] font-mono text-zinc-450 break-all leading-normal">
+          <code className="block dash-filepath text-zinc-400 break-all">
             {filePath}
           </code>
         </div>

@@ -76,7 +76,7 @@ function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProp
       className="w-72 bg-zinc-900/95 backdrop-blur-xl border-l border-border/70 h-full overflow-y-auto shrink-0"
     >
       <div className="p-4 border-b border-border/50 flex items-center justify-between">
-        <h3 className="font-bold text-white flex items-center gap-2 text-xs">
+        <h3 className="dash-card-title text-white flex items-center gap-2">
           <Info size={14} className="text-primary" />
           Step Inspector
         </h3>
@@ -92,14 +92,14 @@ function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProp
             <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
               <div className="flex items-center gap-2 mb-3">
                 <FileCode size={14} className="text-zinc-400" />
-                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Module</span>
+                <span className="dash-sidebar-cat text-zinc-400">Module</span>
               </div>
-              <div className="font-mono text-white text-sm">{selectedStep.name}</div>
-              <div className={`text-[10px] mt-1 ${style?.text || 'text-zinc-400'} capitalize`}>
+              <div className="dash-filepath-medium text-white">{selectedStep.name}</div>
+              <div className={`dash-metadata mt-1 ${style?.text || 'text-zinc-400'} capitalize`}>
                 {selectedStep.type}
               </div>
               {selectedStep.file && (
-                <div className="text-[10px] text-zinc-500 mt-1 font-mono truncate">{selectedStep.file}</div>
+                <div className="dash-filepath text-zinc-500 mt-1 truncate">{selectedStep.file}</div>
               )}
             </div>
 
@@ -117,12 +117,12 @@ function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProp
                     <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
                   )}
                   <div>
-                    <div className={`text-xs font-medium ${
+                    <div className={`dash-card-title ${
                       authAlert.status === 'protected' ? 'text-emerald-300' : 'text-amber-300'
                     }`}>
                       {authAlert.status === 'protected' ? 'Protected' : 'Security Warning'}
                     </div>
-                    <div className={`text-[10px] mt-0.5 ${
+                    <div className={`dash-body mt-0.5 ${
                       authAlert.status === 'protected' ? 'text-emerald-400/80' : 'text-amber-400/80'
                     }`}>
                       {authAlert.message}
@@ -137,11 +137,11 @@ function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProp
               <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-3">
                   <Key size={14} className="text-amber-400" />
-                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Env Secrets</span>
+                  <span className="dash-sidebar-cat text-zinc-400">Env Secrets</span>
                 </div>
                 <div className="space-y-1">
                   {envVars.map((env: string, i: number) => (
-                    <div key={i} className="font-mono text-[10px] text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded">
+                    <div key={i} className="dash-filepath text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded">
                       {env}
                     </div>
                   ))}
@@ -154,11 +154,11 @@ function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProp
               <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-3">
                   <Database size={14} className="text-rose-400" />
-                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">DB Entities</span>
+                  <span className="dash-sidebar-cat text-zinc-400">DB Entities</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {dbEntities.map((entity: string, i: number) => (
-                    <span key={i} className="px-2 py-1 bg-rose-500/10 border border-rose-500/30 rounded text-[10px] text-rose-300 font-mono">
+                    <span key={i} className="px-2 py-1 bg-rose-500/10 border border-rose-500/30 rounded dash-filepath text-rose-300">
                       {entity}
                     </span>
                   ))}
@@ -172,24 +172,24 @@ function InspectorSidebar({ selectedStep, trace, onClose }: InspectorSidebarProp
             <div className="bg-zinc-800/50 rounded-xl p-4 border border-border/50">
               <div className="flex items-center gap-2 mb-3">
                 <Route size={14} className="text-blue-400" />
-                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Trace Summary</span>
+                <span className="dash-sidebar-cat text-zinc-400">Trace Summary</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="text-[10px] text-zinc-500">Confidence</div>
-                  <div className="text-lg font-bold text-emerald-400">{trace.confidence <= 1 ? Math.round(trace.confidence * 100) : Math.round(trace.confidence)}%</div>
+                  <div className="dash-metadata text-zinc-500">Confidence</div>
+                  <div className="dash-card-title text-emerald-400">{trace.confidence <= 1 ? Math.round(trace.confidence * 100) : Math.round(trace.confidence)}%</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-zinc-500">Complexity</div>
-                  <div className="text-lg font-bold text-amber-400">Σ {trace.metrics?.complexity || 42}</div>
+                  <div className="dash-metadata text-zinc-500">Complexity</div>
+                  <div className="dash-card-title text-amber-400">Σ {trace.metrics?.complexity || 42}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-zinc-500">DB Access</div>
-                  <div className="text-lg font-bold text-blue-400">{trace.reachability ? 'Yes' : 'No'}</div>
+                  <div className="dash-metadata text-zinc-500">DB Access</div>
+                  <div className="dash-card-title text-blue-400">{trace.reachability ? 'Yes' : 'No'}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-zinc-500">Auth Strategy</div>
-                  <div className="text-lg font-bold text-purple-400">{trace.authType || 'None'}</div>
+                  <div className="dash-metadata text-zinc-500">Auth Strategy</div>
+                  <div className="dash-card-title text-purple-400">{trace.authType || 'None'}</div>
                 </div>
               </div>
             </div>
@@ -348,9 +348,9 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
             >
               <div className="flex items-center gap-2 justify-center mb-1.5">
                 <Icon className="w-3.5 h-3.5 animate-pulse" />
-                <span className="text-[8px] font-bold uppercase tracking-widest opacity-60">{style.label}</span>
+                <span className="dash-sidebar-cat opacity-70">{style.label}</span>
               </div>
-              <div className="text-[11px] font-mono font-bold truncate" title={step.name}>{step.name}</div>
+              <div className="dash-filepath-medium truncate" title={step.name}>{step.name}</div>
             </div>
           )
         },
@@ -379,7 +379,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
     return (
       <div className="h-[480px] flex flex-col items-center justify-center text-zinc-500 gap-2 bg-zinc-950/40 border border-border/60 rounded-2xl">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="text-xs">Generating execution traces from API mappings...</span>
+        <span className="dash-metadata">Generating execution traces from API mappings...</span>
       </div>
     );
   }
@@ -391,7 +391,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
-            className="w-full pl-8 pr-8 py-1.5 text-xs bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
+            className="w-full pl-8 pr-8 py-1.5 dash-metadata bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
             placeholder="Search API endpoints..."
             value={routeSearch}
             onChange={e => setRouteSearch(e.target.value)}
@@ -430,15 +430,15 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold font-mono border shrink-0 ${mc}`}>
+                      <span className={`px-1.5 py-0.5 rounded dash-badge border shrink-0 ${mc}`}>
                         {t.method.toUpperCase()}
                       </span>
-                      <code className="text-[10px] font-mono text-zinc-300 truncate" title={t.route}>
+                      <code className="dash-filepath text-zinc-300 truncate" title={t.route}>
                         {t.route}
                       </code>
                     </div>
                     {t.reachability && (
-                      <Badge variant="success" className="text-[7px] py-0 px-1 border-emerald-500/30 scale-90 shrink-0">
+                      <Badge variant="success" className="dash-badge py-0 px-1 border-emerald-500/30 shrink-0">
                         DB
                       </Badge>
                     )}
@@ -447,7 +447,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
               );
             })
           ) : (
-            <div className="text-center py-8 text-zinc-500 text-[10px] italic">No matching routes found</div>
+            <div className="text-center py-8 text-zinc-500 dash-metadata italic">No matching routes found</div>
           )}
         </div>
       </div>
@@ -456,17 +456,16 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
       <div className="lg:col-span-2 flex flex-col bg-zinc-950/60 border border-border/60 rounded-2xl p-4 overflow-hidden relative">
         {activeTrace ? (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Trace Title & Controls - REPLACE with this */}
+            {/* Trace Title & Controls */}
             <div className="flex items-center justify-between pb-3 border-b border-border/50 mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <Zap className="w-4 h-4 text-primary shrink-0 animate-pulse" />
-                <h4 className="text-xs font-bold text-zinc-200 uppercase tracking-widest truncate">
+                <h4 className="dash-card-title text-zinc-200 uppercase tracking-wider truncate">
                   {activeTrace.method} {activeTrace.route}
                 </h4>
               </div>
               
               <div className="flex items-center gap-2 shrink-0">
-                {/* NEW: Playback Controls from daadd-main */}
                 <button
                   onClick={() => handleStep('prev')}
                   disabled={activeStep === 0}
@@ -498,7 +497,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
                     <button
                       key={mode}
                       onClick={() => setViewMode(mode)}
-                      className={`px-2 py-1 rounded text-[8.5px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                      className={`px-2 py-1 rounded dash-btn-sm uppercase transition-all duration-200 ${
                         viewMode === mode ? "bg-primary text-background" : "text-muted-foreground hover:text-white"
                       }`}
                     >
@@ -513,39 +512,39 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3 bg-zinc-900/40 p-3 rounded-xl border border-border/40">
               {/* Confidence Meter */}
               <div className="flex flex-col justify-center items-center md:border-r border-border/30 pr-1 text-center">
-                <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest">Confidence</span>
+                <span className="dash-sidebar-cat text-zinc-400">Confidence</span>
                 <div className="flex items-center gap-1 mt-0.5">
                   <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="text-sm font-extrabold text-white">{activeTrace.confidence <= 1 ? Math.round(activeTrace.confidence * 100) : Math.round(activeTrace.confidence)}%</span>
+                  <span className="dash-value text-white">{activeTrace.confidence <= 1 ? Math.round(activeTrace.confidence * 100) : Math.round(activeTrace.confidence)}%</span>
                 </div>
               </div>
 
               {/* Reachability Badge */}
               <div className="flex flex-col justify-center items-center md:border-r border-border/30 px-1 text-center">
-                <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest">DB Reachable</span>
+                <span className="dash-sidebar-cat text-zinc-400">DB Reachable</span>
                 {activeTrace.reachability ? (
-                  <Badge variant="success" className="text-[8px] mt-1 font-bold">REACHABLE</Badge>
+                  <Badge variant="success" className="dash-badge mt-1">REACHABLE</Badge>
                 ) : (
-                  <Badge variant="secondary" className="text-[8px] mt-1 font-semibold opacity-60">NO DB ACTIVITY</Badge>
+                  <Badge variant="secondary" className="dash-badge mt-1 opacity-60">NO DB ACTIVITY</Badge>
                 )}
               </div>
 
               {/* Authentication Flow Info */}
               <div className="flex flex-col justify-center items-center md:border-r border-border/30 px-1 text-center">
-                <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest">Auth Flow</span>
+                <span className="dash-sidebar-cat text-zinc-400">Auth Flow</span>
                 {activeTrace.authType ? (
-                  <Badge variant="primary" className="text-[8.5px] mt-1 font-bold bg-emerald-950/40 text-emerald-400 border-emerald-800/60 uppercase">
+                  <Badge variant="primary" className="dash-badge mt-1 bg-emerald-950/40 text-emerald-400 border-emerald-800/60 uppercase">
                     {activeTrace.authType}
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className="text-[8px] mt-1 font-semibold opacity-60 uppercase">PUBLIC</Badge>
+                  <Badge variant="secondary" className="dash-badge mt-1 opacity-60 uppercase">PUBLIC</Badge>
                 )}
               </div>
 
               {/* Quick Metrics Bar */}
               <div className="flex flex-col justify-center items-center text-center">
-                <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest">Complexity</span>
-                <div className="text-xs font-mono font-bold text-primary mt-1">
+                <span className="dash-sidebar-cat text-zinc-400">Complexity</span>
+                <div className="dash-filepath-medium text-primary mt-1">
                   Σ {activeTrace.metrics.complexity}
                 </div>
               </div>
@@ -596,10 +595,10 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
                               <Icon className={`w-3 h-3 ${isActive ? 'text-primary' : ''}`} />
                             </div>
                             <div className="min-w-0 text-left">
-                              <span className={`text-[7.5px] font-bold uppercase tracking-wider block opacity-70 ${isActive ? 'text-primary' : style.text}`}>
+                              <span className={`dash-sidebar-cat block opacity-70 ${isActive ? 'text-primary' : style.text}`}>
                                 {style.label}
                               </span>
-                              <span className="text-[11px] font-mono font-bold text-zinc-200 truncate block">
+                              <span className="dash-filepath-medium text-zinc-200 truncate block">
                                 {step.name}
                               </span>
                             </div>
@@ -608,7 +607,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
                             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                           )}
                           {hasFile && !isActive && (
-                            <Badge variant="secondary" className="text-[8px] tracking-wide shrink-0 font-bold">
+                            <Badge variant="secondary" className="dash-badge shrink-0">
                               INSPECT
                             </Badge>
                           )}
@@ -652,13 +651,13 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
             {/* Trace Meta Info (Env variables list) */}
             {activeTrace.envVars.length > 0 && (
               <div className="mt-auto border-t border-border/40 pt-2.5 bg-zinc-900/10 shrink-0">
-                <div className="flex items-center gap-1.5 text-zinc-450 text-[9px] font-bold uppercase tracking-wider mb-1.5">
+                <div className="flex items-center gap-1.5 text-zinc-400 dash-sidebar-cat mb-1.5">
                   <Key className="w-3 h-3 text-primary shrink-0" />
                   <span>Mapped Environment Configs ({activeTrace.envVars.length})</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {activeTrace.envVars.map(env => (
-                    <code key={env} className="text-[9px] font-mono bg-zinc-900/60 border border-border/60 px-1.5 py-0.5 rounded text-primary">
+                    <code key={env} className="dash-filepath bg-zinc-900/60 border border-border/60 px-1.5 py-0.5 rounded text-primary">
                       {env}
                     </code>
                   ))}
@@ -667,10 +666,10 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
             )}
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-zinc-550">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-zinc-500">
             <Zap className="w-12 h-12 text-zinc-700 mb-2 animate-pulse" />
-            <h4 className="text-xs font-bold text-zinc-300">Execution Trace Explorer</h4>
-            <p className="text-[10px] text-zinc-500 max-w-xs mt-1 leading-relaxed">
+            <h4 className="dash-card-title text-zinc-300">Execution Trace Explorer</h4>
+            <p className="dash-body text-zinc-500 max-w-xs mt-1 leading-relaxed">
               Select an API route from the endpoints menu on the left to analyze its controller, service layers, helpers, and database connections.
             </p>
           </div>
@@ -691,13 +690,13 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
             {/* View Source & View Impact Buttons */}
             {selectedFileNode && (
               <Card className="p-3 bg-zinc-900/40 border border-border/60 space-y-2 shrink-0">
-                <div className="text-[9.5px] font-bold text-zinc-400 uppercase tracking-widest block text-center mb-1">
+                <div className="dash-sidebar-cat text-zinc-400 block text-center mb-1">
                   Inspector Actions
                 </div>
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => setPreviewFile(selectedFile)}
-                    className="flex-1 text-[9px] font-bold py-1.5 h-auto bg-zinc-900 border border-border/60 hover:bg-zinc-800"
+                    className="flex-1 dash-btn-sm py-1.5 h-auto bg-zinc-900 border border-border/60 hover:bg-zinc-800"
                   >
                     <Code className="w-3 h-3 mr-1 text-primary" />
                     View Source
@@ -709,24 +708,24 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
                         onSetImpactFile(selectedFile);
                         onSwitchTab("impact");
                       }}
-                      className="flex-1 text-[9px] font-bold py-1.5 h-auto bg-primary text-background hover:bg-primary/90"
+                      className="flex-1 dash-btn-sm py-1.5 h-auto bg-primary text-background hover:bg-primary/90"
                     >
                       <Eye className="w-3 h-3 mr-1 text-background" />
                       View Impact
                     </Button>
                   )}
                 </div>
-                <div className="text-[8px] text-zinc-550 text-center mt-1 leading-tight">
+                <div className="dash-metadata text-zinc-500 text-center mt-1">
                   Affected Modules: <span className="text-primary font-bold">{selectedFileNode.referencedBy?.length || 0} direct</span>, {(selectedFileNode.referencedBy?.length || 0) * 2} estimated total.
                 </div>
               </Card>
             )}
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-border/80 rounded-2xl bg-zinc-950/20 text-zinc-550">
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-border/80 rounded-2xl bg-zinc-950/20 text-zinc-500">
             <Network className="w-10 h-10 text-zinc-700 mb-2" />
-            <h4 className="text-xs font-bold text-zinc-300">Module Inspector</h4>
-            <p className="text-[10px] text-zinc-500 max-w-xs mt-1 leading-relaxed">
+            <h4 className="dash-card-title text-zinc-300">Module Inspector</h4>
+            <p className="dash-body text-zinc-500 max-w-xs mt-1 leading-relaxed">
               Click on any trace node marked with the "INSPECT" badge to audit imports, dependents, complexity, and file specs.
             </p>
           </div>

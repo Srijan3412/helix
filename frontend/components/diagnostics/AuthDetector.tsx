@@ -46,8 +46,8 @@ export default function AuthDetector({ authType, evidence }: AuthDetectorProps) 
             <AlertTriangle className="text-red-400" size={24} />
           </div>
           <div>
-            <h3 className="font-bold text-white mb-1">No Authentication Detected</h3>
-            <p className="text-xs text-red-300/80 leading-relaxed">
+            <h3 className="dash-card-title text-white mb-1">No Authentication Detected</h3>
+            <p className="dash-body text-red-300/80 leading-relaxed">
               This repository does not appear to have environment variables or configurations matching JWT, Firebase, Clerk, OAuth, or Session-based authentication.
             </p>
           </div>

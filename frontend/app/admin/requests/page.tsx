@@ -172,7 +172,7 @@ export default function AdminRequestsPage() {
     const getStatusBadge = (status: StatusType) => {
         const config = statusConfig[status];
         return (
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${config.color}`}>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full dash-badge border ${config.color}`}>
                 {config.icon}
                 {config.label}
             </span>
@@ -189,7 +189,7 @@ export default function AdminRequestsPage() {
         };
 
         return (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${colorMap[type] || colorMap.GENERAL}`}>
+            <span className={`px-2 py-0.5 rounded-full dash-badge border ${colorMap[type] || colorMap.GENERAL}`}>
                 {requestTypeLabels[type] || type}
             </span>
         );
@@ -225,7 +225,7 @@ export default function AdminRequestsPage() {
             <div className="min-h-screen flex items-center justify-center bg-zinc-950">
                 <div className="flex items-center gap-3 text-zinc-500">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <span className="text-sm font-mono">Loading requests...</span>
+                    <span className="dash-metadata">Loading requests...</span>
                 </div>
             </div>
         );
@@ -239,11 +239,11 @@ export default function AdminRequestsPage() {
                 <div className="max-w-md w-full text-center">
                     <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-2xl">
                         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-white mb-2">Failed to Load Requests</h3>
-                        <p className="text-sm text-zinc-400">{error}</p>
+                        <h3 className="dash-card-title text-white mb-2">Failed to Load Requests</h3>
+                        <p className="dash-body text-zinc-400">{error}</p>
                         <button
                             onClick={fetchRequests}
-                            className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-sm font-medium transition flex items-center gap-2 mx-auto"
+                            className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl dash-btn-sm transition flex items-center gap-2 mx-auto"
                         >
                             <RefreshCw className="w-4 h-4" />
                             Retry
@@ -267,19 +267,20 @@ export default function AdminRequestsPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">Access Requests</h1>
-                            <p className="text-sm text-zinc-500">Review and process user access requests</p>
+                            <p className="dash-eyebrow text-emerald-400">ADMIN CONTROL</p>
+                            <h1 className="dash-title text-white">Access Requests</h1>
+                            <p className="dash-subtitle text-zinc-500">Review and process user access requests</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={fetchRequests}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white transition text-sm"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white transition dash-btn-sm"
                         >
                             <RefreshCw className="w-4 h-4" />
                             Refresh
                         </button>
-                        <div className="text-sm text-zinc-500 bg-zinc-800/40 px-3 py-2 rounded-lg">
+                        <div className="dash-metadata text-zinc-500 bg-zinc-800/40 px-3 py-2 rounded-lg">
                             {stats.new} new
                         </div>
                     </div>
@@ -288,24 +289,24 @@ export default function AdminRequestsPage() {
                 {/* Stats Summary */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-white">{stats.total}</div>
-                        <div className="text-xs text-zinc-500">Total</div>
+                        <div className="dash-metric text-white">{stats.total}</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">Total</div>
                     </div>
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-amber-400">{stats.new}</div>
-                        <div className="text-xs text-zinc-500">New</div>
+                        <div className="dash-metric text-amber-400">{stats.new}</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">New</div>
                     </div>
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-blue-400">{stats.read}</div>
-                        <div className="text-xs text-zinc-500">Read</div>
+                        <div className="dash-metric text-blue-400">{stats.read}</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">Read</div>
                     </div>
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-emerald-400">{stats.contacted}</div>
-                        <div className="text-xs text-zinc-500">Contacted</div>
+                        <div className="dash-metric text-emerald-400">{stats.contacted}</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">Contacted</div>
                     </div>
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-zinc-400">{stats.closed}</div>
-                        <div className="text-xs text-zinc-500">Closed</div>
+                        <div className="dash-metric text-zinc-400">{stats.closed}</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">Closed</div>
                     </div>
                 </div>
 
@@ -348,10 +349,10 @@ export default function AdminRequestsPage() {
                             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center flex-wrap gap-2 mb-1.5">
-                                        <span className="font-bold text-white">{request.name}</span>
+                                        <span className="dash-card-title text-white">{request.name}</span>
                                         <a
                                             href={`mailto:${request.email}`}
-                                            className="text-sm text-primary hover:underline truncate"
+                                            className="dash-body text-primary hover:underline truncate"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             {request.email}
@@ -359,7 +360,7 @@ export default function AdminRequestsPage() {
                                         {getStatusBadge(request.status as StatusType)}
                                         {getRequestTypeBadge(request.request_type)}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 dash-metadata text-zinc-500">
                                         {request.company && (
                                             <span className="flex items-center gap-1">
                                                 <Building className="w-3 h-3" />
@@ -386,7 +387,7 @@ export default function AdminRequestsPage() {
                                                 handleUpdateStatus(request.id, 'READ');
                                             }}
                                             disabled={updatingId === request.id}
-                                            className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition text-xs font-bold disabled:opacity-50"
+                                            className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition dash-btn-sm disabled:opacity-50"
                                         >
                                             {updatingId === request.id ? (
                                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -402,7 +403,7 @@ export default function AdminRequestsPage() {
                                                 handleUpdateStatus(request.id, 'CONTACTED');
                                             }}
                                             disabled={updatingId === request.id}
-                                            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition text-xs font-bold disabled:opacity-50"
+                                            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition dash-btn-sm disabled:opacity-50"
                                         >
                                             {updatingId === request.id ? (
                                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -418,7 +419,7 @@ export default function AdminRequestsPage() {
                                                 handleUpdateStatus(request.id, 'CLOSED');
                                             }}
                                             disabled={updatingId === request.id}
-                                            className="px-3 py-1.5 rounded-lg bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 transition text-xs font-bold disabled:opacity-50"
+                                            className="px-3 py-1.5 rounded-lg bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 transition dash-btn-sm disabled:opacity-50"
                                         >
                                             {updatingId === request.id ? (
                                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -435,9 +436,9 @@ export default function AdminRequestsPage() {
                     {filteredRequests.length === 0 && (
                         <div className="text-center py-12 text-zinc-500">
                             <Mail className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                            <p className="text-sm">No requests found</p>
+                            <p className="dash-body">No requests found</p>
                             {search && (
-                                <p className="text-xs text-zinc-600 mt-1">Try adjusting your search</p>
+                                <p className="dash-metadata text-zinc-600 mt-1">Try adjusting your search</p>
                             )}
                         </div>
                     )}
@@ -449,7 +450,7 @@ export default function AdminRequestsPage() {
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-bold text-white">Request Details</h3>
+                            <h3 className="dash-card-title text-white">Request Details</h3>
                             <button
                                 onClick={() => setShowDetailModal(false)}
                                 className="p-2 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-white transition"
@@ -461,32 +462,32 @@ export default function AdminRequestsPage() {
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs text-zinc-500">Name</label>
-                                    <div className="text-white font-medium">{selectedRequest.name}</div>
+                                    <label className="dash-metadata text-zinc-500">Name</label>
+                                    <div className="text-white dash-body font-medium">{selectedRequest.name}</div>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-zinc-500">Email</label>
-                                    <a href={`mailto:${selectedRequest.email}`} className="text-primary hover:underline">
+                                    <label className="dash-metadata text-zinc-500">Email</label>
+                                    <a href={`mailto:${selectedRequest.email}`} className="text-primary dash-body hover:underline block">
                                         {selectedRequest.email}
                                     </a>
                                 </div>
                                 {selectedRequest.company && (
                                     <div>
-                                        <label className="text-xs text-zinc-500">Company</label>
-                                        <div className="text-white">{selectedRequest.company}</div>
+                                        <label className="dash-metadata text-zinc-500">Company</label>
+                                        <div className="text-white dash-body">{selectedRequest.company}</div>
                                     </div>
                                 )}
                                 <div>
-                                    <label className="text-xs text-zinc-500">Request Type</label>
+                                    <label className="dash-metadata text-zinc-500">Request Type</label>
                                     <div>{getRequestTypeBadge(selectedRequest.request_type)}</div>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-zinc-500">Status</label>
+                                    <label className="dash-metadata text-zinc-500">Status</label>
                                     <div>{getStatusBadge(selectedRequest.status as StatusType)}</div>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-zinc-500">Submitted</label>
-                                    <div className="text-sm text-zinc-400">
+                                    <label className="dash-metadata text-zinc-500">Submitted</label>
+                                    <div className="dash-metadata text-zinc-400">
                                         {new Date(selectedRequest.created_at).toLocaleString()}
                                     </div>
                                 </div>
@@ -494,8 +495,8 @@ export default function AdminRequestsPage() {
 
                             {selectedRequest.message && (
                                 <div>
-                                    <label className="text-xs text-zinc-500">Message</label>
-                                    <div className="mt-1 p-4 bg-zinc-800/60 rounded-xl text-zinc-300 whitespace-pre-wrap">
+                                    <label className="dash-metadata text-zinc-500">Message</label>
+                                    <div className="mt-1 p-4 bg-zinc-800/60 rounded-xl text-zinc-300 dash-body whitespace-pre-wrap">
                                         {selectedRequest.message}
                                     </div>
                                 </div>
@@ -508,7 +509,7 @@ export default function AdminRequestsPage() {
                                             handleUpdateStatus(selectedRequest.id, 'READ');
                                             setSelectedRequest({ ...selectedRequest, status: 'READ' });
                                         }}
-                                        className="px-4 py-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition text-sm font-bold"
+                                        className="px-4 py-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition dash-btn-sm"
                                     >
                                         <Eye className="w-4 h-4 inline mr-1" />
                                         Mark Read
@@ -520,7 +521,7 @@ export default function AdminRequestsPage() {
                                             handleUpdateStatus(selectedRequest.id, 'CONTACTED');
                                             setSelectedRequest({ ...selectedRequest, status: 'CONTACTED' });
                                         }}
-                                        className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition text-sm font-bold"
+                                        className="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition dash-btn-sm"
                                     >
                                         <Phone className="w-4 h-4 inline mr-1" />
                                         Mark Contacted
@@ -532,7 +533,7 @@ export default function AdminRequestsPage() {
                                             handleUpdateStatus(selectedRequest.id, 'CLOSED');
                                             setSelectedRequest({ ...selectedRequest, status: 'CLOSED' });
                                         }}
-                                        className="px-4 py-2 rounded-lg bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 transition text-sm font-bold"
+                                        className="px-4 py-2 rounded-lg bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 transition dash-btn-sm"
                                     >
                                         <Archive className="w-4 h-4 inline mr-1" />
                                         Close Request

@@ -28,7 +28,7 @@ export default function ScanUsageDisplay({
     const renderDots = () => {
         if (isUnlimited) {
             return (
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 dash-badge">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
                     <span>Unlimited Scanner Access</span>
                 </div>
@@ -57,9 +57,9 @@ export default function ScanUsageDisplay({
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Repository Scans</span>
+                    <span className="dash-card-title text-white uppercase tracking-wider">Repository Scans</span>
                 </div>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${isAtLimit
+                <span className={`dash-filepath px-2 py-0.5 rounded ${isAtLimit
                     ? 'bg-red-500/10 text-red-400 border border-red-500/20'
                     : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                     }`}>
@@ -89,12 +89,12 @@ export default function ScanUsageDisplay({
                     {isAtLimit ? (
                         <div className="flex items-center gap-2 text-amber-400">
                             <AlertCircle className="w-4 h-4" />
-                            <span className="text-xs font-bold">📌 Scan limit reached</span>
+                            <span className="dash-body-medium font-bold">📌 Scan limit reached</span>
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 text-emerald-400">
                             <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-xs font-bold">
+                            <span className="dash-body-medium font-bold">
                                 {isUnlimited ? 'Unlimited scans remaining' : `${remaining} scan${remaining !== 1 ? 's' : ''} remaining`}
                             </span>
                         </div>
@@ -104,7 +104,7 @@ export default function ScanUsageDisplay({
                 {isAtLimit ? (
                     <button
                         onClick={() => window.location.href = '/contact-sales'}
-                        className="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition"
+                        className="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 dash-btn-sm hover:bg-amber-500/20 transition"
                     >
                         📧 Contact Us for More Access
                     </button>
@@ -112,7 +112,7 @@ export default function ScanUsageDisplay({
                     <button
                         onClick={onStartScan}
                         disabled={isLoading}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-neutral-950 text-xs font-bold hover:shadow-lg hover:shadow-primary/30 transition disabled:opacity-50"
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-neutral-950 dash-btn hover:shadow-lg hover:shadow-primary/30 transition disabled:opacity-50"
                     >
                         {isLoading ? 'Loading...' : 'Start Scan →'}
                     </button>

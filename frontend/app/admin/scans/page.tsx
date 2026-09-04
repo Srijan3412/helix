@@ -254,7 +254,7 @@ export default function AdminScansPage() {
             <div className="min-h-screen flex items-center justify-center bg-zinc-950">
                 <div className="flex items-center gap-3 text-zinc-500">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <span className="text-sm font-mono">Loading scans...</span>
+                    <span className="dash-metadata">Loading scans...</span>
                 </div>
             </div>
         );
@@ -268,11 +268,11 @@ export default function AdminScansPage() {
                 <div className="max-w-md w-full text-center">
                     <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-2xl">
                         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-white mb-2">Failed to Load Scans</h3>
-                        <p className="text-sm text-zinc-400">{error}</p>
+                        <h3 className="dash-card-title text-white mb-2">Failed to Load Scans</h3>
+                        <p className="dash-body text-zinc-400">{error}</p>
                         <button
                             onClick={fetchScans}
-                            className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-sm font-medium transition flex items-center gap-2 mx-auto"
+                            className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl dash-btn-sm transition flex items-center gap-2 mx-auto"
                         >
                             <RefreshCw className="w-4 h-4" />
                             Retry
@@ -296,19 +296,20 @@ export default function AdminScansPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">All Scans</h1>
-                            <p className="text-sm text-zinc-500">View all repository scans across users</p>
+                            <p className="dash-eyebrow text-emerald-400">ADMIN CONTROL</p>
+                            <h1 className="dash-title text-white">All Scans</h1>
+                            <p className="dash-subtitle text-zinc-500">View all repository scans across users</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={fetchScans}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white transition text-sm"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white transition dash-btn-sm"
                         >
                             <RefreshCw className="w-4 h-4" />
                             Refresh
                         </button>
-                        <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                        <label className="flex items-center gap-2 dash-body text-zinc-400 cursor-pointer">
                             <input
                                 type="checkbox"
                                 checked={showDeleted}
@@ -317,7 +318,7 @@ export default function AdminScansPage() {
                             />
                             Show deleted
                         </label>
-                        <div className="text-sm text-zinc-500 bg-zinc-800/40 px-3 py-2 rounded-lg">
+                        <div className="dash-metadata text-zinc-500 bg-zinc-800/40 px-3 py-2 rounded-lg">
                             {filteredScans.length} scan{filteredScans.length !== 1 ? 's' : ''}
                         </div>
                     </div>
@@ -326,26 +327,26 @@ export default function AdminScansPage() {
                 {/* Stats Summary */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-white">{scans.length}</div>
-                        <div className="text-xs text-zinc-500">Total Scans</div>
+                        <div className="dash-metric text-white">{scans.length}</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">Total Scans</div>
                     </div>
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-emerald-400">
+                        <div className="dash-metric text-emerald-400">
                             {scans.filter(s => s.status === 'completed' && !s.deleted_at).length}
                         </div>
-                        <div className="text-xs text-zinc-500">Completed</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">Completed</div>
                     </div>
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-amber-400">
+                        <div className="dash-metric text-amber-400">
                             {scans.filter(s => s.status !== 'completed' && !s.deleted_at).length}
                         </div>
-                        <div className="text-xs text-zinc-500">Processing</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">Processing</div>
                     </div>
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-                        <div className="text-2xl font-bold text-red-400">
+                        <div className="dash-metric text-red-400">
                             {scans.filter(s => s.deleted_at).length}
                         </div>
-                        <div className="text-xs text-zinc-500">Deleted</div>
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">Deleted</div>
                     </div>
                 </div>
 
@@ -357,7 +358,7 @@ export default function AdminScansPage() {
                         placeholder="Search by repository, job ID, or user email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:border-primary/40"
+                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:border-primary/40 dash-body"
                     />
                 </div>
 
@@ -375,15 +376,15 @@ export default function AdminScansPage() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center flex-wrap gap-2 mb-1.5">
                                         <Database className={`w-4 h-4 ${scan.deleted_at ? 'text-red-500' : 'text-primary'} flex-shrink-0`} />
-                                        <span className="font-bold text-white truncate">{scan.repo_name || 'Unnamed Repository'}</span>
+                                        <span className="dash-card-title text-white truncate">{scan.repo_name || 'Unnamed Repository'}</span>
                                         {getStatusBadge(scan.status, scan.deleted_at)}
                                         {scan.deleted_at && (
-                                            <span className="text-[10px] text-zinc-500">
+                                            <span className="dash-metadata text-zinc-500">
                                                 Deleted: {formatDate(scan.deleted_at)}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 dash-metadata text-zinc-500">
                                         <span className="flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
                                             {formatDate(scan.scanned_at)}
@@ -407,8 +408,8 @@ export default function AdminScansPage() {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-xs text-zinc-600 mt-1">
-                                        Job: <span className="font-mono">{scan.job_id}</span>
+                                    <div className="dash-metadata text-zinc-600 mt-1">
+                                        Job: <span className="dash-filepath">{scan.job_id}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">

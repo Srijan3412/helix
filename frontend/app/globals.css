@@ -202,6 +202,12 @@
   font-weight: 400;
 }
 
+.dash-body-medium {
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 500;
+}
+
 .dash-metadata {
   font-size: 12px;
   line-height: 18px;
@@ -233,11 +239,54 @@
   font-weight: 400;
 }
 
+.dash-filepath-medium {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.dash-sidebar-logo {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.dash-sidebar-cat {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .dash-sidebar-nav {
   font-size: 15px;
   line-height: 21px;
   font-weight: 500;
 }
+
+.dash-sidebar-nav-active {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+}
+
+.dash-repo-label {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dash-repo-name {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
 
 
 

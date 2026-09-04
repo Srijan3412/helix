@@ -40,11 +40,11 @@ export default function FeatureLegend({
       <div className="p-4 border-b border-border/20 shrink-0 text-left">
         <div className="flex items-center gap-2 mb-1">
           <Activity size={13} className="text-primary" />
-          <h3 className="text-[11px] font-extrabold text-primary uppercase tracking-widest leading-tight">
+          <h3 className="dash-sidebar-cat text-primary leading-tight">
             CODEBASE FEATURES
           </h3>
         </div>
-        <p className="text-[10px] text-zinc-550 mt-1 leading-normal">
+        <p className="dash-metadata text-zinc-400 mt-1 leading-normal">
           Click any node to inspect file details and dependencies.
         </p>
       </div>
@@ -84,11 +84,11 @@ export default function FeatureLegend({
                   className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: feature.color }}
                 />
-                <span className="text-[11px] font-bold text-white truncate flex-1">
+                <span className="dash-card-title text-white truncate flex-1">
                   {feature.name}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-[10px]">
+              <div className="flex items-center gap-3 dash-metadata">
                 {healthBad && <AlertTriangle size={11} className="text-red-400 shrink-0" />}
                 <span className={`font-bold ${healthBad ? "text-red-400" : "text-zinc-300"}`}>
                   {feature.health || 0}
@@ -99,7 +99,7 @@ export default function FeatureLegend({
                 </span>
                 <span className="text-zinc-500">Conf</span>
               </div>
-              <div className="mt-2 flex items-center gap-1 text-[10px] text-zinc-500">
+              <div className="mt-2 flex items-center gap-1 dash-metadata text-zinc-500">
                 <ChevronRight size={10} />
                 <span>{fileCount} files</span>
               </div>
@@ -112,16 +112,16 @@ export default function FeatureLegend({
       {topFiles.length > 0 && (
         <div className="p-3 border-t border-border/20 shrink-0 text-left">
           <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-[9px] font-extrabold text-zinc-500 uppercase tracking-widest">
+            <span className="dash-sidebar-cat text-zinc-500">
               Pagerank Importance
             </span>
           </div>
           <div className="space-y-1.5">
             {topFiles.map((f, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-[9px] text-zinc-600 font-bold w-3">{i + 1}</span>
-                <span className="text-[10px] text-zinc-400 truncate flex-1 font-mono">{f.name}</span>
-                <div className="bg-zinc-800 text-zinc-300 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                <span className="dash-metadata text-zinc-600 font-bold w-3">{i + 1}</span>
+                <span className="dash-filepath text-zinc-400 truncate flex-1">{f.name}</span>
+                <div className="bg-zinc-800 text-zinc-300 dash-metadata font-bold px-1.5 py-0.5 rounded-full">
                   {Math.round(f.score)}
                 </div>
               </div>

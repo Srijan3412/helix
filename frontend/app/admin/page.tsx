@@ -199,7 +199,7 @@ export default function AdminDashboard() {
             <div className="min-h-screen flex items-center justify-center bg-zinc-950">
                 <div className="flex items-center gap-3 text-zinc-500">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <span className="text-sm font-mono">Loading admin dashboard...</span>
+                    <span className="dash-metadata">Loading admin dashboard...</span>
                 </div>
             </div>
         );
@@ -215,11 +215,11 @@ export default function AdminDashboard() {
                 <div className="max-w-md w-full text-center">
                     <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-2xl">
                         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-white mb-2">Failed to Load Dashboard</h3>
-                        <p className="text-sm text-zinc-400">{error}</p>
+                        <h3 className="dash-card-title text-white mb-2">Failed to Load Dashboard</h3>
+                        <p className="dash-body text-zinc-400">{error}</p>
                         <button
                             onClick={handleRefresh}
-                            className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-sm font-medium transition flex items-center gap-2 mx-auto"
+                            className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl dash-btn-sm transition flex items-center gap-2 mx-auto"
                         >
                             <RefreshCw className="w-4 h-4" />
                             Retry
@@ -278,7 +278,7 @@ export default function AdminDashboard() {
         const configItem = config[status] || config.NEW;
 
         return (
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${configItem.color}`}>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg dash-badge border ${configItem.color}`}>
                 {configItem.icon}
                 {status}
             </span>

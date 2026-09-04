@@ -210,7 +210,7 @@ export default function AdminUsersPage() {
 
         const configItem = config[role] || config.visitor;
         return (
-            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase border ${configItem.color}`}>
+            <span className={`px-2 py-1 rounded-full dash-badge uppercase border ${configItem.color}`}>
                 {configItem.label}
             </span>
         );
@@ -231,7 +231,7 @@ export default function AdminUsersPage() {
             <div className="min-h-screen flex items-center justify-center bg-zinc-950">
                 <div className="flex items-center gap-3 text-zinc-500">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <span className="text-sm font-mono">Loading users...</span>
+                    <span className="dash-metadata">Loading users...</span>
                 </div>
             </div>
         );
@@ -245,11 +245,11 @@ export default function AdminUsersPage() {
                 <div className="max-w-md w-full text-center">
                     <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-2xl">
                         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-white mb-2">Failed to Load Users</h3>
-                        <p className="text-sm text-zinc-400">{error}</p>
+                        <h3 className="dash-card-title text-white mb-2">Failed to Load Users</h3>
+                        <p className="dash-body text-zinc-400">{error}</p>
                         <button
                             onClick={fetchUsers}
-                            className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-sm font-medium transition flex items-center gap-2 mx-auto"
+                            className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl dash-btn-sm transition flex items-center gap-2 mx-auto"
                         >
                             <RefreshCw className="w-4 h-4" />
                             Retry
@@ -273,19 +273,20 @@ export default function AdminUsersPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">Users</h1>
-                            <p className="text-sm text-zinc-500">Manage user scan limits and roles</p>
+                            <p className="dash-eyebrow text-emerald-400">ADMIN CONTROL</p>
+                            <h1 className="dash-title text-white">Users</h1>
+                            <p className="dash-subtitle text-zinc-500">Manage user scan limits and roles</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <button
                             onClick={fetchUsers}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white transition text-sm"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-white transition dash-btn-sm"
                         >
                             <RefreshCw className="w-4 h-4" />
                             Refresh
                         </button>
-                        <div className="text-sm text-zinc-500 bg-zinc-800/40 px-3 py-2 rounded-lg">
+                        <div className="dash-metadata text-zinc-500 bg-zinc-800/40 px-3 py-2 rounded-lg">
                             {users.length} user{users.length !== 1 ? 's' : ''}
                         </div>
                     </div>
@@ -299,7 +300,7 @@ export default function AdminUsersPage() {
                         placeholder="Search by email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:border-primary/40"
+                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-900/80 border border-zinc-800 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:border-primary/40 dash-body"
                     />
                 </div>
 
@@ -310,7 +311,7 @@ export default function AdminUsersPage() {
                             <thead className="bg-zinc-800/40 border-b border-zinc-800">
                                 <tr>
                                     <th
-                                        className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
+                                        className="px-4 py-3 text-left dash-metadata text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
                                         onClick={() => handleSort('email')}
                                     >
                                         <div className="flex items-center gap-1">
@@ -319,7 +320,7 @@ export default function AdminUsersPage() {
                                         </div>
                                     </th>
                                     <th
-                                        className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
+                                        className="px-4 py-3 text-left dash-metadata text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
                                         onClick={() => handleSort('role')}
                                     >
                                         <div className="flex items-center gap-1">
@@ -328,7 +329,7 @@ export default function AdminUsersPage() {
                                         </div>
                                     </th>
                                     <th
-                                        className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
+                                        className="px-4 py-3 text-left dash-metadata text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
                                         onClick={() => handleSort('email_verified')}
                                     >
                                         <div className="flex items-center gap-1">
@@ -337,7 +338,7 @@ export default function AdminUsersPage() {
                                         </div>
                                     </th>
                                     <th
-                                        className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
+                                        className="px-4 py-3 text-left dash-metadata text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
                                         onClick={() => handleSort('scans_used')}
                                     >
                                         <div className="flex items-center gap-1">
@@ -346,7 +347,7 @@ export default function AdminUsersPage() {
                                         </div>
                                     </th>
                                     <th
-                                        className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
+                                        className="px-4 py-3 text-left dash-metadata text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
                                         onClick={() => handleSort('scan_limit')}
                                     >
                                         <div className="flex items-center gap-1">
@@ -355,7 +356,7 @@ export default function AdminUsersPage() {
                                         </div>
                                     </th>
                                     <th
-                                        className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
+                                        className="px-4 py-3 text-left dash-metadata text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-white transition"
                                         onClick={() => handleSort('created_at')}
                                     >
                                         <div className="flex items-center gap-1">
@@ -363,7 +364,7 @@ export default function AdminUsersPage() {
                                             {getSortIcon('created_at')}
                                         </div>
                                     </th>
-                                    <th className="px-4 py-3 text-right text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                    <th className="px-4 py-3 text-right dash-metadata text-zinc-400 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
@@ -380,10 +381,10 @@ export default function AdminUsersPage() {
                                                         <User className="w-4 h-4 text-primary" />
                                                     </div>
                                                     <div>
-                                                        <div className="text-sm font-medium text-white truncate max-w-[200px]">
+                                                        <div className="dash-value text-white truncate max-w-[200px]">
                                                             {user.email}
                                                         </div>
-                                                        <div className="text-xs text-zinc-500">
+                                                        <div className="dash-metadata text-zinc-500">
                                                             ID: {user.id.slice(0, 8)}...
                                                         </div>
                                                     </div>
@@ -394,7 +395,7 @@ export default function AdminUsersPage() {
                                                     value={user.role}
                                                     onChange={(e) => handleUpdateRole(user.id, e.target.value)}
                                                     disabled={updatingRole === user.id}
-                                                    className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-xs focus:outline-none focus:border-primary/40 disabled:opacity-50"
+                                                    className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-white dash-metadata focus:outline-none focus:border-primary/40 disabled:opacity-50"
                                                 >
                                                     <option value="visitor">Visitor</option>
                                                     <option value="trial">Trial</option>
@@ -414,11 +415,11 @@ export default function AdminUsersPage() {
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden max-w-24">
                                                         <div
-                                                            className={`h-full rounded-full ${usageStatus.color}`}
-                                                            style={{ width: `${Math.min(100, (user.scans_used / Math.max(user.scan_limit, 1)) * 100)}%` }}
+                                                             className={`h-full rounded-full ${usageStatus.color}`}
+                                                             style={{ width: `${Math.min(100, (user.scans_used / Math.max(user.scan_limit, 1)) * 100)}%` }}
                                                         />
                                                     </div>
-                                                    <span className="text-xs text-zinc-400 font-mono">
+                                                    <span className="dash-filepath text-zinc-400">
                                                         {user.scans_used}/{user.scan_limit}
                                                     </span>
                                                 </div>
@@ -428,7 +429,7 @@ export default function AdminUsersPage() {
                                                     value={user.scan_limit}
                                                     onChange={(e) => handleUpdateLimit(user.id, parseInt(e.target.value))}
                                                     disabled={updatingLimit === user.id}
-                                                    className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-xs focus:outline-none focus:border-primary/40 disabled:opacity-50"
+                                                    className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-white dash-metadata focus:outline-none focus:border-primary/40 disabled:opacity-50"
                                                 >
                                                     {[2, 5, 10, 25, 50, 100, 500].map(limit => (
                                                         <option key={limit} value={limit}>{limit}</option>
@@ -436,7 +437,7 @@ export default function AdminUsersPage() {
                                                 </select>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                                <div className="flex items-center gap-2 dash-metadata text-zinc-400">
                                                     <Calendar className="w-3 h-3" />
                                                     {new Date(user.created_at).toLocaleDateString()}
                                                 </div>
