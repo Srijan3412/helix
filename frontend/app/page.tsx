@@ -1662,10 +1662,10 @@ export default function Home() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="min-w-0 overflow-hidden"
+                className="min-w-0 overflow-hidden flex items-center gap-2"
               >
-                <span className="text-lg font-semibold text-white">Helix</span>
-                <span className="ml-2 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/40">
+                <span className="text-2xl font-bold text-white tracking-tight">Helix</span>
+                <span className="rounded-full bg-white/5 px-2 py-0.5 dash-badge text-white/40">
                   v2.0
                 </span>
               </motion.div>
@@ -1678,7 +1678,7 @@ export default function Home() {
           {/* Section: Analysis */}
           <div>
             {sidebarExpanded && (
-              <div className="mb-2 px-3 text-[10px] font-medium uppercase tracking-wider text-white/30">
+              <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">
                 Analysis
               </div>
             )}
@@ -1686,9 +1686,9 @@ export default function Home() {
               onClick={() => reset()}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Upload Repository" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${!currentJobId
-                ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
-                : "text-white/50 hover:bg-white/5 hover:text-white/80"
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav transition-all ${!currentJobId
+                ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white font-semibold"
+                : "text-white/50 hover:bg-white/5 hover:text-white/80 font-medium"
                 } ${!sidebarExpanded ? "justify-center" : ""}`}
             >
               <div
@@ -1715,7 +1715,7 @@ export default function Home() {
                 status &&
                 status !== "completed" &&
                 status !== "failed" && (
-                  <span className="text-[10px] text-blue-400">
+                  <span className="dash-badge text-blue-400">
                     {getProgressValue()}%
                   </span>
                 )}
@@ -1725,7 +1725,7 @@ export default function Home() {
           {/* Section: History */}
           <div className="mt-4">
             {sidebarExpanded && (
-              <div className="mb-2 px-3 text-[10px] font-medium uppercase tracking-wider text-white/30">
+              <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">
                 History
               </div>
             )}
@@ -1733,7 +1733,7 @@ export default function Home() {
               onClick={() => router.push("/scan-history")}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Scan History" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav font-medium transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
                 }`}
             >
               <div className="rounded-md p-1.5 text-white/30">
@@ -1757,7 +1757,7 @@ export default function Home() {
           {/* Section: Results */}
           <div>
             {sidebarExpanded && (
-              <div className="mb-2 px-3 text-[10px] font-medium uppercase tracking-wider text-white/30">
+              <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/30">
                 Results
               </div>
             )}
@@ -1797,9 +1797,9 @@ export default function Home() {
                     onClick={() => setActiveResultTab(tab.id as ResultTab)}
                     whileHover={{ x: sidebarExpanded ? 3 : 0 }}
                     title={!sidebarExpanded ? tab.label : undefined}
-                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${isActive
-                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav transition-all ${isActive
+                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white font-semibold"
+                      : "text-white/50 hover:bg-white/5 hover:text-white/80 font-medium"
                       } ${!sidebarExpanded ? "justify-center" : ""}`}
                   >
                     <div
@@ -1844,8 +1844,8 @@ export default function Home() {
         {/* Repository Info - Premium */}
         <div className="border-t border-white/5 p-4">
           <div className="rounded-lg bg-white/5 px-3 py-2">
-            <div className="text-[10px] text-white/40">Repository</div>
-            <div className="truncate text-sm text-white/80">
+            <div className="text-[11px] font-medium uppercase tracking-wider text-white/40">Repository</div>
+            <div className="truncate text-sm font-semibold text-white/80 mt-0.5">
               {result?.tree?.name || "No repository loaded"}
             </div>
           </div>
@@ -1855,7 +1855,7 @@ export default function Home() {
         <div className="border-t border-white/5 p-2">
           <button
             onClick={() => signOut()}
-            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav font-medium text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
               }`}
             title="Sign Out"
           >
@@ -1922,13 +1922,13 @@ export default function Home() {
             {activeResultTab === "overview" && (
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">
+                  <p className="dash-eyebrow text-emerald-400">
                     Active Analysis
                   </p>
-                  <h2 className="text-3xl font-bold text-white mt-1">
+                  <h2 className="dash-title text-white mt-1">
                     Repository Intelligence
                   </h2>
-                  <p className="text-sm text-white/40">
+                  <p className="dash-subtitle text-white/40 mt-1">
                     Comprehensive analysis and metadata diagnostics
                   </p>
                 </div>
@@ -1981,10 +1981,10 @@ export default function Home() {
             {activeResultTab === "routes" && (
               <div className="space-y-4 text-left max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">
+                  <p className="dash-eyebrow text-emerald-400">
                     Route Analysis
                   </p>
-                  <h2 className="text-3xl font-bold text-white mt-1">
+                  <h2 className="dash-title text-white mt-1">
                     API Endpoints
                   </h2>
                 </div>
@@ -1992,7 +1992,7 @@ export default function Home() {
                   <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <input
-                      className="w-full pl-8 py-2 text-xs bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
+                      className="w-full pl-8 py-2 dash-body bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
                       placeholder="Search routes..."
                       value={routeSearch}
                       onChange={(e) => setRouteSearch(e.target.value)}
@@ -2012,7 +2012,7 @@ export default function Home() {
                             <Badge
                               key={method}
                               variant="secondary"
-                              className="text-[9px] uppercase"
+                              className="dash-badge uppercase"
                             >
                               {method}: {count as number}
                             </Badge>
@@ -2062,23 +2062,23 @@ export default function Home() {
                             }`}
                         >
                           <span
-                            className={`text-[10px] font-bold font-mono px-2 py-1 rounded-lg border shrink-0 ${mc}`}
+                            className={`dash-badge font-mono px-2 py-1 rounded-lg border shrink-0 ${mc}`}
                           >
                             {route.method}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <code className="text-xs text-zinc-200 font-mono truncate block">
+                            <code className="dash-filepath text-zinc-200 truncate block">
                               {route.path}
                             </code>
                             {route.file && (
-                              <div className="text-[10px] text-zinc-600 font-mono truncate mt-0.5">
+                              <div className="dash-filepath text-zinc-600 truncate mt-0.5">
                                 {route.file}
                               </div>
                             )}
                             {route.group && (
                               <Badge
                                 variant="secondary"
-                                className="text-[9px] mt-1"
+                                className="dash-badge mt-1"
                               >
                                 {route.group}
                               </Badge>
@@ -2089,7 +2089,7 @@ export default function Home() {
                               <Badge
                                 key={m}
                                 variant="primary"
-                                className="text-[9px]"
+                                className="dash-badge"
                               >
                                 {m}
                               </Badge>
@@ -2106,10 +2106,10 @@ export default function Home() {
             {activeResultTab === "db" && (
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                  <p className="dash-eyebrow text-emerald-400">
                     Database Analysis
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-1">
+                  <h2 className="dash-title text-white mt-1">
                     Schema & Entities
                   </h2>
                 </div>
@@ -2117,37 +2117,37 @@ export default function Home() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {result.metadata.databaseInfo.orm && (
                       <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                           ORM
                         </div>
-                        <div className="text-sm font-bold text-white">
+                        <div className="dash-card-title text-white">
                           {result.metadata.databaseInfo.orm}
                         </div>
                       </div>
                     )}
                     {result.metadata.databaseInfo.type && (
                       <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                           Database
                         </div>
-                        <div className="text-sm font-bold text-white">
+                        <div className="dash-card-title text-white">
                           {result.metadata.databaseInfo.type}
                         </div>
                       </div>
                     )}
                     <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                      <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                         Entities
                       </div>
-                      <div className="text-sm font-bold text-white">
+                      <div className="dash-card-title text-white">
                         {result.metadata.databaseInfo.entities?.length ?? 0}
                       </div>
                     </div>
                     <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                      <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                         Flows
                       </div>
-                      <div className="text-sm font-bold text-white">
+                      <div className="dash-card-title text-white">
                         {result.metadata.databaseInfo.flows?.length ?? 0}
                       </div>
                     </div>
@@ -2172,7 +2172,7 @@ export default function Home() {
                       >
                         <div className="flex items-center gap-3 mb-2">
                           <Database className="w-4 h-4 text-primary shrink-0" />
-                          <span className="font-bold text-white text-sm">
+                          <span className="dash-card-title text-white">
                             {entity.entity}
                           </span>
                           <div className="flex gap-1 flex-wrap ml-auto">
@@ -2180,7 +2180,7 @@ export default function Home() {
                               <Badge
                                 key={op}
                                 variant="secondary"
-                                className="text-[9px]"
+                                className="dash-badge"
                               >
                                 {op}
                               </Badge>
@@ -2188,15 +2188,15 @@ export default function Home() {
                           </div>
                         </div>
                         {selectedEntity?.entity === entity.entity && (
-                          <div className="mt-3 text-[11px] text-zinc-400 border-t border-border/20 pt-2">
-                            <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px]">
+                          <div className="mt-3 dash-metadata text-zinc-400 border-t border-border/20 pt-2">
+                            <span className="text-zinc-500 font-bold uppercase tracking-wider text-[11px]">
                               Active Operations:
                             </span>
                             <div className="flex gap-2 mt-1">
                               {(entity.operations ?? []).map((op: string) => (
                                 <span
                                   key={op}
-                                  className="px-2 py-0.5 bg-white/10 rounded text-zinc-300 capitalize font-mono"
+                                  className="px-2 py-0.5 bg-white/10 rounded text-zinc-300 capitalize dash-filepath"
                                 >
                                   {op}
                                 </span>
@@ -2215,53 +2215,53 @@ export default function Home() {
             {activeResultTab === "health" && (
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                  <p className="dash-eyebrow text-emerald-400">
                     Code Quality
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-1">
+                  <h2 className="dash-title text-white mt-1">
                     Health Diagnostics
                   </h2>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4 col-span-2 md:col-span-1">
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                    <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                       Health Score
                     </div>
                     <div
-                      className={`text-4xl font-black ${score >= 80 ? "text-emerald-400" : score >= 60 ? "text-amber-400" : "text-red-400"}`}
+                      className={`dash-metric ${score >= 80 ? "text-emerald-400" : score >= 60 ? "text-amber-400" : "text-red-400"}`}
                     >
                       {score}
                     </div>
-                    <div className="text-[10px] text-zinc-600 mt-1">/100</div>
+                    <div className="dash-metadata text-zinc-600 mt-1">/100</div>
                   </div>
                   <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                    <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                       Cycles
                     </div>
-                    <div className="text-2xl font-bold text-red-400">
+                    <div className="dash-metric text-red-400">
                       {cycleCount}
                     </div>
                   </div>
                   <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                    <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                       Dead Code
                     </div>
-                    <div className="text-2xl font-bold text-amber-400">
+                    <div className="dash-metric text-amber-400">
                       {deadCount}
                     </div>
                   </div>
                   <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">
+                    <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                       Broken Imports
                     </div>
-                    <div className="text-2xl font-bold text-rose-400">
+                    <div className="dash-metric text-rose-400">
                       {brokenCount}
                     </div>
                   </div>
                 </div>
 
                 {isStaticLoading && (
-                  <div className="flex items-center gap-2 text-zinc-500 text-xs">
+                  <div className="flex items-center gap-2 text-zinc-500 dash-metadata">
                     <Loader2 className="w-4 h-4 animate-spin" /> Loading
                     detailed report...
                   </div>
@@ -2271,7 +2271,7 @@ export default function Home() {
                   <div className="space-y-4">
                     {staticAnalysisReport.godServices?.length > 0 && (
                       <div className="bg-red-950/10 border border-red-900/30 rounded-xl p-4">
-                        <div className="text-xs font-bold text-red-400 uppercase tracking-widest mb-3">
+                        <div className="dash-section-heading text-red-400 uppercase tracking-[0.06em] mb-3">
                           God Services (
                           {staticAnalysisReport.godServices.length})
                         </div>
@@ -2280,17 +2280,17 @@ export default function Home() {
                             (g: any, i: number) => (
                               <div
                                 key={i}
-                                className="flex items-center gap-3 text-xs"
+                                className="flex items-center gap-3"
                               >
-                                <code className="text-zinc-300 font-mono truncate flex-1">
+                                <code className="dash-filepath text-zinc-300 truncate flex-1">
                                   {g.file}
                                 </code>
-                                <Badge variant="error" className="text-[9px]">
+                                <Badge variant="error" className="dash-badge">
                                   {g.methods} methods
                                 </Badge>
                                 <Badge
                                   variant="secondary"
-                                  className="text-[9px]"
+                                  className="dash-badge"
                                 >
                                   {g.loc} LOC
                                 </Badge>
@@ -2302,7 +2302,7 @@ export default function Home() {
                     )}
                     {staticAnalysisReport.cycles?.length > 0 && (
                       <div className="bg-amber-950/10 border border-amber-900/30 rounded-xl p-4">
-                        <div className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">
+                        <div className="dash-section-heading text-amber-400 uppercase tracking-[0.06em] mb-3">
                           Circular Dependencies (
                           {staticAnalysisReport.cycles.length})
                         </div>
@@ -2312,12 +2312,12 @@ export default function Home() {
                             .map((c: any, i: number) => (
                               <div
                                 key={i}
-                                className="flex items-start gap-2 text-[10px]"
+                                className="flex items-start gap-2"
                               >
-                                <span className="text-zinc-600 font-bold mt-0.5">
+                                <span className="dash-metadata text-zinc-600 font-bold mt-0.5">
                                   {i + 1}.
                                 </span>
-                                <code className="text-amber-300/80 font-mono">
+                                <code className="dash-filepath text-amber-300/80">
                                   {Array.isArray(c) ? c.join(" → ") : c}
                                 </code>
                               </div>
@@ -2327,7 +2327,7 @@ export default function Home() {
                     )}
                     {staticAnalysisReport.deadCode?.length > 0 && (
                       <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">
+                        <div className="dash-section-heading text-zinc-400 uppercase tracking-[0.06em] mb-3">
                           Dead Code ({staticAnalysisReport.deadCode.length})
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
@@ -2336,7 +2336,7 @@ export default function Home() {
                             .map((f: any, i: number) => (
                               <code
                                 key={i}
-                                className="text-[10px] font-mono text-zinc-500 truncate"
+                                className="dash-filepath text-zinc-500 truncate"
                               >
                                 {typeof f === "string" ? f : f.file}
                               </code>
@@ -2353,10 +2353,10 @@ export default function Home() {
             {activeResultTab === "impact" && (
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                  <p className="dash-eyebrow text-emerald-400">
                     Change Analysis
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-1">
+                  <h2 className="dash-title text-white mt-1">
                     Impact Analysis
                   </h2>
                 </div>
@@ -2364,7 +2364,7 @@ export default function Home() {
                   <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <input
-                      className="w-full pl-8 py-2 text-xs bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
+                      className="w-full pl-8 py-2 dash-body bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
                       placeholder="Search files to analyze impact..."
                       value={impactSearch}
                       onChange={(e) => setImpactSearch(e.target.value)}
@@ -2389,7 +2389,7 @@ export default function Home() {
                         <button
                           key={i}
                           onClick={() => setSelectedImpactFile(f.path)}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-mono transition-all ${selectedImpactFile === f.path
+                          className={`w-full text-left px-3 py-2 rounded-xl dash-filepath transition-all ${selectedImpactFile === f.path
                             ? "bg-primary/10 border border-primary/30 text-primary"
                             : "bg-zinc-900/60 border border-border/40 text-zinc-400 hover:border-zinc-600"
                             }`}
@@ -2400,7 +2400,7 @@ export default function Home() {
                   </div>
                 )}
                 {isImpactLoading && (
-                  <div className="flex items-center gap-2 text-zinc-500 text-xs">
+                  <div className="flex items-center gap-2 text-zinc-500 dash-metadata">
                     <Loader2 className="w-4 h-4 animate-spin" /> Computing
                     impact...
                   </div>
@@ -2409,26 +2409,26 @@ export default function Home() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="text-[10px] text-zinc-500 mb-1">
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                           Direct Impact
                         </div>
-                        <div className="text-2xl font-bold text-primary">
+                        <div className="dash-metric text-primary">
                           {impactData.impact?.directDependents?.length ?? 0}
                         </div>
                       </div>
                       <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="text-[10px] text-zinc-500 mb-1">
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                           Transitive Impact
                         </div>
-                        <div className="text-2xl font-bold text-amber-400">
+                        <div className="dash-metric text-amber-400">
                           {impactData.impact?.transitiveDependents?.length ?? 0}
                         </div>
                       </div>
                       <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="text-[10px] text-zinc-500 mb-1">
+                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
                           Risk Score
                         </div>
-                        <div className="text-2xl font-bold text-red-400">
+                        <div className="dash-metric text-red-400">
                           {impactData.impact?.impactScore ?? 0}
                         </div>
                       </div>
@@ -2436,7 +2436,7 @@ export default function Home() {
                     {impactData.impact?.directDependents &&
                       impactData.impact.directDependents.length > 0 && (
                         <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                          <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">
+                          <div className="dash-section-heading text-zinc-400 uppercase tracking-[0.06em] mb-3">
                             Directly Impacted Files
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
@@ -2445,7 +2445,7 @@ export default function Home() {
                               .map((f: string, i: number) => (
                                 <code
                                   key={i}
-                                  className="text-[10px] font-mono text-zinc-300 truncate"
+                                  className="dash-filepath text-zinc-300 truncate"
                                 >
                                   {f}
                                 </code>
@@ -2462,20 +2462,20 @@ export default function Home() {
             {activeResultTab === "compare" && (
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                  <p className="dash-eyebrow text-emerald-400">
                     Version Diff
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-1">
+                  <h2 className="dash-title text-white mt-1">
                     Architecture Comparison
                   </h2>
                 </div>
                 <div className="flex gap-3 items-end">
                   <div className="flex-1">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest block mb-2">
+                    <label className="dash-metadata text-zinc-500 uppercase tracking-widest block mb-2">
                       Compare with Job ID
                     </label>
                     <input
-                      className="w-full py-2 px-3 text-xs bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
+                      className="w-full py-2 px-3 dash-body bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
                       placeholder="Enter job ID to compare..."
                       value={compareJobId}
                       onChange={(e) => setCompareJobId(e.target.value)}
@@ -2483,7 +2483,7 @@ export default function Home() {
                   </div>
                   {jobsListData?.jobs && jobsListData.jobs.length > 0 && (
                     <select
-                      className="py-2 px-3 text-xs bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none"
+                      className="py-2 px-3 dash-body bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none"
                       onChange={(e) => setCompareJobId(e.target.value)}
                       value={compareJobId}
                     >
@@ -2499,7 +2499,7 @@ export default function Home() {
                   )}
                 </div>
                 {isCompareLoading && (
-                  <div className="flex items-center gap-2 text-zinc-500 text-xs">
+                  <div className="flex items-center gap-2 text-zinc-500 dash-metadata">
                     <Loader2 className="w-4 h-4 animate-spin" /> Running
                     comparison...
                   </div>
@@ -2508,47 +2508,47 @@ export default function Home() {
                   <div className="space-y-6">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="bg-emerald-950/10 border border-emerald-900/30 rounded-xl p-4">
-                        <div className="text-[10px] text-emerald-500 mb-1">
+                        <div className="dash-metadata text-emerald-500 uppercase tracking-widest mb-1">
                           Added Files
                         </div>
-                        <div className="text-2xl font-bold text-emerald-400">
+                        <div className="dash-metric text-emerald-400">
                           {compareData.summary?.addedFilesCount ?? 0}
                         </div>
                       </div>
                       <div className="bg-red-950/10 border border-red-900/30 rounded-xl p-4">
-                        <div className="text-[10px] text-red-500 mb-1">
+                        <div className="dash-metadata text-red-500 uppercase tracking-widest mb-1">
                           Removed Files
                         </div>
-                        <div className="text-2xl font-bold text-red-400">
+                        <div className="dash-metric text-red-400">
                           {compareData.summary?.removedFilesCount ?? 0}
                         </div>
                       </div>
                       <div className="bg-amber-950/10 border border-amber-900/30 rounded-xl p-4">
-                        <div className="text-[10px] text-amber-500 mb-1">
+                        <div className="dash-metadata text-amber-500 uppercase tracking-widest mb-1">
                           Modified Files
                         </div>
-                        <div className="text-2xl font-bold text-amber-400">
+                        <div className="dash-metric text-amber-400">
                           {compareData.summary?.modifiedFilesCount ?? 0}
                         </div>
                       </div>
                     </div>
                     {compareData.files && compareData.files.length > 0 && (
                       <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">
+                        <div className="dash-section-heading text-zinc-400 uppercase tracking-[0.06em] mb-3">
                           File Changes
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                           {compareData.files.map((file, idx) => (
                             <div
                               key={idx}
-                              className="flex items-center justify-between text-xs py-1 border-b border-zinc-800/60 last:border-0"
+                              className="flex items-center justify-between py-1 border-b border-zinc-800/60 last:border-0"
                             >
-                              <span className="font-mono text-zinc-300 truncate max-w-[70%]">
+                              <span className="dash-filepath text-zinc-300 truncate max-w-[70%]">
                                 {file.path}
                               </span>
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${file.status === "added"
+                                  className={`dash-badge px-1.5 py-0.5 rounded capitalize ${file.status === "added"
                                     ? "bg-emerald-500/10 text-emerald-400"
                                     : file.status === "removed"
                                       ? "bg-red-500/10 text-red-400"
@@ -2559,7 +2559,7 @@ export default function Home() {
                                 </span>
                                 {file.linesDiff !== 0 && (
                                   <span
-                                    className={`font-mono text-[10px] ${file.linesDiff > 0 ? "text-emerald-400" : "text-red-400"}`}
+                                    className={`dash-metadata font-mono ${file.linesDiff > 0 ? "text-emerald-400" : "text-red-400"}`}
                                   >
                                     {file.linesDiff > 0
                                       ? `+${file.linesDiff}`
@@ -2582,17 +2582,17 @@ export default function Home() {
             {activeResultTab === "env" && (
               <div className="space-y-4 max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                  <p className="dash-eyebrow text-emerald-400">
                     Configuration
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-1">
+                  <h2 className="dash-title text-white mt-1">
                     Environment Variables
                   </h2>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <input
-                    className="w-full pl-8 py-2 text-xs bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
+                    className="w-full pl-8 py-2 dash-body bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
                     placeholder="Search env vars..."
                     value={envSearch}
                     onChange={(e) => setEnvSearch(e.target.value)}
@@ -2622,36 +2622,36 @@ export default function Home() {
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <Settings className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <code className="text-xs font-mono text-zinc-200 truncate flex-1">
+                          <code className="dash-card-title font-mono text-zinc-200 truncate flex-1">
                             {envVar.name}
                           </code>
-                          <Badge variant="secondary" className="text-[9px]">
+                          <Badge variant="secondary" className="dash-badge">
                             {envVar.category || "General"}
                           </Badge>
                           {envVar.criticality === "HIGH" && (
-                            <Badge variant="error" className="text-[9px]">
+                            <Badge variant="error" className="dash-badge">
                               HIGH RISK
                             </Badge>
                           )}
                         </div>
                         {selectedEnvVar?.name === envVar.name && (
                           <div className="space-y-1.5 mt-2">
-                            <p className="text-[10px] text-zinc-400">
+                            <p className="dash-body text-zinc-400">
                               Usages in code:{" "}
                               <span className="text-zinc-200 font-bold">
                                 {envVar.usages}
                               </span>
                             </p>
                             {envVar.usedBy && envVar.usedBy.length > 0 && (
-                              <div className="text-[10px] text-zinc-400">
-                                <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block mb-1">
+                              <div className="dash-metadata text-zinc-400">
+                                <span className="text-zinc-500 font-bold uppercase tracking-wider text-[11px] block mb-1">
                                   Used By:
                                 </span>
                                 <div className="flex flex-wrap gap-1">
                                   {envVar.usedBy.map((f: string, i: number) => (
                                     <code
                                       key={i}
-                                      className="text-[9px] font-mono text-zinc-400 hover:bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]"
+                                      className="dash-filepath text-zinc-400 hover:bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]"
                                     >
                                       {f.split(/[\\/]/).pop()}
                                     </code>
@@ -2660,15 +2660,15 @@ export default function Home() {
                               </div>
                             )}
                             {envVar.files && envVar.files.length > 0 && (
-                              <div className="text-[10px] text-zinc-400 mt-2">
-                                <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block mb-1">
+                              <div className="dash-metadata text-zinc-400 mt-2">
+                                <span className="text-zinc-500 font-bold uppercase tracking-wider text-[11px] block mb-1">
                                   Declared In Files:
                                 </span>
                                 <div className="flex flex-wrap gap-1">
                                   {envVar.files.map((f: string, i: number) => (
                                     <code
                                       key={i}
-                                      className="text-[9px] font-mono text-zinc-500 hover:bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]"
+                                      className="dash-filepath text-zinc-500 hover:bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[120px]"
                                     >
                                       {f.split(/[\\/]/).pop()}
                                     </code>
@@ -2685,40 +2685,39 @@ export default function Home() {
             )}
 
             {/* ─── AI ARCHITECT TAB ─── */}
-            {/* ─── AI ARCHITECT TAB ─── */}
             {activeResultTab === "ai-architect" && result.aiSummary && (
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-primary" />
+                    <p className="dash-eyebrow text-emerald-400 flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                       AI Analysis
                     </p>
-                    <h2 className="text-3xl font-bold text-white mt-1">
+                    <h2 className="dash-title text-white mt-1">
                       AI Architect
                     </h2>
-                    <p className="text-sm text-zinc-500">
+                    <p className="dash-subtitle text-white/40 mt-1">
                       Intelligent codebase analysis & insights
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={copySummary}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-zinc-400 hover:text-white transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 dash-btn-sm text-zinc-400 hover:text-white transition"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       Copy
                     </button>
                     <button
                       onClick={exportAsMarkdown}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/20 text-xs text-primary transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/20 dash-btn-sm text-primary transition"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Export
                     </button>
                     <button
                       onClick={regenerateSummary}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-zinc-400 hover:text-white transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 dash-btn-sm text-zinc-400 hover:text-white transition"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                       Regenerate
@@ -2734,10 +2733,10 @@ export default function Home() {
                       <Sparkles className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-white">
+                      <span className="dash-card-title text-white">
                         Architecture Summary
                       </span>
-                      <p className="text-[10px] text-zinc-500">
+                      <p className="dash-metadata text-zinc-500">
                         Generated by AI analysis engine
                       </p>
                     </div>
@@ -2750,10 +2749,10 @@ export default function Home() {
                       <div className="mb-6 p-4 bg-blue-500/5 border-l-2 border-primary rounded-r-xl">
                         <div className="flex items-start gap-3">
                           <div>
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider block mb-1">
+                            <span className="dash-metadata font-bold text-primary uppercase tracking-wider block mb-1">
                               Project Purpose
                             </span>
-                            <p className="text-sm text-zinc-300 leading-relaxed italic">
+                            <p className="dash-body text-zinc-300 leading-relaxed italic">
                               "{result.aiSummary.purpose}"
                             </p>
                           </div>
@@ -2766,7 +2765,7 @@ export default function Home() {
                       <div className="mb-6">
                         <div className="flex items-center gap-2 mb-3">
                           <Cpu className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-bold text-white">
+                          <span className="dash-section-heading text-white">
                             Technical Stack
                           </span>
                         </div>
@@ -2777,10 +2776,10 @@ export default function Home() {
                                 key={key}
                                 className="p-3 bg-white/5 rounded-xl border border-white/5"
                               >
-                                <span className="text-[10px] text-zinc-500 capitalize block mb-0.5">
+                                <span className="dash-metadata text-zinc-500 capitalize block mb-0.5">
                                   {key}
                                 </span>
-                                <span className="text-sm text-white font-medium font-mono">
+                                <span className="dash-value text-white font-mono">
                                   {String(val || "N/A")}
                                 </span>
                               </div>
@@ -2795,11 +2794,11 @@ export default function Home() {
                       <div className="mt-4 pt-4 border-t border-white/10">
                         <div className="flex items-center gap-2 mb-3">
                           <FileText className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-bold text-white">
+                          <span className="dash-section-heading text-white">
                             AI Analysis
                           </span>
                         </div>
-                        <div className="space-y-4 text-zinc-300 leading-relaxed">
+                        <div className="space-y-4 dash-body text-zinc-300 leading-relaxed">
                           {formatMarkdownContent(
                             result.aiSummary.markdownSummary,
                           )}
@@ -2817,10 +2816,10 @@ export default function Home() {
                         <div className="p-1.5 rounded-lg bg-amber-500/20">
                           <AlertTriangle className="w-4 h-4 text-amber-400" />
                         </div>
-                        <span className="text-sm font-bold text-amber-400">
+                        <span className="dash-section-heading text-amber-400">
                           Refactoring Recommendations
                         </span>
-                        <span className="text-[10px] text-amber-500/60 ml-auto">
+                        <span className="dash-metadata text-amber-500/60 ml-auto">
                           {result.staticAnalysis.summary.recommendations.length}{" "}
                           items
                         </span>
@@ -2844,7 +2843,7 @@ export default function Home() {
                                   {icons[i % icons.length]}
                                 </div>
                                 <div>
-                                  <p className="text-sm text-zinc-300">
+                                  <p className="dash-body text-zinc-300">
                                     {item}
                                   </p>
                                 </div>
@@ -2862,10 +2861,10 @@ export default function Home() {
             {activeResultTab === "onboarding" && result.onboarding && (
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                  <p className="dash-eyebrow text-emerald-400">
                     Developer Guide
                   </p>
-                  <h2 className="text-2xl font-bold text-white mt-1">
+                  <h2 className="dash-title text-white mt-1">
                     Onboarding Checklist
                   </h2>
                 </div>
@@ -2882,13 +2881,13 @@ export default function Home() {
                         className="bg-zinc-900/60 border border-border/40 rounded-xl p-4 cursor-pointer hover:border-zinc-600 transition-all"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center dash-badge text-primary shrink-0">
                             {idx + 1}
                           </div>
-                          <span className="text-sm font-semibold text-white flex-1">
+                          <span className="dash-card-title text-white flex-1">
                             {step.label}
                           </span>
-                          <div className="text-[10px] text-zinc-500 font-mono bg-white/10/80 px-2 py-0.5 rounded capitalize">
+                          <div className="dash-badge text-zinc-500 font-mono bg-white/10/80 px-2 py-0.5 rounded capitalize">
                             {step.category}
                           </div>
                           {openOnboardingStep === idx ? (
@@ -2900,7 +2899,7 @@ export default function Home() {
                         {openOnboardingStep === idx && (
                           <div className="mt-3 ml-10 space-y-2">
                             {step.file && (
-                              <p className="text-[10px] font-mono text-primary">
+                              <p className="dash-filepath text-primary">
                                 File:{" "}
                                 <span className="text-zinc-300">
                                   {step.file}
@@ -2908,7 +2907,7 @@ export default function Home() {
                               </p>
                             )}
                             {step.reason && (
-                              <p className="text-xs text-zinc-400 leading-relaxed">
+                              <p className="dash-body text-zinc-400 leading-relaxed">
                                 {step.reason}
                               </p>
                             )}

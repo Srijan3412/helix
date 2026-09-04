@@ -296,14 +296,15 @@ export default function AdminDashboard() {
                                 <UserCheck className="w-6 h-6 text-primary" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-                                <p className="text-sm text-zinc-500">Manage users, scans, and access requests</p>
+                                <p className="dash-eyebrow text-emerald-400">ADMIN CONSOLE</p>
+                                <h1 className="dash-title text-white">Admin Dashboard</h1>
+                                <p className="dash-subtitle text-zinc-400">Manage users, scans, and access requests</p>
                             </div>
                         </div>
                     </div>
                     <button
                         onClick={handleRefresh}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 transition text-sm"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 transition dash-btn-sm"
                     >
                         <RefreshCw className="w-4 h-4" />
                         Refresh
@@ -324,10 +325,10 @@ export default function AdminDashboard() {
                                 </div>
                                 <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition" />
                             </div>
-                            <div className="text-3xl font-bold text-white">{card.value}</div>
-                            <div className="text-sm text-zinc-500 mt-1">{card.title}</div>
+                            <div className="dash-metric text-white">{card.value}</div>
+                            <div className="dash-metadata text-zinc-500 uppercase tracking-widest mt-1">{card.title}</div>
                             {card.subtext && (
-                                <div className="text-[10px] text-zinc-600 mt-1">{card.subtext}</div>
+                                <div className="dash-metadata text-zinc-600 mt-1">{card.subtext}</div>
                             )}
                         </button>
                     ))}
@@ -336,39 +337,39 @@ export default function AdminDashboard() {
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl p-6">
-                        <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">Quick Actions</h2>
+                        <h2 className="dash-section-heading text-zinc-400 uppercase tracking-[0.06em] mb-4">Quick Actions</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <button
                                 onClick={() => router.push('/admin/users')}
                                 className="p-4 bg-zinc-800/40 border border-zinc-800 rounded-xl hover:border-primary/30 transition text-left group"
                             >
                                 <Users className="w-5 h-5 text-primary mb-2" />
-                                <div className="text-sm font-semibold text-white">Manage Users</div>
-                                <div className="text-xs text-zinc-500">View and manage user profiles</div>
+                                <div className="dash-card-title text-white">Manage Users</div>
+                                <div className="dash-body text-zinc-500">View and manage user profiles</div>
                             </button>
                             <button
                                 onClick={() => router.push('/admin/requests')}
                                 className="p-4 bg-zinc-800/40 border border-zinc-800 rounded-xl hover:border-primary/30 transition text-left group"
                             >
                                 <Mail className="w-5 h-5 text-amber-400 mb-2" />
-                                <div className="text-sm font-semibold text-white">Review Requests</div>
-                                <div className="text-xs text-zinc-500">Process access requests</div>
+                                <div className="dash-card-title text-white">Review Requests</div>
+                                <div className="dash-body text-zinc-500">Process access requests</div>
                             </button>
                             <button
                                 onClick={() => router.push('/admin/scans')}
                                 className="p-4 bg-zinc-800/40 border border-zinc-800 rounded-xl hover:border-primary/30 transition text-left group"
                             >
                                 <Database className="w-5 h-5 text-emerald-400 mb-2" />
-                                <div className="text-sm font-semibold text-white">Scan History</div>
-                                <div className="text-xs text-zinc-500">View all scans</div>
+                                <div className="dash-card-title text-white">Scan History</div>
+                                <div className="dash-body text-zinc-500">View all scans</div>
                             </button>
                             <button
                                 onClick={() => router.push('/admin/settings')}
                                 className="p-4 bg-zinc-800/40 border border-zinc-800 rounded-xl hover:border-primary/30 transition text-left group"
                             >
                                 <Activity className="w-5 h-5 text-purple-400 mb-2" />
-                                <div className="text-sm font-semibold text-white">Settings</div>
-                                <div className="text-xs text-zinc-500">System configuration</div>
+                                <div className="dash-card-title text-white">Settings</div>
+                                <div className="dash-body text-zinc-500">System configuration</div>
                             </button>
                         </div>
                     </div>
@@ -376,12 +377,12 @@ export default function AdminDashboard() {
                     {/* Recent Activity */}
                     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Recent Activity</h2>
+                            <h2 className="dash-section-heading text-zinc-400 uppercase tracking-[0.06em]">Recent Activity</h2>
                             <Clock className="w-4 h-4 text-zinc-600" />
                         </div>
                         <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
                             {recentActivity.length === 0 ? (
-                                <p className="text-sm text-zinc-500 text-center py-4">No recent activity</p>
+                                <p className="dash-body text-zinc-500 text-center py-4">No recent activity</p>
                             ) : (
                                 recentActivity.map((activity) => (
                                     <div
@@ -394,11 +395,14 @@ export default function AdminDashboard() {
                                             {activity.type === 'request' && <Mail className="w-4 h-4 text-amber-400" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-zinc-300 truncate">{activity.description}</p>
+                                            <p className="dash-body text-zinc-300 truncate">{activity.description}</p>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-[10px] text-zinc-500">
+                                                <span className="dash-metadata text-zinc-500">
                                                     {new Date(activity.timestamp).toLocaleDateString()} at{' '}
-                                                    {new Date(activity.timestamp).toLocaleTimeString()}
+                                                    {new Date(activity.timestamp).toLocaleTimeString([], {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
                                                 </span>
                                                 {activity.status && getStatusBadge(activity.status)}
                                             </div>

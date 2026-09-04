@@ -144,8 +144,9 @@ export default function ScanHistoryPage() {
               </div>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white tracking-wide">Scan History</h1>
-              <p className="text-[10px] text-zinc-500">View, manage, and compare past repository scans</p>
+              <p className="dash-eyebrow text-emerald-400">SCAN ARCHIVE</p>
+              <h1 className="dash-title text-white">Scan History</h1>
+              <p className="dash-subtitle text-zinc-400">View, manage, and compare past repository scans</p>
             </div>
           </div>
 
@@ -155,7 +156,7 @@ export default function ScanHistoryPage() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 onClick={handleCompare}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 hover:opacity-95 transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg dash-btn-sm shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 hover:opacity-95 transition"
               >
                 <GitCompare className="w-3.5 h-3.5" />
                 Compare Selected
@@ -167,7 +168,7 @@ export default function ScanHistoryPage() {
                   setShowComparison(false);
                   setSelectedScans([]);
                 }}
-                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-medium transition"
+                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg dash-btn-sm transition"
               >
                 Back to History
               </button>
@@ -189,11 +190,11 @@ export default function ScanHistoryPage() {
             >
               <div className="flex items-center justify-between border-b border-border/20 pb-4 mb-6">
                 <div>
-                  <h2 className="text-md font-extrabold text-white flex items-center gap-2 tracking-wide uppercase">
+                  <h2 className="dash-section-heading text-white flex items-center gap-2 uppercase">
                     <Sparkles className="w-4 h-4 text-purple-400" />
                     Comparison Report
                   </h2>
-                  <p className="text-[10px] text-zinc-500">Structural delta analysis between code commits</p>
+                  <p className="dash-metadata text-zinc-500">Structural delta analysis between code commits</p>
                 </div>
               </div>
               <ScanComparison 
@@ -239,7 +240,7 @@ export default function ScanHistoryPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="text-xs text-zinc-500 font-semibold px-3 mb-2 flex items-center gap-2">
+                  <div className="dash-metadata text-zinc-500 font-semibold px-3 mb-2 flex items-center gap-2">
                     <Clock size={12} />
                     Select up to 2 scans to run a comparison
                   </div>
@@ -274,10 +275,10 @@ export default function ScanHistoryPage() {
                           </div>
 
                           <div className="min-w-0">
-                            <h3 className="text-white text-sm font-semibold tracking-wide truncate group-hover:text-primary transition-colors">
+                            <h3 className="text-white dash-card-title truncate group-hover:text-primary transition-colors">
                               {scan.repoName}
                             </h3>
-                            <div className="flex items-center gap-4 text-[10px] text-zinc-500 mt-1.5 flex-wrap">
+                            <div className="flex items-center gap-4 dash-metadata text-zinc-500 mt-1.5 flex-wrap">
                               <span className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5" />
                                 {new Date(scan.scannedAt).toLocaleDateString(undefined, { 
@@ -296,7 +297,7 @@ export default function ScanHistoryPage() {
                                 <Database className="w-3.5 h-3.5" />
                                 {scan.totalRoutes} routes
                               </span>
-                              <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold uppercase tracking-wider text-[8px]">
+                              <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 dash-badge uppercase">
                                 {scan.status}
                               </span>
                             </div>
@@ -305,8 +306,8 @@ export default function ScanHistoryPage() {
 
                         <div className="flex items-center gap-2 ml-4 shrink-0">
                           <div className="flex flex-col items-end mr-3">
-                            <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Health</span>
-                            <span className={`text-sm font-black ${
+                            <span className="dash-metadata text-zinc-500 uppercase tracking-widest text-[11px]">Health</span>
+                            <span className={`dash-card-title font-bold ${
                               scan.healthScore >= 70 ? 'text-emerald-400' :
                               scan.healthScore >= 40 ? 'text-amber-400' :
                               'text-rose-400'

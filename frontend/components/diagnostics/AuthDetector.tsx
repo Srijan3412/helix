@@ -72,20 +72,20 @@ export default function AuthDetector({ authType, evidence }: AuthDetectorProps) 
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <h3 className="font-bold text-white text-base">Authentication Guard</h3>
-            <Badge variant="success" className="text-xs px-2.5 py-0.5 font-bold">
+            <h3 className="dash-card-title text-white">Authentication Guard</h3>
+            <Badge variant="success" className="dash-badge px-2.5 py-0.5">
               {authType}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">
-            Confidence: <span className="text-primary font-bold">{confidence <= 1 ? Math.round(confidence * 100) : Math.round(confidence)}%</span>
+          <p className="dash-body text-muted-foreground mb-4">
+            Confidence: <span className="text-primary font-semibold">{confidence <= 1 ? Math.round(confidence * 100) : Math.round(confidence)}%</span>
           </p>
 
-          {/* Evidence Panel - from daadd-main with projectAnalyser styling */}
+          {/* Evidence Panel */}
           {evidence.length > 0 && (
             <div className="bg-zinc-950/40 rounded-lg p-4 border border-zinc-800/60">
-              <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-                <FileCode size={12} className="text-primary" />
+              <h4 className="dash-section-heading text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                <FileCode size={14} className="text-primary" />
                 Evidence Found
               </h4>
               <div className="space-y-2">
@@ -95,7 +95,7 @@ export default function AuthDetector({ authType, evidence }: AuthDetectorProps) 
                     initial={{ opacity: 0, x: -5 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="flex items-start gap-2 text-xs"
+                    className="flex items-start gap-2 dash-body"
                   >
                     {item.includes("route") || item.includes("endpoint") ? (
                       <Route size={14} className="text-primary flex-shrink-0 mt-0.5" />

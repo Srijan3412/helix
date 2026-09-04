@@ -146,11 +146,99 @@
   font-weight: 600;
 }
 
-.typo-price {
-  font-size: 40px;
-  line-height: 1;
-  font-weight: 700;
+/* ========================================
+   HELIX DASHBOARD TYPOGRAPHY SCALE
+   ======================================== */
+.dash-eyebrow {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
 }
+
+.dash-title {
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.dash-subtitle {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.dash-section-heading {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.dash-card-title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+}
+
+.dash-metric {
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.dash-value {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+}
+
+.dash-body {
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 400;
+}
+
+.dash-metadata {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+.dash-badge {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+.dash-btn {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.dash-btn-sm {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+.dash-filepath {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.dash-sidebar-nav {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 500;
+}
+
 
 
 /* ========================================

@@ -45,7 +45,7 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
 
   return (
     <div className="space-y-6 text-left">
-      {/* Key Metrics Grid - from daadd-main with projectAnalyser styling */}
+      {/* Key Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((value, index) => {
           const Icon = statIcons[index];
@@ -59,15 +59,15 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
               transition={{ delay: index * 0.05 }}
               className="bg-zinc-900/60 backdrop-blur-xl rounded-xl p-5 border border-border/60 shadow-sm"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${colorClass}`}>
-                  <Icon size={18} />
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${colorClass}`}>
+                  <Icon size={16} />
                 </div>
-                <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                <span className="dash-metadata text-muted-foreground uppercase tracking-wider font-semibold">
                   {statLabels[index]}
                 </span>
               </div>
-              <div className="text-3xl font-extrabold text-white">
+              <div className="dash-metric text-white">
                 {value.toLocaleString()}
               </div>
             </motion.div>
@@ -75,7 +75,7 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
         })}
       </div>
 
-      {/* Auto-Stack Badging - from daadd-main */}
+      {/* Auto-Stack Badging */}
       {frameworkMetadata && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -83,54 +83,58 @@ export default function OverviewAnalytics({ overview, frameworkMetadata }: Overv
           transition={{ delay: 0.2 }}
           className="bg-zinc-900/60 backdrop-blur-xl rounded-xl p-6 border border-border/60 shadow-sm"
         >
-          <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-5 flex items-center gap-2">
+          <h3 className="dash-section-heading uppercase tracking-widest text-primary mb-5 flex items-center gap-2">
             <Layers size={16} />
             Detected Technology Stack
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Primary Language - from daadd-main */}
+            {/* Primary Language */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                 <Braces className="text-blue-400" size={18} />
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Language</div>
-                <div className="font-bold text-white text-sm mt-0.5">{frameworkMetadata.language || "Unknown"}</div>
+                <div className="dash-metadata text-muted-foreground uppercase tracking-wider">Language</div>
+                <div className="dash-card-title text-white mt-0.5">{frameworkMetadata.language || "Unknown"}</div>
               </div>
             </div>
 
-            {/* Runtime - from daadd-main */}
+            {/* Runtime */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                 <Server className="text-emerald-400" size={18} />
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Runtime</div>
-                <div className="font-bold text-white text-sm mt-0.5">{frameworkMetadata.runtime || "Unknown"}</div>
+                <div className="dash-metadata text-muted-foreground uppercase tracking-wider">Runtime</div>
+                <div className="dash-card-title text-white mt-0.5">{frameworkMetadata.runtime || "Unknown"}</div>
               </div>
             </div>
 
-            {/* Package Manager - from daadd-main */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                <Terminal className="text-amber-400" size={18} />
+            {/* Package Manager */}
+            {frameworkMetadata.packageManager && (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <Terminal className="text-amber-400" size={18} />
+                </div>
+                <div>
+                  <div className="dash-metadata text-muted-foreground uppercase tracking-wider">Package Manager</div>
+                  <div className="dash-card-title text-white mt-0.5">{frameworkMetadata.packageManager}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Package Manager</div>
-                <div className="font-bold text-white text-sm mt-0.5">{frameworkMetadata.packageManager || "None"}</div>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Frameworks - from daadd-main with Badge component */}
+          {/* Framework Badges */}
           {frameworkMetadata.frameworks && frameworkMetadata.frameworks.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-border/50">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">Detected Frameworks</div>
+            <div className="mt-5 pt-4 border-t border-border/40">
+              <div className="dash-metadata text-muted-foreground uppercase tracking-wider mb-2">
+                Detected Frameworks
+              </div>
               <div className="flex flex-wrap gap-2">
-                {frameworkMetadata.frameworks.map((fw: any) => (
-                  <Badge key={fw.name} variant="primary" className="text-xs px-3 py-1 font-medium">
-                    {fw.name}
+                {frameworkMetadata.frameworks.map((f: any, i: number) => (
+                  <Badge key={i} variant="secondary" className="dash-badge px-2.5 py-1 bg-primary/10 text-primary border-primary/20">
+                    {f.name}
                   </Badge>
                 ))}
               </div>
