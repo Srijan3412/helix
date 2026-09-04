@@ -43,16 +43,16 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-400 flex items-center justify-center">
               <Layers size={18} className="text-neutral-950" />
             </div>
-            <span className="font-bold text-white text-lg">Archaeologist</span>
+            <span className="font-bold text-white typo-h3">Archaeologist</span>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm text-neutral-400">
+          <div className="hidden md:flex items-center gap-8 text-neutral-400 typo-btn">
             <a href="#features" className="hover:text-white transition">Features</a>
             <a href="#pricing" className="hover:text-white transition">Pricing</a>
             <a href="#faq" className="hover:text-white transition">FAQ</a>
           </div>
           <button
             onClick={onGetStarted}
-            className="px-4 py-2 rounded-xl bg-primary text-neutral-950 text-sm font-bold hover:bg-primary-400 transition"
+            className="px-4 py-2 rounded-xl bg-primary text-neutral-950 typo-btn hover:bg-primary-400 transition"
           >
             Get Started
           </button>
@@ -60,37 +60,37 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
       </nav>
 
       {/* Hero */}
-      <section className="relative pt-32 pb-20 px-4 max-w-6xl mx-auto">
+      <section className="relative pt-32 pb-24 px-4 max-w-6xl mx-auto">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute top-20 right-10 w-[300px] h-[300px] bg-secondary/5 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-6 hover:border-primary/20 transition">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-4 hover:border-primary/20 transition">
             <Terminal className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">Repository Intelligence Platform</span>
+            <span className="typo-eyebrow text-neutral-400">Repository Intelligence Platform</span>
           </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
+          <h1 className="typo-h1 mx-auto mb-4">
             <span className="bg-gradient-to-b from-white to-neutral-400 bg-clip-text text-transparent">
               Understand Any Codebase
             </span>
             <br />
             <span className="text-gradient">In 30 Seconds</span>
           </h1>
-          <p className="text-lg text-neutral-500 max-w-2xl mx-auto font-light leading-relaxed mb-10">
+          <p className="typo-body text-neutral-400 max-w-[600px] mx-auto mb-8">
             AST Engine → Graph Engine → Route Engine → Database Engine → Auth Engine → Architecture Engine → AI
           </p>
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={onGetStarted}
-              className="px-6 py-3 rounded-xl bg-primary text-neutral-950 font-bold text-sm hover:bg-primary-400 transition flex items-center gap-2"
+              className="px-6 py-3 rounded-xl bg-primary text-neutral-950 typo-btn hover:bg-primary-400 transition flex items-center gap-2"
             >
               Start Free Trial <ArrowRight className="w-4 h-4" />
             </button>
-            <a href="#features" className="px-6 py-3 rounded-xl border border-white/10 text-white font-semibold text-sm hover:bg-white/5 transition">
+            <a href="#features" className="px-6 py-3 rounded-xl border border-white/10 text-white typo-btn hover:bg-white/5 transition">
               Explore Features
             </a>
           </div>
-          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-neutral-600">
+          <div className="mt-8 flex items-center justify-center gap-6 typo-metadata text-neutral-400">
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> No credit card</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> 14-day trial</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Cancel anytime</span>
@@ -99,32 +99,32 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
       </section>
 
       {/* Features */}
-      <section id="features" className="py-20 px-4 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-6">
+      <section id="features" className="py-24 px-4 max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-4">
             <Activity className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold tracking-wider text-primary uppercase">Features</span>
+            <span className="typo-eyebrow text-primary">CORE CAPABILITIES</span>
           </div>
-          <h2 className="text-4xl font-extrabold text-white mb-4">Eight Engines. One Platform.</h2>
-          <p className="text-lg text-neutral-500 max-w-2xl mx-auto">
+          <h2 className="typo-h2 text-white mx-auto mb-4">Eight Engines. One Platform.</h2>
+          <p className="typo-body text-neutral-400 max-w-[600px] mx-auto">
             Every tool you need to understand, analyze, and onboard onto any codebase.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((f, i) => (
             <div key={i} className="border border-white/8 bg-white/3 hover:border-white/15 rounded-2xl p-6 group transition-all duration-300">
               <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition">
                 <f.icon className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="text-sm font-bold text-white mb-2">{f.title}</h3>
-              <p className="text-xs text-neutral-500 leading-relaxed">{f.desc}</p>
+              <h3 className="typo-h3 text-white mb-2">{f.title}</h3>
+              <p className="typo-small text-neutral-400 max-w-[280px]">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Screenshots / Stats */}
-      <section className="py-20 px-4 max-w-6xl mx-auto">
+      <section className="py-12 px-4 max-w-6xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'AST Parsing', value: '8 langs', icon: Terminal },
@@ -134,8 +134,8 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           ].map((s, i) => (
             <div key={i} className="border border-white/8 bg-white/3 rounded-2xl p-6 text-center">
               <s.icon className="w-6 h-6 text-primary mx-auto mb-3" />
-              <div className="text-2xl font-extrabold text-white">{s.value}</div>
-              <div className="text-xs text-neutral-500 mt-1">{s.label}</div>
+              <div className="typo-h2 text-white">{s.value}</div>
+              <div className="typo-metadata text-neutral-400 mt-1 uppercase tracking-wider">{s.label}</div>
             </div>
           ))}
         </div>
@@ -147,13 +147,13 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
       </div>
 
       {/* FAQ */}
-      <section id="faq" className="py-20 px-4 max-w-3xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-6">
+      <section id="faq" className="py-24 px-4 max-w-3xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-4">
             <FileText className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold tracking-wider text-primary uppercase">FAQ</span>
+            <span className="typo-eyebrow text-primary">HAVE QUESTIONS?</span>
           </div>
-          <h2 className="text-4xl font-extrabold text-white">Frequently Asked Questions</h2>
+          <h2 className="typo-h2 text-white mx-auto">Frequently Asked Questions</h2>
         </div>
         <div className="space-y-3">
           {faqs.map((faq, i) => (
@@ -162,11 +162,11 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 className="w-full flex items-center justify-between p-5 text-left"
               >
-                <span className="text-sm font-semibold text-white">{faq.q}</span>
-                <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
+                <h4 className="typo-h4 text-white">{faq.q}</h4>
+                <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
               </button>
               {openFaq === i && (
-                <div className="px-5 pb-5 text-sm text-neutral-400 leading-relaxed transition-all">
+                <div className="px-5 pb-5 typo-small text-neutral-300 transition-all">
                   {faq.a}
                 </div>
               )}
@@ -176,13 +176,13 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 max-w-4xl mx-auto">
+      <section className="py-24 px-4 max-w-4xl mx-auto">
         <div className="border-2 border-primary/20 bg-white/3 rounded-3xl p-12 text-center">
-          <h2 className="text-3xl font-extrabold text-white mb-4">Ready to understand your codebase?</h2>
-          <p className="text-neutral-500 mb-8">Start your 14-day free trial. No credit card required.</p>
+          <h2 className="typo-h2 text-white mx-auto mb-4">Ready to understand your codebase?</h2>
+          <p className="typo-body text-neutral-400 max-w-[600px] mx-auto mb-8">Start your 14-day free trial. No credit card required.</p>
           <button
             onClick={onGetStarted}
-            className="px-8 py-3.5 rounded-xl bg-primary text-neutral-950 font-bold text-sm hover:bg-primary-400 transition inline-flex items-center gap-2"
+            className="px-8 py-3.5 rounded-xl bg-primary text-neutral-950 typo-btn-lg hover:bg-primary-400 transition inline-flex items-center gap-2"
           >
             Get Started Free <ArrowRight className="w-4 h-4" />
           </button>
@@ -196,15 +196,15 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-400 flex items-center justify-center">
               <Layers size={16} className="text-neutral-950" />
             </div>
-            <span className="font-bold text-white text-sm">Archaeologist</span>
+            <span className="font-bold text-white typo-h4">Archaeologist</span>
           </div>
-          <div className="flex items-center gap-6 text-xs text-neutral-600">
+          <div className="flex items-center gap-6 typo-small text-neutral-400">
             <a href="#" className="hover:text-white transition">Privacy</a>
             <a href="#" className="hover:text-white transition">Terms</a>
             <a href="#" className="hover:text-white transition">Security</a>
             <a href="#" className="hover:text-white transition">Docs</a>
           </div>
-          <div className="text-xs text-neutral-700">Built with precision for developers</div>
+          <div className="typo-metadata text-neutral-500">Built with precision for developers</div>
         </div>
       </footer>
     </div>

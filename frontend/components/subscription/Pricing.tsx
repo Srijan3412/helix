@@ -12,14 +12,14 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
 
   return (
     <section className="relative py-24 px-4 max-w-6xl mx-auto">
-      <div className="text-center mb-16">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-6">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-4">
           <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-xs font-semibold tracking-wider text-primary uppercase">Pricing</span>
+          <span className="typo-eyebrow text-primary">TRANSPARENT PRICING</span>
         </div>
-        <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4">Choose Your Plan</h2>
-        <p className="text-lg text-neutral-500 max-w-2xl mx-auto">
-          Start free for 14 days. Upgrade when you're ready. Cancel anytime.
+        <h2 className="typo-h2 text-white mx-auto mb-4">Choose Your Plan</h2>
+        <p className="typo-body text-neutral-400 max-w-[600px] mx-auto">
+          Start for free with 2 repository scans. Upgrade as your team grows.
         </p>
       </div>
 
@@ -33,67 +33,69 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
           return (
             <div
               key={planKey}
-              className={`relative rounded-2xl p-8 backdrop-blur-md transition-all duration-300 ${
+              className={`relative rounded-2xl p-8 backdrop-blur-md transition-all duration-300 flex flex-col justify-between ${
                 isPro
                   ? 'border-2 border-primary/40 bg-primary/5 shadow-2xl shadow-primary/10 scale-[1.02]'
                   : 'border border-white/8 bg-white/3'
               }`}
             >
               {isPro && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-neutral-950 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-neutral-950 typo-eyebrow flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> Recommended
                 </div>
               )}
 
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  {planKey === 'trial' && <Zap className="w-5 h-5 text-neutral-400" />}
-                  {isPro && <Sparkles className="w-5 h-5 text-primary" />}
-                  {isEnterprise && <Building2 className="w-5 h-5 text-secondary-400" />}
-                  <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+              <div>
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    {planKey === 'trial' && <Zap className="w-5 h-5 text-neutral-400" />}
+                    {isPro && <Sparkles className="w-5 h-5 text-primary" />}
+                    {isEnterprise && <Building2 className="w-5 h-5 text-secondary-400" />}
+                    <h3 className="typo-h3 text-white">{plan.name}</h3>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    {plan.price === null ? (
+                      <span className="typo-price text-white">Custom</span>
+                    ) : plan.price === 0 ? (
+                      <>
+                        <span className="typo-price text-white">Free</span>
+                        <span className="typo-small text-neutral-400">/ {plan.period}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="typo-price text-white">${plan.price}</span>
+                        <span className="typo-small text-neutral-400">/ {plan.period}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-baseline gap-1">
-                  {plan.price === null ? (
-                    <span className="text-3xl font-extrabold text-white">Custom</span>
-                  ) : plan.price === 0 ? (
-                    <>
-                      <span className="text-4xl font-extrabold text-white">Free</span>
-                      <span className="text-sm text-neutral-500">/ {plan.period}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-4xl font-extrabold text-white">${plan.price}</span>
-                      <span className="text-sm text-neutral-500">/ {plan.period}</span>
-                    </>
-                  )}
-                </div>
-              </div>
 
-              <div className="space-y-3 mb-8">
-                {plan.features.map((feature, i) => (
-                  <div key={i} className="flex items-start gap-2.5">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                      isPro ? 'bg-primary/20' : 'bg-white/5'
-                    }`}>
-                      <Check className={`w-3 h-3 ${isPro ? 'text-primary' : 'text-neutral-400'}`} />
+                <div className="space-y-3 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                        isPro ? 'bg-primary/20' : 'bg-white/5'
+                      }`}>
+                        <Check className={`w-3 h-3 ${isPro ? 'text-primary' : 'text-neutral-400'}`} />
+                      </div>
+                      <span className="typo-small text-neutral-300">{feature}</span>
                     </div>
-                    <span className="text-sm text-neutral-300">{feature}</span>
-                  </div>
-                ))}
-                {plan.excluded.map((feature, i) => (
-                  <div key={i} className="flex items-start gap-2.5 opacity-40">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-white/5">
-                      <X className="w-3 h-3 text-neutral-500" />
+                  ))}
+                  {plan.excluded.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-2.5 opacity-40">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-white/5">
+                        <X className="w-3 h-3 text-neutral-500" />
+                      </div>
+                      <span className="typo-small text-neutral-500 line-through">{feature}</span>
                     </div>
-                    <span className="text-sm text-neutral-500 line-through">{feature}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
               <button
                 onClick={() => onSelectPlan(planKey)}
                 disabled={isCurrent}
-                className={`w-full py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 ${
+                className={`w-full py-3 rounded-xl typo-btn transition flex items-center justify-center gap-2 ${
                   isCurrent
                     ? 'bg-white/5 text-neutral-500 cursor-not-allowed'
                     : isPro
