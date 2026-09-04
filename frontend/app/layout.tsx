@@ -26,15 +26,6 @@ export default function RootLayout({
             <main className="flex-1 flex flex-col">
               {children}
             </main>
-            <footer className="mt-auto border-t border-border/20 bg-zinc-950/40 backdrop-blur-md py-6 px-8 text-center flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
-              <div className="text-center sm:text-left">
-                <p className="text-xs text-zinc-400 font-medium">Built by <span className="text-zinc-200 font-bold">Shriniwas Srijan Bajpai</span></p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">
-                  <a href="mailto:srijanbajpai1447@gmail.com" className="hover:text-primary transition">srijanbajpai1447@gmail.com</a>
-                </p>
-              </div>
-              
-            </footer>
           </div>
         </Providers>
       </body>

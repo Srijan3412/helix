@@ -1875,6 +1875,23 @@ export default function Home() {
           </button>
         </div>
 
+        {/* Author Credit */}
+        <AnimatePresence>
+          {sidebarExpanded && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="border-t border-white/5 px-4 py-3 text-left"
+            >
+              <p className="text-[11px] text-white/50">Built by <span className="text-white font-semibold">Shriniwas Srijan Bajpai</span></p>
+              <a href="mailto:srijanbajpai1447@gmail.com" className="text-[10px] text-white/30 hover:text-primary transition truncate block mt-0.5">
+                srijanbajpai1447@gmail.com
+              </a>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarExpanded(!sidebarExpanded)}
