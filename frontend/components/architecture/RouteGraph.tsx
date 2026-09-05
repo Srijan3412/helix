@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, {  useState, useMemo, useEffect , useRef } from 'react';
 import {
   ReactFlow,
   Node,
@@ -232,13 +232,24 @@ function RouteGraphInternal({ result }: { result: any }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Simple sync - only triggers when memoized data changes
-  React.useEffect(() => {
-    setNodes(initialNodes);
+  // useRef synchronization guards to block rendering-loop crashes (Error #301)
+  const lastSyncedNodeIds = useRef<string>("");
+  const lastSyncedEdgeIds = useRef<string>("");
+
+  useEffect(() => {
+    const newIds = initialNodes.map((n) => `${n.id}:${n.position.x}:${n.position.y}`).join("|");
+    if (newIds !== lastSyncedNodeIds.current) {
+      lastSyncedNodeIds.current = newIds;
+      setNodes(initialNodes);
+    }
   }, [initialNodes, setNodes]);
 
-  React.useEffect(() => {
-    setEdges(initialEdges);
+  useEffect(() => {
+    const newIds = initialEdges.map((e) => e.id).join("|");
+    if (newIds !== lastSyncedEdgeIds.current) {
+      lastSyncedEdgeIds.current = newIds;
+      setEdges(initialEdges);
+    }
   }, [initialEdges, setEdges]);
 
   return (

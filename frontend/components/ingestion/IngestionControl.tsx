@@ -9,7 +9,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  Zap
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -86,7 +88,10 @@ export default function IngestionControl({
   const handleFileDrop = (file: File) => {
     if (isLimitReached) return;
     setSelectedFile(file);
-    onSubmitZip(file);
+  };
+
+  const handleClearFile = () => {
+    setSelectedFile(null);
   };
 
   const isValid = () => {
@@ -98,17 +103,17 @@ export default function IngestionControl({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6">
-      {/* Scan Limit Reached Banner */}
+    <div className="w-full max-w-2xl mx-auto space-y-6">
+      {/* Scan Limit Alert */}
       {isLimitReached && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-300 shadow-xl"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4"
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <AlertCircle className="w-5 h-5 text-amber-400" />
+              <AlertCircle size={18} className="text-amber-400" />
             </div>
             <div>
               <div className="text-xs font-extrabold uppercase tracking-wider text-amber-200">
@@ -120,16 +125,16 @@ export default function IngestionControl({
             </div>
           </div>
           <button
-            onClick={() => window.location.href = '/contact-sales'}
+            onClick={() => (window.location.href = "/contact-sales")}
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-neutral-950 text-xs font-extrabold hover:shadow-lg hover:shadow-amber-500/20 transition cursor-pointer shrink-0"
           >
-            Upgrade Plan →
+            Upgrade Plan
           </button>
         </motion.div>
       )}
 
-      {/* Tab Header - daadd-main styling with projectAnalyser structure */}
-      <div className="flex justify-center bg-zinc-900/60 p-1.5 rounded-2xl border border-border/60 max-w-md mx-auto backdrop-blur-md">
+      {/* Tab Header Selector */}
+      <div className="flex justify-center bg-zinc-900/80 p-1.5 rounded-2xl border border-zinc-800/80 max-w-md mx-auto backdrop-blur-md shadow-xl">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -140,8 +145,8 @@ export default function IngestionControl({
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all duration-300 ${
                 isActive
-                  ? "bg-primary text-background shadow-lg font-bold"
-                  : "text-muted-foreground hover:text-white"
+                  ? "bg-primary text-zinc-950 shadow-lg font-bold"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
               <Icon size={14} />
@@ -151,8 +156,12 @@ export default function IngestionControl({
         })}
       </div>
 
-      {/* Tab Content - from daadd-main with projectAnalyser components */}
-      <div className={`glass-card rounded-2xl p-6 shadow-2xl transition-all ${isLimitReached ? 'opacity-70 border-amber-500/20' : ''}`}>
+      {/* Tab Content Area */}
+      <div
+        className={`bg-zinc-900/70 border border-zinc-800/80 rounded-2xl p-6 shadow-2xl backdrop-blur-xl transition-all ${
+          isLimitReached ? "opacity-70 border-amber-500/20" : ""
+        }`}
+      >
         <AnimatePresence mode="wait">
           {/* GitHub Tab */}
           {activeTab === "github" && (
@@ -164,12 +173,14 @@ export default function IngestionControl({
               className="space-y-4"
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center">
                   <Link className="text-primary" size={20} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">Repository URL</h3>
-                  <p className="text-xs text-muted-foreground">Enter a GitHub repository URL to clone and analyze</p>
+                  <h3 className="font-semibold text-white text-sm">Repository URL</h3>
+                  <p className="text-xs text-zinc-400">
+                    Enter a GitHub repository URL to clone and analyze
+                  </p>
                 </div>
               </div>
 
@@ -180,24 +191,29 @@ export default function IngestionControl({
                     value={githubUrl}
                     onChange={(e) => setGithubUrl(e.target.value)}
                     placeholder="https://github.com/owner/repository"
-                    icon={<Github className="w-5 h-5 text-muted-foreground" />}
+                    icon={<Github className="w-5 h-5 text-zinc-500" />}
                     required
                     disabled={isLoading || isLimitReached}
                   />
                 </div>
-                <Button type="submit" isLoading={isLoading} disabled={!githubUrl.trim() || isLimitReached} className="px-8 py-4">
-                  {isLimitReached ? '🔒 Limit Reached' : 'Analyze Repo'}
+                <Button
+                  type="submit"
+                  isLoading={isLoading}
+                  disabled={!githubUrl.trim() || isLimitReached}
+                  className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20"
+                >
+                  {isLimitReached ? "Limit Reached" : "Analyze Repo"}
                 </Button>
               </form>
 
-              <p className="text-[10px] text-muted-foreground/80 flex items-center gap-1">
-                <AlertCircle size={12} className="text-primary" />
-                Supports public repositories and private repos with environment token authentication.
+              <p className="text-[10.5px] text-zinc-500 flex items-center gap-1.5">
+                <ShieldCheck size={13} className="text-primary" />
+                Supports public and private repositories with automatic token authentication.
               </p>
             </motion.div>
           )}
 
-          {/* ZIP Tab - from daadd-main with FileDropzone */}
+          {/* ZIP Upload Tab */}
           {activeTab === "zip" && (
             <motion.div
               key="zip"
@@ -207,30 +223,56 @@ export default function IngestionControl({
               className="space-y-4"
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center">
                   <Upload className="text-primary" size={20} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">Upload Archive</h3>
-                  <p className="text-xs text-muted-foreground">Drag and drop a ZIP archive to analyze</p>
+                  <h3 className="font-semibold text-white text-sm">Upload Codebase Archive</h3>
+                  <p className="text-xs text-zinc-400">
+                    Drag and drop or browse a compressed .ZIP repository archive
+                  </p>
                 </div>
               </div>
 
-              <FileDropzone onFileDrop={handleFileDrop} disabled={isLoading || isLimitReached} />
-              
-              {selectedFile && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/50">
-                  <div className="flex items-center gap-3">
-                    <FileArchive className="text-primary" size={20} />
-                    <span className="text-sm text-zinc-300 font-medium truncate max-w-md">{selectedFile.name}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground font-mono">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
-                </div>
-              )}
+              <FileDropzone
+                onFileDrop={handleFileDrop}
+                selectedFile={selectedFile}
+                onClearFile={handleClearFile}
+                disabled={isLoading || isLimitReached}
+              />
+
+              {/* Start Analysis Button for ZIP */}
+              <button
+                type="button"
+                onClick={() => handleSubmit()}
+                disabled={!selectedFile || isLoading || isLimitReached}
+                className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-500/20 cursor-pointer"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    <span>Uploading & Extracting Archive...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap size={16} className="text-amber-300" />
+                    <span>Start ZIP Architecture Analysis</span>
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center justify-between text-[10.5px] text-zinc-500 pt-1">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck size={12} className="text-emerald-400" />
+                  Protected against Zip-Slip & decompression attacks
+                </span>
+                <span>Max 200MB</span>
+              </div>
             </motion.div>
           )}
 
-          {/* Local Tab - from daadd-main */}
+          {/* Local Directory Tab */}
           {activeTab === "local" && (
             <motion.div
               key="local"
@@ -240,12 +282,14 @@ export default function IngestionControl({
               className="space-y-4"
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center">
                   <FolderOpen className="text-primary" size={20} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">Local Directory</h3>
-                  <p className="text-xs text-muted-foreground">Scan a directory from your local filesystem</p>
+                  <h3 className="font-semibold text-white text-sm">Local Directory Scan</h3>
+                  <p className="text-xs text-zinc-400">
+                    Scan an uncompressed project directory from your local filesystem
+                  </p>
                 </div>
               </div>
 
@@ -256,34 +300,41 @@ export default function IngestionControl({
                     value={localPath}
                     onChange={(e) => setLocalPath(e.target.value)}
                     placeholder="c:\Users\..."
-                    icon={<FolderOpen className="w-5 h-5 text-muted-foreground" />}
+                    icon={<FolderOpen className="w-5 h-5 text-zinc-500" />}
                     required
                     disabled={isLoading || isLimitReached}
                   />
                 </div>
-                <Button type="submit" isLoading={isLoading} disabled={!localPath.trim() || isLimitReached} className="px-8 py-4">
-                  {isLimitReached ? '🔒 Limit Reached' : 'Scan Directory'}
+                <Button
+                  type="submit"
+                  isLoading={isLoading}
+                  disabled={!localPath.trim() || isLimitReached}
+                  className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20"
+                >
+                  {isLimitReached ? "Limit Reached" : "Scan Directory"}
                 </Button>
               </form>
 
-              <p className="text-[10px] text-muted-foreground/80 italic">
-                Scans restricted to <code>c:\Users\91798\Documents</code>
+              <p className="text-[10px] text-zinc-500 italic">
+                Local scanning requires read permissions for the specified directory path.
               </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Error Display - from daadd-main */}
+        {/* Error Display */}
         {error && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-4 rounded-xl bg-red-950/20 border border-red-900/50 flex items-start gap-3"
+            className="mt-4 p-4 rounded-xl bg-red-950/30 border border-red-900/60 flex items-start gap-3"
           >
-            <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={16} />
+            <AlertCircle className="text-red-400 shrink-0 mt-0.5" size={16} />
             <div>
-              <p className="text-red-400 font-medium text-sm">Error</p>
-              <p className="text-red-300/80 text-sm">{error}</p>
+              <p className="text-red-400 font-semibold text-xs uppercase tracking-wider">
+                Ingestion Error
+              </p>
+              <p className="text-red-300/90 text-xs mt-0.5">{error}</p>
             </div>
           </motion.div>
         )}

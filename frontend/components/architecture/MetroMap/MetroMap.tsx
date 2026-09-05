@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, {  useState, useMemo, useCallback , useRef, useEffect } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -269,10 +269,32 @@ function MetroMapInternal({
   const [nodes, setNodes, onNodesChange] = useNodesState(graphNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(graphEdges);
 
-  useMemo(() => {
-    setNodes(graphNodes);
-    setEdges(graphEdges);
-  }, [graphNodes, graphEdges, setNodes, setEdges]);
+  // useRef synchronization guards to prevent infinite re-render loops (React Error #301)
+  const lastSyncedNodeIds = useRef<string>("");
+  const lastSyncedEdgeIds = useRef<string>("");
+
+  useEffect(() => {
+    const newIds = graphNodes
+      .map(
+        (n) =>
+          `${n.id}:${n.position.x}:${n.position.y}:${(n.data as any)?.focused}:${(n.data as any)?.selected}:${(n.data as any)?.isJourneyActive}`
+      )
+      .join("|");
+    if (newIds !== lastSyncedNodeIds.current) {
+      lastSyncedNodeIds.current = newIds;
+      setNodes(graphNodes);
+    }
+  }, [graphNodes, setNodes]);
+
+  useEffect(() => {
+    const newIds = graphEdges
+      .map((e) => `${e.id}:${e.style?.opacity}:${e.style?.strokeWidth}:${e.animated}`)
+      .join("|");
+    if (newIds !== lastSyncedEdgeIds.current) {
+      lastSyncedEdgeIds.current = newIds;
+      setEdges(graphEdges);
+    }
+  }, [graphEdges, setEdges]);
 
   // Station Node Click
   const handleNodeClick: NodeMouseHandler = useCallback((_, node) => {
