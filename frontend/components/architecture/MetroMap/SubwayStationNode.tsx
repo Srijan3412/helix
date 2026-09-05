@@ -4,6 +4,8 @@ import React, { memo, useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { motion } from 'framer-motion';
 import {
+  Package,
+  ChevronRight,
   Route,
   Settings,
   Cog,
@@ -69,6 +71,8 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
     layer = 'utility',
     type = 'service',
     health = 'healthy',
+    isAggregated = false,
+    hiddenCount = 0,
     onClick
   } = data;
 
@@ -81,6 +85,66 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
     }, 60000);
     return () => clearInterval(timer);
   }, []);
+
+  
+  // ── Special Aggregated Node Rendering ──
+  if (isAggregated) {
+    return (
+      <motion.div
+        whileHover={{ scale: 1.08, y: -2 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        onClick={onClick}
+        className="relative select-none group cursor-pointer flex flex-col items-center"
+        style={{ width: '150px' }}
+      >
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="left"
+          className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900"
+          style={{ top: '32px', zIndex: 10 }}
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="right"
+          className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900"
+          style={{ top: '32px', zIndex: 10 }}
+        />
+
+        <div
+          className="relative bg-zinc-900/95 border-2 border-dashed border-zinc-600 hover:border-primary rounded-xl p-2.5 shadow-xl transition-all duration-300 text-left w-[150px] bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-zinc-950"
+          style={{
+            borderColor: color ? `${color}80` : undefined,
+            boxShadow: `0 4px 14px ${color}25`
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 shadow-sm"
+              style={{ backgroundColor: `${color}30`, color: color }}
+            >
+              <Package size={13} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold text-zinc-100 truncate">
+                +{hiddenCount || 'More'} Files
+              </div>
+              <div className="text-[7.5px] text-zinc-400 flex items-center gap-0.5">
+                <span>Click to expand</span>
+                <ChevronRight size={8} className="text-primary" />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 pt-1 border-t border-zinc-800/80 flex items-center justify-between text-[7px] text-zinc-400 font-mono">
+            <span>{lineName || 'Track'}</span>
+            <span className="text-primary font-bold">EXPAND</span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   const stationType = (type as StationType) || 'service';
   const Icon = stationIconMap[stationType] || Route;

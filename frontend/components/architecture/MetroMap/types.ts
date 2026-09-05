@@ -28,7 +28,10 @@ export interface SubwayStationData {
   selected?: boolean;        // ✅ Selection state
   isSelected?: boolean;      // ✅ Selection alias
   isActive?: boolean;        // ✅ Active state
-  isJourneyActive?: boolean; // ✅ Journey simulation active
+  isJourneyActive?: boolean;
+  isAggregated?: boolean;
+  hiddenCount?: number;
+  isExpandable?: boolean; // ✅ Journey simulation active
   lineName?: string;         // ✅ Line name
   routes?: string[];         // ✅ Route endpoints
   metrics?: {

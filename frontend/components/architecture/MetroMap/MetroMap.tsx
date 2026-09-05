@@ -13,7 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AnimatePresence } from 'framer-motion';
-import { RotateCcw, Download, Layers, RotateCw } from 'lucide-react';
+import { RotateCcw, Download, Layers, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { SubwayStationNode } from './SubwayStationNode';
 import { StationInspector } from './StationInspector';
@@ -22,18 +22,12 @@ import { FeatureLegend } from './FeatureLegend';
 import { MetroSearchPanel } from './MetroSearchPanel';
 import { LayerHeader } from './LayerHeader';
 import { TrackHeaders } from './TrackHeaders';
-import { useMetroData } from './useMetroData';
+import { useMetroData, inferStationType } from './useMetroData';
 import { useMetroLayout } from './useMetroLayout';
 import { useMetroGraph } from './useMetroGraph';
 import { useJourneyAnimation } from './useJourneyAnimation';
-import { SubwayStationData, MetroMapProps, FeatureFlow } from './types';
-import {
-  LayerType,
-  LAYER_CONFIG,
-  getLayerOrder,
-  getLayerColor,
-  detectLayer
-} from './layerDetector';
+import { SubwayStationData, FeatureFlow, MetroMapProps, StationType } from './types';
+import { LayerType, LAYER_CONFIG, getLayerColor, getLayerEmoji, detectLayer, isImportantFile, isUtilityFile } from './layerDetector';
 
 const nodeTypes = {
   subwayStation: SubwayStationNode
@@ -60,6 +54,11 @@ function MetroMapInternal({
   const { featureClusters, interchanges, executionTraces, featureImportance } =
     useMetroData(result);
 
+  // ── Smart Filtering & Collapse Configuration ──
+  const MAX_STATIONS_TO_SHOW = 15;
+  const AUTO_COLLAPSE_THRESHOLD = 20;
+  const TOP_FEATURES_COUNT = 5;
+
   // ── State for Selection & Focus ──
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
@@ -67,16 +66,110 @@ function MetroMapInternal({
   const [focusedNodeIds, setFocusedNodeIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // ── Smart View Controls ──
+  const [showUtilities, setShowUtilities] = useState(false);
+  const [showAllFeatures, setShowAllFeatures] = useState(false);
+  const [expandedFeatures, setExpandedFeatures] = useState<Set<string>>(new Set());
+  const [collapseLarge, setCollapseLarge] = useState(true);
+
   // ── 4b: Layer Filter State ──
   const [activeLayers, setActiveLayers] = useState<LayerType[]>(ALL_LAYERS);
 
-  // ── 4c: Layer-Aware Feature Lines & Layer Groups ──
+  // ── Horizontal Scrolling State & Ref ──
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isAtStart, setIsAtStart] = useState(true);
+  const [isAtEnd, setIsAtEnd] = useState(false);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+  const [viewportWidthState, setViewportWidthState] = useState(1200);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // ── Scroll Event Handler ──
+  const handleScroll = useCallback(() => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    
+    setScrollProgress(maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0);
+    setIsAtStart(scrollLeft <= 5);
+    setIsAtEnd(scrollLeft >= maxScroll - 5);
+    setScrollLeftState(scrollLeft);
+    setViewportWidthState(clientWidth);
+  }, []);
+
+  // ── Scroll Button Handler ──
+  const scroll = useCallback((direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    const scrollAmount = Math.min(480, scrollContainerRef.current.clientWidth * 0.75);
+    scrollContainerRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  }, []);
+
+  // ── Mouse Wheel → Horizontal Scroll Conversion ──
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.shiftKey) return;
+      if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // ── Toggle Expand for specific feature ──
+  const toggleFeatureExpand = useCallback((featId: string) => {
+    setExpandedFeatures((prev) => {
+      const next = new Set(prev);
+      if (next.has(featId)) {
+        next.delete(featId);
+      } else {
+        next.add(featId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleCollapseAll = useCallback(() => {
+    setCollapseLarge((prev) => {
+      const nextVal = !prev;
+      if (!nextVal) {
+        setExpandedFeatures(new Set(featureClusters.map((f) => f.id)));
+      } else {
+        setExpandedFeatures(new Set());
+      }
+      return nextVal;
+    });
+  }, [featureClusters]);
+
+  // ── Feature Importance Sorting ──
+  const sortedFeatureClusters = useMemo(() => {
+    return [...featureClusters].sort((a, b) => {
+      if ((b.health || 0) !== (a.health || 0)) {
+        return (b.health || 0) - (a.health || 0);
+      }
+      return (a.files?.length || 0) - (b.files?.length || 0);
+    });
+  }, [featureClusters]);
+
+  const activeFeatureClusters = useMemo(() => {
+    if (showAllFeatures || selectedFeatures.length > 0) return sortedFeatureClusters;
+    return sortedFeatureClusters.slice(0, TOP_FEATURES_COUNT);
+  }, [sortedFeatureClusters, showAllFeatures, selectedFeatures]);
+
+  // ── 4c: Smart Filtered & Collapsed Feature Lines ──
   const featureLines = useMemo(() => {
     const lines: Record<string, SubwayStationData[]> = {};
     const layerGroups: Record<string, Record<LayerType, SubwayStationData[]>> = {};
 
-    featureClusters.forEach((feature: FeatureFlow) => {
-      const allStations: SubwayStationData[] = [];
+    activeFeatureClusters.forEach((feature: FeatureFlow, fIdx: number) => {
+      const rawStations: SubwayStationData[] = [];
       const groups: Record<LayerType, SubwayStationData[]> = {
         api: [],
         middleware: [],
@@ -109,13 +202,19 @@ function MetroMapInternal({
           featureId: feature.id,
           lineName: feature.name
         };
-        allStations.push(station);
-        groups.api.push(station);
+        rawStations.push(station);
       });
 
-      // ── Process Files (Detected Layer) ──
-      (feature.files || []).forEach((fPath: string, fIdx: number) => {
+      // ── Process Files (Filter utilities if showUtilities is false) ──
+      (feature.files || []).forEach((fPath: string, fileIdx: number) => {
         const filename = fPath.split(/[\\/]/).pop() || fPath;
+        const isUtil = isUtilityFile(filename) && !isImportantFile(filename);
+        
+        // Hide low-priority utility files by default unless showUtilities is enabled or activeLayers specifically isolates utility
+        if (!showUtilities && isUtil && activeLayers.length === ALL_LAYERS.length) {
+          return;
+        }
+
         const layer = detectLayer({ type: 'file' }, fPath);
         const station: SubwayStationData = {
           id: `${feature.id}-${fPath}`,
@@ -123,20 +222,19 @@ function MetroMapInternal({
           label: filename,
           displayName: filename,
           rawPath: fPath,
-          type: 'service',
+          type: inferStationType(filename),
           key: `file:${fPath}`,
           raw: fPath,
           layer,
           health: 'healthy',
-          complexity: (fIdx * 7) % 25 + 6,
+          complexity: (fileIdx * 7) % 25 + 6,
           features: [feature.name],
           isInterchange: interchanges.some((i) => i.file === fPath && i.features.length > 1),
           color: feature.color,
           featureId: feature.id,
           lineName: feature.name
         };
-        allStations.push(station);
-        groups[layer].push(station);
+        rawStations.push(station);
       });
 
       // ── Process Database Tables (Data Layer) ──
@@ -159,20 +257,80 @@ function MetroMapInternal({
           featureId: feature.id,
           lineName: feature.name
         };
-        allStations.push(station);
-        groups.data.push(station);
+        rawStations.push(station);
       });
 
-      lines[feature.id] = allStations;
+      // ── Auto-Collapse Handling for Large Features ──
+      const isExpanded = expandedFeatures.has(feature.id);
+      const shouldCollapse = collapseLarge && !isExpanded && rawStations.length > AUTO_COLLAPSE_THRESHOLD;
+
+      let finalStations: SubwayStationData[] = [];
+      if (shouldCollapse) {
+        // Pick most important stations first (routes -> controllers -> services -> repos -> databases)
+        const sortedStations = [...rawStations].sort((a, b) => {
+          const priorityOrder: Record<StationType, number> = {
+            route: 1,
+            controller: 2,
+            service: 3,
+            repository: 4,
+            database: 5,
+            middleware: 6
+          };
+          return (priorityOrder[a.type] || 9) - (priorityOrder[b.type] || 9);
+        });
+
+        const visibleSubset = sortedStations.slice(0, MAX_STATIONS_TO_SHOW);
+        const hiddenCount = rawStations.length - MAX_STATIONS_TO_SHOW;
+
+        const expandNode: SubwayStationData = {
+          id: `station:${feature.id}:expand-more`,
+          name: `+${hiddenCount} More`,
+          label: `+${hiddenCount} More`,
+          displayName: `+${hiddenCount} More Stations`,
+          rawPath: 'expandable',
+          type: 'service',
+          key: `expand:${feature.id}`,
+          raw: 'expandable',
+          layer: 'utility',
+          health: 'healthy',
+          complexity: hiddenCount,
+          features: [feature.name],
+          isInterchange: false,
+          color: feature.color,
+          featureId: feature.id,
+          lineName: feature.name,
+          isAggregated: true,
+          hiddenCount,
+          isExpandable: true
+        };
+
+        finalStations = [...visibleSubset, expandNode];
+      } else {
+        finalStations = rawStations;
+      }
+
+      // Group into layers
+      finalStations.forEach((station) => {
+        groups[station.layer]?.push(station);
+      });
+
+      lines[feature.id] = finalStations;
       layerGroups[feature.id] = groups;
     });
 
     return { stations: lines, layerGroups };
-  }, [featureClusters, interchanges]);
+  }, [
+    activeFeatureClusters,
+    interchanges,
+    showUtilities,
+    activeLayers,
+    expandedFeatures,
+    collapseLarge
+  ]);
 
   // ── 4d: Filtered Features by Active Layers & Selection ──
   const filteredFeatures = useMemo(() => {
-    let result = featureClusters;
+    let result = activeFeatureClusters;
 
     if (selectedFeatures.length > 0) {
       result = result.filter((f: FeatureFlow) => selectedFeatures.includes(f.id));
@@ -206,8 +364,8 @@ function MetroMapInternal({
         );
     }
 
-    return result.length > 0 ? result : featureClusters;
-  }, [featureClusters, selectedFeatures, activeLayers]);
+    return result.length > 0 ? result : activeFeatureClusters;
+  }, [activeFeatureClusters, selectedFeatures, activeLayers]);
 
   // ── 4f: Layout Computation ──
   const maxStationsCount = useMemo(() => {
@@ -226,7 +384,7 @@ function MetroMapInternal({
     layerGroups: computedLayerGroups,
     layerOrder
   } = useMetroLayout(
-    featureClusters,
+    activeFeatureClusters,
     filteredFeatures,
     selectedFeatures,
     featureLines.stations,
@@ -297,11 +455,18 @@ function MetroMapInternal({
   }, [graphEdges, setEdges]);
 
   // Station Node Click
-  const handleNodeClick: NodeMouseHandler = useCallback((_, node) => {
-    const stationData = node.data as unknown as SubwayStationData;
-    setSelectedStation(stationData);
-    setFocusedNodeIds([node.id]);
-  }, []);
+  const handleNodeClick: NodeMouseHandler = useCallback(
+    (_, node) => {
+      const stationData = node.data as unknown as SubwayStationData;
+      if (stationData.isAggregated && stationData.featureId) {
+        toggleFeatureExpand(stationData.featureId);
+        return;
+      }
+      setSelectedStation(stationData);
+      setFocusedNodeIds([node.id]);
+    },
+    [toggleFeatureExpand]
+  );
 
   // Search Engine
   const handleSearch = useCallback(
@@ -399,68 +564,12 @@ function MetroMapInternal({
 
   return (
     <div className="h-full w-full text-left relative flex flex-col bg-zinc-950 select-none overflow-hidden">
-      {/* ── FILTER & TOOLBAR ── */}
-      <div className="flex flex-col shrink-0 bg-zinc-900/80 border-b border-zinc-800/80 z-10">
-        {/* Row 1: Feature Track Filter & Canvas Actions */}
-        <div className="flex items-center justify-between gap-2 px-4 py-1.5">
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
-            <button
-              onClick={selectAllFeatures}
-              className={`px-2.5 py-1 rounded-lg text-[9.5px] font-bold transition whitespace-nowrap border ${
-                selectedFeatures.length === 0
-                  ? 'bg-primary/20 text-primary border-primary/30'
-                  : 'bg-zinc-800/60 text-zinc-400 border-transparent hover:border-zinc-600'
-              }`}
-            >
-              All Tracks
-            </button>
-
-            {featureClusters.map((f) => {
-              const isSelected = selectedFeatures.includes(f.id);
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => toggleFeature(f.id)}
-                  className="px-2.5 py-1 rounded-lg text-[9.5px] font-bold transition whitespace-nowrap border flex items-center gap-1.5"
-                  style={{
-                    backgroundColor: isSelected ? f.color : '#27272a',
-                    color: isSelected ? 'white' : '#a1a1aa',
-                    borderColor: isSelected ? f.color : 'transparent'
-                  }}
-                >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: isSelected ? 'white' : f.color }}
-                  />
-                  {f.name}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => fitView({ padding: 0.15, duration: 400 })}
-              className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[9.5px] font-semibold text-zinc-300 transition"
-            >
-              <RotateCcw size={11} />
-              <span>Fit View</span>
-            </button>
-
-            <button
-              onClick={exportToSvg}
-              className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[9.5px] font-semibold text-zinc-300 transition"
-            >
-              <Download size={11} />
-              <span>Export SVG</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ── 4e: LAYER FILTER CONTROLS ── */}
-        <div className="flex items-center gap-1 px-4 py-1 border-t border-zinc-800/60 bg-zinc-950/40 overflow-x-auto scrollbar-none">
-          <span className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-wider mr-1 flex items-center gap-1">
-            <Layers size={10} /> Layers:
+      {/* ── FILTER & TOOLBAR (Single Clean Unified Row) ── */}
+      <div className="flex items-center justify-between gap-3 px-4 py-1.5 shrink-0 bg-zinc-900/90 border-b border-zinc-800/80 z-10 overflow-x-auto scrollbar-none">
+        {/* Layer Filter Controls */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
+            <Layers size={11} className="text-primary" /> Layers:
           </span>
 
           {Object.entries(LAYER_CONFIG).map(([key, config]) => {
@@ -469,10 +578,10 @@ function MetroMapInternal({
               <button
                 key={key}
                 onClick={() => toggleLayer(key as LayerType)}
-                className={`px-2 py-0.5 rounded text-[8px] font-bold transition border flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition whitespace-nowrap border flex items-center gap-1.5 ${
                   isActive
                     ? 'bg-zinc-800/90 text-white border-zinc-600 shadow-sm'
-                    : 'text-zinc-500 border-transparent hover:border-zinc-700 opacity-60 hover:opacity-100'
+                    : 'bg-zinc-950/40 text-zinc-500 border-transparent hover:border-zinc-700 opacity-60 hover:opacity-100'
                 }`}
                 style={{
                   borderColor: isActive ? config.color : 'transparent'
@@ -486,10 +595,71 @@ function MetroMapInternal({
 
           <button
             onClick={resetLayers}
-            className="px-2 py-0.5 rounded text-[8px] font-bold text-zinc-400 hover:text-white transition ml-auto flex items-center gap-1"
+            className="px-2 py-1 rounded-lg text-[8.5px] font-bold text-zinc-400 hover:text-white transition flex items-center gap-1 hover:bg-zinc-800/60"
+            title="Reset layer filters"
           >
-            <RotateCw size={9} />
+            <RotateCw size={10} />
             <span>Reset</span>
+          </button>
+        </div>
+
+        {/* Smart View Controls & Canvas Actions */}
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          {/* Feature Range Toggle */}
+          <button
+            onClick={() => setShowAllFeatures((prev) => !prev)}
+            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition border ${
+              showAllFeatures
+                ? 'bg-primary/20 text-primary border-primary/40'
+                : 'bg-zinc-800/80 text-zinc-300 border-zinc-700 hover:border-zinc-500'
+            }`}
+            title="Toggle showing Top 5 vs All Tracks"
+          >
+            {showAllFeatures ? 'Showing All Tracks' : 'Showing Top 5'}
+          </button>
+
+          {/* Utilities Toggle */}
+          <button
+            onClick={() => setShowUtilities((prev) => !prev)}
+            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition border ${
+              showUtilities
+                ? 'bg-primary/20 text-primary border-primary/40'
+                : 'bg-zinc-800/80 text-zinc-300 border-zinc-700 hover:border-zinc-500'
+            }`}
+            title="Show or hide low-priority utility/helper files"
+          >
+            {showUtilities ? 'Show Utils' : 'Hide Utils'}
+          </button>
+
+          {/* Auto-Collapse Large Features Toggle */}
+          <button
+            onClick={toggleCollapseAll}
+            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition border ${
+              collapseLarge
+                ? 'bg-zinc-800/80 text-zinc-300 border-zinc-700 hover:border-zinc-500'
+                : 'bg-primary/20 text-primary border-primary/40'
+            }`}
+            title="Collapse large features into summary preview"
+          >
+            {collapseLarge ? 'Collapse Large' : 'Expand All'}
+          </button>
+
+          <div className="h-4 w-[1px] bg-zinc-700/60 mx-0.5" />
+
+          <button
+            onClick={() => fitView({ padding: 0.15, duration: 400 })}
+            className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[9.5px] font-semibold text-zinc-300 transition"
+          >
+            <RotateCcw size={11} />
+            <span>Fit View</span>
+          </button>
+
+          <button
+            onClick={exportToSvg}
+            className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[9.5px] font-semibold text-zinc-300 transition"
+          >
+            <Download size={11} />
+            <span>Export SVG</span>
           </button>
         </div>
       </div>
@@ -497,7 +667,7 @@ function MetroMapInternal({
       {/* ── MAIN CONTENT AREA ── */}
       <div className="flex flex-1 relative overflow-hidden">
         {/* Left Sidebar Feature Legend */}
-        <aside className="w-52 shrink-0 hidden md:flex flex-col border-r border-zinc-800/80 bg-zinc-900/40 z-10">
+        <aside className="w-52 shrink-0 hidden md:flex flex-col border-r border-zinc-800/80 bg-zinc-900/40 z-10 overflow-y-auto">
           <FeatureLegend
             features={featureClusters}
             selectedFeatures={selectedFeatures}
@@ -508,8 +678,8 @@ function MetroMapInternal({
           />
         </aside>
 
-        {/* ReactFlow Interactive Canvas Container */}
-        <div className="flex-1 h-full relative bg-zinc-950">
+        {/* ReactFlow Interactive Canvas Container (Contained Horizontal Scroll) */}
+        <div className="flex-1 h-full relative bg-zinc-950 overflow-hidden">
           {/* Search Panel */}
           <MetroSearchPanel
             nodes={nodes}
@@ -546,37 +716,115 @@ function MetroMapInternal({
             )}
           </AnimatePresence>
 
-          {/* ReactFlow Graph Canvas */}
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            nodeTypes={nodeTypes}
-            onNodeClick={handleNodeClick}
-            fitView
-            minZoom={0.25}
-            maxZoom={1.75}
-            defaultViewport={{ x: 50, y: 50, zoom: 0.85 }}
-            panOnDrag={[0, 1, 2]}
-            panOnScroll={true}
-            panOnScrollMode={PanOnScrollMode.Free}
-            style={{ width: '100%', height: '100%' }}
+          {/* ── SCROLLABLE CONTAINER ── */}
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="w-full h-full overflow-x-auto overflow-y-hidden select-none scrollbar-none"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {/* ── 4g: LAYER HEADERS ON CANVAS ── */}
-            
+            {/* Inner Canvas with Computed Width & Height */}
+            <div 
+              className="relative h-full"
+              style={{ 
+                width: Math.max(canvasWidth, 1400),
+                minHeight: Math.max(canvasHeight, 700) 
+              }}
+            >
+              {/* Sticky Track Headers */}
+              <TrackHeaders
+                filteredFeatures={filteredFeatures}
+                canvasWidth={Math.max(canvasWidth, 1400)}
+                scrollLeft={scrollLeftState}
+                viewportWidth={viewportWidthState}
+                selectedLayers={activeLayers}
+                onLayerClick={toggleLayer}
+              />
 
-            <Controls className="!bg-zinc-900/90 !border-zinc-800 !shadow-xl !fill-zinc-300" />
-            <MiniMap
-              nodeStrokeWidth={3}
-              zoomable
-              pannable
-              className="!bg-zinc-900/90 !border-zinc-800 !rounded-xl overflow-hidden"
-              nodeColor={(n) => (n.data as any)?.color || '#3B82F6'}
-              maskColor="rgba(0, 0, 0, 0.75)"
-            />
-            <Background gap={20} size={1} color="#27272a" />
-          </ReactFlow>
+              {/* ReactFlow Graph Canvas */}
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                nodeTypes={nodeTypes}
+                onNodeClick={handleNodeClick}
+                fitView={false}
+                minZoom={0.3}
+                maxZoom={1.8}
+                defaultViewport={{ x: 50, y: 50, zoom: 0.85 }}
+                panOnDrag={false}
+                panOnScroll={false}
+                zoomOnScroll={false}
+                style={{ width: '100%', height: '100%' }}
+              >
+                <Controls className="!bg-zinc-900/90 !border-zinc-800 !shadow-xl !fill-zinc-300" />
+                <MiniMap
+                  nodeStrokeWidth={3}
+                  zoomable
+                  pannable
+                  className="!bg-zinc-900/90 !border-zinc-800 !rounded-xl overflow-hidden"
+                  nodeColor={(n) => (n.data as any)?.color || '#3B82F6'}
+                  maskColor="rgba(0, 0, 0, 0.75)"
+                />
+                <Background gap={20} size={1} color="#27272a" />
+              </ReactFlow>
+            </div>
+          </div>
+
+          {/* ── LEFT FLOATING SCROLL BUTTON ── */}
+          {!isAtStart && (
+            <button
+              onClick={() => scroll('left')}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-30 p-2.5 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md"
+              title="Scroll Left"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          )}
+
+          {/* ── RIGHT FLOATING SCROLL BUTTON ── */}
+          {!isAtEnd && (
+            <button
+              onClick={() => scroll('right')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-30 p-2.5 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md"
+              title="Scroll Right"
+            >
+              <ChevronRight size={16} />
+            </button>
+          )}
+
+          {/* ── SCROLL PROGRESS BAR (Bottom Floating Bar) ── */}
+          <div className="absolute bottom-3 left-6 right-6 z-20 pointer-events-auto">
+            <div className="flex items-center gap-3 px-3 py-1.5 bg-zinc-900/90 rounded-xl border border-zinc-800/80 backdrop-blur-md shadow-lg max-w-md mx-auto">
+              <button 
+                onClick={() => scroll('left')}
+                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
+                title="Scroll left"
+              >
+                <ChevronLeft size={13} />
+              </button>
+              
+              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all duration-150 shadow-sm"
+                  style={{ width: `${Math.max(4, Math.min(100, scrollProgress))}%` }}
+                />
+              </div>
+              
+              <button 
+                onClick={() => scroll('right')}
+                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
+                title="Scroll right"
+              >
+                <ChevronRight size={13} />
+              </button>
+              
+              <span className="text-[8.5px] text-zinc-400 font-mono min-w-[32px] text-right font-semibold">
+                {Math.round(scrollProgress)}%
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

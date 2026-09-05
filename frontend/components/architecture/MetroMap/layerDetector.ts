@@ -123,3 +123,50 @@ export function getLayerEmoji(layer: LayerType): string {
 export function getLayerBadgeColor(layer: LayerType): string {
   return LAYER_CONFIG[layer]?.badgeColor ?? 'bg-gray-500/20 border-gray-500/30 text-gray-400';
 }
+
+
+// ── File Importance & Utility Classifiers ──
+export const IMPORTANT_FILE_PATTERNS = [
+  '.service.',
+  '.controller.',
+  '.routes.',
+  '.route.',
+  '.repository.',
+  '.repo.',
+  '.middleware.',
+  '.guard.',
+  '.handler.',
+  'index.',
+  'main.',
+  'app.',
+  'server.'
+];
+
+export const UTILITY_PATTERNS = [
+  '.util.',
+  '.helper.',
+  '.dto.',
+  '.types.',
+  '.type.',
+  '.interface.',
+  '.enum.',
+  '.constant.',
+  '.config.',
+  '.mock.',
+  '.test.',
+  '.spec.',
+  '.schema.'
+];
+
+export function isImportantFile(filename: string): boolean {
+  const lower = filename.toLowerCase();
+  return IMPORTANT_FILE_PATTERNS.some(p => lower.includes(p)) || 
+         lower.startsWith('/api') || 
+         lower.startsWith('api/') || 
+         lower.includes('routes');
+}
+
+export function isUtilityFile(filename: string): boolean {
+  const lower = filename.toLowerCase();
+  return UTILITY_PATTERNS.some(p => lower.includes(p));
+}
