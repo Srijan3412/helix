@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/subscription/supabase";
-import { useSubscription } from "../lib/subscription/SubscriptionContext";
+import { useOptionalSubscription } from "../lib/subscription/SubscriptionContext";
 
 const ADMIN_EMAIL = "admin@projectanalyser.com";
 
@@ -15,13 +15,8 @@ export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Get subscription context for verification status
-  let subscriptionContext: ReturnType<typeof useSubscription> | null = null;
-  try {
-    subscriptionContext = useSubscription();
-  } catch {
-    // Not inside SubscriptionProvider - handle gracefully
-  }
+  // Get optional subscription context for verification status
+  const subscriptionContext = useOptionalSubscription();
 
   useEffect(() => {
     const getSession = async () => {

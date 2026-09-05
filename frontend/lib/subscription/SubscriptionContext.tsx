@@ -242,7 +242,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
 
     // Auto-create profile if authenticated but no profile exists
-    let userEmail = email || authUser?.email || '';
+    const userEmail = email || authUser?.email || '';
     const isUserAdmin = userEmail === 'admin@projectanalyser.com';
 
     // Only include valid database columns for helix_profiles DB insert/upsert
@@ -823,6 +823,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       {children}
     </SubscriptionContext.Provider>
   );
+}
+
+export function useOptionalSubscription() {
+  return useContext(SubscriptionContext) || null;
 }
 
 export function useSubscription() {

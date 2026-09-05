@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -46,19 +46,8 @@ export default function AdminUsersPage() {
     const [sortField, setSortField] = useState<SortField>('created_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [updatingLimit, setUpdatingLimit] = useState<string | null>(null);
-    const [updatingRole, setUpdatingRole] = useState<string | null>(null);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!loading && !isAdmin) {
-            router.push('/');
-            return;
-        }
-
-        fetchUsers();
-    }, [loading, isAdmin, router]);
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
@@ -72,18 +61,31 @@ export default function AdminUsersPage() {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch users: ${response.status}`);
+                throw new Error('Failed to fetch users');
             }
 
             const data = await response.json();
-            setUsers(data.data || []);
-        } catch (error) {
-            console.error('Failed to fetch users:', error);
-            setError('Failed to load users. Please try again.');
+            setUsers(data.users || []);
+        } catch (err) {
+            console.error('Error fetching users:', err);
+            setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+    const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!loading && !isAdmin) {
+            router.push('/');
+            return;
+        }
+
+        fetchUsers();
+    }, [loading, isAdmin, router]);
+
+    
 
     const handleUpdateLimit = async (userId: string, newLimit: number) => {
         setUpdatingLimit(userId);

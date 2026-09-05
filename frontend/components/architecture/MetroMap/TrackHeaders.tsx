@@ -1,12 +1,6 @@
 import React, { useMemo } from 'react';
-import { FeatureFlow } from '@shared/types';
-
-interface TrackHeadersProps {
-  filteredFeatures: FeatureFlow[];
-  canvasWidth: number;
-  scrollLeft: number;
-  viewportWidth: number;
-}
+import { FeatureFlow, TrackHeadersProps } from './types';
+import { LayerType, LAYER_CONFIG } from './layerDetector';
 
 interface HeaderPosition {
   feature: FeatureFlow;
@@ -22,7 +16,10 @@ export function TrackHeaders({
   filteredFeatures, 
   canvasWidth, 
   scrollLeft, 
-  viewportWidth
+  viewportWidth,
+  showLayerIndicators = true,
+  onLayerClick,
+  selectedLayers = []
 }: TrackHeadersProps) {
   // Calculate header positions and stickiness
   const headerPositions = useMemo<HeaderPosition[]>(() => {
@@ -89,9 +86,33 @@ export function TrackHeaders({
               {feature.name}
             </span>
 
+            {/* Layer indicators */}
+            {showLayerIndicators && feature.layerGroups && (
+              <div className="flex gap-1 ml-1 items-center">
+                {Object.entries(feature.layerGroups).map(([layer, stations]) => {
+                  const arr = Array.isArray(stations) ? stations : [];
+                  if (arr.length === 0) return null;
+                  const config = LAYER_CONFIG[layer as LayerType];
+                  const isSelected = selectedLayers.length === 0 || selectedLayers.includes(layer as LayerType);
+                  return (
+                    <div
+                      key={layer}
+                      className="w-2.5 h-2.5 rounded-full cursor-pointer hover:scale-125 transition ring-1 ring-zinc-900 shrink-0"
+                      style={{
+                        backgroundColor: config?.color || '#a1a1aa',
+                        opacity: isSelected ? 1 : 0.35,
+                      }}
+                      onClick={() => onLayerClick?.(layer as LayerType)}
+                      title={`${config?.label}: ${arr.length} stations`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
             {/* Station count badge */}
             <span 
-              className="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0"
+              className="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-auto"
               style={{ 
                 backgroundColor: `${feature.color}30`,
                 color: feature.color,
@@ -101,16 +122,9 @@ export function TrackHeaders({
             </span>
 
             {/* Line number */}
-            <span className="text-[9px] text-zinc-500 ml-auto font-mono shrink-0">
+            <span className="text-[9px] text-zinc-500 font-mono shrink-0">
               LINE {lineNumber}
             </span>
-
-            {/* Show indicator when sticky */}
-            {isSticky && (
-              <span className="text-[8px] text-zinc-500 ml-1 shrink-0">
-                📌
-              </span>
-            )}
           </div>
         );
       })}

@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -87,16 +87,7 @@ export default function AdminRequestsPage() {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!loading && !isAdmin) {
-            router.push('/');
-            return;
-        }
-
-        fetchRequests();
-    }, [loading, isAdmin, router, statusFilter]);
-
-    const fetchRequests = async () => {
+    const fetchRequests = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
@@ -114,18 +105,29 @@ export default function AdminRequestsPage() {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch requests: ${response.status}`);
+                throw new Error('Failed to fetch contact requests');
             }
 
             const data = await response.json();
-            setRequests(data.data || []);
-        } catch (error) {
-            console.error('Failed to fetch requests:', error);
-            setError('Failed to load requests. Please try again.');
+            setRequests(data.requests || []);
+        } catch (err) {
+            console.error('Error fetching contact requests:', err);
+            setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [statusFilter]);
+
+    useEffect(() => {
+        if (!loading && !isAdmin) {
+            router.push('/');
+            return;
+        }
+
+        fetchRequests();
+    }, [loading, isAdmin, router, statusFilter]);
+
+    
 
     const handleUpdateStatus = async (id: string, status: 'READ' | 'CONTACTED' | 'CLOSED') => {
         setUpdatingId(id);

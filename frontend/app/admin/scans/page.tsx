@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -56,16 +56,7 @@ export default function AdminScansPage() {
     const [selectedScan, setSelectedScan] = useState<ScanSession | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
 
-    useEffect(() => {
-        if (!loading && !isAdmin) {
-            router.push('/');
-            return;
-        }
-
-        fetchScans();
-    }, [loading, isAdmin, router]);
-
-    const fetchScans = async () => {
+    const fetchScans = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
@@ -79,18 +70,29 @@ export default function AdminScansPage() {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch scans: ${response.status}`);
+                throw new Error('Failed to fetch scans');
             }
 
             const data = await response.json();
-            setScans(data.data || []);
-        } catch (error) {
-            console.error('Failed to fetch scans:', error);
-            setError('Failed to load scans. Please try again.');
+            setScans(data.scans || []);
+        } catch (err) {
+            console.error('Error fetching scans:', err);
+            setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [showDeleted]);
+
+    useEffect(() => {
+        if (!loading && !isAdmin) {
+            router.push('/');
+            return;
+        }
+
+        fetchScans();
+    }, [loading, isAdmin, router]);
+
+    
 
     const handleDeleteScan = async (scanId: string) => {
         if (!confirm('Are you sure you want to delete this scan? This action can be undone.')) return;

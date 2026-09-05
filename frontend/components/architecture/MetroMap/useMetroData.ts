@@ -14,6 +14,7 @@ import {
   mockExecutionTraces,
   mockFeatureImportance
 } from './mockData';
+import { detectLayer, LayerType } from './layerDetector';
 
 /**
  * Maps a file path or name to its architectural role:
@@ -54,23 +55,40 @@ export interface MetroDataResult {
 
 /**
  * Phase 1: Data Adaptation & Normalization Hook
- * Extracts and normalizes features, files, routes, interchanges, and traces
- * from AnalysisResult, or seamlessly falls back to mockData.
+ * Extracts and normalizes features, files, routes, interchanges, traces, and layer groups.
  */
 export function useMetroData(result?: AnalysisResult | null): MetroDataResult {
   return useMemo(() => {
     if (result && result.features && result.features.length > 0) {
-      // 1. Extract & normalize feature clusters
-      const clusters: FeatureCluster[] = result.features.map((f: any) => ({
-        id: f.id || f.name.toLowerCase().replace(/\s+/g, '-'),
-        name: f.name,
-        color: f.color || '#3B82F6',
-        files: f.files && f.files.length > 0 ? f.files : ['index.ts', 'service.ts'],
-        routes: f.routes || [],
-        databases: f.database && f.database.length > 0 ? f.database : ['PostgreSQL'],
-        health: f.health !== undefined ? f.health : 85,
-        confidence: f.confidence !== undefined ? f.confidence : 90
-      }));
+      // 1. Extract & normalize feature clusters with layer sub-groups
+      const clusters: FeatureCluster[] = result.features.map((f: any) => {
+        const files: string[] = f.files && f.files.length > 0 ? f.files : ['index.ts', 'service.ts'];
+        const layerGroups: Record<LayerType, string[]> = {
+          api: [],
+          middleware: [],
+          business: [],
+          data: [],
+          infrastructure: [],
+          utility: []
+        };
+
+        files.forEach((file) => {
+          const l = detectLayer({ type: inferStationType(file) }, file);
+          layerGroups[l].push(file);
+        });
+
+        return {
+          id: f.id || f.name.toLowerCase().replace(/\s+/g, '-'),
+          name: f.name,
+          color: f.color || '#3B82F6',
+          files,
+          routes: f.routes || [],
+          databases: f.database && f.database.length > 0 ? f.database : ['PostgreSQL'],
+          health: f.health !== undefined ? f.health : 85,
+          confidence: f.confidence !== undefined ? f.confidence : 90,
+          layerGroups
+        };
+      });
 
       // 2. Detect shared files across features to produce an interchanges index
       const fileFeatureMap: Record<string, string[]> = {};
@@ -138,9 +156,28 @@ export function useMetroData(result?: AnalysisResult | null): MetroDataResult {
       };
     }
 
-    // Seamless fallback to rich mock data
+    // Seamless fallback to rich mock data with populated layerGroups
+    const enrichedMockClusters = mockFeatureClusters.map((cluster) => {
+      const layerGroups: Record<LayerType, string[]> = {
+        api: [],
+        middleware: [],
+        business: [],
+        data: [],
+        infrastructure: [],
+        utility: []
+      };
+      cluster.files.forEach((file) => {
+        const l = detectLayer({ type: inferStationType(file) }, file);
+        layerGroups[l].push(file);
+      });
+      return {
+        ...cluster,
+        layerGroups
+      };
+    });
+
     return {
-      featureClusters: mockFeatureClusters,
+      featureClusters: enrichedMockClusters,
       interchanges: mockInterchanges,
       executionTraces: mockExecutionTraces,
       featureImportance: mockFeatureImportance

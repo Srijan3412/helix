@@ -2828,11 +2828,11 @@ export default function Home() {
                         {result.staticAnalysis.summary.recommendations.map(
                           (item: string, i: number) => {
                             const icons = [
-                              <Trash2 className="w-4 h-4 text-red-400" />,
-                              <Split className="w-4 h-4 text-orange-400" />,
-                              <Package className="w-4 h-4 text-amber-400" />,
-                              <BarChart3 className="w-4 h-4 text-yellow-400" />,
-                              <AlertCircle className="w-4 h-4 text-red-400" />,
+                              <Trash2 key="trash" className="w-4 h-4 text-red-400" />,
+                              <Split key="split" className="w-4 h-4 text-orange-400" />,
+                              <Package key="package" className="w-4 h-4 text-amber-400" />,
+                              <BarChart3 key="chart" className="w-4 h-4 text-yellow-400" />,
+                              <AlertCircle key="alert" className="w-4 h-4 text-red-400" />,
                             ];
                             return (
                               <div

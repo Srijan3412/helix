@@ -2,33 +2,51 @@ import React, { useState, useMemo, useCallback } from 'react';
 import {
   ReactFlow,
   Controls,
-  Background,
   MiniMap,
+  Background,
   useNodesState,
   useEdgesState,
   useReactFlow,
   ReactFlowProvider,
-  Node,
-  PanOnScrollMode
+  PanOnScrollMode,
+  NodeMouseHandler
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AnimatePresence } from 'framer-motion';
-import { RotateCcw, Download } from 'lucide-react';
+import { RotateCcw, Download, Layers, RotateCw } from 'lucide-react';
 
-import { SubwayStationData, MetroMapProps } from './types';
-import { useMetroData } from './useMetroData';
-import { useJourneyAnimation } from './useJourneyAnimation';
 import { SubwayStationNode } from './SubwayStationNode';
-import { MetroSearchPanel } from './MetroSearchPanel';
 import { StationInspector } from './StationInspector';
 import { FeatureImportancePanel } from './FeatureImportancePanel';
 import { FeatureLegend } from './FeatureLegend';
+import { MetroSearchPanel } from './MetroSearchPanel';
+import { LayerHeader } from './LayerHeader';
+import { TrackHeaders } from './TrackHeaders';
+import { useMetroData } from './useMetroData';
 import { useMetroLayout } from './useMetroLayout';
 import { useMetroGraph } from './useMetroGraph';
+import { useJourneyAnimation } from './useJourneyAnimation';
+import { SubwayStationData, MetroMapProps, FeatureFlow } from './types';
+import {
+  LayerType,
+  LAYER_CONFIG,
+  getLayerOrder,
+  getLayerColor,
+  detectLayer
+} from './layerDetector';
 
 const nodeTypes = {
   subwayStation: SubwayStationNode
 };
+
+const ALL_LAYERS: LayerType[] = [
+  'api',
+  'middleware',
+  'business',
+  'data',
+  'infrastructure',
+  'utility'
+];
 
 function MetroMapInternal({
   result,
@@ -36,19 +54,188 @@ function MetroMapInternal({
   onSetImpactFile,
   onSelectTraceRouteId
 }: MetroMapProps) {
-  const [selectedStation, setSelectedStation] = useState<SubwayStationData | null>(null);
+  const { fitView, setCenter } = useReactFlow();
+
+  // Phase 1: Data Hook
+  const { featureClusters, interchanges, executionTraces, featureImportance } =
+    useMetroData(result);
+
+  // ── State for Selection & Focus ──
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStation, setSelectedStation] = useState<SubwayStationData | null>(null);
   const [focusedNodeIds, setFocusedNodeIds] = useState<string[]>([]);
-  const [healthGlowActive, setHealthGlowActive] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const { setCenter, fitView } = useReactFlow();
+  // ── 4b: Layer Filter State ──
+  const [activeLayers, setActiveLayers] = useState<LayerType[]>(ALL_LAYERS);
 
-  // Phase 1: Data Adaptation Pipeline
-  const { featureClusters, interchanges, executionTraces, featureImportance } = useMetroData(result);
+  // ── 4c: Layer-Aware Feature Lines & Layer Groups ──
+  const featureLines = useMemo(() => {
+    const lines: Record<string, SubwayStationData[]> = {};
+    const layerGroups: Record<string, Record<LayerType, SubwayStationData[]>> = {};
 
-  // Phase 5: Transit Journey & Trace Animation Engine
+    featureClusters.forEach((feature: FeatureFlow) => {
+      const allStations: SubwayStationData[] = [];
+      const groups: Record<LayerType, SubwayStationData[]> = {
+        api: [],
+        middleware: [],
+        business: [],
+        data: [],
+        infrastructure: [],
+        utility: []
+      };
+
+      // ── Process Routes (API Layer) ──
+      (feature.routes || []).forEach((r: string) => {
+        const spaceIdx = r.indexOf(' ');
+        const method = spaceIdx > 0 ? r.substring(0, spaceIdx) : 'GET';
+        const path = spaceIdx > 0 ? r.substring(spaceIdx + 1) : r;
+        const station: SubwayStationData = {
+          id: `station:${feature.id}:route:${method}:${path}`,
+          name: r,
+          label: r,
+          displayName: r,
+          rawPath: path,
+          type: 'route',
+          key: `route:${method}:${path}`,
+          raw: r,
+          layer: 'api',
+          health: 'healthy',
+          complexity: 10,
+          features: [feature.name],
+          isInterchange: false,
+          color: feature.color,
+          featureId: feature.id,
+          lineName: feature.name
+        };
+        allStations.push(station);
+        groups.api.push(station);
+      });
+
+      // ── Process Files (Detected Layer) ──
+      (feature.files || []).forEach((fPath: string, fIdx: number) => {
+        const filename = fPath.split(/[\\/]/).pop() || fPath;
+        const layer = detectLayer({ type: 'file' }, fPath);
+        const station: SubwayStationData = {
+          id: `${feature.id}-${fPath}`,
+          name: fPath,
+          label: filename,
+          displayName: filename,
+          rawPath: fPath,
+          type: 'service',
+          key: `file:${fPath}`,
+          raw: fPath,
+          layer,
+          health: 'healthy',
+          complexity: (fIdx * 7) % 25 + 6,
+          features: [feature.name],
+          isInterchange: interchanges.some((i) => i.file === fPath && i.features.length > 1),
+          color: feature.color,
+          featureId: feature.id,
+          lineName: feature.name
+        };
+        allStations.push(station);
+        groups[layer].push(station);
+      });
+
+      // ── Process Database Tables (Data Layer) ──
+      (feature.database || feature.databases || []).forEach((ent: string) => {
+        const station: SubwayStationData = {
+          id: `station:${feature.id}:db:${ent}`,
+          name: ent,
+          label: ent,
+          displayName: ent,
+          rawPath: ent,
+          type: 'database',
+          key: `db:${ent}`,
+          raw: ent,
+          layer: 'data',
+          health: 'healthy',
+          complexity: 4,
+          features: [feature.name],
+          isInterchange: false,
+          color: feature.color,
+          featureId: feature.id,
+          lineName: feature.name
+        };
+        allStations.push(station);
+        groups.data.push(station);
+      });
+
+      lines[feature.id] = allStations;
+      layerGroups[feature.id] = groups;
+    });
+
+    return { stations: lines, layerGroups };
+  }, [featureClusters, interchanges]);
+
+  // ── 4d: Filtered Features by Active Layers & Selection ──
+  const filteredFeatures = useMemo(() => {
+    let result = featureClusters;
+
+    if (selectedFeatures.length > 0) {
+      result = result.filter((f: FeatureFlow) => selectedFeatures.includes(f.id));
+    }
+
+    if (activeLayers.length > 0 && activeLayers.length < ALL_LAYERS.length) {
+      result = result
+        .map((feature: FeatureFlow) => {
+          const filteredFiles = (feature.files || []).filter((fPath: string) => {
+            const layer = detectLayer({ type: 'file' }, fPath);
+            return activeLayers.includes(layer);
+          });
+
+          const filteredRoutes = activeLayers.includes('api') ? feature.routes || [] : [];
+          const filteredDatabase = activeLayers.includes('data')
+            ? feature.database || feature.databases || []
+            : [];
+
+          return {
+            ...feature,
+            files: filteredFiles,
+            routes: filteredRoutes,
+            database: filteredDatabase
+          };
+        })
+        .filter(
+          (f: FeatureFlow) =>
+            f.files.length > 0 ||
+            f.routes.length > 0 ||
+            (f.database && f.database.length > 0)
+        );
+    }
+
+    return result.length > 0 ? result : featureClusters;
+  }, [featureClusters, selectedFeatures, activeLayers]);
+
+  // ── 4f: Layout Computation ──
+  const maxStationsCount = useMemo(() => {
+    let maxCount = 1;
+    Object.values(featureLines.stations).forEach((st) => {
+      if (st.length > maxCount) maxCount = st.length;
+    });
+    return maxCount;
+  }, [featureLines.stations]);
+
+  const {
+    positions,
+    canvasWidth,
+    canvasHeight,
+    keyToInstances,
+    layerGroups: computedLayerGroups,
+    layerOrder
+  } = useMetroLayout(
+    featureClusters,
+    filteredFeatures,
+    selectedFeatures,
+    featureLines.stations,
+    featureLines.layerGroups,
+    maxStationsCount,
+    9999
+  );
+
+  // Phase 5: Journey Simulation Engine
   const {
     animatedRoute,
     animationStep,
@@ -60,19 +247,12 @@ function MetroMapInternal({
     stopJourney
   } = useJourneyAnimation(executionTraces);
 
-  // Filtered Feature Lines
-  const filteredFeatures = useMemo(() => {
-    if (selectedFeatures.length === 0) return featureClusters;
-    return featureClusters.filter((f) => selectedFeatures.includes(f.id));
-  }, [featureClusters, selectedFeatures]);
-
-  // Phase 3: Track Layout (160px vertical spacing)
-  const { positions, canvasWidth, canvasHeight } = useMetroLayout(featureClusters, filteredFeatures);
-
-  // Phase 3 & 5: Graph, Edges and Animated Trace Route
-  const { nodes: initialNodes, edges: initialEdges } = useMetroGraph({
+  // Graph Generation
+  const { nodes: graphNodes, edges: graphEdges } = useMetroGraph({
     features: featureClusters,
     filteredFeatures,
+    featureLines: featureLines.stations,
+    layerGroups: featureLines.layerGroups,
     interchanges,
     selectedFeatures,
     hoveredFeature,
@@ -81,26 +261,27 @@ function MetroMapInternal({
     animatedRoute,
     animationStep,
     executionTraces,
-    healthGlowActive,
-    positions
+    healthGlowActive: true,
+    positions,
+    activeLayers
   });
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(graphNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(graphEdges);
 
-  // Sync state when graph updates
-  React.useEffect(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+  useMemo(() => {
+    setNodes(graphNodes);
+    setEdges(graphEdges);
+  }, [graphNodes, graphEdges, setNodes, setEdges]);
 
-  // Node Click Handler
-  const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    const data = node.data as unknown as SubwayStationData;
-    setSelectedStation(data);
+  // Station Node Click
+  const handleNodeClick: NodeMouseHandler = useCallback((_, node) => {
+    const stationData = node.data as unknown as SubwayStationData;
+    setSelectedStation(stationData);
+    setFocusedNodeIds([node.id]);
   }, []);
 
-  // Phase 4: Search, Camera & Focus Handlers
+  // Search Engine
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
@@ -109,7 +290,7 @@ function MetroMapInternal({
         return;
       }
 
-      const q = query.toLowerCase().trim();
+      const q = query.toLowerCase();
       const matches = nodes.filter((n) => {
         const data = n.data as unknown as SubwayStationData;
         return (
@@ -117,6 +298,7 @@ function MetroMapInternal({
           data.displayName?.toLowerCase().includes(q) ||
           data.name?.toLowerCase().includes(q) ||
           data.type?.toLowerCase().includes(q) ||
+          data.layer?.toLowerCase().includes(q) ||
           data.lineName?.toLowerCase().includes(q) ||
           data.features?.some((f) => f.toLowerCase().includes(q))
         );
@@ -135,13 +317,16 @@ function MetroMapInternal({
     [nodes, setCenter]
   );
 
-  const handleSelectSearchResult = useCallback((nodeId: string) => {
-    setFocusedNodeIds([nodeId]);
-    const node = nodes.find((n) => n.id === nodeId);
-    if (node) {
-      setSelectedStation(node.data as unknown as SubwayStationData);
-    }
-  }, [nodes]);
+  const handleSelectSearchResult = useCallback(
+    (nodeId: string) => {
+      setFocusedNodeIds([nodeId]);
+      const node = nodes.find((n) => n.id === nodeId);
+      if (node) {
+        setSelectedStation(node.data as unknown as SubwayStationData);
+      }
+    },
+    [nodes]
+  );
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery('');
@@ -157,6 +342,21 @@ function MetroMapInternal({
 
   const selectAllFeatures = useCallback(() => {
     setSelectedFeatures([]);
+  }, []);
+
+  // Layer Filter Toggle
+  const toggleLayer = useCallback((layer: LayerType) => {
+    setActiveLayers((prev) =>
+      prev.includes(layer)
+        ? prev.length > 1
+          ? prev.filter((l) => l !== layer)
+          : prev
+        : [...prev, layer]
+    );
+  }, []);
+
+  const resetLayers = useCallback(() => {
+    setActiveLayers(ALL_LAYERS);
   }, []);
 
   // Export SVG
@@ -177,65 +377,102 @@ function MetroMapInternal({
 
   return (
     <div className="h-full w-full text-left relative flex flex-col bg-zinc-950 select-none overflow-hidden">
-      {/* Top Filter & Toolbar */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2 bg-zinc-900/60 border-b border-zinc-800/80 shrink-0 z-10">
-        {/* Feature Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
-          <button
-            onClick={selectAllFeatures}
-            className={`px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border ${
-              selectedFeatures.length === 0
-                ? 'bg-primary/20 text-primary border-primary/30'
-                : 'bg-zinc-800/60 text-zinc-400 border-transparent hover:border-zinc-600'
-            }`}
-          >
-            All Tracks
-          </button>
+      {/* ── FILTER & TOOLBAR ── */}
+      <div className="flex flex-col shrink-0 bg-zinc-900/80 border-b border-zinc-800/80 z-10">
+        {/* Row 1: Feature Track Filter & Canvas Actions */}
+        <div className="flex items-center justify-between gap-2 px-4 py-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+            <button
+              onClick={selectAllFeatures}
+              className={`px-2.5 py-1 rounded-lg text-[9.5px] font-bold transition whitespace-nowrap border ${
+                selectedFeatures.length === 0
+                  ? 'bg-primary/20 text-primary border-primary/30'
+                  : 'bg-zinc-800/60 text-zinc-400 border-transparent hover:border-zinc-600'
+              }`}
+            >
+              All Tracks
+            </button>
 
-          {featureClusters.map((f) => {
-            const isSelected = selectedFeatures.includes(f.id);
+            {featureClusters.map((f) => {
+              const isSelected = selectedFeatures.includes(f.id);
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => toggleFeature(f.id)}
+                  className="px-2.5 py-1 rounded-lg text-[9.5px] font-bold transition whitespace-nowrap border flex items-center gap-1.5"
+                  style={{
+                    backgroundColor: isSelected ? f.color : '#27272a',
+                    color: isSelected ? 'white' : '#a1a1aa',
+                    borderColor: isSelected ? f.color : 'transparent'
+                  }}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: isSelected ? 'white' : f.color }}
+                  />
+                  {f.name}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => fitView({ padding: 0.15, duration: 400 })}
+              className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[9.5px] font-semibold text-zinc-300 transition"
+            >
+              <RotateCcw size={11} />
+              <span>Fit View</span>
+            </button>
+
+            <button
+              onClick={exportToSvg}
+              className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[9.5px] font-semibold text-zinc-300 transition"
+            >
+              <Download size={11} />
+              <span>Export SVG</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── 4e: LAYER FILTER CONTROLS ── */}
+        <div className="flex items-center gap-1 px-4 py-1 border-t border-zinc-800/60 bg-zinc-950/40 overflow-x-auto scrollbar-none">
+          <span className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-wider mr-1 flex items-center gap-1">
+            <Layers size={10} /> Layers:
+          </span>
+
+          {Object.entries(LAYER_CONFIG).map(([key, config]) => {
+            const isActive = activeLayers.includes(key as LayerType);
             return (
               <button
-                key={f.id}
-                onClick={() => toggleFeature(f.id)}
-                className="px-3 py-1 rounded-lg text-[10px] font-bold transition whitespace-nowrap border flex items-center gap-1.5"
+                key={key}
+                onClick={() => toggleLayer(key as LayerType)}
+                className={`px-2 py-0.5 rounded text-[8px] font-bold transition border flex items-center gap-1 ${
+                  isActive
+                    ? 'bg-zinc-800/90 text-white border-zinc-600 shadow-sm'
+                    : 'text-zinc-500 border-transparent hover:border-zinc-700 opacity-60 hover:opacity-100'
+                }`}
                 style={{
-                  backgroundColor: isSelected ? f.color : '#27272a',
-                  color: isSelected ? 'white' : '#a1a1aa',
-                  borderColor: isSelected ? f.color : 'transparent'
+                  borderColor: isActive ? config.color : 'transparent'
                 }}
               >
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: isSelected ? 'white' : f.color }}
-                />
-                {f.name}
+                <span>{config.emoji}</span>
+                <span>{config.label}</span>
               </button>
             );
           })}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => fitView({ padding: 0.15, duration: 400 })}
-            className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[10px] font-semibold text-zinc-300 transition"
-          >
-            <RotateCcw size={11} />
-            <span>Fit View</span>
-          </button>
 
           <button
-            onClick={exportToSvg}
-            className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[10px] font-semibold text-zinc-300 transition"
+            onClick={resetLayers}
+            className="px-2 py-0.5 rounded text-[8px] font-bold text-zinc-400 hover:text-white transition ml-auto flex items-center gap-1"
           >
-            <Download size={11} />
-            <span>Export SVG</span>
+            <RotateCw size={9} />
+            <span>Reset</span>
           </button>
         </div>
       </div>
 
-      {/* Main Graph Canvas Area */}
+      {/* ── MAIN CONTENT AREA ── */}
       <div className="flex flex-1 relative overflow-hidden">
         {/* Left Sidebar Feature Legend */}
         <aside className="w-52 shrink-0 hidden md:flex flex-col border-r border-zinc-800/80 bg-zinc-900/40 z-10">
@@ -249,9 +486,9 @@ function MetroMapInternal({
           />
         </aside>
 
-        {/* ReactFlow Interactive Canvas */}
+        {/* ReactFlow Interactive Canvas Container */}
         <div className="flex-1 h-full relative bg-zinc-950">
-          {/* Phase 4: Search Panel with Zoom & Focus Opacity */}
+          {/* Search Panel */}
           <MetroSearchPanel
             nodes={nodes}
             searchQuery={searchQuery}
@@ -260,10 +497,10 @@ function MetroMapInternal({
             onClear={handleClearSearch}
           />
 
-          {/* Phase 6: Feature Importance Panel (Bottom Right) */}
+          {/* Feature Importance Panel (Bottom Right) */}
           <FeatureImportancePanel items={featureImportance} />
 
-          {/* Phase 5 & 6: Station Inspector Drawer (Right Side) */}
+          {/* Station Inspector Drawer (Right Side) */}
           <AnimatePresence>
             {selectedStation && (
               <StationInspector
@@ -287,7 +524,7 @@ function MetroMapInternal({
             )}
           </AnimatePresence>
 
-          {/* ReactFlow */}
+          {/* ReactFlow Graph Canvas */}
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -304,6 +541,9 @@ function MetroMapInternal({
             panOnScrollMode={PanOnScrollMode.Free}
             style={{ width: '100%', height: '100%' }}
           >
+            {/* ── 4g: LAYER HEADERS ON CANVAS ── */}
+            
+
             <Controls className="!bg-zinc-900/90 !border-zinc-800 !shadow-xl !fill-zinc-300" />
             <MiniMap
               nodeStrokeWidth={3}
