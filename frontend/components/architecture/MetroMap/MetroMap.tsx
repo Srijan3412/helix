@@ -18,7 +18,6 @@ import { RotateCcw, Download, Layers, RotateCw, ChevronLeft, ChevronRight, Chevr
 import { SubwayStationNode } from './SubwayStationNode';
 import { TrackHeaderNode } from './TrackHeaderNode';
 import { StationInspector } from './StationInspector';
-import { FeatureImportancePanel } from './FeatureImportancePanel';
 import { FeatureLegend } from './FeatureLegend';
 import { MetroSearchPanel } from './MetroSearchPanel';
 import { LayerHeader } from './LayerHeader';
@@ -611,42 +610,7 @@ function MetroMapInternal({
     <div className="h-full w-full text-left relative flex flex-col bg-zinc-950 select-none overflow-hidden">
       {/* ── FILTER & TOOLBAR (Clean, Minimal, Spacious) ── */}
       <div className="flex items-center justify-between gap-4 px-4 py-2 shrink-0 bg-zinc-900/95 border-b border-zinc-800/80 z-20 overflow-visible">
-        {/* Layer Filter Controls */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mr-1 flex items-center gap-1.5 shrink-0">
-            <Layers size={13} className="text-primary" /> Layers:
-          </span>
 
-          {Object.entries(LAYER_CONFIG).map(([key, config]) => {
-            const isActive = activeLayers.includes(key as LayerType);
-            return (
-              <button
-                key={key}
-                onClick={() => toggleLayer(key as LayerType)}
-                className={`px-2.5 py-1 rounded-lg text-[9.5px] font-bold transition whitespace-nowrap border flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-zinc-800/90 text-white border-zinc-600 shadow-sm'
-                    : 'bg-zinc-950/40 text-zinc-500 border-transparent hover:border-zinc-700 opacity-60 hover:opacity-100'
-                }`}
-                style={{
-                  borderColor: isActive ? config.color : 'transparent'
-                }}
-              >
-                <span>{config.emoji}</span>
-                <span>{config.label}</span>
-              </button>
-            );
-          })}
-
-          <button
-            onClick={resetLayers}
-            className="px-2 py-1 rounded-lg text-[9px] font-bold text-zinc-400 hover:text-white transition flex items-center gap-1 hover:bg-zinc-800/60 ml-1"
-            title="Reset layer filters"
-          >
-            <RotateCw size={11} />
-            <span>Reset</span>
-          </button>
-        </div>
 
         {/* ── Search Bar & Canvas Actions ── */}
         <div className="flex items-center gap-3 shrink-0 ml-auto">
@@ -701,7 +665,7 @@ function MetroMapInternal({
 {/* Search integrated in top toolbar */}
 
           {/* Feature Importance Panel (Bottom Right) */}
-          <FeatureImportancePanel items={featureImportance} />
+          
 
           {/* Station Inspector Drawer (Right Side) */}
           <AnimatePresence>
