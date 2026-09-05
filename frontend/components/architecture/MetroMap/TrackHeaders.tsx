@@ -1,3 +1,5 @@
+// frontend/components/architecture/MetroMap/TrackHeaders.tsx
+
 import React, { useMemo } from 'react';
 import { FeatureFlow, TrackHeadersProps } from './types';
 import { LayerType, LAYER_CONFIG } from './layerDetector';
@@ -6,125 +8,101 @@ interface HeaderPosition {
   feature: FeatureFlow;
   x: number;
   y: number;
-  isSticky: boolean;
 }
 
-const FEATURE_SPACING = 260;
-const HEADER_OFFSET = 55; // Offset above station row
+const START_X = 80;
 
 export function TrackHeaders({ 
   filteredFeatures, 
+  featureHeaderY = {},
   canvasWidth, 
-  scrollLeft, 
-  viewportWidth,
   showLayerIndicators = true,
   onLayerClick,
   selectedLayers = []
 }: TrackHeadersProps) {
-  // Calculate header positions and stickiness
+  // Calculate header positions anchored directly to each track lane
   const headerPositions = useMemo<HeaderPosition[]>(() => {
     const positions: HeaderPosition[] = [];
-    const padding = 80; // Left padding offset
 
     filteredFeatures.forEach((feature, index) => {
-      const baseY = 80 + index * FEATURE_SPACING - HEADER_OFFSET;
-      const baseX = padding;
-      const isSticky = scrollLeft > baseX;
-      const visibleX = isSticky ? scrollLeft + 20 : baseX;
+      const baseY = featureHeaderY[feature.id] !== undefined 
+        ? featureHeaderY[feature.id] 
+        : (55 + index * 260);
       
       positions.push({
         feature,
-        x: visibleX,
-        y: baseY,
-        isSticky
+        x: START_X,
+        y: baseY
       });
     });
 
     return positions;
-  }, [filteredFeatures, scrollLeft]);
+  }, [filteredFeatures, featureHeaderY]);
 
   if (filteredFeatures.length === 0) return null;
 
   return (
     <div 
-      className="absolute top-0 left-0 pointer-events-none z-20 overflow-visible"
+      className="absolute top-0 left-0 pointer-events-none z-10 overflow-visible"
       style={{ 
         width: canvasWidth,
         height: '100%',
       }}
     >
-      {headerPositions.map(({ feature, x, y, isSticky }) => {
+      {headerPositions.map(({ feature, x, y }) => {
         const stationCount = feature.files?.length || 0;
+        const stationText = `${stationCount} ${stationCount === 1 ? 'station' : 'stations'}`;
         const lineNumber = String(stationCount).padStart(2, '0');
 
         return (
           <div
             key={feature.id}
-            className={`absolute flex items-center gap-3 px-4 py-2 rounded-xl border-2 shadow-lg select-none transition-all duration-200 ${
-              isSticky 
-                ? 'bg-zinc-950/95 backdrop-blur-md border-zinc-700/80 shadow-2xl' 
-                : 'bg-zinc-950/90'
-            }`}
+            className="absolute flex flex-col items-start select-none transition-transform duration-150"
             style={{
               left: `${x}px`,
               top: `${y}px`,
-              borderColor: feature.color,
-              minWidth: '280px',
-              maxWidth: isSticky ? `min(${viewportWidth - 40}px, 450px)` : '400px',
-              pointerEvents: 'auto',
-              transform: isSticky ? 'scale(0.98)' : 'scale(1)',
+              pointerEvents: 'auto'
             }}
           >
-            {/* Color bar */}
-            <div 
-              className="w-3 h-8 rounded-full shrink-0"
-              style={{ backgroundColor: feature.color }}
-            />
+            {/* Primary Track Title with Colored Track Marker */}
+            <div className="flex items-center gap-2.5">
+              <div 
+                className="w-2.5 h-4 rounded-full shrink-0 shadow-sm"
+                style={{ backgroundColor: feature.color }}
+              />
+              <h3 className="text-[16px] font-semibold text-white tracking-wider uppercase leading-none">
+                {feature.name}
+              </h3>
+            </div>
 
-            {/* Feature name */}
-            <span className="text-xs font-bold text-white tracking-wider uppercase truncate">
-              {feature.name}
-            </span>
+            {/* Secondary Metadata: 11-12px font-medium */}
+            <div className="flex items-center gap-2 mt-1.5 ml-5 text-[11.5px] font-medium text-zinc-400 font-mono">
+              <span>{stationText} · LINE {lineNumber}</span>
 
-            {/* Layer indicators */}
-            {showLayerIndicators && feature.layerGroups && (
-              <div className="flex gap-1 ml-1 items-center">
-                {Object.entries(feature.layerGroups).map(([layer, stations]) => {
-                  const arr = Array.isArray(stations) ? stations : [];
-                  if (arr.length === 0) return null;
-                  const config = LAYER_CONFIG[layer as LayerType];
-                  const isSelected = selectedLayers.length === 0 || selectedLayers.includes(layer as LayerType);
-                  return (
-                    <div
-                      key={layer}
-                      className="w-2.5 h-2.5 rounded-full cursor-pointer hover:scale-125 transition ring-1 ring-zinc-900 shrink-0"
-                      style={{
-                        backgroundColor: config?.color || '#a1a1aa',
-                        opacity: isSelected ? 1 : 0.35,
-                      }}
-                      onClick={() => onLayerClick?.(layer as LayerType)}
-                      title={`${config?.label}: ${arr.length} stations`}
-                    />
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Station count badge */}
-            <span 
-              className="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-auto"
-              style={{ 
-                backgroundColor: `${feature.color}30`,
-                color: feature.color,
-              }}
-            >
-              {stationCount} stations
-            </span>
-
-            {/* Line number */}
-            <span className="text-[9px] text-zinc-500 font-mono shrink-0">
-              LINE {lineNumber}
-            </span>
+              {/* Optional Subtle Layer Indicators */}
+              {showLayerIndicators && feature.layerGroups && (
+                <div className="flex gap-1 ml-2 items-center border-l border-zinc-700/60 pl-2">
+                  {Object.entries(feature.layerGroups).map(([layer, stations]) => {
+                    const arr = Array.isArray(stations) ? stations : [];
+                    if (arr.length === 0) return null;
+                    const config = LAYER_CONFIG[layer as LayerType];
+                    const isSelected = selectedLayers.length === 0 || selectedLayers.includes(layer as LayerType);
+                    return (
+                      <div
+                        key={layer}
+                        className="w-2 h-2 rounded-full cursor-pointer hover:scale-125 transition shrink-0"
+                        style={{
+                          backgroundColor: config?.color || '#a1a1aa',
+                          opacity: isSelected ? 1 : 0.35,
+                        }}
+                        onClick={() => onLayerClick?.(layer as LayerType)}
+                        title={`${config?.label}: ${arr.length} stations`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         );
       })}

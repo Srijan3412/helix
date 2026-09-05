@@ -4,13 +4,15 @@ import { useMemo } from 'react';
 import { LayerType, getLayerOrder } from './layerDetector';
 import { SubwayStationData, FeatureFlow, LayoutResult } from './types';
 
-// ── Constants ──
-const FEATURE_SPACING = 260;
-const LAYER_SPACING = 120;
-const STATION_SPACING = 220;
+// ── Precise Transit Layout Spacing Constants ──
 const START_X = 80;
-const START_Y = 80;
-const PADDING = 200;
+const START_Y = 55; // Generous top padding to prevent clipping with top bar
+const HEADER_TO_STATIONS_GAP = 70; // Dedicated vertical gap between track title and first station row
+const LAYER_SPACING = 155; // 105px station card + 50px vertical gap between layers
+const STATION_SPACING = 220; // 150px station card + 70px horizontal track gap
+const TRACK_GAP = 95; // Clear separation between previous track's lowest station and next track's title
+const BOTTOM_PADDING = 140; // Ensures last track is never cut off by bottom scrollbar/controls
+const RIGHT_PADDING = 240;
 
 // ── Default Layer Order ──
 const DEFAULT_LAYER_ORDER: LayerType[] = [
@@ -33,16 +35,7 @@ export function useMetroLayout(
 ): LayoutResult {
   return useMemo(() => {
     const posMap: any = {};
-    const linesCount = filteredFeatures.length || features.length || 1;
     const featuresToLayout = filteredFeatures.length > 0 ? filteredFeatures : features;
-
-    // ── Calculate max layers for canvas height ──
-    let maxLayers = 1;
-    featuresToLayout.forEach((feature) => {
-      const groups = layerGroups[feature.id] || {};
-      const activeLayers = Object.values(groups).filter((arr) => arr && arr.length > 0).length;
-      if (activeLayers > maxLayers) maxLayers = activeLayers;
-    });
 
     // ── Calculate layer order for each feature ──
     const featureLayerOrder: Record<string, LayerType[]> = {};
@@ -55,29 +48,44 @@ export function useMetroLayout(
       featureLayerOrder[feature.id] = sortedLayers.length > 0 ? sortedLayers : DEFAULT_LAYER_ORDER;
     });
 
-    // ── Build position map with layer grouping ──
-    featuresToLayout.forEach((feature, fIdx) => {
+    // ── Dynamic Lane-Based Vertical Layout (Zero Overlaps) ──
+    let currentY = START_Y;
+    const featureHeaderY: Record<string, number> = {};
+    let maxStationColumns = 1;
+
+    featuresToLayout.forEach((feature) => {
       posMap[feature.id] = {};
       const groups = layerGroups[feature.id] || {};
       const sortedLayers = featureLayerOrder[feature.id] || [];
+      const activeLayersCount = Math.max(1, sortedLayers.length);
 
-      const baseY = START_Y + fIdx * FEATURE_SPACING;
+      // Track header positioned cleanly in its own vertical space
+      featureHeaderY[feature.id] = currentY;
+
+      // Station nodes starting Y for layer 0 (strictly below header)
+      const stationStartY = currentY + HEADER_TO_STATIONS_GAP;
 
       sortedLayers.forEach((layer, layerIdx) => {
         const stations = groups[layer] || [];
+        if (stations.length > maxStationColumns) {
+          maxStationColumns = stations.length;
+        }
 
         stations.forEach((station, stepIdx) => {
           const pt = {
             x: START_X + stepIdx * STATION_SPACING,
-            y: baseY + layerIdx * LAYER_SPACING
+            y: stationStartY + layerIdx * LAYER_SPACING
           };
           posMap[feature.id][station.id] = pt;
-          posMap[station.id] = pt; // flat lookup support
+          posMap[station.id] = pt; // Flat lookup support
 
-          // Store layer index on station for later use
+          // Store layer index on station
           station.layerIndex = layerIdx;
         });
       });
+
+      // Advance currentY for the next feature lane
+      currentY = stationStartY + (activeLayersCount - 1) * LAYER_SPACING + 110 + TRACK_GAP;
     });
 
     // ── Build keyToInstances for shared stations (for transfer edges) ──
@@ -100,14 +108,12 @@ export function useMetroLayout(
     for (let iter = 0; iter < 3; iter++) {
       Object.entries(keyToInstances).forEach(([_, instances]) => {
         if (instances.length > 1) {
-          // Find max X position among shared stations
           let maxX = 0;
           instances.forEach((inst) => {
             const pos = posMap[inst.featureId]?.[inst.stationId] || posMap[inst.stationId];
             if (pos && pos.x > maxX) maxX = pos.x;
           });
 
-          // Align all shared stations to maxX
           instances.forEach((inst) => {
             const pos = posMap[inst.featureId]?.[inst.stationId] || posMap[inst.stationId];
             if (pos) {
@@ -116,7 +122,6 @@ export function useMetroLayout(
                 const lineStations = featureLines[inst.featureId] || [];
                 const stationIdx = lineStations.findIndex((s) => s.id === inst.stationId);
                 if (stationIdx >= 0) {
-                  // Shift all subsequent stations in the same layer
                   const currentLayer = lineStations[stationIdx]?.layer;
                   for (let i = stationIdx; i < lineStations.length; i++) {
                     const sId = lineStations[i].id;
@@ -138,9 +143,9 @@ export function useMetroLayout(
     }
 
     // ── Calculate canvas dimensions ──
-    const visibleCount = Math.min(stationsPerPage, maxStationsCount || 10);
-    const canvasWidth = Math.max(1300, START_X + visibleCount * STATION_SPACING + PADDING);
-    const canvasHeight = Math.max(750, START_Y + linesCount * FEATURE_SPACING + maxLayers * LAYER_SPACING + 100);
+    const effectiveStations = Math.max(maxStationColumns, maxStationsCount || 6);
+    const canvasWidth = Math.max(1400, START_X + effectiveStations * STATION_SPACING + RIGHT_PADDING);
+    const canvasHeight = Math.max(750, currentY + BOTTOM_PADDING);
 
     // ── Build layer groups for return ──
     const resultLayerGroups: Record<string, Record<LayerType, SubwayStationData[]>> = {};
@@ -148,7 +153,6 @@ export function useMetroLayout(
       resultLayerGroups[feature.id] = (layerGroups[feature.id] || {}) as Record<LayerType, SubwayStationData[]>;
     });
 
-    // ── Return layout result ──
     return {
       positions: posMap,
       featureLines,
@@ -157,7 +161,8 @@ export function useMetroLayout(
       canvasHeight,
       keyToInstances,
       layerGroups: resultLayerGroups,
-      layerOrder: DEFAULT_LAYER_ORDER
+      layerOrder: DEFAULT_LAYER_ORDER,
+      featureHeaderY
     };
   }, [
     features,

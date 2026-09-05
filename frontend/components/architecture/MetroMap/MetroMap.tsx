@@ -13,7 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AnimatePresence } from 'framer-motion';
-import { RotateCcw, Download, Layers, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RotateCcw, Download, Layers, RotateCw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
 
 import { SubwayStationNode } from './SubwayStationNode';
 import { StationInspector } from './StationInspector';
@@ -75,33 +75,60 @@ function MetroMapInternal({
   // ── 4b: Layer Filter State ──
   const [activeLayers, setActiveLayers] = useState<LayerType[]>(ALL_LAYERS);
 
-  // ── Horizontal Scrolling State & Ref ──
+  // ── 2D Scrolling State & Ref (Horizontal & Vertical) ──
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAtStart, setIsAtStart] = useState(true);
   const [isAtEnd, setIsAtEnd] = useState(false);
   const [scrollLeftState, setScrollLeftState] = useState(0);
   const [viewportWidthState, setViewportWidthState] = useState(1200);
+
+  const [scrollTop, setScrollTop] = useState(0);
+  const [scrollHeight, setScrollHeight] = useState(0);
+  const [clientHeight, setClientHeight] = useState(0);
+  const [isAtTop, setIsAtTop] = useState(true);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // ── Scroll Event Handler ──
+  // ── 2D Scroll Event Handler ──
   const handleScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-    const maxScroll = scrollWidth - clientWidth;
+    const container = scrollContainerRef.current;
     
-    setScrollProgress(maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0);
-    setIsAtStart(scrollLeft <= 5);
-    setIsAtEnd(scrollLeft >= maxScroll - 5);
+    // Horizontal
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    const maxScrollX = scrollWidth - clientWidth;
     setScrollLeftState(scrollLeft);
     setViewportWidthState(clientWidth);
+    setScrollProgress(maxScrollX > 0 ? (scrollLeft / maxScrollX) * 100 : 0);
+    setIsAtStart(scrollLeft <= 5);
+    setIsAtEnd(scrollLeft >= maxScrollX - 5);
+    
+    // Vertical
+    const { scrollTop: currentScrollTop, scrollHeight: currentScrollHeight, clientHeight: containerClientHeight } = container;
+    const maxScrollY = currentScrollHeight - containerClientHeight;
+    setScrollTop(currentScrollTop);
+    setScrollHeight(currentScrollHeight);
+    setClientHeight(containerClientHeight);
+    setIsAtTop(currentScrollTop <= 5);
+    setIsAtBottom(currentScrollTop >= maxScrollY - 5);
   }, []);
 
-  // ── Scroll Button Handler ──
-  const scroll = useCallback((direction: 'left' | 'right') => {
+  // ── Horizontal & Vertical Scroll Functions ──
+  const scrollHorizontal = useCallback((direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return;
-    const scrollAmount = Math.min(480, scrollContainerRef.current.clientWidth * 0.75);
+    const scrollAmount = Math.min(500, scrollContainerRef.current.clientWidth * 0.75);
     scrollContainerRef.current.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  }, []);
+
+  const scrollVertical = useCallback((direction: 'up' | 'down') => {
+    if (!scrollContainerRef.current) return;
+    const scrollAmount = Math.min(350, scrollContainerRef.current.clientHeight * 0.6);
+    scrollContainerRef.current.scrollBy({
+      top: direction === 'up' ? -scrollAmount : scrollAmount,
       behavior: 'smooth'
     });
   }, []);
@@ -382,7 +409,8 @@ function MetroMapInternal({
     canvasHeight,
     keyToInstances,
     layerGroups: computedLayerGroups,
-    layerOrder
+    layerOrder,
+    featureHeaderY
   } = useMetroLayout(
     activeFeatureClusters,
     filteredFeatures,
@@ -565,7 +593,7 @@ function MetroMapInternal({
   return (
     <div className="h-full w-full text-left relative flex flex-col bg-zinc-950 select-none overflow-hidden">
       {/* ── FILTER & TOOLBAR (Single Clean Unified Row) ── */}
-      <div className="flex items-center justify-between gap-3 px-4 py-1.5 shrink-0 bg-zinc-900/90 border-b border-zinc-800/80 z-10 overflow-x-auto scrollbar-none">
+      <div className="flex items-center justify-between gap-3 px-4 py-1.5 shrink-0 bg-zinc-900/95 border-b border-zinc-800/80 z-20 overflow-visible">
         {/* Layer Filter Controls */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
           <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
@@ -601,6 +629,17 @@ function MetroMapInternal({
             <RotateCw size={10} />
             <span>Reset</span>
           </button>
+        </div>
+
+        {/* ── Search Bar (Toolbar Integrated) ── */}
+        <div className="w-56 md:w-64 shrink-0 relative">
+          <MetroSearchPanel
+            nodes={nodes}
+            searchQuery={searchQuery}
+            onSearch={handleSearch}
+            onSelectNode={handleSelectSearchResult}
+            onClear={handleClearSearch}
+          />
         </div>
 
         {/* Smart View Controls & Canvas Actions */}
@@ -680,14 +719,7 @@ function MetroMapInternal({
 
         {/* ReactFlow Interactive Canvas Container (Contained Horizontal Scroll) */}
         <div className="flex-1 h-full relative bg-zinc-950 overflow-hidden">
-          {/* Search Panel */}
-          <MetroSearchPanel
-            nodes={nodes}
-            searchQuery={searchQuery}
-            onSearch={handleSearch}
-            onSelectNode={handleSelectSearchResult}
-            onClear={handleClearSearch}
-          />
+{/* Search integrated in top toolbar */}
 
           {/* Feature Importance Panel (Bottom Right) */}
           <FeatureImportancePanel items={featureImportance} />
@@ -716,24 +748,25 @@ function MetroMapInternal({
             )}
           </AnimatePresence>
 
-          {/* ── SCROLLABLE CONTAINER ── */}
+          {/* ── SCROLLABLE CONTAINER (2D Horizontal & Vertical) ── */}
           <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="w-full h-full overflow-x-auto overflow-y-hidden select-none scrollbar-none"
+            className="w-full h-full overflow-auto select-none scrollbar-none relative"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {/* Inner Canvas with Computed Width & Height */}
             <div 
-              className="relative h-full"
+              className="relative"
               style={{ 
                 width: Math.max(canvasWidth, 1400),
-                minHeight: Math.max(canvasHeight, 700) 
+                height: Math.max(canvasHeight, 750)
               }}
             >
-              {/* Sticky Track Headers */}
+              {/* Track Headers */}
               <TrackHeaders
                 filteredFeatures={filteredFeatures}
+                featureHeaderY={featureHeaderY}
                 canvasWidth={Math.max(canvasWidth, 1400)}
                 scrollLeft={scrollLeftState}
                 viewportWidth={viewportWidthState}
@@ -772,22 +805,56 @@ function MetroMapInternal({
             </div>
           </div>
 
-          {/* ── LEFT FLOATING SCROLL BUTTON ── */}
+          {/* ── VERTICAL SCROLL BAR INDICATOR (Right Edge) ── */}
+          {scrollHeight > clientHeight && (
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 z-30 w-1.5 h-1/2 bg-zinc-800/50 rounded-full pointer-events-none overflow-hidden backdrop-blur-sm">
+              <div 
+                className="w-full bg-primary/80 rounded-full transition-all duration-150 shadow-sm"
+                style={{ 
+                  height: `${Math.max(12, Math.min(100, (clientHeight / (scrollHeight || 1)) * 100))}%`,
+                  transform: `translateY(${scrollHeight > clientHeight ? (scrollTop / (scrollHeight - clientHeight)) * 100 * (1 - clientHeight / scrollHeight) : 0}%)`,
+                  position: 'relative'
+                }}
+              />
+            </div>
+          )}
+
+          {/* ── VERTICAL FLOATING SCROLL BUTTONS (Top / Bottom) ── */}
+          {!isAtTop && scrollHeight > clientHeight && (
+            <button
+              onClick={() => scrollVertical('up')}
+              className="absolute top-3 left-1/2 -translate-x-1/2 z-30 p-2 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
+              title="Scroll Up"
+            >
+              <ChevronUp size={15} />
+            </button>
+          )}
+
+          {!isAtBottom && scrollHeight > clientHeight && (
+            <button
+              onClick={() => scrollVertical('down')}
+              className="absolute bottom-12 left-1/2 -translate-x-1/2 z-30 p-2 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
+              title="Scroll Down"
+            >
+              <ChevronDown size={15} />
+            </button>
+          )}
+
+          {/* ── HORIZONTAL FLOATING SCROLL BUTTONS (Left / Right) ── */}
           {!isAtStart && (
             <button
-              onClick={() => scroll('left')}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-30 p-2.5 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md"
+              onClick={() => scrollHorizontal('left')}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-30 p-2.5 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
               title="Scroll Left"
             >
               <ChevronLeft size={16} />
             </button>
           )}
 
-          {/* ── RIGHT FLOATING SCROLL BUTTON ── */}
           {!isAtEnd && (
             <button
-              onClick={() => scroll('right')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-30 p-2.5 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md"
+              onClick={() => scrollHorizontal('right')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-30 p-2.5 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
               title="Scroll Right"
             >
               <ChevronRight size={16} />
@@ -798,7 +865,7 @@ function MetroMapInternal({
           <div className="absolute bottom-3 left-6 right-6 z-20 pointer-events-auto">
             <div className="flex items-center gap-3 px-3 py-1.5 bg-zinc-900/90 rounded-xl border border-zinc-800/80 backdrop-blur-md shadow-lg max-w-md mx-auto">
               <button 
-                onClick={() => scroll('left')}
+                onClick={() => scrollHorizontal('left')}
                 className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
                 title="Scroll left"
               >
@@ -813,7 +880,7 @@ function MetroMapInternal({
               </div>
               
               <button 
-                onClick={() => scroll('right')}
+                onClick={() => scrollHorizontal('right')}
                 className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
                 title="Scroll right"
               >

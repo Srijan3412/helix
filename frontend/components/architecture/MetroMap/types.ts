@@ -105,6 +105,7 @@ export interface LayoutResult {
   keyToInstances: Record<string, { featureId: string; stationId: string }[]>;
   layerGroups: Record<string, Record<LayerType, SubwayStationData[]>>;
   layerOrder: LayerType[];
+  featureHeaderY?: Record<string, number>;
 }
 
 // ── Layer Statistics ──
@@ -140,6 +141,7 @@ export interface MetroMapProps {
 // ── Node Generation Props ──
 export interface MetroGraphProps {
   filteredFeatures: FeatureFlow[];
+  featureHeaderY?: Record<string, number>;
   features: FeatureFlow[];
   featureLines?: Record<string, SubwayStationData[]>;
   positions: any;
@@ -184,6 +186,7 @@ export interface MetroLayoutProps {
 // ── Track Headers Props ──
 export interface TrackHeadersProps {
   filteredFeatures: FeatureFlow[];
+  featureHeaderY?: Record<string, number>;
   canvasWidth: number;
   scrollLeft: number;
   viewportWidth: number;
