@@ -1,6 +1,6 @@
 // frontend/components/architecture/MetroMap/SubwayStationNode.tsx
 
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { motion } from 'framer-motion';
 import {
@@ -12,7 +12,9 @@ import {
   Shield,
   Box,
   Database,
-  Train
+  Train,
+  Lock,
+  Globe
 } from 'lucide-react';
 import { LayerType, getLayerColor, getLayerEmoji, LAYER_CONFIG } from './layerDetector';
 import { SubwayStationData, StationType } from './types';
@@ -30,24 +32,29 @@ export const stationColorMap: Record<StationType, string> = {
   route: '#10B981',
   controller: '#3B82F6',
   service: '#F59E0B',
-  middleware: '#A855F7',
-  repository: '#EF4444',
-  database: '#EC4899'
+  middleware: '#8B5CF6',
+  repository: '#EC4899',
+  database: '#6366F1'
+};
+
+const httpMethodColors: Record<string, { bg: string; text: string; border: string }> = {
+  GET: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/40' },
+  POST: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/40' },
+  PUT: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/40' },
+  PATCH: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/40' },
+  DELETE: { bg: 'bg-rose-500/20', text: 'text-rose-400', border: 'border-rose-500/40' }
 };
 
 const healthClasses = {
   healthy: 'border-emerald-500/50 bg-zinc-900/95 text-emerald-400 shadow-emerald-950/20',
   warning: 'border-amber-500/50 bg-zinc-900/95 text-amber-400 shadow-amber-950/20',
-  critical: 'border-red-500/60 bg-zinc-900/95 text-red-400 shadow-red-950/20'
+  critical: 'border-rose-500/50 bg-zinc-900/95 text-rose-400 shadow-rose-950/20'
 };
 
 export interface SubwayStationNodeProps {
   data: SubwayStationData & {
-    stationNumber?: string;
-    typeLabel?: string;
-    hasHighComplexity?: boolean;
-    healthGlowActive?: boolean;
-    nextStationName?: string;
+    color?: string;
+    lineName?: string;
     layerLabel?: string;
     layerEmoji?: string;
     onClick?: () => void;
@@ -66,64 +73,40 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
     features = [],
     isInterchange = false,
     focused,
+    type,
     isJourneyActive = false,
-    lineName = '',
-    layer = 'utility',
-    type = 'service',
+    lineName,
+    layer,
     health = 'healthy',
-    isAggregated = false,
-    hiddenCount = 0,
+    healthScore,
+    httpMethod,
+    isAuthRequired,
+    lineCount,
+    isAggregated,
+    hiddenCount,
     onClick
   } = data;
 
-  const [localTime, setLocalTime] = useState('');
-
-  useEffect(() => {
-    setLocalTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    const timer = setInterval(() => {
-      setLocalTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  
-  // ── Special Aggregated Node Rendering ──
   if (isAggregated) {
     return (
       <motion.div
-        whileHover={{ scale: 1.08, y: -2 }}
+        whileHover={{ scale: 1.05, y: -2 }}
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         onClick={onClick}
         className="relative select-none group cursor-pointer flex flex-col items-center"
         style={{ width: '150px' }}
       >
-        <Handle
-          type="target"
-          position={Position.Left}
-          id="left"
-          className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900"
-          style={{ top: '32px', zIndex: 10 }}
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="right"
-          className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900"
-          style={{ top: '32px', zIndex: 10 }}
-        />
+        <Handle type="target" position={Position.Left} id="left" className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900" style={{ top: '38px', zIndex: 10 }} />
+        <Handle type="source" position={Position.Right} id="right" className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900" style={{ top: '38px', zIndex: 10 }} />
+        <Handle type="target" position={Position.Top} id="top" className="!w-2 !h-2 !bg-purple-400 !border-2 !border-zinc-900" style={{ left: '50%', zIndex: 10 }} />
+        <Handle type="source" position={Position.Bottom} id="bottom" className="!w-2 !h-2 !bg-purple-400 !border-2 !border-zinc-900" style={{ left: '50%', bottom: '0px', zIndex: 10 }} />
 
         <div
-          className="relative bg-zinc-900/95 border-2 border-dashed border-zinc-600 hover:border-primary rounded-xl p-2.5 shadow-xl transition-all duration-300 text-left w-[150px] bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-zinc-950"
-          style={{
-            borderColor: color ? `${color}80` : undefined,
-            boxShadow: `0 4px 14px ${color}25`
-          }}
+          className="relative bg-zinc-900/90 border border-dashed rounded-xl p-2.5 text-left w-[150px] transition-all hover:bg-zinc-800/80 shadow-md"
+          style={{ borderColor: color, boxShadow: `0 4px 14px ${color}25` }}
         >
           <div className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 shadow-sm"
-              style={{ backgroundColor: `${color}30`, color: color }}
-            >
+            <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 shadow-sm" style={{ backgroundColor: `${color}30`, color: color }}>
               <Package size={13} />
             </div>
             <div className="min-w-0 flex-1">
@@ -136,7 +119,6 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
               </div>
             </div>
           </div>
-
           <div className="mt-2 pt-1 border-t border-zinc-800/80 flex items-center justify-between text-[7px] text-zinc-400 font-mono">
             <span>{lineName || 'Track'}</span>
             <span className="text-primary font-bold">EXPAND</span>
@@ -156,8 +138,14 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
   const layerLabel = LAYER_CONFIG[layer]?.label || layer;
   const showLayerBadge = Boolean(layer && layer !== 'utility');
 
-  // Health numeric percentage computation
-  const healthPercent = health === 'healthy' ? 92 : health === 'warning' ? 58 : 28;
+  // Real Health Score Percentage
+  const calculatedPercent = healthScore !== undefined ? healthScore : (health === 'healthy' ? 92 : health === 'warning' ? 62 : 32);
+
+  // Real Lines of Code
+  const displayLOC = lineCount !== undefined && lineCount > 0 ? lineCount : (complexity > 0 && complexity < 5000 ? complexity : null);
+
+  // Method Styling for Routes
+  const methodBadge = httpMethod ? (httpMethodColors[httpMethod.toUpperCase()] || httpMethodColors.GET) : null;
 
   return (
     <motion.div
@@ -168,36 +156,12 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
       style={{ opacity, width: '150px', transition: 'opacity 0.2s ease-in-out' }}
     >
       {/* ── Left / Right Horizontal Track Handles ── */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="left"
-        className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900"
-        style={{ top: '38px', zIndex: 10 }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900"
-        style={{ top: '38px', zIndex: 10 }}
-      />
+      <Handle type="target" position={Position.Left} id="left" className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900" style={{ top: '38px', zIndex: 10 }} />
+      <Handle type="source" position={Position.Right} id="right" className="!w-2.5 !h-2.5 !bg-zinc-400 !border-2 !border-zinc-900" style={{ top: '38px', zIndex: 10 }} />
 
       {/* ── Top / Bottom Vertical Step / Transfer Handles ── */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="top"
-        className="!w-2 !h-2 !bg-purple-400 !border-2 !border-zinc-900"
-        style={{ left: '50%', zIndex: 10 }}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="bottom"
-        className="!w-2 !h-2 !bg-purple-400 !border-2 !border-zinc-900"
-        style={{ left: '50%', bottom: '0px', zIndex: 10 }}
-      />
+      <Handle type="target" position={Position.Top} id="top" className="!w-2 !h-2 !bg-purple-400 !border-2 !border-zinc-900" style={{ left: '50%', zIndex: 10 }} />
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!w-2 !h-2 !bg-purple-400 !border-2 !border-zinc-900" style={{ left: '50%', bottom: '0px', zIndex: 10 }} />
 
       {/* ── Main Station Card ── */}
       <div
@@ -215,7 +179,7 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
             : '0 4px 10px rgba(0, 0, 0, 0.45)'
         }}
       >
-        {/* ── 7. LAYER BADGE (Top Right) ── */}
+        {/* ── Layer Badge (Top Right) ── */}
         {showLayerBadge && (
           <div className="absolute top-1 right-1 z-10">
             <span
@@ -263,17 +227,29 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
           </div>
         </div>
 
-        {/* ── LIVE Route Indicator ── */}
+        {/* ── Real Route Endpoint Metadata ── */}
         {stationType === 'route' && (
-          <div className="flex items-center justify-between text-[6.5px] text-zinc-400 font-mono mt-1.5 pt-1 border-t border-zinc-800/80">
-            <span className="text-emerald-400 font-bold flex items-center gap-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE
-            </span>
-            <span className="text-zinc-500">🕐 {localTime}</span>
+          <div className="flex items-center justify-between text-[7px] text-zinc-400 font-mono mt-1.5 pt-1 border-t border-zinc-800/80">
+            {methodBadge ? (
+              <span className={`px-1.5 py-0.5 rounded font-bold text-[7px] border ${methodBadge.bg} ${methodBadge.text} ${methodBadge.border}`}>
+                {httpMethod}
+              </span>
+            ) : (
+              <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+                <Globe size={8} /> API
+              </span>
+            )}
+            {isAuthRequired ? (
+              <span className="text-amber-400 font-medium flex items-center gap-0.5">
+                <Lock size={7} /> Auth
+              </span>
+            ) : (
+              <span className="text-zinc-500 font-medium">Public</span>
+            )}
           </div>
         )}
 
-        {/* ── Health Bar ── */}
+        {/* ── Real Health Bar ── */}
         <div className="mt-1.5 pt-1 border-t border-zinc-800/60">
           <div className="flex items-center gap-1">
             <span className="text-[6px] text-zinc-500 font-mono">HEALTH</span>
@@ -281,17 +257,17 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
               <div
                 className="h-full transition-all duration-500 rounded-full"
                 style={{
-                  width: `${healthPercent}%`,
+                  width: `${calculatedPercent}%`,
                   backgroundColor:
-                    healthPercent > 70 ? '#34d399' : healthPercent > 40 ? '#f59e0b' : '#ef4444'
+                    calculatedPercent >= 75 ? '#34d399' : calculatedPercent >= 50 ? '#f59e0b' : '#ef4444'
                 }}
               />
             </div>
-            <span className="text-[6.5px] font-bold font-mono text-zinc-300">{healthPercent}%</span>
+            <span className="text-[6.5px] font-bold font-mono text-zinc-300">{calculatedPercent}%</span>
           </div>
         </div>
 
-        {/* ── Footer: Line Tag & Layer Tag ── */}
+        {/* ── Footer: Line Tag & Real LOC Badge ── */}
         <div className="flex items-center justify-between gap-1 mt-1.5 pt-1 border-t border-zinc-800/80">
           <div className="flex items-center gap-1 truncate">
             <div
@@ -303,10 +279,10 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
             </span>
           </div>
 
-          {/* Complexity Badge */}
-          {complexity > 0 && (
+          {/* Real LOC Metric (Lines of Code) */}
+          {displayLOC !== null && (
             <span className="text-[7px] font-mono font-bold px-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 shrink-0">
-              LOC {complexity}
+              LOC {displayLOC}
             </span>
           )}
         </div>

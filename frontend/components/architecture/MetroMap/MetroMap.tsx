@@ -22,7 +22,7 @@ import { FeatureLegend } from './FeatureLegend';
 import { MetroSearchPanel } from './MetroSearchPanel';
 import { LayerHeader } from './LayerHeader';
 import { TrackHeaders } from './TrackHeaders';
-import { useMetroData, inferStationType } from './useMetroData';
+import { useMetroData, inferStationType, calculateFileHealth } from './useMetroData';
 import { useMetroLayout } from './useMetroLayout';
 import { useMetroGraph } from './useMetroGraph';
 import { useJourneyAnimation } from './useJourneyAnimation';
@@ -207,23 +207,38 @@ function MetroMapInternal({
         utility: []
       };
 
-      // ── Process Routes (API Layer) ──
+      // ── Process Route Endpoints (API Layer) with Real HTTP Methods & Auth ──
       (feature.routes || []).forEach((r: string) => {
         const spaceIdx = r.indexOf(' ');
-        const method = spaceIdx > 0 ? r.substring(0, spaceIdx) : 'GET';
-        const path = spaceIdx > 0 ? r.substring(spaceIdx + 1) : r;
+        const method = spaceIdx > 0 ? r.substring(0, spaceIdx).toUpperCase() : 'GET';
+        const pathStr = spaceIdx > 0 ? r.substring(spaceIdx + 1) : r;
+        
+        const matchedRoute = result?.routes?.find(
+          (ro: any) => ro.path === pathStr || ro.path === r || (ro.method === method && pathStr.includes(ro.path))
+        );
+        const matchedFile = matchedRoute?.file ? result?.files?.find((f: any) => f.path.includes(matchedRoute.file)) : null;
+        const realLOC = matchedFile?.lineCount || 0;
+        const isAuthRequired = Boolean(
+          feature.auth ||
+          (matchedRoute?.middleware && matchedRoute.middleware.some((m: string) => m.toLowerCase().includes('auth') || m.toLowerCase().includes('guard') || m.toLowerCase().includes('jwt')))
+        );
+
         const station: SubwayStationData = {
-          id: `station:${feature.id}:route:${method}:${path}`,
+          id: `station:${feature.id}:route:${method}:${pathStr}`,
           name: r,
           label: r,
           displayName: r,
-          rawPath: path,
+          rawPath: pathStr,
           type: 'route',
-          key: `route:${method}:${path}`,
+          key: `route:${method}:${pathStr}`,
           raw: r,
           layer: 'api',
           health: 'healthy',
-          complexity: 10,
+          healthScore: 95,
+          httpMethod: method,
+          isAuthRequired,
+          complexity: realLOC > 0 ? realLOC : 12,
+          lineCount: realLOC > 0 ? realLOC : undefined,
           features: [feature.name],
           isInterchange: false,
           color: feature.color,
@@ -233,17 +248,22 @@ function MetroMapInternal({
         rawStations.push(station);
       });
 
-      // ── Process Files (Filter utilities if showUtilities is false) ──
-      (feature.files || []).forEach((fPath: string, fileIdx: number) => {
+      // ── Process Real Files with Accurate Line Counts & Health ──
+      (feature.files || []).forEach((fPath: string) => {
         const filename = fPath.split(/[\\/]/).pop() || fPath;
         const isUtil = isUtilityFile(filename) && !isImportantFile(filename);
         
-        // Hide low-priority utility files by default unless showUtilities is enabled or activeLayers specifically isolates utility
         if (!showUtilities && isUtil && activeLayers.length === ALL_LAYERS.length) {
           return;
         }
 
         const layer = detectLayer({ type: 'file' }, fPath);
+        const matchedFile = result?.files?.find(
+          (f: any) => f.path === fPath || f.path.endsWith(fPath) || fPath.endsWith(f.path) || f.path.endsWith(filename)
+        );
+        const realLineCount = matchedFile?.lineCount || 0;
+        const { health: realHealth, healthScore: realHealthScore } = calculateFileHealth(fPath, result);
+
         const station: SubwayStationData = {
           id: `${feature.id}-${fPath}`,
           name: fPath,
@@ -254,8 +274,10 @@ function MetroMapInternal({
           key: `file:${fPath}`,
           raw: fPath,
           layer,
-          health: 'healthy',
-          complexity: (fileIdx * 7) % 25 + 6,
+          health: realHealth,
+          healthScore: realHealthScore,
+          complexity: realLineCount,
+          lineCount: realLineCount > 0 ? realLineCount : undefined,
           features: [feature.name],
           isInterchange: interchanges.some((i) => i.file === fPath && i.features.length > 1),
           color: feature.color,
@@ -278,7 +300,8 @@ function MetroMapInternal({
           raw: ent,
           layer: 'data',
           health: 'healthy',
-          complexity: 4,
+          healthScore: 96,
+          complexity: 0,
           features: [feature.name],
           isInterchange: false,
           color: feature.color,

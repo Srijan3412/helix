@@ -20,6 +20,10 @@ export interface SubwayStationData {
   layerIndex?: number;       // ✅ Position within layer
   featureId?: string;        // ✅ Parent feature ID
   health: StationHealth;     // ✅ Station health status
+  healthScore?: number;      // ✅ Real 0-100 health score
+  httpMethod?: string;       // ✅ Real HTTP method (GET, POST, etc.)
+  isAuthRequired?: boolean;  // ✅ Route authentication flag
+  lineCount?: number;        // ✅ Real Lines of Code
   complexity: number;        // ✅ Code complexity
   features: string[];        // ✅ Connected feature line names
   isInterchange: boolean;    // ✅ Interchange junction status
