@@ -27,7 +27,7 @@ export function TrackHeaders({
     filteredFeatures.forEach((feature, index) => {
       const baseY = featureHeaderY[feature.id] !== undefined 
         ? featureHeaderY[feature.id] 
-        : (55 + index * 260);
+        : (60 + index * 280);
       
       positions.push({
         feature,
@@ -57,7 +57,7 @@ export function TrackHeaders({
         return (
           <div
             key={feature.id}
-            className="absolute flex flex-col items-start select-none transition-transform duration-150"
+            className="absolute flex flex-col items-start select-none"
             style={{
               left: `${x}px`,
               top: `${y}px`,

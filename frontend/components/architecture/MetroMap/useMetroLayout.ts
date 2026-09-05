@@ -4,15 +4,18 @@ import { useMemo } from 'react';
 import { LayerType, getLayerOrder } from './layerDetector';
 import { SubwayStationData, FeatureFlow, LayoutResult } from './types';
 
-// ── Precise Transit Layout Spacing Constants ──
+// ── Strict Transit Lane Spacing Constants (Zero Collisions Guaranteed) ──
 const START_X = 80;
-const START_Y = 55; // Generous top padding to prevent clipping with top bar
-const HEADER_TO_STATIONS_GAP = 70; // Dedicated vertical gap between track title and first station row
-const LAYER_SPACING = 155; // 105px station card + 50px vertical gap between layers
-const STATION_SPACING = 220; // 150px station card + 70px horizontal track gap
-const TRACK_GAP = 95; // Clear separation between previous track's lowest station and next track's title
-const BOTTOM_PADDING = 140; // Ensures last track is never cut off by bottom scrollbar/controls
-const RIGHT_PADDING = 240;
+const START_Y = 60; // Top padding so first header never touches top bar
+const HEADER_HEIGHT = 44;
+const HEADER_GAP = 32; // Vertical gap between header and first station
+const HEADER_RESERVED = HEADER_HEIGHT + HEADER_GAP; // 76px
+const STATION_HEIGHT = 105; // Station card height
+const LAYER_SPACING = 150; // Distance between layer rows (105px card + 45px vertical gap)
+const STATION_SPACING = 220; // Distance between horizontal stations (150px card + 70px gap)
+const TRACK_GAP = 90; // Dedicated clearance between previous track's lowest station and next track's header
+const BOTTOM_PADDING = 160;
+const RIGHT_PADDING = 260;
 
 // ── Default Layer Order ──
 const DEFAULT_LAYER_ORDER: LayerType[] = [
@@ -34,7 +37,8 @@ export function useMetroLayout(
   stationsPerPage: number = 9999
 ): LayoutResult {
   return useMemo(() => {
-    const posMap: any = {};
+    const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
+    const featureStartY: Record<string, number> = {};
     const featuresToLayout = filteredFeatures.length > 0 ? filteredFeatures : features;
 
     // ── Calculate layer order for each feature ──
@@ -48,9 +52,8 @@ export function useMetroLayout(
       featureLayerOrder[feature.id] = sortedLayers.length > 0 ? sortedLayers : DEFAULT_LAYER_ORDER;
     });
 
-    // ── Dynamic Lane-Based Vertical Layout (Zero Overlaps) ──
+    // ── Compute Lane Geometry per Track ──
     let currentY = START_Y;
-    const featureHeaderY: Record<string, number> = {};
     let maxStationColumns = 1;
 
     featuresToLayout.forEach((feature) => {
@@ -59,11 +62,11 @@ export function useMetroLayout(
       const sortedLayers = featureLayerOrder[feature.id] || [];
       const activeLayersCount = Math.max(1, sortedLayers.length);
 
-      // Track header positioned cleanly in its own vertical space
-      featureHeaderY[feature.id] = currentY;
+      // Track header position (anchored directly above its track)
+      featureStartY[feature.id] = currentY;
 
-      // Station nodes starting Y for layer 0 (strictly below header)
-      const stationStartY = currentY + HEADER_TO_STATIONS_GAP;
+      // Station nodes starting Y for layer 0 (strictly below header with 32px gap)
+      const firstStationY = currentY + HEADER_RESERVED;
 
       sortedLayers.forEach((layer, layerIdx) => {
         const stations = groups[layer] || [];
@@ -71,24 +74,24 @@ export function useMetroLayout(
           maxStationColumns = stations.length;
         }
 
+        const layerY = firstStationY + layerIdx * LAYER_SPACING;
+
         stations.forEach((station, stepIdx) => {
           const pt = {
             x: START_X + stepIdx * STATION_SPACING,
-            y: stationStartY + layerIdx * LAYER_SPACING
+            y: layerY
           };
           posMap[feature.id][station.id] = pt;
-          posMap[station.id] = pt; // Flat lookup support
-
-          // Store layer index on station
           station.layerIndex = layerIdx;
         });
       });
 
       // Advance currentY for the next feature lane
-      currentY = stationStartY + (activeLayersCount - 1) * LAYER_SPACING + 110 + TRACK_GAP;
+      const trackHeight = (activeLayersCount - 1) * LAYER_SPACING + STATION_HEIGHT;
+      currentY = firstStationY + trackHeight + TRACK_GAP;
     });
 
-    // ── Build keyToInstances for shared stations (for transfer edges) ──
+    // Build keyToInstances for transfer edges
     const keyToInstances: Record<string, { featureId: string; stationId: string }[]> = {};
     featuresToLayout.forEach((feature) => {
       const stations = featureLines[feature.id] || [];
@@ -104,44 +107,6 @@ export function useMetroLayout(
       });
     });
 
-    // ── Relaxation solver for shared stations ──
-    for (let iter = 0; iter < 3; iter++) {
-      Object.entries(keyToInstances).forEach(([_, instances]) => {
-        if (instances.length > 1) {
-          let maxX = 0;
-          instances.forEach((inst) => {
-            const pos = posMap[inst.featureId]?.[inst.stationId] || posMap[inst.stationId];
-            if (pos && pos.x > maxX) maxX = pos.x;
-          });
-
-          instances.forEach((inst) => {
-            const pos = posMap[inst.featureId]?.[inst.stationId] || posMap[inst.stationId];
-            if (pos) {
-              const shift = maxX - pos.x;
-              if (shift > 0) {
-                const lineStations = featureLines[inst.featureId] || [];
-                const stationIdx = lineStations.findIndex((s) => s.id === inst.stationId);
-                if (stationIdx >= 0) {
-                  const currentLayer = lineStations[stationIdx]?.layer;
-                  for (let i = stationIdx; i < lineStations.length; i++) {
-                    const sId = lineStations[i].id;
-                    if (lineStations[i]?.layer === currentLayer) {
-                      if (posMap[inst.featureId]?.[sId]) {
-                        posMap[inst.featureId][sId].x += shift;
-                      }
-                      if (posMap[sId]) {
-                        posMap[sId].x += shift;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }
-      });
-    }
-
     // ── Calculate canvas dimensions ──
     const effectiveStations = Math.max(maxStationColumns, maxStationsCount || 6);
     const canvasWidth = Math.max(1400, START_X + effectiveStations * STATION_SPACING + RIGHT_PADDING);
@@ -154,7 +119,7 @@ export function useMetroLayout(
     });
 
     return {
-      positions: posMap,
+      positions: posMap as any,
       featureLines,
       maxStationsCount,
       canvasWidth,
@@ -162,7 +127,7 @@ export function useMetroLayout(
       keyToInstances,
       layerGroups: resultLayerGroups,
       layerOrder: DEFAULT_LAYER_ORDER,
-      featureHeaderY
+      featureHeaderY: featureStartY
     };
   }, [
     features,

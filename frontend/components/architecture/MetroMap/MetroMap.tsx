@@ -68,7 +68,7 @@ function MetroMapInternal({
 
   // ── Smart View Controls ──
   const [showUtilities, setShowUtilities] = useState(false);
-  const [showAllFeatures, setShowAllFeatures] = useState(false);
+  const [showAllFeatures, setShowAllFeatures] = useState(true);
   const [expandedFeatures, setExpandedFeatures] = useState<Set<string>>(new Set());
   const [collapseLarge, setCollapseLarge] = useState(true);
 
@@ -412,7 +412,7 @@ function MetroMapInternal({
     layerOrder,
     featureHeaderY
   } = useMetroLayout(
-    activeFeatureClusters,
+    filteredFeatures,
     filteredFeatures,
     selectedFeatures,
     featureLines.stations,
@@ -435,7 +435,7 @@ function MetroMapInternal({
 
   // Graph Generation
   const { nodes: graphNodes, edges: graphEdges } = useMetroGraph({
-    features: featureClusters,
+    features: filteredFeatures,
     filteredFeatures,
     featureLines: featureLines.stations,
     layerGroups: featureLines.layerGroups,
@@ -490,11 +490,26 @@ function MetroMapInternal({
         toggleFeatureExpand(stationData.featureId);
         return;
       }
+      // If clicking the currently selected/focused node, deselect it!
+      if (
+        selectedStation?.id === stationData.id ||
+        (focusedNodeIds.length === 1 && focusedNodeIds[0] === node.id)
+      ) {
+        setSelectedStation(null);
+        setFocusedNodeIds([]);
+        return;
+      }
       setSelectedStation(stationData);
       setFocusedNodeIds([node.id]);
     },
-    [toggleFeatureExpand]
+    [toggleFeatureExpand, selectedStation, focusedNodeIds]
   );
+
+  // Pane background click handler to clear selection
+  const handlePaneClick = useCallback(() => {
+    setSelectedStation(null);
+    setFocusedNodeIds([]);
+  }, []);
 
   // Search Engine
   const handleSearch = useCallback(
@@ -592,12 +607,12 @@ function MetroMapInternal({
 
   return (
     <div className="h-full w-full text-left relative flex flex-col bg-zinc-950 select-none overflow-hidden">
-      {/* ── FILTER & TOOLBAR (Single Clean Unified Row) ── */}
-      <div className="flex items-center justify-between gap-3 px-4 py-1.5 shrink-0 bg-zinc-900/95 border-b border-zinc-800/80 z-20 overflow-visible">
+      {/* ── FILTER & TOOLBAR (Clean, Minimal, Spacious) ── */}
+      <div className="flex items-center justify-between gap-4 px-4 py-2 shrink-0 bg-zinc-900/95 border-b border-zinc-800/80 z-20 overflow-visible">
         {/* Layer Filter Controls */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
-          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
-            <Layers size={11} className="text-primary" /> Layers:
+          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mr-1 flex items-center gap-1.5 shrink-0">
+            <Layers size={13} className="text-primary" /> Layers:
           </span>
 
           {Object.entries(LAYER_CONFIG).map(([key, config]) => {
@@ -606,7 +621,7 @@ function MetroMapInternal({
               <button
                 key={key}
                 onClick={() => toggleLayer(key as LayerType)}
-                className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition whitespace-nowrap border flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-lg text-[9.5px] font-bold transition whitespace-nowrap border flex items-center gap-1.5 ${
                   isActive
                     ? 'bg-zinc-800/90 text-white border-zinc-600 shadow-sm'
                     : 'bg-zinc-950/40 text-zinc-500 border-transparent hover:border-zinc-700 opacity-60 hover:opacity-100'
@@ -623,81 +638,43 @@ function MetroMapInternal({
 
           <button
             onClick={resetLayers}
-            className="px-2 py-1 rounded-lg text-[8.5px] font-bold text-zinc-400 hover:text-white transition flex items-center gap-1 hover:bg-zinc-800/60"
+            className="px-2 py-1 rounded-lg text-[9px] font-bold text-zinc-400 hover:text-white transition flex items-center gap-1 hover:bg-zinc-800/60 ml-1"
             title="Reset layer filters"
           >
-            <RotateCw size={10} />
+            <RotateCw size={11} />
             <span>Reset</span>
           </button>
         </div>
 
-        {/* ── Search Bar (Toolbar Integrated) ── */}
-        <div className="w-56 md:w-64 shrink-0 relative">
-          <MetroSearchPanel
-            nodes={nodes}
-            searchQuery={searchQuery}
-            onSearch={handleSearch}
-            onSelectNode={handleSelectSearchResult}
-            onClear={handleClearSearch}
-          />
-        </div>
+        {/* ── Search Bar & Canvas Actions ── */}
+        <div className="flex items-center gap-3 shrink-0 ml-auto">
+          {/* Integrated Search Bar */}
+          <div className="w-56 md:w-64 shrink-0 relative">
+            <MetroSearchPanel
+              nodes={nodes}
+              searchQuery={searchQuery}
+              onSearch={handleSearch}
+              onSelectNode={handleSelectSearchResult}
+              onClear={handleClearSearch}
+            />
+          </div>
 
-        {/* Smart View Controls & Canvas Actions */}
-        <div className="flex items-center gap-2 shrink-0 ml-auto">
-          {/* Feature Range Toggle */}
-          <button
-            onClick={() => setShowAllFeatures((prev) => !prev)}
-            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition border ${
-              showAllFeatures
-                ? 'bg-primary/20 text-primary border-primary/40'
-                : 'bg-zinc-800/80 text-zinc-300 border-zinc-700 hover:border-zinc-500'
-            }`}
-            title="Toggle showing Top 5 vs All Tracks"
-          >
-            {showAllFeatures ? 'Showing All Tracks' : 'Showing Top 5'}
-          </button>
+          <div className="h-4 w-[1px] bg-zinc-800 mx-0.5" />
 
-          {/* Utilities Toggle */}
-          <button
-            onClick={() => setShowUtilities((prev) => !prev)}
-            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition border ${
-              showUtilities
-                ? 'bg-primary/20 text-primary border-primary/40'
-                : 'bg-zinc-800/80 text-zinc-300 border-zinc-700 hover:border-zinc-500'
-            }`}
-            title="Show or hide low-priority utility/helper files"
-          >
-            {showUtilities ? 'Show Utils' : 'Hide Utils'}
-          </button>
-
-          {/* Auto-Collapse Large Features Toggle */}
-          <button
-            onClick={toggleCollapseAll}
-            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition border ${
-              collapseLarge
-                ? 'bg-zinc-800/80 text-zinc-300 border-zinc-700 hover:border-zinc-500'
-                : 'bg-primary/20 text-primary border-primary/40'
-            }`}
-            title="Collapse large features into summary preview"
-          >
-            {collapseLarge ? 'Collapse Large' : 'Expand All'}
-          </button>
-
-          <div className="h-4 w-[1px] bg-zinc-700/60 mx-0.5" />
-
+          {/* Canvas Actions */}
           <button
             onClick={() => fitView({ padding: 0.15, duration: 400 })}
-            className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[9.5px] font-semibold text-zinc-300 transition"
+            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[10px] font-semibold text-zinc-300 transition shadow-sm"
           >
-            <RotateCcw size={11} />
+            <RotateCcw size={12} />
             <span>Fit View</span>
           </button>
 
           <button
             onClick={exportToSvg}
-            className="flex items-center gap-1 px-2.5 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[9.5px] font-semibold text-zinc-300 transition"
+            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[10px] font-semibold text-zinc-300 transition shadow-sm"
           >
-            <Download size={11} />
+            <Download size={12} />
             <span>Export SVG</span>
           </button>
         </div>
@@ -732,7 +709,10 @@ function MetroMapInternal({
                 featureClusters={featureClusters}
                 interchanges={interchanges}
                 executionTraces={executionTraces}
-                onClose={() => setSelectedStation(null)}
+                onClose={() => {
+                setSelectedStation(null);
+                setFocusedNodeIds([]);
+              }}
                 onStartJourney={startJourney}
                 onPauseJourney={pauseJourney}
                 onResumeJourney={resumeJourney}
@@ -782,6 +762,7 @@ function MetroMapInternal({
                 onEdgesChange={onEdgesChange}
                 nodeTypes={nodeTypes}
                 onNodeClick={handleNodeClick}
+                onPaneClick={handlePaneClick}
                 fitView={false}
                 minZoom={0.3}
                 maxZoom={1.8}
@@ -844,20 +825,20 @@ function MetroMapInternal({
           {!isAtStart && (
             <button
               onClick={() => scrollHorizontal('left')}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-30 p-2.5 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
+              className="absolute left-2.5 top-[38%] -translate-y-1/2 z-30 w-7 h-7 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
               title="Scroll Left"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={13} />
             </button>
           )}
 
           {!isAtEnd && (
             <button
               onClick={() => scrollHorizontal('right')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-30 p-2.5 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
+              className="absolute right-2.5 top-[38%] -translate-y-1/2 z-30 w-7 h-7 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
               title="Scroll Right"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={13} />
             </button>
           )}
 
