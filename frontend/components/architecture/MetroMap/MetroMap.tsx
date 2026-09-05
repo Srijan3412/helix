@@ -16,6 +16,7 @@ import { AnimatePresence } from 'framer-motion';
 import { RotateCcw, Download, Layers, RotateCw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
 
 import { SubwayStationNode } from './SubwayStationNode';
+import { TrackHeaderNode } from './TrackHeaderNode';
 import { StationInspector } from './StationInspector';
 import { FeatureImportancePanel } from './FeatureImportancePanel';
 import { FeatureLegend } from './FeatureLegend';
@@ -30,7 +31,8 @@ import { SubwayStationData, FeatureFlow, MetroMapProps, StationType } from './ty
 import { LayerType, LAYER_CONFIG, getLayerColor, getLayerEmoji, detectLayer, isImportantFile, isUtilityFile } from './layerDetector';
 
 const nodeTypes = {
-  subwayStation: SubwayStationNode
+  subwayStation: SubwayStationNode,
+  trackHeader: TrackHeaderNode
 };
 
 const ALL_LAYERS: LayerType[] = [
@@ -743,16 +745,7 @@ function MetroMapInternal({
                 height: Math.max(canvasHeight, 750)
               }}
             >
-              {/* Track Headers */}
-              <TrackHeaders
-                filteredFeatures={filteredFeatures}
-                featureHeaderY={featureHeaderY}
-                canvasWidth={Math.max(canvasWidth, 1400)}
-                scrollLeft={scrollLeftState}
-                viewportWidth={viewportWidthState}
-                selectedLayers={activeLayers}
-                onLayerClick={toggleLayer}
-              />
+              
 
               {/* ReactFlow Graph Canvas */}
               <ReactFlow

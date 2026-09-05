@@ -3,10 +3,7 @@
 import { useMemo } from 'react';
 import { Node as ReactFlowNode, Edge as ReactFlowEdge, MarkerType } from '@xyflow/react';
 import { FeatureFlow, SubwayStationData, MetroGraphProps } from './types';
-import { LayerType, getLayerOrder, LAYER_CONFIG } from './layerDetector';
-import { inferStationType, inferStationHealth } from './useMetroData';
-
-const HIGH_COMPLEXITY_THRESHOLD = 15;
+import { LayerType, getLayerOrder } from './layerDetector';
 
 export function useMetroGraph({
   filteredFeatures,
@@ -35,36 +32,64 @@ export function useMetroGraph({
     const flowEdges: ReactFlowEdge[] = [];
 
     const activeFeatures = filteredFeatures.length > 0 ? filteredFeatures : features;
-    if (activeFeatures.length === 0) return { nodes: [], edges: [] };
+    if (!activeFeatures || activeFeatures.length === 0) {
+      return { nodes: [], edges: [] };
+    }
 
-    const effectiveActiveLayers = selectedLayers.length > 0 
-      ? selectedLayers 
-      : (activeLayers.length > 0 ? activeLayers : ['api', 'middleware', 'business', 'data', 'infrastructure', 'utility' as LayerType]);
-
-    const hasHighlight = hoveredFeature !== null || selectedFeatures.length > 0;
-    const activeFeatureId = hoveredFeature || (selectedFeatures.length === 1 ? selectedFeatures[0] : null);
+    const effectiveActiveLayers = activeLayers.length > 0 ? activeLayers : selectedLayers;
+    const activeFeatureId = selectedFeatures[0];
+    const hasHighlight = Boolean(activeFeatureId || hoveredFeature);
     const hasFocus = focusedNodeIds.length > 0;
 
-    // ── 1. Build Station Nodes ──
-    activeFeatures.forEach((feature) => {
-      const isFeatureSelected = selectedFeatures.length === 0 || selectedFeatures.includes(feature.id);
-      const isFeatureHovered = hoveredFeature === null || hoveredFeature === feature.id;
-      const isActiveLine = selectedFeatures.length > 0 
-        ? selectedFeatures.includes(feature.id) 
-        : (activeFeatureId ? activeFeatureId === feature.id : true);
-
-      const stations = featureLines[feature.id] || [];
+    // ── 1. Build Track Header Nodes & Station Nodes ──
+    activeFeatures.forEach((feature, fIdx) => {
+      const allFeatureStations = featureLines[feature.id] || [];
       const groups = layerGroups[feature.id] || {};
+      const isFeatureSelected = selectedFeatures.length === 0 || selectedFeatures.includes(feature.id);
+      const isFeatureHovered = !hoveredFeature || hoveredFeature === feature.id;
 
+      // Find lowest Y position among stations in this feature to calculate header Y
+      let minStationY = Infinity;
+      allFeatureStations.forEach((station) => {
+        const pos = positions[feature.id]?.[station.id] || positions[station.id];
+        if (pos && pos.y < minStationY) {
+          minStationY = pos.y;
+        }
+      });
+
+      const headerY = minStationY !== Infinity ? minStationY - 64 : (50 + fIdx * 250);
+
+      // Add Native ReactFlow Track Header Node
+      nodes.push({
+        id: `track-header-${feature.id}`,
+        type: 'trackHeader',
+        position: { x: 80, y: headerY },
+        data: {
+          id: feature.id,
+          name: feature.name,
+          color: feature.color,
+          stationCount: allFeatureStations.length,
+          lineNumber: String(fIdx + 1).padStart(2, '0'),
+          health: feature.health
+        },
+        selectable: false,
+        draggable: false,
+        focusable: false,
+        zIndex: 5,
+        style: {
+          background: 'transparent',
+          border: 'none',
+          padding: 0
+        }
+      });
+
+      // Add Stations
       const sortedLayers = Object.keys(groups)
         .filter((key) => groups[key as LayerType] && groups[key as LayerType].length > 0)
         .sort((a, b) => getLayerOrder(a as LayerType) - getLayerOrder(b as LayerType)) as LayerType[];
 
-      // Build from layer groups or flat stations
-      const layersToRender = sortedLayers.length > 0 ? sortedLayers : (['api', 'middleware', 'business', 'data', 'infrastructure', 'utility'] as LayerType[]);
-
-      layersToRender.forEach((layer) => {
-        const layerStations = groups[layer] || stations.filter((s) => s.layer === layer);
+      sortedLayers.forEach((layer) => {
+        const layerStations = groups[layer] || [];
         const isLayerActive = effectiveActiveLayers.includes(layer);
 
         layerStations.forEach((station, stationIdx) => {
@@ -136,7 +161,7 @@ export function useMetroGraph({
         .filter((key) => groups[key as LayerType] && groups[key as LayerType].length > 0)
         .sort((a, b) => getLayerOrder(a as LayerType) - getLayerOrder(b as LayerType)) as LayerType[];
 
-      // ── A. Intra-layer edges (within same layer) ──
+      // Intra-layer edges
       sortedLayers.forEach((layer) => {
         const stations = groups[layer] || [];
         const isLayerActive = effectiveActiveLayers.includes(layer);
@@ -147,7 +172,6 @@ export function useMetroGraph({
           const isActiveEdge = isActiveLine && isLayerActive;
           const isEdgeDimmed = hasHighlight && !isActiveLine;
 
-          // Check if edge is in active animated trace
           let isEdgeInTrace = false;
           if (animatedRoute) {
             const trace = executionTraces.find((t) => t.route === animatedRoute);
@@ -184,7 +208,7 @@ export function useMetroGraph({
         }
       });
 
-      // ── B. Inter-layer bridges (from end of one layer to start of next) ──
+      // Inter-layer bridges
       for (let i = 0; i < sortedLayers.length - 1; i++) {
         const currentLayer = sortedLayers[i];
         const nextLayer = sortedLayers[i + 1];
@@ -216,7 +240,7 @@ export function useMetroGraph({
       }
     });
 
-    // ── 3. Cross-line Interchange Edges (shared files across features) ──
+    // Cross-line Interchange Edges
     interchanges.forEach((interchange) => {
       const matchingStations: { featureId: string; stationId: string }[] = [];
       activeFeatures.forEach((f) => {
@@ -249,7 +273,6 @@ export function useMetroGraph({
       }
     });
 
-    // ── Validate and Clean Edges ──
     const validNodeIds = new Set(nodes.map((n) => n.id));
     const validEdges = flowEdges.filter((e) => validNodeIds.has(e.source) && validNodeIds.has(e.target));
 
