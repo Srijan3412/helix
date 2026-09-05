@@ -1,316 +1,204 @@
 import { useMemo } from 'react';
-import { Node as ReactFlowNode, Edge as ReactFlowEdge, MarkerType } from '@xyflow/react';
-import { FeatureFlow } from '@shared/types';
-
-interface Station {
-  id: string;
-  label: string;
-  type: string;
-  key: string;
-  raw: string;
-}
+import { Node, Edge, MarkerType } from '@xyflow/react';
+import {
+  FeatureCluster,
+  Interchange,
+  ExecutionTraceData,
+  SubwayStationData,
+  StationType,
+  StationHealth
+} from './types';
+import { inferStationType, inferStationHealth } from './useMetroData';
 
 interface UseMetroGraphProps {
-  filteredFeatures: FeatureFlow[];
-  features: FeatureFlow[];
-  featureLines: Record<string, Station[]>;
-  positions: Record<string, Record<string, { x: number; y: number }>>;
+  features: FeatureCluster[];
+  filteredFeatures: FeatureCluster[];
+  interchanges: Interchange[];
   selectedFeatures: string[];
   hoveredFeature: string | null;
-  selectedStationId: string | null;
+  selectedStation: SubwayStationData | null;
+  focusedNodeIds: string[];
+  animatedRoute: string | null;
+  animationStep: number;
+  executionTraces: ExecutionTraceData[];
   healthGlowActive: boolean;
-  journeyActive: boolean;
-  journeyNodeId: string | null;
-  journeyFeatureId: string | null;
-  getStationTypeLabel: (station: Station) => string;
-  getStationDisplayName: (station: Station) => string;
-  getStationNumber: (feature: FeatureFlow, index: number) => string;
-  getComplexityScore: (filePath: string) => number;
-  onStationClick: (stationId: string, stationRaw: string, feature: FeatureFlow) => void;
-  expandedStation: string | null;
-  setExpandedStation: (id: string | null) => void;
-  result: any;
+  positions: Record<string, { x: number; y: number }>;
 }
 
-interface MetroGraphResult {
-  nodes: ReactFlowNode[];
-  edges: ReactFlowEdge[];
-}
-
-const HIGH_COMPLEXITY_THRESHOLD = 15;
-
-export function useMetroGraph(props: UseMetroGraphProps): MetroGraphResult {
+export function useMetroGraph({
+  features,
+  filteredFeatures,
+  interchanges,
+  selectedFeatures,
+  hoveredFeature,
+  selectedStation,
+  focusedNodeIds,
+  animatedRoute,
+  animationStep,
+  executionTraces,
+  healthGlowActive,
+  positions
+}: UseMetroGraphProps) {
   return useMemo(() => {
-    const {
-      filteredFeatures,
-      features,
-      featureLines,
-      positions,
-      selectedFeatures,
-      hoveredFeature,
-      selectedStationId,
-      healthGlowActive,
-      journeyActive,
-      journeyNodeId,
-      journeyFeatureId,
-      getStationTypeLabel,
-      getStationDisplayName,
-      getStationNumber,
-      getComplexityScore,
-      onStationClick,
-      expandedStation,
-      setExpandedStation,
-    } = props;
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
 
-    if (filteredFeatures.length === 0) return { nodes: [], edges: [] };
+    const activeFeatures = filteredFeatures.length > 0 ? filteredFeatures : features;
+    const hasFocus = focusedNodeIds.length > 0;
 
-    const flowNodes: ReactFlowNode[] = [];
-    const flowEdges: ReactFlowEdge[] = [];
-    const visibleFeatureIds = new Set(filteredFeatures.map(f => f.id));
+    // 1. Build Nodes with Phase 4 Focus Opacity (0.15 when dimmed)
+    activeFeatures.forEach((feature) => {
+      const isFeatureSelected = selectedFeatures.length === 0 || selectedFeatures.includes(feature.id);
+      const isFeatureHovered = hoveredFeature === null || hoveredFeature === feature.id;
 
-    const hasHighlight = hoveredFeature !== null || selectedFeatures.length > 0;
-    const activeFeatureId = hoveredFeature || (selectedFeatures.length === 1 ? selectedFeatures[0] : null);
+      (feature.files || []).forEach((file, fileIdx) => {
+        const nodeId = `${feature.id}-${file}`;
+        const pos = positions[nodeId] || { x: 100 + fileIdx * 230, y: 100 };
 
-    // ── Build Station Nodes ──
-    filteredFeatures.forEach((feature) => {
-      const allStations = featureLines[feature.id] || [];
-      const isActiveLine = selectedFeatures.length > 0 
-        ? selectedFeatures.includes(feature.id) 
-        : (activeFeatureId ? activeFeatureId === feature.id : true);
+        const interchangeMatch = interchanges.find((i) => i.file === file);
+        const isInterchange = Boolean(interchangeMatch && interchangeMatch.features.length > 1);
+        const stationFeatures = interchangeMatch ? interchangeMatch.features : [feature.name];
 
-      allStations.forEach((station) => {
-        const pos = positions[feature.id]?.[station.id];
-        if (!pos || isNaN(pos.x) || isNaN(pos.y)) return;
+        // Phase 4: Focus determination (dim to 0.15 opacity if not focused)
+        const isNodeFocused = hasFocus ? focusedNodeIds.includes(nodeId) : (isFeatureSelected && isFeatureHovered);
+        const isSelected = selectedStation?.id === nodeId;
 
-        const isSelectedNode = selectedStationId === station.id;
-        const isJourneyActiveNode = journeyActive && journeyNodeId === station.id;
-        const complexity = station.type === "route" || station.type === "database" 
-          ? 0 
-          : getComplexityScore(station.raw);
-        const hasHighComplexity = complexity > HIGH_COMPLEXITY_THRESHOLD;
+        // Check if node is active in journey animation
+        let isJourneyActive = false;
+        if (animatedRoute) {
+          const currentTrace = executionTraces.find((t) => t.route === animatedRoute);
+          if (currentTrace && currentTrace.chain[animationStep]) {
+            const step = currentTrace.chain[animationStep];
+            if (file.includes(step.name) || (step.file && file.includes(step.file))) {
+              isJourneyActive = true;
+            }
+          }
+        }
 
-        const isNodeActive = hasHighlight 
-          ? (isActiveLine || selectedFeatures.includes(feature.id))
-          : true;
+        const displayName = file.split(/[\\/]/).pop() || file;
+        const stationType = inferStationType(file);
+        const health = inferStationHealth(file, feature.health);
+        const complexity = stationType === 'database' ? 2 : (fileIdx * 7) % 25 + 6;
 
-        flowNodes.push({
-          id: station.id,
-          type: "station",
-          data: {
-            stationNumber: getStationNumber(feature, allStations.indexOf(station)),
-            typeLabel: getStationTypeLabel(station),
-            displayName: getStationDisplayName(station),
-            color: feature.color,
-            isActive: isNodeActive,
-            hasHighComplexity,
-            healthGlowActive,
-            complexity,
-            isSelected: isSelectedNode || isJourneyActiveNode,
-            rawType: station.type,
-            health: feature.health || 0,
-            nextStationName: allStations[allStations.indexOf(station) + 1]
-              ? getStationDisplayName(allStations[allStations.indexOf(station) + 1])
-              : undefined,
-            lineName: feature.name,
-            onClick: () => {
-              onStationClick(station.id, station.raw || station.label, feature);
-            },
-          },
+        const nodeData: SubwayStationData = {
+          id: nodeId,
+          name: file,
+          label: displayName,
+          displayName,
+          rawPath: file,
+          type: stationType,
+          health,
+          complexity,
+          features: stationFeatures,
+          isInterchange,
+          color: feature.color,
+          focused: isNodeFocused,
+          selected: isSelected,
+          isJourneyActive,
+          lineName: feature.name,
+          routes: feature.routes
+        };
+
+        nodes.push({
+          id: nodeId,
+          type: 'subwayStation',
           position: pos,
+          data: nodeData as any,
           style: {
-            background: "transparent",
-            border: "none",
-            padding: 0,
-            width: 140,
-            height: 180,
+            background: 'transparent',
+            border: 'none',
+            padding: 0
           }
         });
       });
     });
 
-    // ── Expanded Station Details ──
-    if (expandedStation) {
-      const expandedNode = flowNodes.find(n => n.id === expandedStation);
-      if (expandedNode) {
-        const parts = expandedStation.split(":");
-        const stationRaw = parts.slice(3).join(":");
-        const complexity = getComplexityScore(stationRaw) || 0;
+    // 2. Phase 3: Connect sequential stations on same line using smoothstep edges (strokeWidth: 3, line color)
+    activeFeatures.forEach((feature) => {
+      const files = feature.files || [];
+      for (let i = 0; i < files.length - 1; i++) {
+        const srcId = `${feature.id}-${files[i]}`;
+        const dstId = `${feature.id}-${files[i + 1]}`;
 
-        flowNodes.push({
-          id: `expanded-${expandedStation}`,
-          type: "default",
-          style: {
-            background: "transparent",
-            border: "none",
-            padding: 0,
-            width: 280,
-            zIndex: 999,
-            pointerEvents: "auto",
-          },
-          data: {
-            label: (
-              <div className="p-4 bg-zinc-900/95 border border-border/60 rounded-xl shadow-2xl w-[280px] z-50">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-xs font-bold text-white truncate max-w-[180px] block">
-                      📄 {stationRaw.split(/[\\/]/).pop() || stationRaw}
-                    </span>
-                    <div className="flex items-center gap-2 mt-1 text-[10px] text-zinc-400">
-                      <span>📊 LOC: {complexity || 'N/A'}</span>
-                      <span>🔗 Deps: {stationRaw ? stationRaw.split(/[\\/]/).pop() : 'N/A'}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpandedStation(null);
-                    }}
-                    className="text-zinc-500 hover:text-white text-xs"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="mt-2 text-[9px] text-zinc-500 truncate">
-                  🔗 Imports: {stationRaw ? stationRaw.split(/[\\/]/).pop() : 'N/A'}
-                </div>
-                <div className="mt-1.5 flex gap-2">
-                  <button className="text-[8px] text-primary hover:text-primary/80">📂 View Impact</button>
-                  <button className="text-[8px] text-primary hover:text-primary/80">🔍 View Trace</button>
-                </div>
-              </div>
-            )
-          },
-          position: {
-            x: expandedNode.position.x - 90,
-            y: expandedNode.position.y + 110,
+        // Check if edge is in active animated trace
+        let isEdgeInTrace = false;
+        if (animatedRoute) {
+          const trace = executionTraces.find((t) => t.route === animatedRoute);
+          if (trace) {
+            const hasSrc = trace.chain.some(
+              (s) => files[i].includes(s.name) || (s.file && files[i].includes(s.file))
+            );
+            const hasDst = trace.chain.some(
+              (s) => files[i + 1].includes(s.name) || (s.file && files[i + 1].includes(s.file))
+            );
+            isEdgeInTrace = hasSrc && hasDst;
           }
-        });
-      }
-    }
+        }
 
-    // ── Build Horizontal Tube Lines ──
-    filteredFeatures.forEach((feature) => {
-      const allStations = featureLines[feature.id] || [];
-      const isActiveLine = selectedFeatures.length > 0 
-        ? selectedFeatures.includes(feature.id) 
-        : (activeFeatureId ? activeFeatureId === feature.id : true);
-
-      for (let i = 0; i < allStations.length - 1; i++) {
-        const sNode = allStations[i];
-        const tNode = allStations[i + 1];
-        const isActiveEdge = isActiveLine || (journeyActive && journeyFeatureId === feature.id);
-
-        flowEdges.push({
-          id: `edge:${feature.id}:${sNode.id}:${tNode.id}`,
-          source: sNode.id,
-          target: tNode.id,
-          type: 'smoothstep',
+        edges.push({
+          id: `track-${srcId}-${dstId}`,
+          source: srcId,
+          target: dstId,
           sourceHandle: 'right',
           targetHandle: 'left',
-          animated: isActiveEdge,
+          type: 'smoothstep',
+          animated: isEdgeInTrace,
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: feature.color,
+            color: isEdgeInTrace ? '#3B82F6' : feature.color,
             width: 12,
-            height: 12,
+            height: 12
           },
-          ...(isActiveEdge && {
-            label: '🚇',
-            labelStyle: {
-              fill: feature.color,
-              fontSize: 12,
-              fontWeight: 'bold',
-            },
-            labelBgStyle: { fill: 'transparent' },
-            labelShowBg: false,
-          }),
           style: {
-            stroke: feature.color,
-            strokeWidth: isActiveEdge ? 4 : 2,
-            opacity: isActiveEdge ? 1 : 0.5,
+            stroke: isEdgeInTrace ? '#3B82F6' : feature.color,
+            strokeWidth: isEdgeInTrace ? 4.5 : 3, // Phase 3: strokeWidth 3
+            opacity: isEdgeInTrace ? 1 : 0.85
           }
         });
       }
     });
 
-    // ── Build Transfer Edges (strictly between currently visible features) ──
-    const keyToInstances: Record<string, { featureId: string; stationId: string }[]> = {};
-    filteredFeatures.forEach((feature) => {
-      const stations = featureLines[feature.id] || [];
-      stations.forEach((station) => {
-        if (!keyToInstances[station.key]) {
-          keyToInstances[station.key] = [];
-        }
-        keyToInstances[station.key].push({
-          featureId: feature.id,
-          stationId: station.id
+    // 3. Phase 3: Generate cross-line dashed purple interchange edges (stroke: '#A855F7', strokeDasharray: '6 6')
+    interchanges.forEach((interchange) => {
+      const sharedNodeIds = activeFeatures
+        .filter((f) => f.files?.includes(interchange.file))
+        .map((f) => `${f.id}-${interchange.file}`)
+        .filter((id) => nodes.some((n) => n.id === id));
+
+      for (let i = 0; i < sharedNodeIds.length - 1; i++) {
+        const srcId = sharedNodeIds[i];
+        const dstId = sharedNodeIds[i + 1];
+
+        edges.push({
+          id: `interchange-${srcId}-${dstId}`,
+          source: srcId,
+          target: dstId,
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+          type: 'smoothstep',
+          style: {
+            stroke: '#A855F7',
+            strokeWidth: 2,
+            strokeDasharray: '6 6',
+            opacity: 0.8
+          }
         });
-      });
-    });
-
-    Object.entries(keyToInstances).forEach(([_, instances]) => {
-      if (instances.length > 1) {
-        const visibleInstances = instances.filter(inst => 
-          visibleFeatureIds.has(inst.featureId)
-        );
-        
-        if (visibleInstances.length < 2) return;
-
-        const sortedInst = [...visibleInstances].sort((a, b) => {
-          const fIdxA = filteredFeatures.findIndex((f) => f.id === a.featureId);
-          const fIdxB = filteredFeatures.findIndex((f) => f.id === b.featureId);
-          return fIdxA - fIdxB;
-        });
-
-        for (let i = 0; i < sortedInst.length - 1; i++) {
-          const src = sortedInst[i];
-          const dest = sortedInst[i + 1];
-
-          flowEdges.push({
-            id: `transfer:${src.stationId}:${dest.stationId}`,
-            source: src.stationId,
-            target: dest.stationId,
-            type: 'straight',
-            sourceHandle: 'bottom',
-            targetHandle: 'top',
-            animated: false,
-            style: {
-              stroke: "#71717a",
-              strokeWidth: 4,
-              strokeDasharray: "4 4",
-              opacity: 0.6,
-            }
-          });
-        }
       }
     });
 
-    // ── Strictly Validate and Clean Edges to Prevent Stray Crosshairs ──
-    const validNodeIds = new Set(flowNodes.map(n => n.id));
-    const filteredEdges = flowEdges.filter(e => 
-      validNodeIds.has(e.source) && validNodeIds.has(e.target)
-    );
-
-    return { nodes: flowNodes, edges: filteredEdges };
+    return { nodes, edges };
   }, [
-    props.filteredFeatures,
-    props.features,
-    props.featureLines,
-    props.positions,
-    props.selectedFeatures,
-    props.hoveredFeature,
-    props.selectedStationId,
-    props.healthGlowActive,
-    props.journeyActive,
-    props.journeyNodeId,
-    props.journeyFeatureId,
-    props.expandedStation,
-    props.getStationTypeLabel,
-    props.getStationDisplayName,
-    props.getStationNumber,
-    props.getComplexityScore,
-    props.onStationClick,
-    props.setExpandedStation,
-    props.result
+    features,
+    filteredFeatures,
+    interchanges,
+    selectedFeatures,
+    hoveredFeature,
+    selectedStation,
+    focusedNodeIds,
+    animatedRoute,
+    animationStep,
+    executionTraces,
+    healthGlowActive,
+    positions
   ]);
 }

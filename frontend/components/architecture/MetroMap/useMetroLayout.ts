@@ -1,113 +1,55 @@
 import { useMemo } from 'react';
-import { FeatureFlow } from '@shared/types';
-
-interface Station {
-  id: string;
-  label: string;
-  type: string;
-  key: string;
-  raw: string;
-}
+import { FeatureCluster } from './types';
 
 interface LayoutResult {
-  positions: Record<string, Record<string, { x: number; y: number }>>;
+  positions: Record<string, { x: number; y: number }>;
   canvasWidth: number;
   canvasHeight: number;
-  keyToInstances: Record<string, { featureId: string; stationId: string }[]>;
 }
 
-const STATION_SPACING = 220;
-const FEATURE_SPACING = 260;
-const START_X = 80;
-const START_Y = 80;
+// Phase 3: Track Layout Constants
+const STATION_SPACING_X = 230;
+const FEATURE_SPACING_Y = 160; // Consistent 160px vertical spacing between tracks
+const START_X = 100;
+const START_Y = 110;
 const PADDING = 200;
 
+/**
+ * Phase 3: Track Layout Generator
+ * Computes horizontal tracks for each feature line with consistent 160px vertical spacing.
+ */
 export function useMetroLayout(
-  features: FeatureFlow[],
-  filteredFeatures: FeatureFlow[],
-  selectedFeatures: string[],
-  featureLines: Record<string, Station[]>,
-  maxStationsCount: number,
-  stationsPerPage: number = 9999
+  features: FeatureCluster[],
+  filteredFeatures: FeatureCluster[]
 ): LayoutResult {
   return useMemo(() => {
-    const posMap: Record<string, Record<string, { x: number; y: number }>> = {};
-    const linesCount = filteredFeatures.length || features.length || 1;
+    const positions: Record<string, { x: number; y: number }> = {};
+    const featuresToRender = filteredFeatures.length > 0 ? filteredFeatures : features;
 
-    const featuresToLayout = filteredFeatures.length > 0 ? filteredFeatures : features;
+    let maxStationsInLine = 1;
 
-    // 1. Compute Base Positions per visible feature line
-    featuresToLayout.forEach((feature, fIdx) => {
-      posMap[feature.id] = {};
-      const stations = featureLines[feature.id] || [];
-      const baseY = START_Y + fIdx * FEATURE_SPACING;
+    featuresToRender.forEach((feature, featureIdx) => {
+      const y = START_Y + featureIdx * FEATURE_SPACING_Y;
+      const files = feature.files || [];
 
-      stations.forEach((station, stepIdx) => {
-        posMap[feature.id][station.id] = {
-          x: START_X + stepIdx * STATION_SPACING,
-          y: baseY
-        };
+      if (files.length > maxStationsInLine) {
+        maxStationsInLine = files.length;
+      }
+
+      files.forEach((file, fileIdx) => {
+        const x = START_X + fileIdx * STATION_SPACING_X;
+        const stationId = `${feature.id}-${file}`;
+        positions[stationId] = { x, y };
       });
     });
 
-    // 2. Build shared station index for relaxation solver
-    const keyToInstances: Record<string, { featureId: string; stationId: string }[]> = {};
-    filteredFeatures.forEach((feature) => {
-      const stations = featureLines[feature.id] || [];
-      stations.forEach((station) => {
-        if (!keyToInstances[station.key]) {
-          keyToInstances[station.key] = [];
-        }
-        keyToInstances[station.key].push({
-          featureId: feature.id,
-          stationId: station.id
-        });
-      });
-    });
-
-    // 3. Relaxation solver to align shared stations without breaking layout
-    for (let iter = 0; iter < 3; iter++) {
-      Object.entries(keyToInstances).forEach(([_, instances]) => {
-        if (instances.length > 1) {
-          let maxX = 0;
-          instances.forEach((inst) => {
-            const pos = posMap[inst.featureId]?.[inst.stationId];
-            if (pos && pos.x > maxX) {
-              maxX = pos.x;
-            }
-          });
-
-          instances.forEach((inst) => {
-            const pos = posMap[inst.featureId]?.[inst.stationId];
-            if (pos) {
-              const shift = maxX - pos.x;
-              if (shift > 0) {
-                const lineStations = featureLines[inst.featureId] || [];
-                const stationIdx = lineStations.findIndex((s) => s.id === inst.stationId);
-                if (stationIdx >= 0) {
-                  for (let i = stationIdx; i < lineStations.length; i++) {
-                    const sId = lineStations[i].id;
-                    if (posMap[inst.featureId]?.[sId]) {
-                      posMap[inst.featureId][sId].x += shift;
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }
-      });
-    }
-
-    const visibleCount = Math.min(stationsPerPage, maxStationsCount || 1);
-    const canvasWidth = 80 + visibleCount * STATION_SPACING + PADDING;
-    const canvasHeight = 80 + linesCount * FEATURE_SPACING + 100;
+    const canvasWidth = Math.max(1200, START_X + maxStationsInLine * STATION_SPACING_X + PADDING);
+    const canvasHeight = Math.max(700, START_Y + featuresToRender.length * FEATURE_SPACING_Y + PADDING);
 
     return {
-      positions: posMap,
+      positions,
       canvasWidth,
-      canvasHeight,
-      keyToInstances
+      canvasHeight
     };
-  }, [features, filteredFeatures, selectedFeatures, featureLines, maxStationsCount, stationsPerPage]);
+  }, [features, filteredFeatures]);
 }

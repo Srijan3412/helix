@@ -1,134 +1,101 @@
-import React, { useMemo } from "react";
-import { Activity, AlertTriangle, ChevronRight } from "lucide-react";
-import { FeatureFlow } from "@shared/types";
+import React from 'react';
+import { Layers, Activity, Shield, ChevronRight } from 'lucide-react';
+import { FeatureCluster } from './types';
 
 interface FeatureLegendProps {
-  features: FeatureFlow[];
-  result: any;
-  hoveredFeature: string | null;
-  setHoveredFeature: (id: string | null) => void;
+  features: FeatureCluster[];
   selectedFeatures: string[];
-  setSelectedFeatures: (ids: string[] | ((prev: string[]) => string[])) => void;
+  onToggleFeature: (featureId: string) => void;
+  onSelectAll: () => void;
+  hoveredFeature?: string | null;
+  onHoverFeature?: (featureId: string | null) => void;
 }
 
-export default function FeatureLegend({
+export function FeatureLegend({
   features,
-  result,
-  hoveredFeature,
-  setHoveredFeature,
   selectedFeatures,
-  setSelectedFeatures,
+  onToggleFeature,
+  onSelectAll,
+  hoveredFeature,
+  onHoverFeature
 }: FeatureLegendProps) {
-  // PageRank — top files by incoming reference count
-  const topFiles = useMemo(() => {
-    const files: any[] = (result?.files || []).filter((f: any) => {
-      const p = f.path || "";
-      return !p.startsWith("ROUTE:") && !p.startsWith("ENV:") && !p.startsWith("DB:") && !p.startsWith("ENTITY:");
-    });
-    return files
-      .map((f: any) => ({
-        name: (f.path || "").split("/").pop() || f.path,
-        score: (f.referencedBy?.length || 0) * 10 + (f.lineCount || 0) / 10,
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
-  }, [result]);
+  const isAllSelected = selectedFeatures.length === 0;
 
   return (
-    <div className="flex flex-col select-none h-full w-full">
-      {/* Title */}
-      <div className="p-4 border-b border-border/20 shrink-0 text-left">
-        <div className="flex items-center gap-2 mb-1">
-          <Activity size={13} className="text-primary" />
-          <h3 className="dash-sidebar-cat text-primary leading-tight">
-            CODEBASE FEATURES
-          </h3>
+    <div className="flex flex-col h-full text-left select-none">
+      {/* Header */}
+      <div className="p-4 border-b border-zinc-800/80 shrink-0">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 uppercase tracking-wider">
+            <Layers size={13} className="text-primary" />
+            <span>Feature Lines</span>
+          </div>
+          <button
+            onClick={onSelectAll}
+            className={`px-2 py-0.5 rounded text-[9.5px] font-bold transition ${
+              isAllSelected
+                ? 'bg-primary/20 text-primary border border-primary/30'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            All Lines
+          </button>
         </div>
-        <p className="dash-metadata text-zinc-400 mt-1 leading-normal">
-          Click any node to inspect file details and dependencies.
+        <p className="text-[10px] text-zinc-500 leading-normal">
+          Toggle features to filter subway tracks
         </p>
       </div>
 
-      {/* Feature Lines */}
-      <div className="p-3 space-y-2 flex-1 overflow-y-auto min-h-0">
-        {features.map((feature) => {
-          const isHovered = hoveredFeature === feature.id;
-          const isSelected = selectedFeatures.includes(feature.id);
-          const isActive = isSelected || isHovered;
-          const healthBad = (feature.health || 0) < 40;
-          const fileCount = feature.files?.length || 0;
-          const confidence = Math.round(
-            feature.confidence <= 1 ? feature.confidence * 100 : feature.confidence
-          );
+      {/* Feature Cards List */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {features.map((feat) => {
+          const isSelected = selectedFeatures.includes(feat.id);
+          const isHovered = hoveredFeature === feat.id;
 
           return (
             <div
-              key={feature.id}
-              onMouseEnter={() => setHoveredFeature(feature.id)}
-              onMouseLeave={() => setHoveredFeature(null)}
-              onClick={() => {
-                setSelectedFeatures((prev) =>
-                  prev.includes(feature.id)
-                    ? prev.filter((id) => id !== feature.id)
-                    : [...prev, feature.id]
-                );
-              }}
-              className={`rounded-xl p-3 cursor-pointer transition-all duration-200 text-left border ${
-                isActive
-                  ? "bg-zinc-900/95 border-primary shadow-lg ring-1 ring-primary/30"
-                  : "bg-zinc-900/80 border-zinc-800/80 hover:border-zinc-600/60"
-              }`}
+              key={feat.id}
+              onClick={() => onToggleFeature(feat.id)}
+              onMouseEnter={() => onHoverFeature?.(feat.id)}
+              onMouseLeave={() => onHoverFeature?.(null)}
+              className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                isSelected || isAllSelected
+                  ? 'bg-zinc-900/80 border-zinc-800 hover:border-zinc-600'
+                  : 'bg-zinc-950/40 border-zinc-900/80 opacity-40 hover:opacity-70'
+              } ${isHovered ? 'ring-1 ring-primary/40 border-primary/50' : ''}`}
             >
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className="w-3 h-3 rounded-full shrink-0 ring-2 ring-zinc-950"
+                    style={{ backgroundColor: feat.color }}
+                  />
+                  <span className="text-xs font-bold text-zinc-100 truncate">
+                    {feat.name}
+                  </span>
+                </div>
                 <div
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: feature.color }}
+                  className="w-2 h-2 rounded-full"
+                  style={{
+                    backgroundColor: isSelected || isAllSelected ? feat.color : '#52525b'
+                  }}
                 />
-                <span className="dash-card-title text-white truncate flex-1">
-                  {feature.name}
-                </span>
               </div>
-              <div className="flex items-center gap-3 dash-metadata">
-                {healthBad && <AlertTriangle size={11} className="text-red-400 shrink-0" />}
-                <span className={`font-bold ${healthBad ? "text-red-400" : "text-zinc-300"}`}>
-                  {feature.health || 0}
-                </span>
-                <span className="text-zinc-500">Health</span>
-                <span className="text-zinc-300 font-bold ml-auto">
-                  {confidence}%
-                </span>
-                <span className="text-zinc-500">Conf</span>
-              </div>
-              <div className="mt-2 flex items-center gap-1 dash-metadata text-zinc-500">
-                <ChevronRight size={10} />
-                <span>{fileCount} files</span>
+
+              {/* Metrics */}
+              <div className="flex items-center justify-between text-[10px] text-zinc-400 mt-1">
+                <span className="font-mono">{feat.files?.length || 0} stations</span>
+                {feat.health !== undefined && (
+                  <span className="flex items-center gap-1 font-mono font-bold text-zinc-300">
+                    <Activity size={10} className="text-emerald-400" />
+                    {feat.health}%
+                  </span>
+                )}
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* PageRank Importance */}
-      {topFiles.length > 0 && (
-        <div className="p-3 border-t border-border/20 shrink-0 text-left">
-          <div className="flex items-center gap-1.5 mb-2">
-            <span className="dash-sidebar-cat text-zinc-500">
-              Pagerank Importance
-            </span>
-          </div>
-          <div className="space-y-1.5">
-            {topFiles.map((f, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="dash-metadata text-zinc-600 font-bold w-3">{i + 1}</span>
-                <span className="dash-filepath text-zinc-400 truncate flex-1">{f.name}</span>
-                <div className="bg-zinc-800 text-zinc-300 dash-metadata font-bold px-1.5 py-0.5 rounded-full">
-                  {Math.round(f.score)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
