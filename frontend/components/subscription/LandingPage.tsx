@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Terminal, Layers, Network, Database, Zap, Sparkles, Shield,
   GitBranch, Activity, FileText, ChevronDown, CheckCircle2,
@@ -170,22 +171,45 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
       </header>
 
       {/* ── 3. HERO SECTION (2-COLUMN VISUAL SAAS LAYOUT) ── */}
-      <section className="relative pt-12 pb-20 px-6 sm:px-8 max-w-[1280px] mx-auto z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
+      <section className="relative pt-8 pb-12 sm:pt-10 sm:pb-14 px-6 sm:px-8 max-w-[1280px] mx-auto z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
           
           {/* Left Column: Messaging & CTA */}
           <div className="lg:col-span-5 flex flex-col items-start text-left">
-            <div className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#9BE8E0] mb-4">
+            <div className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#9BE8E0] mb-3.5">
               CODE BETTER, FASTER
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[58px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.02] mb-5">
-              Understand Any <br />
-              Codebase In <br />
-              <span className="text-[#FF3344]">30 Seconds</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-[58px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.02] mb-4">
+              <motion.span
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                className="inline-block"
+              >
+                Understand Any
+              </motion.span>
+              <br />
+              <motion.span
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.1, ease: "easeOut" }}
+                className="inline-block"
+              >
+                Codebase In
+              </motion.span>
+              <br />
+              <motion.span
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.2, ease: "easeOut" }}
+                className="inline-block text-[#FF3344]"
+              >
+                30 Seconds
+              </motion.span>
             </h1>
 
-            <p className="text-[#C3D5D8] text-base sm:text-[17px] leading-[1.55] max-w-[460px] mb-8">
+            <p className="text-[#C3D5D8] text-base sm:text-[17px] leading-[1.55] max-w-[460px] mb-7">
               Understand what any codebase does, from architecture and dependencies to routes, database schemas, and code health diagnostics in seconds.
             </p>
 
@@ -193,20 +217,21 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
             <div className="flex flex-wrap items-center gap-4 mb-3">
               <button
                 onClick={onGetStarted}
-                className="h-[52px] px-8 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white text-[15px] font-bold shadow-lg shadow-red-500/20 flex items-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="group h-[52px] px-8 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white text-[15px] font-bold shadow-lg shadow-red-500/20 flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
               >
-                Start Free Trial <ArrowRight className="w-4 h-4" />
+                <span>Start Free Trial</span>
+                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
               </button>
 
               <a
                 href="#features"
-                className="h-[52px] px-7 rounded-[10px] bg-transparent hover:bg-[rgba(155,232,224,0.08)] text-[#F7FAFA] border border-[rgba(155,232,224,0.25)] text-[15px] font-semibold flex items-center transition-all duration-200"
+                className="h-[52px] px-7 rounded-[10px] bg-transparent hover:bg-[rgba(155,232,224,0.08)] text-[#F7FAFA] border border-[rgba(155,232,224,0.25)] hover:border-[rgba(155,232,224,0.45)] text-[15px] font-semibold flex items-center transition-all duration-200 hover:-translate-y-0.5"
               >
                 Explore Features
               </a>
             </div>
 
-            <p className="text-xs text-[#8EA9AE] mb-10">
+            <p className="text-xs text-[#8EA9AE] mb-8">
               No credit card, No credit cards, Don't even.
             </p>
 
@@ -240,10 +265,14 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
 
           {/* Right Column: Hero Product Mockup & Action Cards */}
           <div className="lg:col-span-7 relative">
-            <div className="relative flex items-center">
+            <motion.div
+              animate={{ y: [-4, 4, -4] }}
+              transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut" }}
+              className="relative flex items-center"
+            >
               
               {/* Main Browser Window Mockup */}
-              <div className="w-full max-w-[500px] bg-[#f8fafc] rounded-[20px] shadow-2xl overflow-hidden text-slate-800 border border-slate-200">
+              <div className="w-full max-w-[500px] bg-[#f8fafc] rounded-[20px] shadow-2xl overflow-hidden text-slate-800 border border-slate-200 relative">
                 
                 {/* Browser Top Controls */}
                 <div className="px-4 py-3 bg-[#ffffff] border-b border-slate-200 flex items-center gap-2">
@@ -293,7 +322,13 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                   </div>
 
                   {/* Mock Main Viewport / Code & Architecture Lines */}
-                  <div className="col-span-7 p-4 bg-white flex flex-col justify-center space-y-3">
+                  <div className="col-span-7 p-4 bg-white flex flex-col justify-center space-y-3 relative overflow-hidden">
+                    {/* Subtle Scan Line Animation */}
+                    <motion.div
+                      animate={{ y: [-10, 220, -10] }}
+                      transition={{ repeat: Infinity, duration: 3.5, ease: "linear" }}
+                      className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#16C7A1] to-transparent pointer-events-none z-10 opacity-75"
+                    />
                     <div className="w-20 h-2 bg-[#FF3344] rounded-full opacity-80" />
                     <div className="w-36 h-2 bg-[#16C7A1] rounded-full opacity-70" />
                     <div className="w-28 h-2 bg-[#FF3344] rounded-full opacity-80" />
@@ -355,31 +390,42 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                 </div>
               </div>
 
-            </div>
+            </motion.div>
           </div>
 
         </div>
       </section>
 
-      {/* ── 4. EIGHT ENGINES GRID (FEATURES SECTION) ── */}
-      <section id="features" className="py-20 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl sm:text-[40px] font-bold text-[#F7FAFA] tracking-tight mb-3">
+      {/* ── 4. EIGHT ENGINES GRID (FEATURES SECTION & INTEGRATED CAPABILITY STRIP) ── */}
+      <section id="features" className="pt-10 pb-8 sm:pt-12 sm:pb-10 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-10 sm:mb-12"
+        >
+          <h2 className="text-3xl sm:text-[40px] font-bold text-[#F7FAFA] tracking-tight mb-2.5">
             Eight Engines, <span className="text-[#FF3344]">One Powerful Platform</span>
           </h2>
           <p className="text-[#C3D5D8] text-[15px] sm:text-[16px] max-w-[600px] mx-auto leading-relaxed">
             Comprehensive analysis, clear explanations, and real-time collaboration.
           </p>
-        </div>
+        </motion.div>
 
+        {/* 8 Feature Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map((f, i) => (
-            <div
+            <motion.div
               key={i}
-              className="p-6 rounded-[18px] bg-[rgba(8,55,65,0.72)] border border-[rgba(155,232,224,0.18)] hover:border-[rgba(155,232,224,0.38)] hover:bg-[rgba(12,70,80,0.88)] transition-all duration-200 group flex flex-col justify-between"
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: i * 0.05 }}
+              className="p-6 rounded-[18px] bg-[rgba(8,55,65,0.72)] border border-[rgba(155,232,224,0.18)] hover:border-[rgba(155,232,224,0.45)] hover:bg-[rgba(12,70,80,0.88)] transition-all duration-200 hover:-translate-y-1 group flex flex-col justify-between shadow-md"
             >
               <div>
-                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center mb-4 ${f.badgeBg}`}>
+                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-105 ${f.badgeBg}`}>
                   <f.icon className="w-5 h-5" />
                 </div>
                 <h3 className="text-lg font-bold text-[#F7FAFA] mb-2 group-hover:text-[#9BE8E0] transition-colors">
@@ -389,14 +435,18 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                   {f.desc}
                 </p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </section>
 
-      {/* ── 5. CAPABILITY / PROOF STRIP ── */}
-      <section className="py-6 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Integrated Capability Strip (Connected to Features, eliminating isolated gaps) */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.45, delay: 0.2 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 sm:mt-10"
+        >
           {[
             { label: 'AST Analysis', value: '8+ Languages', icon: Terminal },
             { label: 'Route Mapping', value: 'Auto Detection', icon: Network },
@@ -405,36 +455,42 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           ].map((s, i) => (
             <div
               key={i}
-              className="p-5 rounded-[18px] bg-[rgba(8,55,65,0.72)] border border-[rgba(155,232,224,0.18)] text-center"
+              className="p-4 sm:p-5 rounded-[18px] bg-[rgba(8,55,65,0.72)] border border-[rgba(155,232,224,0.18)] text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(155,232,224,0.35)]"
             >
               <s.icon className="w-5 h-5 text-[#9BE8E0] mx-auto mb-2" />
               <div className="text-xl font-bold text-[#F7FAFA]">{s.value}</div>
               <div className="text-[11px] text-[#8EA9AE] mt-0.5 uppercase tracking-wider">{s.label}</div>
             </div>
           ))}
-        </div>
+        </motion.div>
       </section>
 
-      {/* ── 6. PRICING SECTION ── */}
+      {/* ── 5. PRICING SECTION ── */}
       <div id="pricing">
         <Pricing onSelectPlan={onSelectPlan} />
       </div>
 
-      {/* ── 7. FAQ SECTION (EXACT REFERENCE SPECIFICATION) ── */}
-      <section id="faq" className="py-24 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
+      {/* ── 6. FAQ SECTION (EXACT REFERENCE SPECIFICATION) ── */}
+      <section id="faq" className="pt-10 pb-14 sm:pt-12 sm:pb-18 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
         
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <div className="text-[13px] font-bold uppercase tracking-[0.22em] text-[#FF3344] mb-3">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-10 sm:mb-12"
+        >
+          <div className="text-[13px] font-bold uppercase tracking-[0.22em] text-[#FF3344] mb-2.5">
             F A Q
           </div>
-          <h2 className="text-4xl sm:text-[48px] font-bold text-[#F7FAFA] tracking-tight leading-tight mb-3">
+          <h2 className="text-4xl sm:text-[48px] font-bold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
             Frequently Asked <span className="text-[#FF3344]">Questions</span>
           </h2>
-          <p className="text-[#C3D5D8] text-[17px] sm:text-[18px] max-w-[640px] mx-auto leading-relaxed">
+          <p className="text-[#C3D5D8] text-[16px] sm:text-[17px] max-w-[640px] mx-auto leading-relaxed">
             Everything you need to know about Archaeologist, in one place.
           </p>
-        </div>
+        </motion.div>
 
         {/* 2-Column FAQ Grid (Exact 20px gap, 20px radius, 56px icon block, 44px round button) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
@@ -442,8 +498,12 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
             const isOpen = openFaqs.includes(i);
 
             return (
-              <div
+              <motion.div
                 key={i}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: i * 0.08 }}
                 className={`rounded-[20px] bg-[rgba(8,70,80,0.65)] border transition-all duration-200 p-6 sm:p-7 ${
                   isOpen
                     ? 'border-[#16C7A1] shadow-[0_0_0_1px_rgba(22,199,161,0.15)] bg-[rgba(8,70,80,0.85)]'
@@ -474,20 +534,34 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                 </div>
 
                 {/* 16px Answer Text */}
-                {isOpen && (
-                  <div className="mt-4 pt-4 border-t border-[rgba(155,232,224,0.12)] text-[#C3D5D8] text-[15px] sm:text-[16px] leading-[1.55] max-w-[520px]">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden mt-4 pt-4 border-t border-[rgba(155,232,224,0.12)] text-[#C3D5D8] text-[15px] sm:text-[16px] leading-[1.55] max-w-[520px]"
+                    >
+                      {faq.a}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             );
           })}
         </div>
       </section>
 
-      {/* ── 8. LARGE CTA BANNER (EXACT REFERENCE SPECIFICATION) ── */}
-      <section className="py-10 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
-        <div className="min-h-[210px] rounded-[22px] bg-[rgba(8,76,88,0.85)] border border-[rgba(155,232,224,0.20)] p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden">
+      {/* ── 7. LARGE CTA BANNER (EXACT REFERENCE SPECIFICATION) ── */}
+      <section className="pt-6 pb-12 sm:pt-8 sm:pb-16 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="group min-h-[200px] rounded-[22px] bg-[rgba(8,76,88,0.85)] border border-[rgba(155,232,224,0.20)] p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden"
+        >
           
           {/* Left Decorative Subtle Arc Background */}
           <div className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-[#16C7A1]/10 pointer-events-none" />
@@ -498,7 +572,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           {/* Left Content */}
           <div className="flex items-center gap-5 text-left z-10">
             {/* Rocket Icon in Glowing Coral Circle */}
-            <div className="w-14 h-14 rounded-2xl bg-[#063D48] border border-[rgba(255,51,68,0.35)] flex items-center justify-center text-[#FF3344] shrink-0 shadow-lg">
+            <div className="w-14 h-14 rounded-2xl bg-[#063D48] border border-[rgba(255,51,68,0.35)] flex items-center justify-center text-[#FF3344] shrink-0 shadow-lg transition-transform duration-200 group-hover:scale-105">
               <Rocket className="w-7 h-7" />
             </div>
 
@@ -516,9 +590,10 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           <div className="flex flex-col items-center md:items-end gap-2.5 shrink-0 z-10 w-full md:w-auto">
             <button
               onClick={onGetStarted}
-              className="w-full md:w-auto h-[52px] px-8 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-[15px] sm:text-[16px] shadow-xl shadow-red-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              className="group/btn w-full md:w-auto h-[52px] px-8 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-[15px] sm:text-[16px] shadow-xl shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              Get Started Free <ArrowRight className="w-4 h-4" />
+              <span>Get Started Free</span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/btn:translate-x-1" />
             </button>
             
             {/* Hand-drawn style sub-annotation */}
@@ -526,7 +601,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
               <span>No credit card required!</span>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* ── 9. FOOTER ── */}

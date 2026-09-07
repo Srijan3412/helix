@@ -1,19 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import {
-  Shield,
-  ShieldCheck,
-  Key,
-  Lock,
-  FileCode,
-  Route,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowRight,
-  FileText,
-  Terminal
-} from "lucide-react";
-import { Badge } from "../ui/badge";
+import { Shield, Check } from "lucide-react";
 
 interface AuthDetectorProps {
   authType: string;
@@ -25,156 +12,83 @@ export default function AuthDetector({ authType, evidence = [] }: AuthDetectorPr
   const confidence = evidence.length > 0 ? Math.min(100, Math.round(50 + evidence.length * 15)) : (isNone ? 0 : 100);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch text-left w-full mt-5">
-      
-      {/* ── Left Panel: Authentication Guard ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="lg:col-span-6 bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[20px] p-6 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col justify-between"
-      >
-        <div>
-          {/* Header Row */}
-          <div className="flex items-start gap-4 mb-4">
-            <div className="w-14 h-14 rounded-[14px] bg-[#FF3344] text-white flex items-center justify-center shrink-0 shadow-lg shadow-red-500/20">
-              <Shield size={26} className="stroke-[2.2]" />
-            </div>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="w-full rounded-[24px] bg-[#F8FBFC] border border-[rgba(80,220,220,0.35)] p-7 sm:p-9 relative overflow-hidden shadow-[0_16px_50px_rgba(0,0,0,0.12)] text-left mt-6"
+    >
+      {/* ── Top-Right Subtle Pale Pink Decorative Circle ── */}
+      <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-[#FFE5E8]/80 pointer-events-none z-0" />
 
-            <div className="flex-1">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h3 className="text-xl font-bold text-[#F7FAFA]">
-                  Authentication Guard
-                </h3>
-                <span className="px-3 py-0.5 rounded-full bg-[#9BE8E0] text-[#063D48] text-xs font-bold shadow-sm">
-                  {isNone ? "None detected" : authType}
-                </span>
-              </div>
-
-              <div className="text-xs text-[#C3D5D8] mt-1">
-                Confidence: <span className="font-bold text-[#16C7A1]">{confidence}%</span>
-              </div>
-            </div>
+      <div className="relative z-10">
+        {/* ── Top Header: Large Shield Icon + Title + Badge & Confidence ── */}
+        <div className="flex items-center gap-5 sm:gap-6">
+          {/* Large Shield Container with subtle pink glow */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[20px] bg-gradient-to-br from-[#FF4D5E] to-[#E9232E] text-white flex items-center justify-center shadow-lg shadow-red-500/25 shrink-0">
+            <Shield className="w-8 h-8 sm:w-10 sm:h-10 stroke-[2.2]" />
           </div>
 
-          {/* Smooth Confidence Progress Bar */}
-          <div className="w-full h-3 rounded-full bg-[rgba(6,47,56,0.85)] overflow-hidden my-4">
+          {/* Title, Badge & Confidence Row */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3.5 flex-wrap">
+              <h2 className="text-2xl sm:text-[32px] lg:text-[36px] font-extrabold text-[#082D3A] tracking-tight leading-none">
+                Authentication Guard
+              </h2>
+              <span className="px-4 py-1 rounded-full bg-[#C5F4EF] text-[#084C58] text-xs sm:text-sm font-bold shadow-sm">
+                {isNone ? "None detected" : authType}
+              </span>
+            </div>
+
+            <div className="text-sm sm:text-base font-medium text-[#4F757D] mt-2">
+              Confidence: <span className="font-bold text-[#16C7A1] text-base sm:text-lg">{confidence}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Full-Width Progress Bar with Percentage Outside ── */}
+        <div className="flex items-center gap-4 my-6 sm:my-7">
+          <div className="flex-1 h-3.5 sm:h-4 rounded-full bg-[#D7EFEF] overflow-hidden">
             <div
               className="h-full rounded-full bg-[#16C7A1] transition-all duration-500"
               style={{ width: `${confidence}%` }}
             />
           </div>
+          <span className="text-base sm:text-lg font-black text-[#082D3A] shrink-0">
+            {confidence}%
+          </span>
+        </div>
 
-          {/* Status Indicators / Pills */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
-            <div className="flex items-center gap-2 p-2.5 rounded-[12px] bg-[rgba(6,47,56,0.80)] border border-[rgba(155,232,224,0.10)]">
-              <CheckCircle2 size={15} className="text-[#16C7A1] shrink-0" />
-              <span className="text-[11px] font-medium text-[#F7FAFA] leading-tight">
-                Auth routes detected
-              </span>
+        {/* ── 3 Large Evidence Panels ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+          <div className="bg-white/90 border border-[#BCEBE6] rounded-[18px] p-4 sm:p-5 flex items-center gap-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#16C7A1] text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Check className="w-5 h-5 stroke-[2.8]" />
             </div>
+            <span className="text-[14px] sm:text-[15px] font-bold text-[#082D3A] leading-snug">
+              Auth routes detected
+            </span>
+          </div>
 
-            <div className="flex items-center gap-2 p-2.5 rounded-[12px] bg-[rgba(6,47,56,0.80)] border border-[rgba(155,232,224,0.10)]">
-              <CheckCircle2 size={15} className="text-[#16C7A1] shrink-0" />
-              <span className="text-[11px] font-medium text-[#F7FAFA] leading-tight">
-                Environment vars found
-              </span>
+          <div className="bg-white/90 border border-[#BCEBE6] rounded-[18px] p-4 sm:p-5 flex items-center gap-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#16C7A1] text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Check className="w-5 h-5 stroke-[2.8]" />
             </div>
+            <span className="text-[14px] sm:text-[15px] font-bold text-[#082D3A] leading-snug">
+              Environment variables found
+            </span>
+          </div>
 
-            <div className="flex items-center gap-2 p-2.5 rounded-[12px] bg-[rgba(6,47,56,0.80)] border border-[rgba(155,232,224,0.10)]">
-              <CheckCircle2 size={15} className="text-[#16C7A1] shrink-0" />
-              <span className="text-[11px] font-medium text-[#F7FAFA] leading-tight">
-                Security best practices
-              </span>
+          <div className="bg-white/90 border border-[#BCEBE6] rounded-[18px] p-4 sm:p-5 flex items-center gap-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#16C7A1] text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Check className="w-5 h-5 stroke-[2.8]" />
             </div>
+            <span className="text-[14px] sm:text-[15px] font-bold text-[#082D3A] leading-snug">
+              Security best practices
+            </span>
           </div>
         </div>
-      </motion.div>
-
-      {/* ── Right Panel: Evidence Found ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="lg:col-span-6 bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[20px] p-6 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col justify-between"
-      >
-        <div>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[12px] bg-[#084C58] text-[#9BE8E0] flex items-center justify-center">
-                <FileText size={20} />
-              </div>
-              <h3 className="text-[17px] font-bold text-[#F7FAFA]">
-                Evidence Found
-              </h3>
-            </div>
-
-            <button className="text-xs font-semibold text-[#9BE8E0] hover:text-white flex items-center gap-1 transition">
-              View All <ArrowRight size={13} />
-            </button>
-          </div>
-
-          {/* Evidence List & File Tags */}
-          <div className="space-y-3">
-            {evidence.length > 0 ? (
-              evidence.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start justify-between gap-3 p-2.5 rounded-[12px] bg-[rgba(6,47,56,0.70)] border border-[rgba(155,232,224,0.10)]"
-                >
-                  <div className="flex items-start gap-2.5 text-xs text-[#C3D5D8] leading-relaxed">
-                    <span className="w-2 h-2 rounded-full bg-[#16C7A1] mt-1.5 shrink-0" />
-                    <span>{item}</span>
-                  </div>
-
-                  {/* Smart contextual badge */}
-                  <span className="px-2 py-0.5 rounded-md bg-[rgba(8,76,88,0.9)] text-[#9BE8E0] text-[10px] font-mono shrink-0 border border-[rgba(155,232,224,0.15)]">
-                    {item.includes(".env") || item.includes("variable")
-                      ? ".env"
-                      : item.includes("route")
-                      ? "routes"
-                      : "src/lib/auth"}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="flex items-start justify-between gap-3 p-2.5 rounded-[12px] bg-[rgba(6,47,56,0.70)] border border-[rgba(155,232,224,0.10)]">
-                  <div className="flex items-start gap-2.5 text-xs text-[#C3D5D8]">
-                    <span className="w-2 h-2 rounded-full bg-[#16C7A1] mt-1.5 shrink-0" />
-                    <span>SUPABASE_URL env var</span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-md bg-[rgba(8,76,88,0.9)] text-[#9BE8E0] text-[10px] font-mono shrink-0">
-                    .env
-                  </span>
-                </div>
-
-                <div className="flex items-start justify-between gap-3 p-2.5 rounded-[12px] bg-[rgba(6,47,56,0.70)] border border-[rgba(155,232,224,0.10)]">
-                  <div className="flex items-start gap-2.5 text-xs text-[#C3D5D8]">
-                    <span className="w-2 h-2 rounded-full bg-[#16C7A1] mt-1.5 shrink-0" />
-                    <span>14 auth-related routes (/api/auth/login, /api/auth/signup)</span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-md bg-[rgba(8,76,88,0.9)] text-[#9BE8E0] text-[10px] font-mono shrink-0">
-                    routes
-                  </span>
-                </div>
-
-                <div className="flex items-start justify-between gap-3 p-2.5 rounded-[12px] bg-[rgba(6,47,56,0.70)] border border-[rgba(155,232,224,0.10)]">
-                  <div className="flex items-start gap-2.5 text-xs text-[#C3D5D8]">
-                    <span className="w-2 h-2 rounded-full bg-[#16C7A1] mt-1.5 shrink-0" />
-                    <span>Supabase client initialization detected</span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-md bg-[rgba(8,76,88,0.9)] text-[#9BE8E0] text-[10px] font-mono shrink-0">
-                    src/lib/supabase.ts
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </motion.div>
-
-    </div>
+      </div>
+    </motion.div>
   );
 }

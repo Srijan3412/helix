@@ -173,6 +173,10 @@ const AuthDetector = dynamic(
   () => import("../components/diagnostics/AuthDetector"),
   { ssr: false },
 );
+const EvidenceFound = dynamic(
+  () => import("../components/diagnostics/EvidenceFound"),
+  { ssr: false },
+);
 const LanguageBreakdown = dynamic(
   () => import("../components/diagnostics/LanguageBreakdown"),
   { ssr: false },
@@ -1914,7 +1918,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.15 }}
-            className="min-h-full p-8 sm:p-10 relative z-10 max-w-[1600px] mx-auto"
+            className="min-h-full py-7 px-8 sm:px-10 relative z-10 w-full"
           >
             {/* ─── OVERVIEW TAB ─── */}
             {activeResultTab === "overview" && (
@@ -1984,7 +1988,7 @@ export default function Home() {
                   files={result.files || []}
                 />
 
-                {/* ── Authentication Guard & Evidence Found Panels ── */}
+                {/* ── Authentication Guard Panel ── */}
                 <AuthDetector
                   authType={authData?.authType ?? "Supabase Auth"}
                   evidence={authData?.evidence ?? [
@@ -1992,6 +1996,18 @@ export default function Home() {
                     "14 auth-related routes (/api/auth/login, /api/auth/signin, /api/auth/signup)",
                     "Supabase client initialization detected"
                   ]}
+                />
+
+                {/* ── Evidence Found & Related Files Panel ── */}
+                <EvidenceFound
+                  evidence={authData?.evidence ?? [
+                    "SUPABASE_URL env var",
+                    "14 auth-related routes (/api/auth/login, /api/auth/signup)",
+                    "Supabase client initialization detected",
+                    "21 routes have middleware protection"
+                  ]}
+                  files={result.files || []}
+                  onViewAll={() => setActiveResultTab("routes")}
                 />
                 {result.metadata?.languages && (
                   <LanguageBreakdown

@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Check, X, Sparkles, Building2, Zap, ArrowRight, Layers } from 'lucide-react';
 import { PLAN_CONFIG } from '../../lib/subscription/subscription';
 import type { Plan } from '../../lib/subscription/subscription';
@@ -12,14 +13,17 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
   const plans: Plan[] = ['trial', 'professional', 'enterprise'];
 
   return (
-    <section className="relative py-20 sm:py-24 px-6 sm:px-8 bg-[#063943] overflow-hidden">
+    <section className="relative pt-10 pb-12 sm:pt-14 sm:pb-16 px-6 sm:px-8 bg-transparent overflow-hidden">
       
-      {/* ── Background Decorations (Exact Specification) ── */}
-      {/* Top-Left Red Circular Shape */}
-      <div className="absolute -top-[140px] -left-[100px] w-[280px] h-[280px] rounded-full bg-[#F52B36] opacity-90 pointer-events-none z-0" />
+      {/* ── Background Decorations (Continuous Visual Language) ── */}
+      {/* Left Red Circular Shape */}
+      <div className="absolute top-1/4 -left-[140px] w-[260px] h-[260px] rounded-full bg-[#FF3344] opacity-85 pointer-events-none z-0" />
       
+      {/* Large Soft Ambient Radial Glow behind Pricing Cards */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] max-w-full h-[480px] bg-[radial-gradient(ellipse_at_center,rgba(22,199,161,0.16)_0%,rgba(6,61,72,0)_70%)] blur-3xl pointer-events-none z-0" />
+
       {/* Top-Right Dotted Matrix Pattern (#8DE7DF) */}
-      <div className="absolute top-12 right-12 sm:right-20 grid grid-cols-4 gap-3 pointer-events-none z-0 opacity-70">
+      <div className="absolute top-8 right-10 sm:right-16 grid grid-cols-4 gap-3 pointer-events-none z-0 opacity-60">
         {[...Array(12)].map((_, i) => (
           <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#8DE7DF]" />
         ))}
@@ -27,7 +31,7 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
 
       {/* Right-Side Subtle Curved Decorative Line */}
       <svg
-        className="absolute right-0 top-1/2 -translate-y-1/2 w-48 sm:w-64 h-[420px] pointer-events-none z-0 opacity-40"
+        className="absolute right-0 top-1/2 -translate-y-1/2 w-48 sm:w-64 h-[420px] pointer-events-none z-0 opacity-30"
         viewBox="0 0 200 400"
         fill="none"
       >
@@ -43,7 +47,13 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
       <div className="max-w-[1280px] w-full mx-auto relative z-10">
         
         {/* ── Section Header ── */}
-        <div className="text-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
+        >
           {/* Eyebrow Pill */}
           <div className="inline-flex items-center gap-2 h-7 px-3.5 rounded-full bg-[rgba(0,200,170,0.08)] border border-[rgba(0,220,190,0.25)] mb-3.5 shadow-sm">
             <span className="text-[12px] font-bold uppercase tracking-[3px] text-[#79E1D7]">
@@ -52,7 +62,7 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
           </div>
 
           {/* Main Heading */}
-          <h2 className="text-3xl sm:text-[42px] font-bold text-white tracking-tight leading-tight mb-3">
+          <h2 className="text-3xl sm:text-[42px] font-bold text-white tracking-tight leading-tight mb-2.5">
             Choose Your Plan
           </h2>
 
@@ -60,11 +70,11 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
           <p className="text-[#AFC9CE] text-[15px] sm:text-[16px] leading-relaxed max-w-[700px] mx-auto">
             Start for free with 2 repository scans. Upgrade as your team grows.
           </p>
-        </div>
+        </motion.div>
 
         {/* ── 3 Pricing Cards Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {plans.map((planKey) => {
+          {plans.map((planKey, idx) => {
             const plan = PLAN_CONFIG[planKey];
             const isPro = planKey === 'professional';
             const isEnterprise = planKey === 'enterprise';
@@ -72,19 +82,27 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
             const isCurrent = currentPlan === planKey;
 
             return (
-              <div
+              <motion.div
                 key={planKey}
-                className={`relative rounded-[20px] p-8 sm:p-9 min-h-[520px] flex flex-col justify-between transition-all duration-300 ${
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: idx * 0.08 }}
+                className={`relative rounded-[20px] p-8 sm:p-9 min-h-[520px] flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                   isPro
                     ? 'bg-[#DDF6F1] text-[#073942] border-2 border-[#79E1D7] shadow-[0_12px_40px_rgba(70,230,210,0.18)] scale-[1.02] z-20'
-                    : 'bg-[#104957] text-[#D5E8EB] border border-[rgba(121,225,215,0.22)] hover:border-[rgba(121,225,215,0.4)] shadow-lg'
+                    : 'bg-[#104957] text-[#D5E8EB] border border-[rgba(121,225,215,0.22)] hover:border-[rgba(121,225,215,0.45)] shadow-lg'
                 }`}
               >
-                {/* Overlapping RECOMMENDED Badge for Professional */}
+                {/* Overlapping RECOMMENDED Badge for Professional with gentle micro-float */}
                 {isPro && (
-                  <div className="absolute -top-[16px] left-1/2 -translate-x-1/2 h-8 px-5 rounded-full bg-[#72DDD2] text-[#073942] text-[12px] font-bold uppercase tracking-[1.5px] shadow-md flex items-center justify-center">
+                  <motion.div
+                    animate={{ y: [-1, 1, -1] }}
+                    transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                    className="absolute -top-[16px] left-1/2 -translate-x-1/2 h-8 px-5 rounded-full bg-[#72DDD2] text-[#073942] text-[12px] font-bold uppercase tracking-[1.5px] shadow-md flex items-center justify-center pointer-events-none"
+                  >
                     RECOMMENDED
-                  </div>
+                  </motion.div>
                 )}
 
                 <div>
@@ -169,7 +187,7 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                   <button
                     onClick={() => onSelectPlan(planKey)}
                     disabled={isCurrent}
-                    className={`w-full h-[54px] rounded-[12px] font-bold text-[15px] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${
+                    className={`group w-full h-[54px] rounded-[12px] font-bold text-[15px] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${
                       isCurrent
                         ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
                         : isPro
@@ -179,18 +197,22 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                         : 'bg-[#F52B36] text-white hover:bg-[#d0232d] shadow-md active:scale-[0.98]'
                     }`}
                   >
-                    {isCurrent
-                      ? 'Current Plan'
-                      : isTrial
-                      ? 'Start Free'
-                      : isEnterprise
-                      ? 'Contact Sales'
-                      : 'Start Pro'}
-                    {!isCurrent && <ArrowRight className="w-4 h-4" />}
+                    <span>
+                      {isCurrent
+                        ? 'Current Plan'
+                        : isTrial
+                        ? 'Start Free'
+                        : isEnterprise
+                        ? 'Contact Sales'
+                        : 'Start Pro'}
+                    </span>
+                    {!isCurrent && (
+                      <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+                    )}
                   </button>
                 </div>
 
-              </div>
+              </motion.div>
             );
           })}
         </div>

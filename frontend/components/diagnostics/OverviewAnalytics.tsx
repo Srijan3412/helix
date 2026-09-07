@@ -50,38 +50,70 @@ export default function OverviewAnalytics({
     {
       label: "FILES ANALYZED",
       value: overview.totalFiles || 213,
-      trend: "+12% vs last scan",
-      isPositive: true,
-      highlight: true, // Red card
+      trendPercent: "12%",
+      trendDirection: "up",
+      trendLabel: "vs last scan",
+      cardStyle: "bg-gradient-to-br from-[#F52B35] to-[#D91F29] text-white shadow-xl shadow-red-500/20",
+      iconContainerStyle: "bg-white/20 text-white",
+      titleStyle: "text-white",
+      arrowStyle: "bg-white/15 text-white hover:bg-white/25",
+      numberStyle: "text-white",
+      trendHighlightStyle: "text-white",
+      trendLabelStyle: "text-white/80",
       icon: Files,
-      sparkline: "M0,35 Q20,38 40,25 T80,18 T120,5"
+      bars: [30, 50, 75, 60, 90, 100],
+      barGradient: "from-white/10 to-white/40"
     },
     {
       label: "API ROUTES",
       value: overview.totalRoutes || 88,
-      trend: "+8% vs last scan",
-      isPositive: true,
-      highlight: false,
+      trendPercent: "8%",
+      trendDirection: "up",
+      trendLabel: "vs last scan",
+      cardStyle: "bg-[#F8F8F6] text-[#082D3A] border border-white/80 shadow-md",
+      iconContainerStyle: "bg-[#A8ECE7] text-[#0A3440]",
+      titleStyle: "text-[#0A3440]",
+      arrowStyle: "bg-[#EDF3F4] text-[#123D49] hover:bg-[#dfe9eb]",
+      numberStyle: "text-[#082D3A]",
+      trendHighlightStyle: "text-[#16BFA6]",
+      trendLabelStyle: "text-[#315D66]",
       icon: Route,
-      sparkline: "M0,30 Q30,35 60,20 T120,8"
+      bars: [25, 45, 60, 75, 85, 95],
+      barGradient: "from-[#79DCD5]/15 to-[#79DCD5]/90"
     },
     {
       label: "DEPENDENCIES",
       value: overview.totalDependencies || 620,
-      trend: "-17% vs last scan",
-      isPositive: false,
-      highlight: false,
+      trendPercent: "17%",
+      trendDirection: "down",
+      trendLabel: "vs last scan",
+      cardStyle: "bg-[#E4F8F7] text-[#082D3A] border border-[#C5F4EF]/60 shadow-md",
+      iconContainerStyle: "bg-[#087B83] text-white",
+      titleStyle: "text-[#0A3440]",
+      arrowStyle: "bg-[#EDF3F4] text-[#123D49] hover:bg-[#dfe9eb]",
+      numberStyle: "text-[#082D3A]",
+      trendHighlightStyle: "text-[#E9232E]",
+      trendLabelStyle: "text-[#315D66]",
       icon: Package,
-      sparkline: "M0,15 Q30,8 60,25 T120,28"
+      bars: [35, 55, 70, 80, 90, 100],
+      barGradient: "from-[#79DCD5]/15 to-[#79DCD5]/90"
     },
     {
       label: "ENVIRONMENT VARS",
       value: overview.totalEnvVars || 27,
-      trend: "+4% vs last scan",
-      isPositive: true,
-      highlight: false,
+      trendPercent: "4%",
+      trendDirection: "up",
+      trendLabel: "vs last scan",
+      cardStyle: "bg-[#F8F8F6] text-[#082D3A] border border-white/80 shadow-md",
+      iconContainerStyle: "bg-[#A8ECE7] text-[#0A3440]",
+      titleStyle: "text-[#0A3440]",
+      arrowStyle: "bg-[#EDF3F4] text-[#123D49] hover:bg-[#dfe9eb]",
+      numberStyle: "text-[#082D3A]",
+      trendHighlightStyle: "text-[#16BFA6]",
+      trendLabelStyle: "text-[#315D66]",
       icon: Key,
-      sparkline: "M0,28 Q30,32 60,18 T120,10"
+      bars: [20, 35, 50, 70, 85, 100],
+      barGradient: "from-[#79DCD5]/15 to-[#79DCD5]/90"
     }
   ];
 
@@ -123,103 +155,66 @@ export default function OverviewAnalytics({
   return (
     <div className="space-y-6 text-left w-full">
       
-      {/* ── 1. 4 KEY METRIC CARDS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── 1. 4 KEY METRIC CARDS (EXACT REFERENCE DESIGN) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {metrics.map((m, idx) => (
           <motion.div
             key={idx}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
-            className={`rounded-[18px] p-5 relative overflow-hidden flex flex-col justify-between min-h-[160px] transition-all duration-200 shadow-md ${
-              m.highlight
-                ? "bg-[#FF3344] text-white shadow-red-500/20"
-                : "bg-white text-slate-800 border border-slate-200/80 hover:border-teal-400/40"
-            }`}
+            className={`rounded-[20px] p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between min-h-[175px] sm:min-h-[180px] transition-all duration-200 hover:-translate-y-1 ${m.cardStyle}`}
           >
-            {/* Top Row: Icon, Label & Action arrow */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+            {/* Top Row: Icon Container + Title + Arrow Button */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5">
                 <div
-                  className={`w-9 h-9 rounded-[10px] flex items-center justify-center ${
-                    m.highlight
-                      ? "bg-white/20 text-white"
-                      : "bg-[#C5F4EF] text-[#063D48]"
-                  }`}
+                  className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 shadow-sm ${m.iconContainerStyle}`}
                 >
-                  <m.icon size={18} />
+                  <m.icon size={22} className="stroke-[2.2]" />
                 </div>
                 <span
-                  className={`text-[12px] font-bold uppercase tracking-[0.12em] ${
-                    m.highlight ? "text-white/90" : "text-slate-600"
-                  }`}
+                  className={`text-[13px] sm:text-[14px] font-extrabold uppercase tracking-[0.12em] leading-tight ${m.titleStyle}`}
                 >
                   {m.label}
                 </span>
               </div>
 
-              {/* Arrow Indicator */}
+              {/* Circular Action Arrow Button */}
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                  m.highlight
-                    ? "bg-white/15 text-white"
-                    : "bg-slate-100 text-slate-500"
-                }`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${m.arrowStyle}`}
               >
-                <ArrowRight size={13} />
+                <ArrowRight size={16} />
               </div>
             </div>
 
-            {/* Bottom Row: Large Number, Trend & Sparkline */}
-            <div className="flex items-end justify-between mt-4">
+            {/* Bottom Row: Large Number + Trend & Vertical Bar Chart */}
+            <div className="flex items-end justify-between mt-4 relative z-10">
               <div>
                 <div
-                  className={`text-4xl font-extrabold tracking-tight ${
-                    m.highlight ? "text-white" : "text-slate-900"
-                  }`}
+                  className={`text-5xl sm:text-[54px] font-black tracking-tight leading-none ${m.numberStyle}`}
                 >
                   {m.value.toLocaleString()}
                 </div>
-                <div
-                  className={`text-xs font-semibold mt-1 flex items-center gap-1 ${
-                    m.highlight
-                      ? "text-white/80"
-                      : m.isPositive
-                      ? "text-teal-600"
-                      : "text-red-500"
-                  }`}
-                >
-                  {m.isPositive ? (
-                    <TrendingUp size={13} />
-                  ) : (
-                    <TrendingDown size={13} />
-                  )}
-                  <span>{m.trend}</span>
+                <div className="text-sm font-semibold mt-2 flex items-center gap-1.5">
+                  <span className={`font-bold flex items-center gap-0.5 ${m.trendHighlightStyle}`}>
+                    {m.trendDirection === "up" ? "↑" : "↓"} {m.trendPercent}
+                  </span>
+                  <span className={m.trendLabelStyle}>
+                    {m.trendLabel}
+                  </span>
                 </div>
               </div>
 
-              {/* Mini Sparkline Chart */}
-              <div className="w-24 h-11 relative">
-                <svg
-                  className="w-full h-full overflow-visible"
-                  viewBox="0 0 120 40"
-                  fill="none"
-                >
-                  <path
-                    d={m.sparkline}
-                    stroke={m.highlight ? "#ffffff" : "#16C7A1"}
-                    strokeWidth="3"
-                    strokeLinecap="round"
+              {/* Mini Vertical Bar Chart with bottom fade */}
+              <div className="flex items-end gap-1.5 h-14 pb-0.5 shrink-0">
+                {m.bars.map((barHeight, bIdx) => (
+                  <div
+                    key={bIdx}
+                    className={`w-2 sm:w-2.5 rounded-t-md bg-gradient-to-t ${m.barGradient}`}
+                    style={{ height: `${barHeight}%` }}
                   />
-                  <path
-                    d={`${m.sparkline} L120,40 L0,40 Z`}
-                    fill={
-                      m.highlight
-                        ? "rgba(255,255,255,0.12)"
-                        : "rgba(22,199,161,0.10)"
-                    }
-                  />
-                </svg>
+                ))}
               </div>
             </div>
           </motion.div>
