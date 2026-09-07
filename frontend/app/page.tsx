@@ -94,6 +94,7 @@ import {
   Split,
   Package,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 
 // ─── Dynamic Imports (Code Splitting) ───────────────────────────────────────
