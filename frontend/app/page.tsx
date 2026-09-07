@@ -3173,15 +3173,6 @@ export default function Home() {
 
                 {/* ── 4. Refactoring Recommendations (Sleek, Balanced Analytical Panel) ── */}
                 <div className="rounded-[20px] bg-[rgba(7,67,77,0.78)] backdrop-blur-xl border border-[rgba(155,232,224,0.16)] p-5 sm:p-6 relative overflow-hidden shadow-xl">
-                  {/* Subtle Geometric Decorative Background in Header (Top Right) */}
-                  <div className="absolute right-0 top-0 w-60 h-24 pointer-events-none overflow-hidden opacity-15 select-none flex items-start justify-end p-3">
-                    <svg width="120" height="80" viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="20" y="10" width="32" height="32" rx="8" fill="#F5B800" fillOpacity="0.5" />
-                      <rect x="65" y="25" width="44" height="44" rx="10" fill="#F5B800" fillOpacity="0.7" />
-                      <rect x="120" y="15" width="28" height="28" rx="6" fill="#F5B800" fillOpacity="0.4" />
-                    </svg>
-                  </div>
-
                   {/* Header Row */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10 pb-2 border-b border-[rgba(155,232,224,0.08)]">
                     <div className="flex items-center gap-3.5 sm:gap-4">
