@@ -69,6 +69,11 @@
   --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 /* ========================================
    STANDARDIZED TYPOGRAPHY HIERARCHY
    ======================================== */
@@ -183,84 +188,106 @@
    HELIX DASHBOARD TYPOGRAPHY SCALE
    ======================================== */
 .dash-eyebrow {
-  font-size: 12px;
+  font-size: 11px;
   line-height: 16px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.12em;
 }
 
 .dash-title {
-  font-size: 32px;
-  line-height: 38px;
+  font-size: 26px;
+  line-height: 32px;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  .dash-title {
+    font-size: 30px;
+    line-height: 36px;
+  }
 }
 
 .dash-subtitle {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 13px;
+  line-height: 20px;
   font-weight: 400;
+  color: var(--text-secondary);
+}
+@media (min-width: 640px) {
+  .dash-subtitle {
+    font-size: 14px;
+    line-height: 22px;
+  }
 }
 
 .dash-section-heading {
-  font-size: 16px;
-  line-height: 22px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .dash-card-title {
-  font-size: 16px;
-  line-height: 22px;
-  font-weight: 600;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
 }
 
 .dash-metric {
-  font-size: 40px;
-  line-height: 44px;
+  font-size: 32px;
+  line-height: 36px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
+@media (min-width: 640px) {
+  .dash-metric {
+    font-size: 36px;
+    line-height: 40px;
+  }
+}
 
 .dash-value {
-  font-size: 15px;
-  line-height: 21px;
-  font-weight: 600;
-}
-
-.dash-body {
-  font-size: 14px;
-  line-height: 21px;
-  font-weight: 400;
-}
-
-.dash-body-medium {
-  font-size: 14px;
-  line-height: 21px;
-  font-weight: 500;
-}
-
-.dash-metadata {
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 500;
-}
-
-.dash-badge {
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 600;
-}
-
-.dash-btn {
   font-size: 14px;
   line-height: 20px;
   font-weight: 600;
 }
 
+.dash-body {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.dash-body-medium {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.dash-metadata {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.dash-badge {
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.dash-btn {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
 .dash-btn-sm {
-  font-size: 12px;
+  font-size: 11px;
   line-height: 16px;
   font-weight: 600;
 }
@@ -335,24 +362,24 @@ html, body {
 }
 
 /* ========================================
-   CUSTOM SCROLLBAR (from 1st file - adapted for dark theme)
+   CUSTOM SCROLLBAR (adapted for dark teal theme)
    ======================================== */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(6, 48, 56, 0.6);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
-  border-radius: 3px;
+  background: rgba(23, 104, 115, 0.7);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #16C7A1;
 }
 
 /* ========================================

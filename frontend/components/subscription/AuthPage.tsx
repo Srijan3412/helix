@@ -2,7 +2,20 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '../../lib/subscription/SubscriptionContext';
 import { supabase } from '../../lib/subscription/supabase';
-import { Layers, Mail, Lock, Loader2, AlertCircle, Terminal, CheckCircle2 } from 'lucide-react';
+import {
+  Layers,
+  Mail,
+  Lock,
+  Loader2,
+  AlertCircle,
+  Terminal,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  MessageSquare,
+  Calendar
+} from 'lucide-react';
 import ForgotPasswordModal from '../auth/ForgotPasswordModal';
 import OTPVerification from '../auth/OTPVerification';
 
@@ -27,6 +40,7 @@ export default function AuthPage({
   const [mode, setMode] = useState<'signin' | 'signup' | 'verify-otp'>(initialMode);
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [unverifiedUserId, setUnverifiedUserId] = useState(initialUserId);
   const [otpToken, setOtpToken] = useState(initialToken);
 
@@ -146,26 +160,58 @@ export default function AuthPage({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-950 relative overflow-hidden px-4">
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[300px] h-[300px] bg-secondary/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#063D48] relative overflow-hidden px-4 py-12 text-[#F7FAFA]">
+      
+      {/* ── Decorative Background Elements ────────────────────────────── */}
+      
+      {/* Top-Left Large Cropped Coral Circle */}
+      <div className="w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full bg-[#D9334B] absolute -top-32 -left-24 sm:-top-36 sm:-left-28 pointer-events-none z-0 shadow-2xl opacity-95" />
 
-      <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-6">
-            <Terminal className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold tracking-wider text-neutral-400 uppercase">
-              Repository Intelligence
-            </span>
-          </div>
-          <h1 className="text-3xl font-extrabold text-white mb-2">
-            {mode === 'signin'
-              ? 'Welcome back'
-              : mode === 'signup'
-                ? 'Start your free trial'
-                : 'Verify your email'}
+      {/* Top-Left Cyan Dot Grid */}
+      <div className="absolute top-36 left-8 sm:left-14 pointer-events-none z-0 grid grid-cols-4 gap-3.5 opacity-35">
+        {Array.from({ length: 16 }).map((_, i) => (
+          <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#16C7A1]" />
+        ))}
+      </div>
+
+      {/* Bottom-Left Large Dark Teal Circle with Cyan Border */}
+      <div className="w-[360px] h-[360px] sm:w-[440px] sm:h-[440px] rounded-full bg-[rgba(4,52,62,0.60)] border border-[#16C7A1]/30 absolute -bottom-40 -left-32 pointer-events-none z-0" />
+
+      {/* Top-Right Dark Teal Circle with Pale Solid Circle */}
+      <div className="w-[320px] h-[320px] sm:w-[380px] sm:h-[380px] rounded-full bg-[rgba(4,52,62,0.60)] border border-[#16C7A1]/20 absolute -top-28 -right-24 pointer-events-none z-0">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#F5F5ED] absolute top-14 right-10 shadow-lg" />
+      </div>
+
+      {/* Bottom-Right Cyan Dot Grid */}
+      <div className="absolute bottom-20 right-8 sm:right-16 pointer-events-none z-0 grid grid-cols-4 gap-3.5 opacity-35">
+        {Array.from({ length: 16 }).map((_, i) => (
+          <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#16C7A1]" />
+        ))}
+      </div>
+
+      {/* ── Main Centered Content ─────────────────────────────────────── */}
+      <div className="relative z-10 w-full max-w-[560px] sm:max-w-[580px] flex flex-col items-center">
+        
+        {/* Brand Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#16C7A1]/35 bg-[rgba(6,61,72,0.50)] backdrop-blur-md mb-6 shadow-xs">
+          <Terminal className="w-3.5 h-3.5 text-[#16C7A1]" />
+          <span className="text-[12px] sm:text-[13px] font-semibold tracking-[0.05em] text-[#9BE8E0] uppercase">
+            Repository Intelligence
+          </span>
+        </div>
+
+        {/* Heading & Subtitle */}
+        <div className="text-center mb-7 sm:mb-8">
+          <h1 className="text-4xl sm:text-[56px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.05] mb-3">
+            {mode === 'signin' ? (
+              <>Welcome <span className="text-[#16C7A1]">back</span></>
+            ) : mode === 'signup' ? (
+              <>Start your <span className="text-[#16C7A1]">free trial</span></>
+            ) : (
+              <>Verify your <span className="text-[#16C7A1]">email</span></>
+            )}
           </h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-base sm:text-[18px] text-[#C3D5D8] max-w-md mx-auto">
             {mode === 'signin'
               ? 'Sign in to access your dashboard'
               : mode === 'signup'
@@ -174,17 +220,19 @@ export default function AuthPage({
           </p>
         </div>
 
-        <div className="border border-white/8 bg-white/3 rounded-2xl p-8 backdrop-blur-md">
+        {/* ── Form Card ──────────────────────────────────────────────── */}
+        <div className="w-full bg-[rgba(6,61,72,0.42)] border border-[rgba(22,199,161,0.45)] rounded-[18px] p-7 sm:p-10 backdrop-blur-xl shadow-2xl relative text-left">
+          
           {successMessage && (
-            <div className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <div className="mb-5 flex items-center gap-2.5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
               <span>{successMessage}</span>
             </div>
           )}
 
           {error && (
-            <div className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="mb-5 flex items-center gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs sm:text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0 text-[#FF3344]" />
               <span>{error}</span>
             </div>
           )}
@@ -205,58 +253,77 @@ export default function AuthPage({
             />
           ) : (
             <>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                
+                {/* Email Field */}
                 <div>
-                  <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 block">
+                  <label className="text-[12px] sm:text-[13px] font-semibold text-[#F7FAFA] uppercase tracking-[0.05em] mb-2 block">
                     Email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#C3D5D8]" />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition"
+                      className="w-full h-[54px] sm:h-[56px] pl-12 pr-4 bg-[rgba(8,76,88,0.45)] border border-[rgba(155,232,224,0.20)] rounded-[12px] text-[15px] sm:text-[16px] text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#16C7A1] focus:ring-1 focus:ring-[#16C7A1]/30 transition"
                       placeholder="you@example.com"
                     />
                   </div>
                 </div>
+
+                {/* Password Field */}
                 <div>
-                  <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 block">
+                  <label className="text-[12px] sm:text-[13px] font-semibold text-[#F7FAFA] uppercase tracking-[0.05em] mb-2 block">
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#C3D5D8]" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
                       minLength={6}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition"
+                      className="w-full h-[54px] sm:h-[56px] pl-12 pr-12 bg-[rgba(8,76,88,0.45)] border border-[rgba(155,232,224,0.20)] rounded-[12px] text-[15px] sm:text-[16px] text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#16C7A1] focus:ring-1 focus:ring-[#16C7A1]/30 transition"
                       placeholder="Min. 6 characters"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C3D5D8] hover:text-[#16C7A1] transition p-1 cursor-pointer"
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
                 </div>
 
+                {/* Primary Coral Button */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 rounded-xl bg-primary text-neutral-950 font-bold text-sm hover:bg-primary-400 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-[56px] rounded-[12px] bg-[#FF3344] hover:bg-[#e02636] active:translate-y-[1px] text-white font-bold text-[16px] shadow-lg shadow-[#FF3344]/25 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
                 >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {mode === 'signin' ? 'Sign In' : 'Create Account'}
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <span>{mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
                 </button>
               </form>
 
               {/* Divider */}
-              <div className="relative my-5">
+              <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/10" />
+                  <div className="w-full border-t border-[rgba(155,232,224,0.20)]" />
                 </div>
-                <div className="relative flex justify-center text-[10px] uppercase">
-                  <span className="bg-neutral-900/90 px-3 text-neutral-500 font-mono tracking-wider">
+                <div className="relative flex justify-center text-[11px] sm:text-[12px] uppercase">
+                  <span className="bg-[#074754] px-3.5 py-0.5 rounded text-[#9BE8E0]/80 font-mono tracking-[0.08em]">
                     Or continue with
                   </span>
                 </div>
@@ -267,10 +334,10 @@ export default function AuthPage({
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={loading || googleLoading}
-                className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-semibold transition flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+                className="w-full h-[54px] rounded-[12px] bg-[rgba(8,76,88,0.42)] hover:bg-[rgba(8,76,88,0.65)] border border-[rgba(155,232,224,0.20)] text-[#F7FAFA] text-[15px] sm:text-[16px] font-medium transition flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
               >
                 {googleLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
+                  <Loader2 className="w-5 h-5 animate-spin text-[#9BE8E0]" />
                 ) : (
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
@@ -294,44 +361,58 @@ export default function AuthPage({
                 <span>Continue with Google</span>
               </button>
 
-              <div className="mt-6 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode(mode === 'signin' ? 'signup' : 'signin');
-                    setError(null);
-                    setSuccessMessage(null);
-                  }}
-                  className="text-xs text-neutral-500 hover:text-primary transition cursor-pointer"
-                >
-                  {mode === 'signin'
-                    ? "Don't have an account? Sign up"
-                    : 'Already have an account? Sign in'}
-                </button>
-              </div>
+              {/* Mode Switch & Forgot Password Links */}
+              <div className="mt-6 text-center space-y-3">
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode(mode === 'signin' ? 'signup' : 'signin');
+                      setError(null);
+                      setSuccessMessage(null);
+                    }}
+                    className="text-[14px] sm:text-[15px] text-[#C3D5D8] hover:text-white transition cursor-pointer"
+                  >
+                    {mode === 'signin' ? (
+                      <>
+                        Don't have an account?{' '}
+                        <span className="text-[#16C7A1] font-semibold hover:underline">Sign up</span>
+                      </>
+                    ) : (
+                      <>
+                        Already have an account?{' '}
+                        <span className="text-[#16C7A1] font-semibold hover:underline">Sign in</span>
+                      </>
+                    )}
+                  </button>
+                </div>
 
-              {/* Forgot Password Link */}
-              <div className="mt-3 text-center">
-                <button
-                  onClick={() => setShowForgotPassword(true)}
-                  className="text-xs text-zinc-500 hover:text-primary transition cursor-pointer"
-                >
-                  Forgot password?
-                </button>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-[13px] sm:text-[14px] text-[#8EA9AE] hover:text-[#16C7A1] transition cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
             </>
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-6 text-xs text-neutral-600">
-          <span className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5" /> 3 repos free
+        {/* ── Bottom Capability Row ──────────────────────────────────── */}
+        <div className="mt-7 sm:mt-8 flex items-center justify-center gap-6 sm:gap-8 text-[14px] text-[#C3D5D8] relative z-10">
+          <span className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#16C7A1]" /> 3 repos free
           </span>
-          <span className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5" /> 20 AI chats
+          <span className="text-[rgba(155,232,224,0.25)]">|</span>
+          <span className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-[#16C7A1]" /> 20 AI chats
           </span>
-          <span className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5" /> 14 days
+          <span className="text-[rgba(155,232,224,0.25)]">|</span>
+          <span className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#16C7A1]" /> 14 days
           </span>
         </div>
       </div>

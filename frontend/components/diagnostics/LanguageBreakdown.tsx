@@ -237,16 +237,16 @@ export default function LanguageBreakdown({
   const visibleEntrypoints = isExpanded ? entryPoints : entryPoints.slice(0, 5);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start text-left w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-4 items-start text-left w-full">
       {/* ─── LEFT: LANGUAGE BREAKDOWN ─── */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="bg-[#063038]/90 backdrop-blur-xl rounded-2xl p-6 border border-[#176873]/50 shadow-xl flex flex-col"
+        transition={{ duration: 0.3 }}
+        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#094752] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
               <Code2 size={18} />
@@ -402,13 +402,13 @@ export default function LanguageBreakdown({
 
       {/* ─── RIGHT: CORE ENTRYPOINTS ─── */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.08 }}
-        className="bg-[#063038]/90 backdrop-blur-xl rounded-2xl p-6 border border-[#176873]/50 shadow-xl flex flex-col"
+        transition={{ duration: 0.3, delay: 0.06 }}
+        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#094752] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
               <FileText size={18} />

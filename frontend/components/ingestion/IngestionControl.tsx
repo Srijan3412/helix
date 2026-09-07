@@ -11,10 +11,8 @@ import {
   Loader2,
   ArrowRight,
   ShieldCheck,
-  Zap
+  Zap,
 } from "lucide-react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
 import { FileDropzone } from "../ui/dropzone";
 
 type TabId = "github" | "zip" | "local";
@@ -31,20 +29,20 @@ const tabs: TabConfig[] = [
     id: "github",
     label: "GitHub URL",
     icon: Github,
-    description: "Clone a public or private repository"
+    description: "Clone a public or private repository",
   },
   {
     id: "zip",
     label: "ZIP Archive",
     icon: FileArchive,
-    description: "Upload and extract a codebase archive"
+    description: "Upload and extract a codebase archive",
   },
   {
     id: "local",
     label: "Local Directory",
     icon: FolderOpen,
-    description: "Scan a local filesystem path"
-  }
+    description: "Scan a local filesystem path",
+  },
 ];
 
 interface IngestionControlProps {
@@ -62,10 +60,10 @@ export default function IngestionControl({
   onSubmitLocal,
   isLoading,
   error,
-  isLimitReached = false
+  isLimitReached = false,
 }: IngestionControlProps) {
   const [activeTab, setActiveTab] = useState<TabId>("github");
-  const [githubUrl, setGithubUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("https://github.com/Srijan3412/helix.git");
   const [localPath, setLocalPath] = useState("c:\\Users\\91798\\Documents\\New folder (3)");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -94,47 +92,39 @@ export default function IngestionControl({
     setSelectedFile(null);
   };
 
-  const isValid = () => {
-    if (isLimitReached) return false;
-    if (activeTab === "github") return githubUrl.trim().length > 0;
-    if (activeTab === "local") return localPath.trim().length > 0;
-    if (activeTab === "zip") return selectedFile !== null;
-    return false;
-  };
-
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6">
-      {/* Scan Limit Alert */}
+    <div className="w-full max-w-[1000px] sm:max-w-[1040px] mx-auto space-y-5 text-left">
+      {/* ── Scan Limit Alert Banner (if limit reached) ────────────── */}
       {isLimitReached && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4"
+          className="p-4 rounded-xl bg-[rgba(255,51,68,0.12)] border border-[rgba(255,51,68,0.35)] flex items-center justify-between gap-3 shadow-lg"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <AlertCircle size={18} className="text-amber-400" />
+            <div className="w-10 h-10 rounded-lg bg-[rgba(255,51,68,0.20)] border border-[rgba(255,51,68,0.35)] flex items-center justify-center shrink-0">
+              <AlertCircle size={20} className="text-[#FF4D5E]" />
             </div>
             <div>
-              <div className="text-xs font-extrabold uppercase tracking-wider text-amber-200">
+              <div className="text-xs font-bold uppercase tracking-wider text-[#FF4D5E]">
                 Scan Limit Reached
               </div>
-              <div className="text-xs text-amber-300/80">
-                You have used all available repository scans for your plan.
+              <div className="text-xs sm:text-sm text-[#C3D5D8] mt-0.5">
+                You have reached your limit of available repository scans for your current plan.
               </div>
             </div>
           </div>
           <button
             onClick={() => (window.location.href = "/contact-sales")}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-neutral-950 text-xs font-extrabold hover:shadow-lg hover:shadow-amber-500/20 transition cursor-pointer shrink-0"
+            className="px-4 py-2 rounded-lg bg-[#FF3344] hover:bg-[#ff4d5e] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#FF3344]/25 transition cursor-pointer shrink-0"
           >
             Upgrade Plan
           </button>
         </motion.div>
       )}
 
-      {/* Tab Header Selector */}
-      <div className="flex justify-center bg-zinc-900/80 p-1.5 rounded-2xl border border-zinc-800/80 max-w-md mx-auto backdrop-blur-md shadow-xl">
+      {/* ── Source Selector Tabs (Height: 60-64px) ─────────────────── */}
+      <div className="flex justify-center bg-[rgba(4,42,52,0.75)] p-1.5 rounded-[16px] border border-[rgba(155,232,224,0.18)] max-w-md sm:max-w-lg mx-auto backdrop-blur-md shadow-lg h-14 sm:h-16">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -143,23 +133,23 @@ export default function IngestionControl({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all duration-300 ${
+              className={`flex-1 flex items-center justify-center gap-2.5 px-3 rounded-[12px] text-xs sm:text-sm font-semibold tracking-wide transition-all duration-200 cursor-pointer h-full ${
                 isActive
-                  ? "bg-primary text-zinc-950 shadow-lg font-bold"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-[#9BE8E0] text-[#063D48] font-bold shadow-md shadow-[#9BE8E0]/20"
+                  : "text-[#C3D5D8] hover:text-white hover:bg-[rgba(155,232,224,0.06)]"
               }`}
             >
-              <Icon size={14} />
+              <Icon size={16} className={isActive ? "text-[#063D48]" : "text-[#8EA9AE]"} />
               <span>{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Tab Content Area */}
+      {/* ── Repository Input Panel ────────────────────────────────── */}
       <div
-        className={`bg-zinc-900/70 border border-zinc-800/80 rounded-2xl p-6 shadow-2xl backdrop-blur-xl transition-all ${
-          isLimitReached ? "opacity-70 border-amber-500/20" : ""
+        className={`bg-[rgba(5,48,58,0.82)] border border-[rgba(155,232,224,0.18)] rounded-[20px] sm:rounded-[24px] p-6 sm:p-8 shadow-2xl backdrop-blur-xl transition-all ${
+          isLimitReached ? "opacity-75 border-amber-500/20" : ""
         }`}
       >
         <AnimatePresence mode="wait">
@@ -170,45 +160,58 @@ export default function IngestionControl({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
+              className="space-y-5"
             >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center">
-                  <Link className="text-primary" size={20} />
+              <div className="flex items-center gap-3.5 mb-1">
+                <div className="w-12 h-12 rounded-[14px] bg-[rgba(22,199,161,0.15)] border border-[rgba(22,199,161,0.30)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                  <Link size={20} className="text-[#16C7A1]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white text-sm">Repository URL</h3>
-                  <p className="text-xs text-zinc-400">
+                  <h3 className="font-bold text-[#F7FAFA] text-base sm:text-lg">Repository URL</h3>
+                  <p className="text-xs sm:text-sm text-[#C3D5D8] mt-0.5">
                     Enter a GitHub repository URL to clone and analyze
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3">
-                <div className="flex-1">
-                  <Input
+              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8EA9AE] pointer-events-none">
+                    <Github className="w-5 h-5" />
+                  </div>
+                  <input
+                    id="repo-url-input"
                     type="url"
                     value={githubUrl}
                     onChange={(e) => setGithubUrl(e.target.value)}
                     placeholder="https://github.com/owner/repository"
-                    icon={<Github className="w-5 h-5 text-zinc-500" />}
                     required
                     disabled={isLoading || isLimitReached}
+                    className="w-full h-14 sm:h-16 pl-12 pr-4 rounded-[12px] bg-[rgba(4,42,52,0.70)] border border-[rgba(155,232,224,0.25)] focus:border-[#16C7A1] focus:outline-hidden text-[#F7FAFA] placeholder:text-[#8EA9AE] text-sm sm:text-base font-medium shadow-inner transition-all"
                   />
                 </div>
-                <Button
+                <button
                   type="submit"
-                  isLoading={isLoading}
-                  disabled={!githubUrl.trim() || isLimitReached}
-                  className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20"
+                  disabled={!githubUrl.trim() || isLimitReached || isLoading}
+                  className="h-14 sm:h-16 px-7 sm:px-9 rounded-[12px] bg-[#63E0D0] hover:bg-[#7cf2e3] text-[#063D48] font-bold text-sm sm:text-base shadow-md shadow-[#63E0D0]/20 flex items-center justify-center gap-2 shrink-0 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group active:translate-y-[1px]"
                 >
-                  {isLimitReached ? "Limit Reached" : "Analyze Repo"}
-                </Button>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="animate-spin w-5 h-5 text-[#063D48]" />
+                      <span>Analyzing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{isLimitReached ? "Limit Reached" : "Analyze Repo"}</span>
+                      <ArrowRight className="w-5 h-5 text-[#063D48] group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
               </form>
 
-              <p className="text-[10.5px] text-zinc-500 flex items-center gap-1.5">
-                <ShieldCheck size={13} className="text-primary" />
-                Supports public and private repositories with automatic token authentication.
+              <p className="text-xs sm:text-sm text-[#C3D5D8] flex items-center gap-2 pt-1">
+                <CheckCircle2 size={16} className="text-[#16C7A1] shrink-0" />
+                <span>Supports public and private repositories with automatic token authentication.</span>
               </p>
             </motion.div>
           )}
@@ -220,15 +223,17 @@ export default function IngestionControl({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
+              className="space-y-5"
             >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center">
-                  <Upload className="text-primary" size={20} />
+              <div className="flex items-center gap-3.5 mb-1">
+                <div className="w-12 h-12 rounded-[14px] bg-[rgba(22,199,161,0.15)] border border-[rgba(22,199,161,0.30)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                  <Upload size={20} className="text-[#16C7A1]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white text-sm">Upload Codebase Archive</h3>
-                  <p className="text-xs text-zinc-400">
+                  <h3 className="font-bold text-[#F7FAFA] text-base sm:text-lg">
+                    Upload Codebase Archive
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#C3D5D8] mt-0.5">
                     Drag and drop or browse a compressed .ZIP repository archive
                   </p>
                 </div>
@@ -246,28 +251,28 @@ export default function IngestionControl({
                 type="button"
                 onClick={() => handleSubmit()}
                 disabled={!selectedFile || isLoading || isLimitReached}
-                className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-500/20 cursor-pointer"
+                className="w-full h-14 sm:h-16 px-6 rounded-[12px] bg-[#63E0D0] hover:bg-[#7cf2e3] text-[#063D48] font-bold text-sm sm:text-base shadow-md shadow-[#63E0D0]/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed group active:translate-y-[1px]"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="animate-spin" size={18} />
-                    <span>Uploading & Extracting Archive...</span>
+                    <Loader2 className="animate-spin w-5 h-5 text-[#063D48]" />
+                    <span>Uploading & Extracting...</span>
                   </>
                 ) : (
                   <>
-                    <Zap size={16} className="text-amber-300" />
+                    <Zap size={18} className="text-[#063D48]" />
                     <span>Start ZIP Architecture Analysis</span>
-                    <ArrowRight size={16} />
+                    <ArrowRight size={18} className="text-[#063D48] group-hover:translate-x-1 transition-transform" />
                   </>
                 )}
               </button>
 
-              <div className="flex items-center justify-between text-[10.5px] text-zinc-500 pt-1">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck size={12} className="text-emerald-400" />
+              <div className="flex items-center justify-between text-xs sm:text-sm text-[#C3D5D8] pt-1">
+                <span className="flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-[#16C7A1]" />
                   Protected against Zip-Slip & decompression attacks
                 </span>
-                <span>Max 200MB</span>
+                <span className="text-[#8EA9AE]">Max 200MB</span>
               </div>
             </motion.div>
           )}
@@ -279,65 +284,63 @@ export default function IngestionControl({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
+              className="space-y-5"
             >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center">
-                  <FolderOpen className="text-primary" size={20} />
+              <div className="flex items-center gap-3.5 mb-1">
+                <div className="w-12 h-12 rounded-[14px] bg-[rgba(22,199,161,0.15)] border border-[rgba(22,199,161,0.30)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                  <FolderOpen size={20} className="text-[#16C7A1]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white text-sm">Local Directory Scan</h3>
-                  <p className="text-xs text-zinc-400">
+                  <h3 className="font-bold text-[#F7FAFA] text-base sm:text-lg">
+                    Local Directory Scan
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#C3D5D8] mt-0.5">
                     Scan an uncompressed project directory from your local filesystem
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3">
-                <div className="flex-1">
-                  <Input
+              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8EA9AE] pointer-events-none">
+                    <FolderOpen className="w-5 h-5" />
+                  </div>
+                  <input
                     type="text"
                     value={localPath}
                     onChange={(e) => setLocalPath(e.target.value)}
-                    placeholder="c:\Users\..."
-                    icon={<FolderOpen className="w-5 h-5 text-zinc-500" />}
+                    placeholder="e.g. C:\projects\my-app or /home/user/my-app"
                     required
                     disabled={isLoading || isLimitReached}
+                    className="w-full h-14 sm:h-16 pl-12 pr-4 rounded-[12px] bg-[rgba(4,42,52,0.70)] border border-[rgba(155,232,224,0.25)] focus:border-[#16C7A1] focus:outline-hidden text-[#F7FAFA] placeholder:text-[#8EA9AE] text-sm sm:text-base font-medium shadow-inner transition-all"
                   />
                 </div>
-                <Button
+                <button
                   type="submit"
-                  isLoading={isLoading}
-                  disabled={!localPath.trim() || isLimitReached}
-                  className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20"
+                  disabled={!localPath.trim() || isLimitReached || isLoading}
+                  className="h-14 sm:h-16 px-7 sm:px-9 rounded-[12px] bg-[#63E0D0] hover:bg-[#7cf2e3] text-[#063D48] font-bold text-sm sm:text-base shadow-md shadow-[#63E0D0]/20 flex items-center justify-center gap-2 shrink-0 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group active:translate-y-[1px]"
                 >
-                  {isLimitReached ? "Limit Reached" : "Scan Directory"}
-                </Button>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="animate-spin w-5 h-5 text-[#063D48]" />
+                      <span>Scanning...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{isLimitReached ? "Limit Reached" : "Scan Directory"}</span>
+                      <ArrowRight className="w-5 h-5 text-[#063D48] group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
               </form>
 
-              <p className="text-[10px] text-zinc-500 italic">
-                Local scanning requires read permissions for the specified directory path.
+              <p className="text-xs sm:text-sm text-[#C3D5D8] flex items-center gap-2 pt-1">
+                <CheckCircle2 size={16} className="text-[#16C7A1] shrink-0" />
+                <span>Direct AST parsing from local source tree without uploading files.</span>
               </p>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Error Display */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-4 rounded-xl bg-red-950/30 border border-red-900/60 flex items-start gap-3"
-          >
-            <AlertCircle className="text-red-400 shrink-0 mt-0.5" size={16} />
-            <div>
-              <p className="text-red-400 font-semibold text-xs uppercase tracking-wider">
-                Ingestion Error
-              </p>
-              <p className="text-red-300/90 text-xs mt-0.5">{error}</p>
-            </div>
-          </motion.div>
-        )}
       </div>
     </div>
   );

@@ -19,13 +19,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`h-full dark ${inter.variable} antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground antialiased selection:bg-primary selection:text-background font-sans">
+    <html lang="en" className={`h-full dark ${inter.variable} antialiased overflow-x-hidden max-w-full`}>
+      <body className="min-h-full flex flex-col bg-background text-foreground antialiased selection:bg-primary selection:text-background font-sans overflow-x-hidden max-w-full">
         <Providers>
-          <div className="flex-1 flex flex-col">
-            <main className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col w-full max-w-full overflow-x-hidden">
+            <div className="flex-1 flex flex-col w-full max-w-full overflow-x-hidden">
               {children}
-            </main>
+            </div>
           </div>
         </Providers>
       </body>

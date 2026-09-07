@@ -13,80 +13,75 @@ export default function AuthDetector({ authType, evidence = [] }: AuthDetectorPr
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-      className="w-full rounded-[24px] bg-[#F8FBFC] border border-[rgba(80,220,220,0.35)] p-7 sm:p-9 relative overflow-hidden shadow-[0_16px_50px_rgba(0,0,0,0.12)] text-left mt-6"
+      transition={{ delay: 0.18 }}
+      className="w-full rounded-[16px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] p-5 relative overflow-hidden shadow-md text-left flex flex-col justify-between min-h-[145px] sm:min-h-[155px]"
     >
-      {/* ── Top-Right Subtle Pale Pink Decorative Circle ── */}
-      <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-[#FFE5E8]/80 pointer-events-none z-0" />
-
-      <div className="relative z-10">
-        {/* ── Top Header: Large Shield Icon + Title + Badge & Confidence ── */}
-        <div className="flex items-center gap-5 sm:gap-6">
-          {/* Large Shield Container with subtle pink glow */}
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[20px] bg-gradient-to-br from-[#FF4D5E] to-[#E9232E] text-white flex items-center justify-center shadow-lg shadow-red-500/25 shrink-0">
-            <Shield className="w-8 h-8 sm:w-10 sm:h-10 stroke-[2.2]" />
-          </div>
-
-          {/* Title, Badge & Confidence Row */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3.5 flex-wrap">
-              <h2 className="text-2xl sm:text-[32px] lg:text-[36px] font-extrabold text-[#082D3A] tracking-tight leading-none">
-                Authentication Guard
-              </h2>
-              <span className="px-4 py-1 rounded-full bg-[#C5F4EF] text-[#084C58] text-xs sm:text-sm font-bold shadow-sm">
-                {isNone ? "None detected" : authType}
-              </span>
+      <div>
+        {/* ── Top Header: Shield Icon + Title + Badge + Confidence ── */}
+        <div className="flex items-center justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[10px] bg-[#FF3344] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Shield size={18} className="stroke-[2.2]" />
             </div>
-
-            <div className="text-sm sm:text-base font-medium text-[#4F757D] mt-2">
-              Confidence: <span className="font-bold text-[#16C7A1] text-base sm:text-lg">{confidence}%</span>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-[15px] font-bold text-[#F7FAFA] leading-snug">
+                  Authentication Guard
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#0E5462] border border-[#16C7A1]/40 text-[#9BE8E0] text-[11px] font-semibold">
+                  {isNone ? "None detected" : authType}
+                </span>
+              </div>
+              <div className="text-[11px] text-[#C3D5D8] mt-0.5">
+                Confidence: <span className="font-bold text-[#16C7A1]">{confidence}%</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ── Full-Width Progress Bar with Percentage Outside ── */}
-        <div className="flex items-center gap-4 my-6 sm:my-7">
-          <div className="flex-1 h-3.5 sm:h-4 rounded-full bg-[#D7EFEF] overflow-hidden">
+        {/* ── Full-Width Progress Bar ── */}
+        <div className="flex items-center gap-3 my-2">
+          <div className="flex-1 h-2 rounded-full bg-[rgba(6,47,56,0.85)] overflow-hidden">
             <div
               className="h-full rounded-full bg-[#16C7A1] transition-all duration-500"
               style={{ width: `${confidence}%` }}
             />
           </div>
-          <span className="text-base sm:text-lg font-black text-[#082D3A] shrink-0">
+          <span className="text-xs font-bold text-[#F7FAFA] font-mono shrink-0">
             {confidence}%
           </span>
         </div>
+      </div>
 
-        {/* ── 3 Large Evidence Panels ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-          <div className="bg-white/90 border border-[#BCEBE6] rounded-[18px] p-4 sm:p-5 flex items-center gap-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#16C7A1] text-white flex items-center justify-center shrink-0 shadow-sm">
-              <Check className="w-5 h-5 stroke-[2.8]" />
-            </div>
-            <span className="text-[14px] sm:text-[15px] font-bold text-[#082D3A] leading-snug">
-              Auth routes detected
-            </span>
+      {/* ── 3 Status Check Boxes ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+        <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.12)] flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-[#16C7A1] text-[#063D48] flex items-center justify-center shrink-0">
+            <Check size={10} className="stroke-[3]" />
           </div>
+          <span className="text-[11px] font-semibold text-[#E1F1F3] truncate">
+            Auth routes detected
+          </span>
+        </div>
 
-          <div className="bg-white/90 border border-[#BCEBE6] rounded-[18px] p-4 sm:p-5 flex items-center gap-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#16C7A1] text-white flex items-center justify-center shrink-0 shadow-sm">
-              <Check className="w-5 h-5 stroke-[2.8]" />
-            </div>
-            <span className="text-[14px] sm:text-[15px] font-bold text-[#082D3A] leading-snug">
-              Environment variables found
-            </span>
+        <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.12)] flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-[#16C7A1] text-[#063D48] flex items-center justify-center shrink-0">
+            <Check size={10} className="stroke-[3]" />
           </div>
+          <span className="text-[11px] font-semibold text-[#E1F1F3] truncate">
+            Environment variables found
+          </span>
+        </div>
 
-          <div className="bg-white/90 border border-[#BCEBE6] rounded-[18px] p-4 sm:p-5 flex items-center gap-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#16C7A1] text-white flex items-center justify-center shrink-0 shadow-sm">
-              <Check className="w-5 h-5 stroke-[2.8]" />
-            </div>
-            <span className="text-[14px] sm:text-[15px] font-bold text-[#082D3A] leading-snug">
-              Security best practices
-            </span>
+        <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.12)] flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-[#16C7A1] text-[#063D48] flex items-center justify-center shrink-0">
+            <Check size={10} className="stroke-[3]" />
           </div>
+          <span className="text-[11px] font-semibold text-[#E1F1F3] truncate">
+            Security best practices
+          </span>
         </div>
       </div>
     </motion.div>
