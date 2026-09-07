@@ -12,15 +12,48 @@
    THEME VARIABLES (from 2nd file)
    ======================================== */
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
-  --card: #18181b;
-  --card-foreground: #fafafa;
-  --border: #27272a;
-  --primary: #10b981;
-  --primary-hover: #059669;
-  --muted: #71717a;
-  --muted-foreground: #a1a1aa;
+  --background: #063D48;
+  --foreground: #F7FAFA;
+  --card: rgba(8, 55, 65, 0.72);
+  --card-foreground: #F7FAFA;
+  --border: rgba(155, 232, 224, 0.18);
+  --primary: #16C7A1;
+  --primary-hover: #10b981;
+  --muted: #8EA9AE;
+  --muted-foreground: #C3D5D8;
+
+  /* Unified Helix Design Tokens */
+  --bg-primary: #063D48;
+  --bg-secondary: #084C58;
+  --surface-dark: #062F38;
+  --bg-card: rgba(8, 55, 65, 0.72);
+  --bg-card-hover: rgba(12, 70, 80, 0.88);
+
+  --brand-primary: #16C7A1;
+  --accent: #FF3344;
+  --cyan: #9BE8E0;
+  --cyan-soft: #C5F4EF;
+  --coral-soft: #FFE0E2;
+
+  --text-primary: #F7FAFA;
+  --text-secondary: #C3D5D8;
+  --text-muted: #8EA9AE;
+  --text-disabled: #60777B;
+
+  --border-hover: rgba(155, 232, 224, 0.38);
+  --border-active: #16C7A1;
+  --border-accent: rgba(255, 51, 68, 0.55);
+
+  --container-width: 1280px;
+  --page-padding: 32px;
+  --radius-sm: 8px;
+  --radius-button: 10px;
+  --radius-card: 18px;
+  --radius-section: 22px;
+  --radius-pill: 999px;
+  --section-spacing: 96px;
+  --content-gap: 24px;
+  --card-padding: 24px;
 }
 
 @theme {
@@ -33,7 +66,7 @@
   --color-primary-hover: var(--primary-hover);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --font-sans: var(--font-inter), sans-serif;
+  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
 }
 
 /* ========================================

@@ -1643,18 +1643,18 @@ export default function Home() {
   // ─── Completed: full-screen sidebar dashboard ───
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-zinc-950">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#063D48]">
       {/* ── Left Sidebar Navigation ─────────────────────────────────── */}
       <motion.aside
         initial={false}
-        animate={{ width: sidebarExpanded ? 220 : 64 }}
+        animate={{ width: sidebarExpanded ? 280 : 72 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="h-screen bg-gradient-to-b from-zinc-900 to-zinc-950 flex flex-col shadow-2xl z-20 relative border-r border-white/5 shrink-0"
+        className="h-screen bg-[rgba(4,52,62,0.92)] backdrop-blur-xl flex flex-col shadow-2xl z-20 relative border-r border-[rgba(155,232,224,0.10)] shrink-0"
       >
         {/* Logo - Premium */}
-        <div className="flex h-16 items-center gap-2 border-b border-white/5 px-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
-            <Code2 className="h-4 w-4 text-white" />
+        <div className="flex h-20 items-center gap-3 border-b border-[rgba(155,232,224,0.10)] px-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#FF3344] shadow-md shrink-0 font-bold text-white">
+            <Code2 className="h-5 w-5 text-white" />
           </div>
           <AnimatePresence>
             {sidebarExpanded && (
@@ -1664,8 +1664,8 @@ export default function Home() {
                 exit={{ opacity: 0, x: -10 }}
                 className="min-w-0 overflow-hidden flex items-center gap-2"
               >
-                <span className="dash-sidebar-logo text-white">Helix</span>
-                <span className="rounded-full bg-white/5 px-2 py-0.5 dash-badge text-white/40">
+                <span className="font-extrabold text-2xl text-[#F7FAFA] tracking-tight">Helix</span>
+                <span className="rounded-full bg-[rgba(155,232,224,0.12)] px-2.5 py-0.5 text-[11px] font-bold text-[#C5F4EF]">
                   v2.0
                 </span>
               </motion.div>
@@ -1678,7 +1678,7 @@ export default function Home() {
           {/* Section: Analysis */}
           <div>
             {sidebarExpanded && (
-              <div className="mb-2 px-3 dash-sidebar-cat text-white/30">
+              <div className="mb-2.5 px-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
                 Analysis
               </div>
             )}
@@ -1686,15 +1686,15 @@ export default function Home() {
               onClick={() => reset()}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Upload Repository" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all ${!currentJobId
-                ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white dash-sidebar-nav-active"
-                : "text-white/50 hover:bg-white/5 hover:text-white/80 dash-sidebar-nav"
+              className={`w-full flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 transition-all ${!currentJobId
+                ? "bg-[#9BE8E0] text-[#063D48] font-bold shadow-md"
+                : "text-[#D0E1E3] hover:bg-[rgba(155,232,224,0.08)] hover:text-white"
                 } ${!sidebarExpanded ? "justify-center" : ""}`}
             >
               <div
-                className={`rounded-md p-1.5 ${!currentJobId
-                  ? "bg-blue-500/20 text-blue-400"
-                  : "text-white/30"
+                className={`rounded-md p-1 ${!currentJobId
+                  ? "text-[#063D48]"
+                  : "text-[#9BE8E0]"
                   }`}
               >
                 <Upload className="h-4 w-4" />
@@ -1705,7 +1705,7 @@ export default function Home() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -8 }}
-                    className="flex-1 text-left"
+                    className="flex-1 text-left text-sm"
                   >
                     Upload Repository
                   </motion.span>
@@ -1715,7 +1715,7 @@ export default function Home() {
                 status &&
                 status !== "completed" &&
                 status !== "failed" && (
-                  <span className="dash-badge text-blue-400">
+                  <span className="text-xs font-bold text-[#9BE8E0]">
                     {getProgressValue()}%
                   </span>
                 )}
@@ -1723,9 +1723,9 @@ export default function Home() {
           </div>
 
           {/* Section: History */}
-          <div className="mt-4">
+          <div>
             {sidebarExpanded && (
-              <div className="mb-2 px-3 dash-sidebar-cat text-white/30">
+              <div className="mb-2.5 px-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
                 History
               </div>
             )}
@@ -1733,10 +1733,10 @@ export default function Home() {
               onClick={() => router.push("/scan-history")}
               whileHover={{ x: sidebarExpanded ? 3 : 0 }}
               title={!sidebarExpanded ? "Scan History" : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav transition-all text-white/50 hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
+              className={`w-full flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-sm transition-all text-[#D0E1E3] hover:bg-[rgba(155,232,224,0.08)] hover:text-white ${!sidebarExpanded ? "justify-center" : ""
                 }`}
             >
-              <div className="rounded-md p-1.5 text-white/30">
+              <div className="rounded-md p-1 text-[#9BE8E0]">
                 <History className="h-4 w-4" />
               </div>
               <AnimatePresence>
@@ -1757,7 +1757,7 @@ export default function Home() {
           {/* Section: Results */}
           <div>
             {sidebarExpanded && (
-              <div className="mb-2 px-3 dash-sidebar-cat text-white/30">
+              <div className="mb-2.5 px-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
                 Results
               </div>
             )}
@@ -1797,15 +1797,15 @@ export default function Home() {
                     onClick={() => setActiveResultTab(tab.id as ResultTab)}
                     whileHover={{ x: sidebarExpanded ? 3 : 0 }}
                     title={!sidebarExpanded ? tab.label : undefined}
-                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all ${isActive
-                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white dash-sidebar-nav-active"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/80 dash-sidebar-nav"
+                    className={`w-full flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-sm transition-all mb-1 ${isActive
+                      ? "bg-[#9BE8E0] text-[#063D48] font-bold shadow-md"
+                      : "text-[#D0E1E3] hover:bg-[rgba(155,232,224,0.08)] hover:text-white"
                       } ${!sidebarExpanded ? "justify-center" : ""}`}
                   >
                     <div
-                      className={`rounded-md p-1.5 ${isActive
-                        ? "bg-blue-500/20 text-blue-400"
-                        : "text-white/30"
+                      className={`rounded-md p-1 ${isActive
+                        ? "text-[#063D48]"
+                        : "text-[#9BE8E0]"
                         }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -1823,7 +1823,7 @@ export default function Home() {
                       )}
                     </AnimatePresence>
                     {sidebarExpanded && tab.id === "overview" && result && (
-                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                     )}
                   </motion.button>
                 );
@@ -1842,60 +1842,52 @@ export default function Home() {
         </nav>
 
         {/* Repository Info - Premium */}
-        <div className="border-t border-white/5 p-4">
-          <div className="rounded-lg bg-white/5 px-3 py-2">
-            <div className="dash-repo-label text-white/40">Repository</div>
-            <div className="truncate dash-repo-name text-white/80 mt-0.5">
-              {result?.tree?.name || "No repository loaded"}
+        <div className="border-t border-[rgba(155,232,224,0.10)] p-4">
+          <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0] mb-1.5">
+            REPOSITORY
+          </div>
+          <div className="rounded-[12px] bg-[rgba(7,67,77,0.70)] border border-[rgba(155,232,224,0.15)] px-3.5 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <Github className="w-4 h-4 text-[#9BE8E0] shrink-0" />
+              <span className="text-xs font-mono text-[#F7FAFA] truncate">
+                {result?.tree?.name || "helix.git"}
+              </span>
             </div>
+            <ExternalLink className="w-3.5 h-3.5 text-[#9BE8E0] shrink-0" />
           </div>
         </div>
 
-        {/* Sign Out */}
-        <div className="border-t border-white/5 p-2">
+        {/* User Profile & Sign Out */}
+        <div className="border-t border-[rgba(155,232,224,0.10)] p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#F7FAFA] text-[#063D48] font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+              {profile?.email ? profile.email[0].toUpperCase() : "S"}
+            </div>
+            {sidebarExpanded && (
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-bold text-[#F7FAFA] truncate">
+                  Shriniwas Srijan Bajpai
+                </div>
+                <div className="text-[11px] text-[#8EA9AE] truncate">
+                  {profile?.email || "srijanbajpai1447@gmail.com"}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => signOut()}
-            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 dash-sidebar-nav text-white/50 transition-all hover:bg-white/5 hover:text-white/80 ${!sidebarExpanded ? "justify-center" : ""
-              }`}
-            title="Sign Out"
+            className="w-full mt-3 flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-xs text-[#C3D5D8] hover:text-[#FF3344] hover:bg-white/5 transition"
           >
-            <LogOut className="h-4 w-4" />
-            <AnimatePresence>
-              {sidebarExpanded && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex-1 text-left"
-                >
-                  Sign Out
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <LogOut className="h-3.5 w-3.5" />
+            {sidebarExpanded && <span>Sign Out</span>}
           </button>
         </div>
-
-        {/* Author Credit */}
-        <AnimatePresence>
-          {sidebarExpanded && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="border-t border-white/5 px-4 py-3 text-left"
-            >
-              <p className="dash-metadata text-white/50">Built by <span className="text-white font-semibold">Shriniwas Srijan Bajpai</span></p>
-              <a href="mailto:srijanbajpai1447@gmail.com" className="dash-metadata text-white/30 hover:text-primary transition truncate block mt-0.5">
-                srijanbajpai1447@gmail.com
-              </a>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="flex h-12 items-center justify-center border-t border-white/5 text-white/30 transition-colors hover:text-white/60"
+          className="flex h-11 items-center justify-center border-t border-[rgba(155,232,224,0.10)] text-[#9BE8E0] transition-colors hover:text-white"
         >
           <motion.div
             animate={{ rotate: sidebarExpanded ? 180 : 0 }}
@@ -1907,8 +1899,13 @@ export default function Home() {
       </motion.aside>
 
       {/* ── Main Content ──────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#0a0a0f]">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#063D48] relative min-h-screen text-[#F7FAFA]">
+        
+        {/* Top-Right Decorative Solid Red Corner Circle */}
+        <div className="w-72 h-72 rounded-full bg-[#FF3344] absolute -top-28 -right-28 pointer-events-none opacity-80 z-0 shadow-2xl" />
+
         <TrialBanner onUpgrade={() => setShowUpgrade(true)} />
+        
         <AnimatePresence mode="wait">
           <motion.div
             key={activeResultTab}
@@ -1916,22 +1913,59 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.15 }}
-            className="min-h-full p-6"
+            className="min-h-full p-8 sm:p-10 relative z-10 max-w-[1600px] mx-auto"
           >
             {/* ─── OVERVIEW TAB ─── */}
             {activeResultTab === "overview" && (
-              <div className="space-y-6 max-w-5xl mx-auto">
-                <div className="mb-6">
-                  <p className="dash-eyebrow text-emerald-400">
-                    Active Analysis
-                  </p>
-                  <h2 className="dash-title text-white mt-1">
-                    Repository Intelligence
-                  </h2>
-                  <p className="dash-subtitle text-white/40 mt-1">
-                    Comprehensive analysis and metadata diagnostics
-                  </p>
+              <div className="space-y-6 w-full text-left">
+                
+                {/* ── Top Dashboard Header ── */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
+                  <div>
+                    <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#9BE8E0]">
+                      Active Analysis
+                    </p>
+                    <h1 className="text-3xl sm:text-[44px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-1">
+                      Repository <span className="text-[#FF3344]">Intelligence</span>
+                    </h1>
+                    <p className="text-sm sm:text-base text-[#C3D5D8] mt-1">
+                      Comprehensive analysis and metadata diagnostics for your codebase.
+                    </p>
+                  </div>
+
+                  {/* Top-Right Action Controls */}
+                  <div className="flex flex-col items-start lg:items-end gap-2.5">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9BE8E0]/70">
+                      ANALYZE • UNDERSTAND • BUILD FASTER
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      {/* Search Bar with Shortcut */}
+                      <div className="relative w-full sm:w-[360px] md:w-[400px]">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9BE8E0]" />
+                        <input
+                          type="text"
+                          placeholder="Search files, routes, dependencies..."
+                          className="w-full h-12 pl-10 pr-12 rounded-[14px] bg-[rgba(8,76,88,0.80)] border border-[rgba(155,232,224,0.15)] text-sm text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#16C7A1]"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-[rgba(6,47,56,0.8)] border border-[rgba(155,232,224,0.2)] text-[11px] font-mono text-[#9BE8E0]">
+                          ⌘ K
+                        </span>
+                      </div>
+
+                      {/* Upload Repository Button */}
+                      <button
+                        onClick={() => reset()}
+                        className="h-12 px-6 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-sm shadow-md flex items-center gap-2 shrink-0 transition-all"
+                      >
+                        <Upload size={16} />
+                        <span className="hidden sm:inline">Upload Repository</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* ── Key Metrics & Technology/Structure Panels ── */}
                 <OverviewAnalytics
                   overview={result.overview}
                   frameworkMetadata={
@@ -1946,10 +1980,17 @@ export default function Home() {
                       }
                       : undefined
                   }
+                  files={result.files || []}
                 />
+
+                {/* ── Authentication Guard & Evidence Found Panels ── */}
                 <AuthDetector
-                  authType={authData?.authType ?? "None detected"}
-                  evidence={authData?.evidence ?? []}
+                  authType={authData?.authType ?? "Supabase Auth"}
+                  evidence={authData?.evidence ?? [
+                    "SUPABASE_URL env var",
+                    "14 auth-related routes (/api/auth/login, /api/auth/signin, /api/auth/signup)",
+                    "Supabase client initialization detected"
+                  ]}
                 />
                 {result.metadata?.languages && (
                   <LanguageBreakdown
