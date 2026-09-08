@@ -10,7 +10,6 @@ import {
   Loader2,
   FileSearch
 } from "lucide-react";
-import { Progress } from "../ui/progress";
 
 type IngestionStatus = "uploaded" | "queued" | "cloning" | "extracting" | "scanning" | "completed" | "failed" | string;
 
@@ -50,32 +49,21 @@ export default function ProgressTracker({
   const getStageStatus = (stageId: IngestionStatus): "pending" | "active" | "completed" | "failed" => {
     if (isFailed) return "failed";
     const idx = stages.findIndex((s) => s.id === stageId);
-    if (idx < currentStageIndex) return "completed";
+    if (idx < currentStageIndex || isComplete) return "completed";
     if (idx === currentStageIndex) return "active";
     return "pending";
   };
 
-  const getStageColor = (stageStatus: "pending" | "active" | "completed" | "failed") => {
-    switch (stageStatus) {
-      case "completed":
-        return "text-primary bg-primary/10 border-primary/30";
-      case "active":
-        return "text-primary bg-primary/15 border-primary/40 animate-pulse";
-      case "failed":
-        return "text-red-500 bg-red-500/10 border-red-500/30";
-      default:
-        return "text-zinc-500 bg-zinc-800/20 border-zinc-700/30";
-    }
-  };
-
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      <div className="glass-card rounded-2xl p-6 shadow-2xl">
-        {/* Header - from daadd-main with projectAnalyser styling */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="w-full max-w-[760px] mx-auto select-none">
+      <div className="bg-[#131A1D] border border-white/[0.08] rounded-2xl p-6 sm:p-7 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-5">
           <div>
-            <h3 className="font-bold text-white text-lg">Analysis Pipeline</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-[18px] sm:text-[20px] font-bold text-[#F4F7F7] leading-tight">
+              Analysis Pipeline
+            </h3>
+            <p className="text-[14px] text-[#B4C1C4] mt-1 font-normal">
               {isFailed
                 ? "Pipeline execution failed"
                 : isComplete
@@ -84,97 +72,121 @@ export default function ProgressTracker({
             </p>
           </div>
           {jobId && (
-            <div className="text-xs text-muted-foreground font-mono bg-zinc-900 px-3 py-1.5 rounded-lg border border-border/50">
-              Job: {jobId.slice(0, 8)}...
+            <div className="h-[30px] px-3 bg-[#111417] border border-white/[0.08] rounded-lg text-[11px] font-mono text-[#78858A] flex items-center justify-center shrink-0">
+              Job: {jobId.slice(0, 10)}...
             </div>
           )}
         </div>
 
-        {/* Progress Bar - from daadd-main with Progress component */}
-        <div className="mb-8">
-          <div className="flex justify-between text-xs mb-2">
-            <span className="text-muted-foreground uppercase tracking-widest font-semibold">Progress</span>
-            <span className="text-primary font-bold">{progress}%</span>
+        {/* Progress Bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className="text-[12px] font-bold text-[#78858A] uppercase tracking-[0.1em]">
+              PROGRESS
+            </span>
+            <span className="text-[13px] font-bold text-[#16C7A1]">{progress}%</span>
           </div>
-          <Progress value={progress} showText={false} />
+          <div className="w-full h-[7px] bg-[#25282B] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#16C7A1] rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
+            />
+          </div>
         </div>
 
-        {/* Stages List - from daadd-main with projectAnalyser styling */}
-        <div className="space-y-3 relative">
+        {/* Pipeline Vertical Timeline */}
+        <div className="relative py-1 space-y-2">
+          {/* Continuous vertical connector line */}
+          <div className="absolute left-[19px] top-[20px] bottom-[20px] w-[1.5px] bg-[#16C7A1]/35 pointer-events-none z-0" />
+
           {stages.map((stage, index) => {
             const stageStatus = getStageStatus(stage.id);
-            const Icon = stage.icon;
-            const colorClass = getStageColor(stageStatus);
             const isActive = stageStatus === "active";
+            const isStageCompleted = stageStatus === "completed";
 
             return (
               <motion.div
                 key={stage.id}
-                initial={{ opacity: 0, x: -10 }}
+                initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`flex items-center gap-4 p-3 rounded-xl border border-transparent transition-all duration-300 relative z-10 ${
-                  isActive ? "bg-zinc-800/40 border-border/50 shadow-md" : ""
+                transition={{ delay: index * 0.04 }}
+                className={`relative z-10 flex items-center gap-4 px-3 py-2 rounded-xl transition-colors duration-200 ${
+                  isActive ? "bg-white/[0.025]" : "hover:bg-white/[0.015]"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${colorClass}`}>
-                  {isActive ? (
-                    <Loader2 className="animate-spin text-primary" size={18} />
-                  ) : stageStatus === "completed" ? (
-                    <CheckCircle2 size={18} className="text-primary" />
+                {/* Status Circle (40px x 40px) */}
+                <div
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center border shrink-0 transition-colors ${
+                    isStageCompleted
+                      ? "border-[#16C7A1]/40 bg-[#16C7A1]/10 text-[#16C7A1]"
+                      : isActive
+                      ? "border-[#16C7A1]/60 bg-[#16C7A1]/15 text-[#16C7A1]"
+                      : stageStatus === "failed"
+                      ? "border-red-500/40 bg-red-500/10 text-red-400"
+                      : "border-[#3A454B] bg-[#11181B] text-[#78858C]"
+                  }`}
+                >
+                  {isStageCompleted ? (
+                    <CheckCircle2 size={18} className="text-[#16C7A1]" />
+                  ) : isActive ? (
+                    <Loader2 size={18} className="animate-spin text-[#16C7A1]" />
                   ) : stageStatus === "failed" ? (
-                    <XCircle size={18} className="text-red-500" />
+                    <XCircle size={18} className="text-red-400" />
                   ) : (
-                    <Icon size={18} />
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-[#53616A]" />
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-white text-sm">{stage.label}</span>
-                    {isActive && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary">
-                        In Progress
+
+                {/* Step Details */}
+                <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[15px] sm:text-[16px] font-semibold text-[#F4F7F7]">
+                        {stage.label}
                       </span>
-                    )}
-                    {stageStatus === "completed" && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary/80">
-                        Completed
-                      </span>
-                    )}
+                      {isActive && (
+                        <span className="h-[22px] px-2.5 rounded-full text-[11px] font-bold bg-[#16C7A1]/20 text-[#16C7A1] border border-[#16C7A1]/40 flex items-center shrink-0">
+                          In Progress
+                        </span>
+                      )}
+                      {isStageCompleted && (
+                        <span className="h-[22px] px-2.5 rounded-full text-[11px] font-bold bg-[#16C7A1]/12 text-[#16C7A1]/90 border border-[#16C7A1]/25 flex items-center shrink-0">
+                          Completed
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[12px] sm:text-[13px] text-[#B0BEC1] mt-0.5 font-normal">
+                      {stage.description}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{stage.description}</p>
                 </div>
               </motion.div>
             );
           })}
         </div>
 
-        {/* Ingestion Checklist - from daadd-main */}
-        {status === "scanning" && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 pt-6 border-t border-border/50"
-          >
-            <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-              <FileSearch size={14} />
-              AST Analysis Checklist
+        {/* AST Checklist Section */}
+        <div className="mt-6 pt-5 border-t border-white/[0.08]">
+          <div className="flex items-center gap-2 mb-3">
+            <FileSearch size={14} className="text-[#16C7A1]" />
+            <h4 className="text-[12px] font-bold text-[#16C7A1] uppercase tracking-[0.08em]">
+              AST ANALYSIS CHECKLIST
             </h4>
-            <div className="grid grid-cols-2 gap-3 p-3 bg-zinc-900/40 border border-border/50 rounded-xl">
-              <CheckItem label="AST Parser Pipeline" isComplete />
-              <CheckItem label="Framework Classifier" isComplete />
-              <CheckItem label="Route Decorator Engine" isActive />
-              <CheckItem label="Static Import Graph" />
-            </div>
-          </motion.div>
-        )}
+          </div>
+          <div className="bg-[#11181B] border border-white/[0.08] rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-4">
+            <CheckItem label="AST Parser Pipeline" isComplete={progress >= 70 || isComplete} isActive={status === "scanning" && progress < 70} />
+            <CheckItem label="Framework Classifier" isComplete={progress >= 80 || isComplete} isActive={status === "scanning" && progress >= 70 && progress < 80} />
+            <CheckItem label="Route Decorator Engine" isComplete={progress >= 90 || isComplete} isActive={status === "scanning" && progress >= 80 && progress < 90} />
+            <CheckItem label="Static Import Graph" isComplete={isComplete || progress >= 98} isActive={status === "scanning" && progress >= 90} />
+          </div>
+        </div>
 
-        {/* Error Display - from daadd-main */}
+        {/* Error Display */}
         {isFailed && error && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-6 p-4 rounded-xl bg-red-950/20 border border-red-900/50"
+            className="mt-5 p-4 rounded-xl bg-red-950/20 border border-red-900/50"
           >
             <div className="flex items-start gap-3">
               <XCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
@@ -192,17 +204,17 @@ export default function ProgressTracker({
 
 function CheckItem({ label, isComplete, isActive }: { label: string; isComplete?: boolean; isActive?: boolean }) {
   return (
-    <div className="flex items-center gap-2 text-xs font-medium">
+    <div className="flex items-center gap-2 text-[12px] sm:text-[13px] font-medium">
       {isComplete ? (
-        <CheckCircle2 size={12} className="text-primary shrink-0" />
+        <CheckCircle2 size={14} className="text-[#16C7A1] shrink-0" />
       ) : isActive ? (
-        <Loader2 size={12} className="text-primary animate-spin shrink-0" />
+        <Loader2 size={14} className="text-[#16C7A1] animate-spin shrink-0" />
       ) : (
-        <div className="w-3 h-3 rounded-full border border-zinc-700 shrink-0" />
+        <div className="w-3.5 h-3.5 rounded-full border border-[#53616A] shrink-0" />
       )}
-      <span className={isComplete ? "text-zinc-300" : isActive ? "text-primary font-semibold" : "text-zinc-550"}>
+      <span className={isComplete || isActive ? "text-[#F4F7F7]" : "text-[#78858C]"}>
         {label}
       </span>
     </div>
   );
-}
+}
