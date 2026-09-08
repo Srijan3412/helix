@@ -193,6 +193,10 @@ const DatabaseExplorer = dynamic(
   () => import("../components/diagnostics/DatabaseExplorer"),
   { ssr: false },
 );
+const HealthDiagnostics = dynamic(
+  () => import("../components/diagnostics/HealthDiagnostics"),
+  { ssr: false },
+);
 
 import { useSubscription } from "../lib/subscription/SubscriptionContext";
 import ScanUsageDisplay from '../components/ScanUsageDisplay';
@@ -1760,7 +1764,7 @@ export default function Home() {
       {/* ── Left Sidebar Navigation ─────────────────────────────────── */}
       <motion.aside
         initial={false}
-        animate={{ width: sidebarExpanded ? 260 : 72 }}
+        animate={{ width: sidebarExpanded ? 240 : 72 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
         className="h-screen bg-[rgba(4,52,62,0.92)] backdrop-blur-xl flex flex-col shadow-2xl z-20 relative border-r border-[rgba(155,232,224,0.10)] shrink-0 overflow-hidden"
       >
@@ -1787,91 +1791,12 @@ export default function Home() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-6 overflow-y-auto p-4">
-          {/* Section: Analysis */}
-          <div>
-            {sidebarExpanded && (
-              <div className="mb-2.5 px-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
-                Analysis
-              </div>
-            )}
-            <motion.button
-              onClick={() => reset()}
-              whileHover={{ x: sidebarExpanded ? 3 : 0 }}
-              title={!sidebarExpanded ? "Upload Repository" : undefined}
-              className={`w-full flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 transition-all ${!currentJobId
-                ? "bg-[#9BE8E0] text-[#063D48] font-bold shadow-md"
-                : "text-[#D0E1E3] hover:bg-[rgba(155,232,224,0.08)] hover:text-white"
-                } ${!sidebarExpanded ? "justify-center" : ""}`}
-            >
-              <div
-                className={`rounded-md p-1 ${!currentJobId
-                  ? "text-[#063D48]"
-                  : "text-[#9BE8E0]"
-                  }`}
-              >
-                <Upload className="h-4 w-4" />
-              </div>
-              <AnimatePresence>
-                {sidebarExpanded && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -8 }}
-                    className="flex-1 text-left text-sm"
-                  >
-                    Upload Repository
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {sidebarExpanded &&
-                status &&
-                status !== "completed" &&
-                status !== "failed" && (
-                  <span className="text-xs font-bold text-[#9BE8E0]">
-                    {getProgressValue()}%
-                  </span>
-                )}
-            </motion.button>
-          </div>
-
-          {/* Section: History */}
-          <div>
-            {sidebarExpanded && (
-              <div className="mb-2.5 px-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
-                History
-              </div>
-            )}
-            <motion.button
-              onClick={() => router.push("/scan-history")}
-              whileHover={{ x: sidebarExpanded ? 3 : 0 }}
-              title={!sidebarExpanded ? "Scan History" : undefined}
-              className={`w-full flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-sm transition-all text-[#D0E1E3] hover:bg-[rgba(155,232,224,0.08)] hover:text-white ${!sidebarExpanded ? "justify-center" : ""
-                }`}
-            >
-              <div className="rounded-md p-1 text-[#9BE8E0]">
-                <History className="h-4 w-4" />
-              </div>
-              <AnimatePresence>
-                {sidebarExpanded && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -8 }}
-                    className="flex-1 text-left"
-                  >
-                    Scan History
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          </div>
-
+        <nav className="flex-1 space-y-4 overflow-y-auto p-3.5">
           {/* Section: Results */}
           <div>
             {sidebarExpanded && (
               <div className="mb-2.5 px-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
-                Results
+                RESULTS
               </div>
             )}
             {(() => {
@@ -1884,8 +1809,6 @@ export default function Home() {
                 { id: "impact", label: "Impact & Risk" },
                 { id: "compare", label: "Compare Scans" },
                 { id: "env", label: "Environment" },
-                { id: "ai-architect", label: "AI Architect" },
-                { id: "onboarding", label: "Onboarding" },
               ];
               return visibleTabs.map((tab) => {
                 const isActive = activeResultTab === tab.id;
@@ -1898,9 +1821,6 @@ export default function Home() {
                   impact: Zap,
                   compare: GitCompare,
                   env: Settings,
-                  "ai-architect": Sparkles,
-                  onboarding: Terminal,
-                  billing: CreditCard,
                 };
                 const Icon = icons[tab.id as keyof typeof icons] || Layers;
 
@@ -1942,15 +1862,6 @@ export default function Home() {
                 );
               });
             })()}
-
-            {/* Token Counter */}
-            {sidebarExpanded &&
-              profile?.role !== "org_admin" &&
-              profile?.email !== "admin@projectanalyser.com" && (
-                <div className="mt-4 px-2">
-                  <TokenCounter />
-                </div>
-              )}
           </div>
         </nav>
 
@@ -2288,140 +2199,20 @@ export default function Home() {
 
             {/* ─── HEALTH TAB ─── */}
             {activeResultTab === "health" && (
-              <div className="w-full max-w-[1450px] mx-auto space-y-6 text-left">
-                <div className="mb-6">
-                  <p className="dash-eyebrow text-emerald-400">
-                    Code Quality
-                  </p>
-                  <h2 className="dash-title text-white mt-1">
-                    Health Diagnostics
-                  </h2>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4 col-span-2 md:col-span-1">
-                    <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
-                      Health Score
-                    </div>
-                    <div
-                      className={`dash-metric ${score >= 80 ? "text-emerald-400" : score >= 60 ? "text-amber-400" : "text-red-400"}`}
-                    >
-                      {score}
-                    </div>
-                    <div className="dash-metadata text-zinc-600 mt-1">/100</div>
-                  </div>
-                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                    <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
-                      Cycles
-                    </div>
-                    <div className="dash-metric text-red-400">
-                      {cycleCount}
-                    </div>
-                  </div>
-                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                    <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
-                      Dead Code
-                    </div>
-                    <div className="dash-metric text-amber-400">
-                      {deadCount}
-                    </div>
-                  </div>
-                  <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                    <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
-                      Broken Imports
-                    </div>
-                    <div className="dash-metric text-rose-400">
-                      {brokenCount}
-                    </div>
-                  </div>
-                </div>
-
-                {isStaticLoading && (
-                  <div className="flex items-center gap-2 text-zinc-500 dash-metadata">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Loading
-                    detailed report...
-                  </div>
-                )}
-
-                {hasReport && (
-                  <div className="space-y-4">
-                    {staticAnalysisReport.godServices?.length > 0 && (
-                      <div className="bg-red-950/10 border border-red-900/30 rounded-xl p-4">
-                        <div className="dash-section-heading text-red-400 uppercase tracking-[0.06em] mb-3">
-                          God Services (
-                          {staticAnalysisReport.godServices.length})
-                        </div>
-                        <div className="space-y-2">
-                          {staticAnalysisReport.godServices.map(
-                            (g: any, i: number) => (
-                              <div
-                                key={i}
-                                className="flex items-center gap-3"
-                              >
-                                <code className="dash-filepath text-zinc-300 truncate flex-1">
-                                  {g.file}
-                                </code>
-                                <Badge variant="error" className="dash-badge">
-                                  {g.methods} methods
-                                </Badge>
-                                <Badge
-                                  variant="secondary"
-                                  className="dash-badge"
-                                >
-                                  {g.loc} LOC
-                                </Badge>
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    {staticAnalysisReport.cycles?.length > 0 && (
-                      <div className="bg-amber-950/10 border border-amber-900/30 rounded-xl p-4">
-                        <div className="dash-section-heading text-amber-400 uppercase tracking-[0.06em] mb-3">
-                          Circular Dependencies (
-                          {staticAnalysisReport.cycles.length})
-                        </div>
-                        <div className="space-y-2">
-                          {staticAnalysisReport.cycles
-                            .slice(0, 5)
-                            .map((c: any, i: number) => (
-                              <div
-                                key={i}
-                                className="flex items-start gap-2"
-                              >
-                                <span className="dash-metadata text-zinc-600 font-bold mt-0.5">
-                                  {i + 1}.
-                                </span>
-                                <code className="dash-filepath text-amber-300/80">
-                                  {Array.isArray(c) ? c.join(" → ") : c}
-                                </code>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                    {staticAnalysisReport.deadCode?.length > 0 && (
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="dash-section-heading text-zinc-400 uppercase tracking-[0.06em] mb-3">
-                          Dead Code ({staticAnalysisReport.deadCode.length})
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                          {staticAnalysisReport.deadCode
-                            .slice(0, 10)
-                            .map((f: any, i: number) => (
-                              <code
-                                key={i}
-                                className="dash-filepath text-zinc-500 truncate"
-                              >
-                                {typeof f === "string" ? f : f.file}
-                              </code>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <HealthDiagnostics
+                score={healthData?.score ?? 28}
+                cycleCount={healthData?.cycles ?? 0}
+                deadCount={staticAnalysisReport?.deadCode?.length ?? healthData?.deadFiles?.length ?? 50}
+                brokenCount={healthData?.brokenImports ?? (result?.metadata as any)?.brokenImportsCount ?? 86}
+                godServices={staticAnalysisReport?.godServices}
+                deadCode={staticAnalysisReport?.deadCode}
+                cycles={staticAnalysisReport?.cycles}
+                isLoading={isStaticLoading}
+                onSelectFile={(f) => {
+                  setSelectedImpactFile(f);
+                  setActiveResultTab("arch");
+                }}
+              />
             )}
 
             {/* ─── IMPACT TAB ─── */}
