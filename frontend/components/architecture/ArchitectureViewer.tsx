@@ -15,6 +15,9 @@ import {
   Activity,
   ChevronRight,
   AlertTriangle,
+  Folder,
+  BarChart2,
+  ArrowRight,
 } from "lucide-react";
 
 import LayerView from "./LayerView";
@@ -28,7 +31,7 @@ type ArchMode = "layer" | "file" | "route" | "dependency" | "trace" | "metro";
 
 const TABS: { id: ArchMode; label: string; icon: React.ReactNode }[] = [
   { id: "layer",      label: "Layered View",       icon: <Layers size={16} /> },
-  { id: "file",       label: "File Graph",          icon: <Network size={16} /> },
+  { id: "file",       label: "Dependency Graph",    icon: <Network size={16} /> },
   { id: "route",      label: "Route Graph",         icon: <Route size={16} /> },
   { id: "dependency", label: "Package Dependencies",icon: <Package size={16} /> },
   { id: "trace",      label: "Execution Trace",     icon: <GitBranch size={16} /> },
@@ -59,28 +62,28 @@ export default function ArchitectureViewer({
     enabled: !!currentJobId,
   });
 
+  const layerColors: Record<string, string> = {
+    routes: "#2F80ED",       // blue
+    controllers: "#9B5CFF",  // purple
+    services: "#F5B800",     // yellow
+    repositories: "#00B8D9", // cyan
+    models: "#FF4D5E",       // coral/red
+    database: "#16C7A1",     // green
+    middleware: "#EC4899",   // pink
+    config: "#8B5CF6",       // violet
+    tests: "#34D399",        // emerald
+    utils: "#F97316"         // orange
+  };
+
   // Derive sidebar info from result
   const features: { name: string; color: string; fileCount: number; health: number; confidence: number }[] =
     React.useMemo(() => {
       if (activeMode === "layer") {
         const layers = architectureData?.layers || [];
         if (layers.length > 0) {
-          const layerColors: Record<string, string> = {
-            routes: "#6366f1",
-            controllers: "#8b5cf6",
-            services: "#3b82f6",
-            repositories: "#06b6d4",
-            models: "#10b981",
-            database: "#f59e0b",
-            middleware: "#f472b6",
-            config: "#8b5cf6",
-            tests: "#34d399",
-            utils: "#f97316"
-          };
-
           return layers.map((layer: any) => ({
             name: typeof layer === 'string' ? layer : layer.name || layer.id,
-            color: layerColors[typeof layer === 'string' ? layer.toLowerCase() : (layer.name?.toLowerCase() || '')] || "#10b981",
+            color: layerColors[typeof layer === 'string' ? layer.toLowerCase() : (layer.name?.toLowerCase() || '')] || "#16C7A1",
             fileCount: typeof layer === 'string' ? 0 : layer.files?.length || layer.fileCount || 0,
             health: typeof layer === 'string' ? 0 : layer.health ?? 0,
             confidence: typeof layer === 'string' ? 0 : layer.confidence ?? 0,
@@ -93,7 +96,7 @@ export default function ArchitectureViewer({
       if (raw.length > 0) {
         return raw.map((f: any) => ({
           name: f.name || f.id,
-          color: f.color || "#10b981",
+          color: f.color || "#16C7A1",
           fileCount: f.files?.length || f.fileCount || 0,
           health: f.health ?? 0,
           confidence: f.confidence ?? 0,
@@ -102,10 +105,10 @@ export default function ArchitectureViewer({
       }
 
       if (activeMode === "layer") {
-        const defaultLayers = ["Routes", "Controllers", "Services", "Repositories", "Models", "Middleware", "Config", "Tests", "Utils", "Database"];
+        const defaultLayers = ["routes", "controllers", "services", "repositories", "models", "database"];
         return defaultLayers.map(name => ({
           name,
-          color: "#10b981",
+          color: layerColors[name.toLowerCase()] || "#16C7A1",
           fileCount: 0,
           health: 0,
           confidence: 0,
@@ -124,7 +127,7 @@ export default function ArchitectureViewer({
         groups[domain].push(path);
       }
 
-      const palette = ["#10b981", "#3b82f6", "#f59e0b", "#a855f7", "#ef4444", "#06b6d4", "#ec4899", "#f97316"];
+      const palette = ["#3B82F6", "#8B5CF6", "#06B6D4", "#2DD4BF", "#22C55E", "#F5B800", "#F472B6", "#F97316"];
       return Object.entries(groups).slice(0, 8).map(([name, fs], i) => ({
         name,
         color: palette[i % palette.length],
@@ -135,15 +138,12 @@ export default function ArchitectureViewer({
       }));
     }, [result, activeMode, architectureData]);
 
-  const totalFiles = result?.overview?.totalFiles || result?.files?.length || 0;
-  const totalRoutes = result?.overview?.totalRoutes || result?.routes?.length || 0;
-
   const sidebarTitle = activeMode === "layer"
     ? "ARCHITECTURE LAYERS"
     : "CODEBASE FEATURES";
 
   const sidebarDesc = activeMode === "layer"
-    ? "Click tier box to expand file listings or start a tier tour."
+    ? "Click a layer to expand file listings or start a tier tour."
     : "Click any node to inspect file details and dependencies.";
 
   // PageRank — top files by incoming reference count
@@ -162,19 +162,23 @@ export default function ArchitectureViewer({
   }, [result]);
 
   return (
-    <div className="flex flex-col h-full w-full bg-zinc-950 rounded-2xl overflow-hidden border border-border/40">
+    <div className="flex flex-col h-full w-full bg-[#063D48] rounded-2xl overflow-hidden border border-[#16C7A1]/20 relative">
+      {/* Decorative ambient background glows */}
+      <div className="absolute top-12 left-8 w-72 h-72 bg-[#FF3344]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-12 right-12 w-96 h-96 bg-[#16C7A1]/5 rounded-full blur-3xl pointer-events-none" />
+
       {/* ── Top Tab Navigation ───────────────────────────────────────── */}
-      <div className="flex items-center justify-center gap-1 px-6 py-3 border-b border-border/30 bg-zinc-900/80 backdrop-blur-md shrink-0">
+      <div className="flex items-center justify-center gap-1 px-6 py-3 border-b border-[#16C7A1]/20 bg-[#062F38]/90 backdrop-blur-md shrink-0 z-10">
         {TABS.map((tab) => {
           const isActive = activeMode === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveMode(tab.id)}
-              className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl dash-btn-sm transition-all duration-200 min-w-[72px] ${
+              className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 min-w-[72px] cursor-pointer ${
                 isActive
-                  ? "bg-primary text-background shadow-lg shadow-primary/20"
-                  : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60"
+                  ? "bg-[#16C7A1] text-[#062F38] shadow-lg shadow-[#16C7A1]/20 font-bold"
+                  : "text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#084C58]/60"
               }`}
             >
               {tab.icon}
@@ -185,56 +189,94 @@ export default function ArchitectureViewer({
       </div>
 
       {/* ── Body: Sidebar + Canvas ────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden p-4 gap-4 bg-[#063D48] relative z-10">
 
-        {/* Left Sidebar */}
+        {/* Left Analysis Workspace Panel */}
         {activeMode !== "metro" && (
-          <aside className="w-52 shrink-0 flex flex-col border-r border-border/30 bg-zinc-900/60 overflow-y-auto">
-            {/* Title */}
-            <div className="p-4 border-b border-border/20">
-              <div className="flex items-center gap-2 mb-1">
-                <Activity size={13} className="text-primary" />
-                <h3 className="dash-sidebar-cat text-primary leading-tight">
-                  {sidebarTitle}
-                </h3>
+          <aside
+            className="w-[460px] min-w-[400px] shrink-0 h-full rounded-[18px] bg-[#062F38] border border-[#16C7A1]/20 shadow-2xl shadow-teal-950/60 overflow-y-auto analysis-scrollbar flex flex-col pt-6 px-5 pb-5 select-none"
+            style={{
+              scrollbarGutter: "stable",
+            }}
+          >
+            {/* Header Block */}
+            <div className="mb-6 shrink-0">
+              <div className="flex items-start gap-3.5 mb-1">
+                <div className="p-1 mt-0.5 rounded-lg bg-[#16C7A1]/10 text-[#16C7A1] shrink-0">
+                  <Activity size={32} className="text-[#16C7A1]" />
+                </div>
+                <div>
+                  <h2 className="text-[28px] font-bold leading-[1.05] tracking-tight text-[#9BE8E0] uppercase font-sans">
+                    {sidebarTitle === "ARCHITECTURE LAYERS" ? (
+                      <>
+                        ARCHITECTURE<br />LAYERS
+                      </>
+                    ) : (
+                      sidebarTitle
+                    )}
+                  </h2>
+                  <div className="w-[40px] h-[4px] bg-[#FF3344] rounded-full mt-2.5" />
+                </div>
               </div>
-              <p className="dash-metadata text-zinc-400 mt-1 leading-normal">{sidebarDesc}</p>
+              <p className="text-[17px] text-[#BBD5D8] leading-[1.45] mt-3 max-w-[380px]">
+                {sidebarDesc}
+              </p>
             </div>
 
-            {/* Feature Lines */}
-            <div className="p-3 space-y-2 flex-1">
-              {features.slice(0, 6).map((feat, i) => {
-                const healthBad = feat.health < 40;
+            {/* Layer Cards */}
+            <div className="space-y-3.5 flex-1">
+              {features.map((feat, i) => {
+                const healthBad = feat.health > 0 && feat.health < 40;
                 return (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-3 cursor-pointer hover:border-zinc-600/60 transition-all duration-200"
+                    transition={{ delay: i * 0.03 }}
+                    className="w-full min-h-[135px] bg-[#084C58]/55 border border-[#0F8E94]/30 rounded-[14px] p-5 cursor-pointer hover:border-[#16C7A1]/50 hover:bg-[#084C58]/80 transition-all duration-200 flex flex-col justify-between"
+                    style={{
+                      borderLeftWidth: "5px",
+                      borderLeftColor: feat.color,
+                    }}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: feat.color }}
-                      />
-                      <span className="dash-card-title text-white truncate flex-1">
-                        {feat.name}
-                      </span>
+                    {/* Top Row: Colored Marker + Layer Title + Chevron */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-6 h-6 rounded-full shrink-0 shadow-sm"
+                          style={{
+                            backgroundColor: feat.color,
+                            boxShadow: `0 0 10px ${feat.color}40`,
+                          }}
+                        />
+                        <span className="text-[22px] font-bold text-[#F7FAFA] lowercase tracking-tight">
+                          {feat.name.toLowerCase()}
+                        </span>
+                      </div>
+                      <ChevronRight size={22} className="text-[#9BE8E0]/70" />
                     </div>
-                    <div className="flex items-center gap-3 dash-metadata">
-                      {healthBad && <AlertTriangle size={11} className="text-red-400 shrink-0" />}
-                      <span className={`font-bold ${healthBad ? "text-red-400" : "text-zinc-300"}`}>
-                        {feat.health}
-                      </span>
-                      <span className="text-zinc-500">Health</span>
-                      <span className="text-zinc-300 font-bold ml-auto">
-                        {Math.round((feat.confidence <= 1 ? feat.confidence * 100 : feat.confidence))}%
-                      </span>
-                      <span className="text-zinc-500">Conf</span>
+
+                    {/* Middle Row: Metrics */}
+                    <div className="flex items-center gap-4 my-2 text-[17px]">
+                      <div className="flex items-center gap-2">
+                        {healthBad && <AlertTriangle size={17} className="text-[#FF3344] shrink-0" />}
+                        <span className={`font-bold text-[18px] ${healthBad ? "text-[#FF3344]" : "text-[#F7FAFA]"}`}>
+                          {feat.health}
+                        </span>
+                        <span className="text-[#8EA9AE] text-[15px]">Health</span>
+                      </div>
+                      <span className="text-[#0F8E94]/50 font-light text-[15px]">│</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#F7FAFA] font-bold text-[18px]">
+                          {Math.round(feat.confidence <= 1 ? feat.confidence * 100 : feat.confidence)}%
+                        </span>
+                        <span className="text-[#8EA9AE] text-[15px]">Conf</span>
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-1 dash-metadata text-zinc-500">
-                      <ChevronRight size={10} />
+
+                    {/* Bottom Row: File Count */}
+                    <div className="flex items-center gap-2 text-[17px] text-[#C3D5D8]">
+                      <Folder size={20} className="text-[#16C7A1] shrink-0" />
                       <span>{feat.fileCount} files</span>
                     </div>
                   </motion.div>
@@ -242,32 +284,58 @@ export default function ArchitectureViewer({
               })}
             </div>
 
-            {/* PageRank Importance */}
+            {/* PageRank Importance Section */}
             {topFiles.length > 0 && (
-              <div className="p-3 border-t border-border/20 shrink-0">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="dash-sidebar-cat text-zinc-500">
-                    Pagerank Importance
-                  </span>
+              <div className="mt-6 pt-5 border-t border-[#16C7A1]/20 shrink-0">
+                <div className="mb-3.5">
+                  <h4 className="text-[16px] font-bold tracking-[0.12em] text-[#9BE8E0] uppercase font-sans">
+                    PAGERANK IMPORTANCE
+                  </h4>
+                  <div className="w-[36px] h-[3.5px] bg-[#FF3344] rounded-full mt-2" />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2.5">
                   {topFiles.map((f, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="dash-metadata text-zinc-600 font-bold w-3">{i + 1}</span>
-                      <span className="dash-filepath text-zinc-400 truncate flex-1">{f.name}</span>
-                      <div className="bg-zinc-800 text-zinc-300 dash-metadata font-bold px-1.5 py-0.5 rounded-full">
+                    <div
+                      key={i}
+                      className="h-[44px] flex items-center justify-between px-3.5 rounded-xl bg-[#084C58]/30 border border-[#0F8E94]/20 hover:border-[#16C7A1]/40 transition-colors"
+                    >
+                      <span className="text-[#16C7A1] font-bold text-[16px] w-5">
+                        {i + 1}
+                      </span>
+                      <span className="text-[#F7FAFA] text-[15px] font-medium truncate flex-1 px-2.5">
+                        {f.name}
+                      </span>
+                      <div
+                        className={`w-[66px] h-[34px] rounded-full flex items-center justify-center font-bold text-[15px] shrink-0 ${
+                          i === 0
+                            ? "bg-[#FF3344]/22 text-[#FF7A84] border border-[#FF3344]/40 shadow-sm shadow-[#FF3344]/20"
+                            : "bg-[#9BE8E0]/12 text-[#B8E9E6] border border-[#9BE8E0]/20"
+                        }`}
+                      >
                         {Math.round(f.score)}
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {/* View Full Rankings Button */}
+                <button
+                  onClick={() => {
+                    setActiveMode("file");
+                  }}
+                  className="w-full h-[54px] mt-4 rounded-xl flex items-center justify-center gap-2.5 bg-[#16C7A1]/12 hover:bg-[#16C7A1]/22 border border-[#16C7A1]/30 hover:border-[#16C7A1]/60 text-[#9BE8E0] hover:text-[#F7FAFA] font-semibold text-[16px] transition-all duration-200 shadow-lg shadow-teal-950/20 group cursor-pointer"
+                >
+                  <BarChart2 size={20} className="text-[#16C7A1] group-hover:scale-110 transition-transform" />
+                  <span>View Full Rankings</span>
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </button>
               </div>
             )}
           </aside>
         )}
 
-        {/* Main Canvas */}
-        <div className="flex-1 relative overflow-hidden bg-zinc-950">
+        {/* Main Canvas Area */}
+        <div className="flex-1 relative overflow-hidden bg-[#03242B]/80 rounded-[18px] border border-[#16C7A1]/15">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeMode}
@@ -299,7 +367,6 @@ export default function ArchitectureViewer({
                   }}
                 />
               )}
-
             </motion.div>
           </AnimatePresence>
         </div>
@@ -307,3 +374,4 @@ export default function ArchitectureViewer({
     </div>
   );
 }
+

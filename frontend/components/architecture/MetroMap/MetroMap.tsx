@@ -630,9 +630,9 @@ function MetroMapInternal({
   }, []);
 
   return (
-    <div className="h-full w-full text-left relative flex flex-col bg-zinc-950 select-none overflow-hidden">
+    <div className="h-full w-full text-left relative flex flex-col bg-[#07090C] select-none overflow-hidden">
       {/* ── FILTER & TOOLBAR (Clean, Minimal, Spacious) ── */}
-      <div className="flex items-center justify-between gap-4 px-4 py-2 shrink-0 bg-zinc-900/95 border-b border-zinc-800/80 z-20 overflow-visible">
+      <div className="flex items-center justify-between gap-4 px-4 py-2 shrink-0 bg-[#0D1728]/90 backdrop-blur-md border-b border-white/10 z-20 overflow-visible">
 
 
         {/* ── Search Bar & Canvas Actions ── */}
@@ -648,12 +648,12 @@ function MetroMapInternal({
             />
           </div>
 
-          <div className="h-4 w-[1px] bg-zinc-800 mx-0.5" />
+          <div className="h-4 w-[1px] bg-white/10 mx-0.5" />
 
           {/* Canvas Actions */}
           <button
             onClick={() => fitView({ padding: 0.15, duration: 400 })}
-            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[10px] font-semibold text-zinc-300 transition shadow-sm"
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#1B1D20] hover:bg-[#25282C] border border-white/10 rounded-lg text-[10px] font-semibold text-zinc-300 transition shadow-sm"
           >
             <RotateCcw size={12} />
             <span>Fit View</span>
@@ -661,7 +661,7 @@ function MetroMapInternal({
 
           <button
             onClick={exportToSvg}
-            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/60 rounded-lg text-[10px] font-semibold text-zinc-300 transition shadow-sm"
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#1B1D20] hover:bg-[#25282C] border border-white/10 rounded-lg text-[10px] font-semibold text-zinc-300 transition shadow-sm"
           >
             <Download size={12} />
             <span>Export SVG</span>
@@ -670,9 +670,9 @@ function MetroMapInternal({
       </div>
 
       {/* ── MAIN CONTENT AREA ── */}
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 relative overflow-hidden bg-[#07090C]">
         {/* Left Sidebar Feature Legend */}
-        <aside className="w-52 shrink-0 hidden md:flex flex-col border-r border-zinc-800/80 bg-zinc-900/40 z-10 overflow-y-auto">
+        <aside className="w-52 shrink-0 hidden md:flex flex-col border-r border-white/10 bg-[#0D1728]/50 z-10 overflow-y-auto">
           <FeatureLegend
             features={featureClusters}
             selectedFeatures={selectedFeatures}
@@ -684,7 +684,7 @@ function MetroMapInternal({
         </aside>
 
         {/* ReactFlow Interactive Canvas Container (Contained Horizontal Scroll) */}
-        <div className="flex-1 h-full relative bg-zinc-950 overflow-hidden">
+        <div className="flex-1 h-full relative bg-[#07090C] overflow-hidden">
 {/* Search integrated in top toolbar */}
 
           {/* Feature Importance Panel (Bottom Right) */}
@@ -752,16 +752,16 @@ function MetroMapInternal({
                 zoomOnScroll={false}
                 style={{ width: '100%', height: '100%' }}
               >
-                <Controls className="!bg-zinc-900/90 !border-zinc-800 !shadow-xl !fill-zinc-300" />
+                <Controls className="!bg-[#0D1728] !border-white/10 !shadow-xl !fill-[#F7FAFA] [&>button]:!bg-[#0D1728] [&>button]:!border-white/10 [&>button]:!text-zinc-400" />
                 <MiniMap
-                  nodeStrokeWidth={3}
+                  nodeStrokeWidth={2}
                   zoomable
                   pannable
-                  className="!bg-zinc-900/90 !border-zinc-800 !rounded-xl overflow-hidden"
-                  nodeColor={(n) => (n.data as any)?.color || '#3B82F6'}
-                  maskColor="rgba(0, 0, 0, 0.75)"
+                  className="!bg-[#07090C] !border !border-white/10 !rounded-xl overflow-hidden"
+                  nodeColor={(n) => (n.data as any)?.color || '#2F80ED'}
+                  maskColor="rgba(7, 9, 12, 0.75)"
                 />
-                <Background gap={20} size={1} color="#27272a" />
+                <Background gap={22} size={1} color="rgba(255, 255, 255, 0.04)" />
               </ReactFlow>
             </div>
           </div>

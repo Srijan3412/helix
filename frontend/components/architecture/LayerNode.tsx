@@ -1,279 +1,12 @@
 import React, { useState } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { Badge } from "../ui/badge";
 import LayerFileRow from "./LayerFileNode";
+import { getLayerTheme, getLayerIcon } from "./layerTheme";
 import {
-  Shield,
-  Network,
-  Terminal,
-  Layers,
-  Database,
-  Settings,
-  CheckCircle,
-  Wrench,
   ChevronDown,
-  ChevronRight,
-  FileText,
-  FileCode,
-  Route,
-  Zap,
-  Star,
+  CheckCircle,
 } from "lucide-react";
 
-// ─────────────────────────────────────────────────────────────
-// LAYER ICONS
-// ─────────────────────────────────────────────────────────────
-const LAYER_ICONS: Record<string, React.ReactNode> = {
-  Routes: <Network className="w-4.5 h-4.5" />,
-  Controllers: <Terminal className="w-4.5 h-4.5" />,
-  Services: <Layers className="w-4.5 h-4.5" />,
-  Repositories: <Shield className="w-4.5 h-4.5" />,
-  Models: <Layers className="w-4.5 h-4.5" />,
-  Middleware: <Shield className="w-4.5 h-4.5" />,
-  Config: <Settings className="w-4.5 h-4.5" />,
-  Tests: <CheckCircle className="w-4.5 h-4.5" />,
-  Utils: <Wrench className="w-4.5 h-4.5" />,
-  Database: <Database className="w-4.5 h-4.5" />,
-};
-
-// ─────────────────────────────────────────────────────────────
-// LAYER THEMES
-// ─────────────────────────────────────────────────────────────
-const LAYER_THEMES: Record<
-  string,
-  { bg: string; border: string; text: string; accent: string }
-> = {
-  Routes: {
-    bg: "bg-blue-950/40",
-    border: "border-blue-500/50",
-    text: "text-blue-300",
-    accent: "blue",
-  },
-  Controllers: {
-    bg: "bg-purple-950/40",
-    border: "border-purple-500/50",
-    text: "text-purple-300",
-    accent: "purple",
-  },
-  Services: {
-    bg: "bg-amber-950/40",
-    border: "border-amber-500/50",
-    text: "text-amber-300",
-    accent: "amber",
-  },
-  Repositories: {
-    bg: "bg-emerald-950/40",
-    border: "border-emerald-500/50",
-    text: "text-emerald-300",
-    accent: "emerald",
-  },
-  Models: {
-    bg: "bg-teal-950/40",
-    border: "border-teal-500/50",
-    text: "text-teal-300",
-    accent: "teal",
-  },
-  Middleware: {
-    bg: "bg-indigo-950/40",
-    border: "border-indigo-500/50",
-    text: "text-indigo-300",
-    accent: "indigo",
-  },
-  Config: {
-    bg: "bg-slate-950/40",
-    border: "border-slate-500/50",
-    text: "text-slate-300",
-    accent: "slate",
-  },
-  Tests: {
-    bg: "bg-lime-950/40",
-    border: "border-lime-500/50",
-    text: "text-lime-300",
-    accent: "lime",
-  },
-  Utils: {
-    bg: "bg-cyan-950/40",
-    border: "border-cyan-500/50",
-    text: "text-cyan-300",
-    accent: "cyan",
-  },
-  Database: {
-    bg: "bg-rose-950/40",
-    border: "border-rose-500/50",
-    text: "text-rose-300",
-    accent: "rose",
-  },
-};
-
-// ─────────────────────────────────────────────────────────────
-// FILE ROW COMPONENT (Internal)
-// ─────────────────────────────────────────────────────────────
-interface FileRowProps {
-  rank: number;
-  name: string;
-  method?: string;
-  path?: string;
-  loc?: number;
-  deps?: number;
-  reqPerSecond?: number;
-  rating?: string;
-  isGod?: boolean;
-  isDead?: boolean;
-  isRoute?: boolean;
-  isDatabase?: boolean;
-  onClick?: () => void;
-  isSelected?: boolean;
-}
-
-function FileRow({
-  rank,
-  name,
-  method,
-  path,
-  loc,
-  deps,
-  reqPerSecond,
-  rating,
-  isGod,
-  isDead,
-  isRoute,
-  isDatabase,
-  onClick,
-  isSelected,
-}: FileRowProps) {
-  // ── Method Color ──
-  const getMethodColor = (method?: string) => {
-    if (!method) return "text-zinc-400";
-    switch (method.toUpperCase()) {
-      case "GET":
-        return "text-emerald-400";
-      case "POST":
-        return "text-blue-400";
-      case "PUT":
-        return "text-amber-400";
-      case "DELETE":
-        return "text-rose-400";
-      case "PATCH":
-        return "text-purple-400";
-      default:
-        return "text-zinc-400";
-    }
-  };
-
-  // ── Rank Badge Colors ──
-  const getRankColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-      case 2:
-        return "bg-zinc-500/20 text-zinc-400 border-zinc-500/30";
-      case 3:
-        return "bg-amber-700/20 text-amber-600 border-amber-700/30";
-      default:
-        return "bg-primary/10 text-primary border-primary/20";
-    }
-  };
-
-  // ── File Icon ──
-  const getFileIcon = () => {
-    if (isDatabase) {
-      return <Database className="w-3.5 h-3.5 shrink-0 text-rose-400" />;
-    }
-    if (isRoute || method) {
-      return <Route className="w-3.5 h-3.5 shrink-0 text-blue-400" />;
-    }
-    const ext = name.split(".").pop()?.toLowerCase();
-    if (ext === "ts" || ext === "tsx") {
-      return <FileCode className="w-3.5 h-3.5 shrink-0 text-blue-400" />;
-    }
-    if (ext === "js" || ext === "jsx") {
-      return <FileCode className="w-3 h-3 shrink-0 text-yellow-400" />;
-    }
-    return <FileText className="w-3 h-3 shrink-0 text-zinc-500" />;
-  };
-
-  return (
-    <div
-      className={`
-        flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer
-        transition-all duration-150 text-[10px]
-        ${isSelected
-          ? "bg-primary/10 border border-primary/30"
-          : "hover:bg-zinc-800/60 border border-transparent hover:border-zinc-700/50"
-        }
-      `}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick?.();
-      }}
-    >
-      {/* Rank Badge */}
-      <span
-        className={`
-          text-[8px] font-bold w-5 text-center rounded px-1 py-0.5
-          ${getRankColor(rank)}
-        `}
-      >
-        #{rank}
-      </span>
-
-      {/* File Icon */}
-      {getFileIcon()}
-
-      {/* File Name */}
-      <span className="font-mono text-[10px] text-zinc-200 truncate max-w-[140px]" title={name}>
-        {name}
-      </span>
-
-      {/* Status Icons */}
-      {isGod && <span className="text-[10px]" title="God Service">🔥</span>}
-      {isDead && <span className="text-[10px]" title="Dead Code">💀</span>}
-
-      {/* Route Details */}
-      {method && path && (
-        <>
-          <span className={`text-[8px] font-bold ${getMethodColor(method)}`}>
-            {method.toUpperCase()}
-          </span>
-          <span className="text-[8px] text-zinc-500 truncate max-w-[60px]">{path}</span>
-        </>
-      )}
-
-      {/* Metrics */}
-      <div className="flex items-center gap-1.5 ml-auto shrink-0">
-        {loc !== undefined && loc > 0 && (
-          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
-
-            <span>📄</span>
-            <span className={loc > 300 ? "text-amber-400" : "text-zinc-400"}>{loc}</span>
-          </span>
-        )}
-        {deps !== undefined && deps > 0 && (
-          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
-            <span>🔗</span>
-            <span className={deps > 10 ? "text-amber-400" : "text-zinc-400"}>{deps}</span>
-          </span>
-        )}
-        {reqPerSecond !== undefined && reqPerSecond > 0 && (
-          <span className="flex items-center gap-0.5 text-[9px] text-zinc-500">
-            <span>⚡</span>
-            <span className="text-zinc-400">{reqPerSecond}</span>
-          </span>
-        )}
-        {rating && (
-          <span className="flex items-center gap-0.5 text-[9px] text-amber-400">
-            <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-            {rating}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────
 interface LayerNodeProps {
   data: {
     label: string;
@@ -284,6 +17,8 @@ interface LayerNodeProps {
     hasMore?: boolean;
     visibleCount?: number;
     totalFiles?: number;
+    isSelected?: boolean;
+    trackName?: string;
     onShowMore?: () => void;
     onToggle?: () => void;
     files?: Array<{
@@ -316,12 +51,14 @@ export default function LayerNode({ data }: LayerNodeProps) {
     hasMore,
     visibleCount,
     totalFiles,
+    isSelected = false,
+    trackName,
     onShowMore,
     onToggle,
     files = [],
   } = data;
 
-  const theme = LAYER_THEMES[label] || LAYER_THEMES.Services;
+  const theme = getLayerTheme(label);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleCollapse = () => {
@@ -329,17 +66,17 @@ export default function LayerNode({ data }: LayerNodeProps) {
     onToggle?.();
   };
 
-  // ── Health Color ──
+  // ── Health Color (Semantic: Green / Amber / Rose) ──
   const getHealthColor = (value: number) => {
-    if (value > 70) return "text-emerald-400";
-    if (value > 40) return "text-amber-400";
-    return "text-rose-400";
+    if (value > 70) return "text-[#34D399]";
+    if (value > 40) return "text-[#F5B800]";
+    return "text-[#FF4D5E]";
   };
 
   const getHealthBg = (value: number) => {
-    if (value > 70) return "bg-emerald-400";
-    if (value > 40) return "bg-amber-400";
-    return "bg-rose-400";
+    if (value > 70) return "bg-[#34D399]";
+    if (value > 40) return "bg-[#F5B800]";
+    return "bg-[#FF4D5E]";
   };
 
   // ── Display files (top N) ──
@@ -348,76 +85,105 @@ export default function LayerNode({ data }: LayerNodeProps) {
   return (
     <div
       className={`
-        p-4 rounded-2xl border bg-zinc-900/90 backdrop-blur-md
-transition-all duration-300 shadow-xl min-w-[400px] max-w-[500px]
-        ${theme.border}
-        hover:shadow-2xl hover:border-opacity-80
+        p-4.5 rounded-[18px] backdrop-blur-md transition-all duration-200 shadow-2xl min-w-[390px] max-w-[440px] text-left select-none relative group
+        ${isSelected
+          ? "ring-2 ring-[#9BE8E0] shadow-teal-950/80 scale-[1.02]"
+          : "hover:scale-[1.01] hover:shadow-cyan-950/40"
+        }
       `}
+      style={{
+        backgroundColor: "rgba(5, 30, 36, 0.94)",
+        border: `1.5px solid ${theme.primary}B0`,
+        borderLeft: `5px solid ${theme.primary}`,
+        boxShadow: isSelected
+          ? `0 0 24px ${theme.primary}40, 0 12px 30px rgba(0,0,0,0.6)`
+          : `0 8px 24px rgba(0,0,0,0.5)`,
+      }}
     >
-      <Handle type="target" position={Position.Top} className="opacity-0" />
+      <Handle type="target" position={Position.Top} className="opacity-0 !w-2 !h-2" />
 
-      {/* ── HEADER: Icon + Name | Count + Toggle ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl ${theme.bg} ${theme.text}`}>
-            {LAYER_ICONS[label] || <Layers className="w-5 h-5" />}
+      {/* ── HEADER: Icon Square + Name + Badge + Toggle ── */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Dark Icon Container with Bright Icon */}
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 shadow-inner"
+            style={{
+              backgroundColor: theme.iconBg,
+              color: theme.iconColor,
+            }}
+          >
+            {getLayerIcon(label, "w-5 h-5")}
           </div>
-          <div>
-            <h4 className="text-sm font-bold text-white tracking-wide">{label}</h4>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] text-zinc-400">📄 {count} files</span>
-              <span className="text-[10px] text-zinc-600">•</span>
-              <span className="text-[10px] text-zinc-400">
-                📊 Top {Math.min(visibleCount || count, count)} shown
-              </span>
+
+          <div className="min-w-0">
+            <h4 className="text-[15px] font-bold text-[#F7FAFA] tracking-wide truncate">
+              {label}
+            </h4>
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#A8CBD0]">
+              <span>📄 {count} files</span>
+              <span className="text-zinc-600">•</span>
+              <span>📊 Top {Math.min(visibleCount || count, count)} shown</span>
             </div>
           </div>
         </div>
 
-        {/* Toggle Button (replaces "Expanded/View" badge) */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleCollapse();
-          }}
-          className={`
-            p-1.5 rounded-lg transition-all duration-200
-            hover:bg-zinc-800/60 text-zinc-400 hover:text-white
-            ${isCollapsed ? "rotate-0" : "rotate-180"}
-          `}
-          title={isCollapsed ? "Expand" : "Collapse"}
-        >
-          <ChevronDown className="w-4 h-4" />
-        </button>
+        {/* Right side: Category Badge + Toggle Collapse Button */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-wider uppercase"
+            style={{
+              backgroundColor: `${theme.primary}20`,
+              borderColor: `${theme.primary}40`,
+              color: theme.bright,
+            }}
+          >
+            {theme.badge}
+          </span>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleCollapse();
+            }}
+            className={`
+              p-1 rounded-lg transition-all duration-200 text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#084C58]/60 cursor-pointer
+              ${isCollapsed ? "rotate-0" : "rotate-180"}
+            `}
+            title={isCollapsed ? "Expand" : "Collapse"}
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* ── HEALTH & CONFIDENCE (Combined Row) ── */}
+      {/* ── HEALTH & CONFIDENCE (Semantic & Independent) ── */}
       {(health !== undefined || confidence !== undefined) && (
-        <div className="mt-3 space-y-1">
+        <div className="mt-3.5 space-y-1.5 bg-[#031E24]/60 p-2.5 rounded-xl border border-white/5">
           {health !== undefined && (
             <div className="flex items-center gap-2">
-              <span className="text-[9px] text-zinc-400 w-11 font-medium">HEALTH</span>
-              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <span className="text-[10px] text-[#8EA9AE] w-12 font-medium tracking-wider">HEALTH</span>
+              <div className="flex-1 h-2 bg-[#062A32] rounded-full overflow-hidden p-[1px]">
                 <div
-                  className={`h-full transition-all duration-700 ease-out ${getHealthBg(health)}`}
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${getHealthBg(health)}`}
                   style={{ width: `${Math.min(100, Math.max(0, health))}%` }}
                 />
               </div>
-              <span className={`text-[9px] font-bold w-10 text-right ${getHealthColor(health)}`}>
+              <span className={`text-[10px] font-bold w-9 text-right ${getHealthColor(health)}`}>
                 {Math.round(health)}%
               </span>
             </div>
           )}
           {confidence !== undefined && (
             <div className="flex items-center gap-2">
-              <span className="text-[9px] text-zinc-400 w-11 font-medium">CONF</span>
-              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <span className="text-[10px] text-[#8EA9AE] w-12 font-medium tracking-wider">CONF</span>
+              <div className="flex-1 h-2 bg-[#062A32] rounded-full overflow-hidden p-[1px]">
                 <div
-                  className="h-full bg-primary transition-all duration-700 ease-out"
+                  className="h-full rounded-full bg-[#16C7A1] transition-all duration-700 ease-out"
                   style={{ width: `${Math.min(100, Math.max(0, confidence))}%` }}
                 />
               </div>
-              <span className="text-[9px] font-bold text-primary w-10 text-right">
+              <span className="text-[10px] font-bold text-[#16C7A1] w-9 text-right">
                 {Math.round(confidence)}%
               </span>
             </div>
@@ -426,20 +192,25 @@ transition-all duration-300 shadow-xl min-w-[400px] max-w-[500px]
       )}
 
       {/* ── DIVIDER ── */}
-      <div className="mt-3 border-t border-border/30" />
+      <div className="mt-3 border-t border-white/10" />
 
       {/* ── FILE LIST ── */}
       {!isCollapsed && displayFiles.length > 0 && (
         <div className="mt-3 space-y-1">
-          {/* "Top 5 {Layer}" Header */}
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
+          {/* Header Row */}
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#8EA9AE]">
               📌 Top {Math.min(displayFiles.length, 5)} {label}
             </span>
+            {trackName && (
+              <span className="text-[9px] font-medium text-[#9BE8E0]">
+                ● {trackName}
+              </span>
+            )}
           </div>
 
           {/* File Rows */}
-          <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700">
+          <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1 analysis-scrollbar">
             {displayFiles.map((file, index) => (
               <LayerFileRow
                 key={file.id || index}
@@ -464,59 +235,60 @@ transition-all duration-300 shadow-xl min-w-[400px] max-w-[500px]
 
       {/* ── NO FILES STATE ── */}
       {!isCollapsed && displayFiles.length === 0 && (
-        <div className="mt-3 text-center py-4">
-          <span className="text-[10px] text-zinc-500">No files in this layer</span>
+        <div className="mt-3 text-center py-4 text-[#8EA9AE] text-xs">
+          No files identified in this layer
         </div>
       )}
 
       {/* ── SHOW MORE BUTTON ── */}
-      {/* ── SHOW MORE BUTTON ── */}
       {!isCollapsed && hasMore && totalFiles && totalFiles > 0 && (
-        <div className="mt-3 pt-2 border-t border-border/30">
+        <div className="mt-3 pt-2 border-t border-white/10">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onShowMore?.();
             }}
             className="
-              w-full text-[9px] text-primary hover:text-primary/80
-              font-medium flex items-center justify-center gap-1.5
-              py-1.5 rounded-lg bg-primary/5 hover:bg-primary/10
-              transition-all duration-200
+              w-full text-[11px] font-semibold flex items-center justify-center gap-2
+              py-2 rounded-xl border transition-all duration-200 cursor-pointer
             "
+            style={{
+              backgroundColor: `${theme.primary}18`,
+              borderColor: `${theme.primary}40`,
+              color: theme.bright,
+            }}
           >
             <span>📂</span>
             View {Math.min(totalFiles - (visibleCount || 5), 5)} More Files
-            <span className="text-[7px] text-zinc-500">
+            <span className="text-[10px] opacity-75">
               ({totalFiles - (visibleCount || 5)} remaining)
             </span>
           </button>
         </div>
       )}
 
-      {/* ── "All files loaded" message ── */}
+      {/* ── ALL FILES VISIBLE MESSAGE ── */}
       {!isCollapsed && !hasMore && totalFiles && totalFiles > 0 && (
-        <div className="mt-3 pt-2 border-t border-border/30">
-          <span className="text-[8px] text-zinc-500 flex items-center justify-center gap-1">
-            <CheckCircle className="w-3 h-3 text-emerald-400" />
+        <div className="mt-2.5 pt-2 border-t border-white/10">
+          <span className="text-[10px] text-[#8EA9AE] flex items-center justify-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5 text-[#16C7A1]" />
             All {totalFiles} files visible
           </span>
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} className="opacity-0" />
+      {/* ── BOTTOM LAYER IDENTITY PILL ── */}
+      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+        <span className="flex items-center gap-1.5 font-semibold" style={{ color: theme.bright }}>
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.primary }} />
+          {label}
+        </span>
+        <span className="text-[10px] text-[#8EA9AE] font-mono">
+          {theme.category}
+        </span>
+      </div>
 
-      {/* ── "All files loaded" message ── */}
-      {!isCollapsed && !hasMore && totalFiles && totalFiles > 0 && (
-        <div className="mt-3 pt-2 border-t border-border/30">
-          <span className="text-[8px] text-zinc-500 flex items-center justify-center gap-1">
-            <CheckCircle className="w-3 h-3 text-emerald-400" />
-            All {totalFiles} files visible
-          </span>
-        </div>
-      )}
-
-      <Handle type="source" position={Position.Bottom} className="opacity-0" />
+      <Handle type="source" position={Position.Bottom} className="opacity-0 !w-2 !h-2" />
     </div>
   );
 }

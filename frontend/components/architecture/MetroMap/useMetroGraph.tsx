@@ -84,6 +84,7 @@ export function useMetroGraph({
       });
 
       // Add Stations
+      let globalStationSeq = 1;
       const sortedLayers = Object.keys(groups)
         .filter((key) => groups[key as LayerType] && groups[key as LayerType].length > 0)
         .sort((a, b) => getLayerOrder(a as LayerType) - getLayerOrder(b as LayerType)) as LayerType[];
@@ -115,6 +116,8 @@ export function useMetroGraph({
             }
           }
 
+          const stationNumberStr = String(globalStationSeq++).padStart(2, '0');
+
           const nodeData: SubwayStationData = {
             id: station.id,
             name: station.name || station.label,
@@ -123,6 +126,7 @@ export function useMetroGraph({
             rawPath: station.rawPath || station.raw || station.name || '',
             type: station.type,
             layer: layer,
+            stationNumber: stationNumberStr,
             health: station.health || 'healthy',
             healthScore: station.healthScore,
             httpMethod: station.httpMethod,
@@ -199,13 +203,13 @@ export function useMetroGraph({
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: isEdgeInTrace ? '#3B82F6' : (isEdgeDimmed ? `${feature.color}30` : feature.color),
-              width: 12,
-              height: 12
+              width: 6,
+              height: 6
             },
             style: {
               stroke: isEdgeInTrace ? '#3B82F6' : (isEdgeDimmed ? `${feature.color}30` : feature.color),
-              strokeWidth: isEdgeInTrace ? 4.5 : (isActiveEdge ? 3.5 : 2.5),
-              opacity: isEdgeDimmed ? 0.25 : (isLayerActive ? 0.9 : 0.3),
+              strokeWidth: isEdgeInTrace ? 3.5 : (isActiveEdge ? 2.5 : 2),
+              opacity: isEdgeDimmed ? 0.25 : (isLayerActive ? 0.8 : 0.25),
               transition: 'stroke-width 0.3s, opacity 0.3s'
             }
           });

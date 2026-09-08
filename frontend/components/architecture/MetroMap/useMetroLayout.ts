@@ -6,13 +6,13 @@ import { LayerType, getLayerOrder } from './layerDetector';
 
 const START_X = 80;
 const START_Y = 50;
-const STATION_SPACING = 240;
-const LAYER_ROW_HEIGHT = 140;
-const STATION_CARD_HEIGHT = 105;
-const HEADER_HEIGHT = 36;
-const HEADER_GAP = 28;
-const HEADER_RESERVED = HEADER_HEIGHT + HEADER_GAP; // 64px
-const INTER_TRACK_GAP = 85; // Clean separation between last station of Track A and header of Track B
+const STATION_SPACING = 195; // 142px node + 53px gap
+const LAYER_ROW_HEIGHT = 118; // 82px node + 36px gap
+const STATION_CARD_HEIGHT = 86;
+const HEADER_HEIGHT = 32;
+const HEADER_GAP = 22;
+const HEADER_RESERVED = HEADER_HEIGHT + HEADER_GAP; // 54px
+const INTER_TRACK_GAP = 70; // Clean separation between tracks
 const PADDING_RIGHT = 300;
 const PADDING_BOTTOM = 200;
 

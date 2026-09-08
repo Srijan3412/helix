@@ -652,3 +652,29 @@ html, body {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
+/* ========================================
+   CUSTOM SCROLLBAR FOR ANALYSIS PANELS
+   ======================================== */
+.analysis-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.analysis-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.analysis-scrollbar::-webkit-scrollbar-thumb {
+  background: #0F8E94;
+  border-radius: 999px;
+}
+
+.analysis-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #16C7A1;
+}
+
+.analysis-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #0F8E94 transparent;
+  scrollbar-gutter: stable;
+}

@@ -17,14 +17,28 @@ import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 
 // Colors and categories mapping
-const CATEGORY_STYLES: Record<string, { label: string; border: string; bg: string; text: string; icon: any }> = {
-  controller: { label: "Controller", border: "border-purple-500/70", bg: "bg-purple-950/20", text: "text-purple-300", icon: Settings },
-  service:    { label: "Service",    border: "border-amber-500/70",  bg: "bg-amber-950/20",  text: "text-amber-300",  icon: Zap },
-  helper:     { label: "Helper",     border: "border-blue-500/70",   bg: "bg-blue-950/20",   text: "text-blue-300",   icon: Shield },
-  repository: { label: "Repository", border: "border-emerald-500/70",bg: "bg-emerald-950/20",text: "text-emerald-300",icon: Network },
-  database:   { label: "Database",   border: "border-rose-500/70",   bg: "bg-rose-950/20",   text: "text-rose-300",   icon: Database },
-  middleware: { label: "Middleware", border: "border-orange-500/70", bg: "bg-orange-950/20", text: "text-orange-300", icon: Shield },
+const CATEGORY_STYLES: Record<string, { label: string; border: string; bg: string; text: string; color: string; bgSoft: string; icon: any }> = {
+  controller: { label: "CONTROLLER", border: "border-[#16C7A1]", bg: "bg-[#16C7A1]/8", text: "text-[#16C7A1]", color: "#16C7A1", bgSoft: "rgba(22,199,161,0.08)", icon: Settings },
+  service:    { label: "SERVICE",    border: "border-[#F5B800]/30", bg: "bg-[#F5B800]/5", text: "text-[#F5B800]", color: "#F5B800", bgSoft: "rgba(245,184,0,0.05)", icon: Zap },
+  helper:     { label: "HELPER",     border: "border-[#2F80ED]/30", bg: "bg-[#2F80ED]/5", text: "text-[#2F80ED]", color: "#2F80ED", bgSoft: "rgba(47,128,237,0.05)", icon: Shield },
+  repository: { label: "REPOSITORY", border: "border-[#00B8D9]/30", bg: "bg-[#00B8D9]/5", text: "text-[#00B8D9]", color: "#00B8D9", bgSoft: "rgba(0,184,217,0.05)", icon: Network },
+  database:   { label: "DATABASE",   border: "border-[#FF4D5E]/30", bg: "bg-[#FF4D5E]/5", text: "text-[#FF4D5E]", color: "#FF4D5E", bgSoft: "rgba(255,77,94,0.05)", icon: Database },
+  middleware: { label: "MIDDLEWARE", border: "border-[#FF8A00]/30", bg: "bg-[#FF8A00]/5", text: "text-[#FF8A00]", color: "#FF8A00", bgSoft: "rgba(255,138,0,0.05)", icon: Shield },
+  route:      { label: "ROUTE",      border: "border-[#2F80ED]/30", bg: "bg-[#2F80ED]/5", text: "text-[#2F80ED]", color: "#2F80ED", bgSoft: "rgba(47,128,237,0.05)", icon: Route },
 };
+
+function formatRoutePath(rawPath: string): string {
+  if (!rawPath) return "/";
+  let p = rawPath.trim();
+  p = p.replace(/^[`"']|[`"']$/g, "");
+  p = p.replace(/\$\{([^}]+)\}/g, ":$1");
+  p = p.replace(/\/([a-zA-Z0-9_-]+)::?([a-zA-Z0-9_]+):/g, "/$1/:$2/");
+  p = p.replace(/\/([a-zA-Z0-9_-]+)::?([a-zA-Z0-9_]+)\//g, "/$1/:$2/");
+  p = p.replace(/\/([a-zA-Z0-9_-]+)::([a-zA-Z0-9_]+)$/g, "/$1/:$2");
+  p = p.replace(/\/+/g, "/");
+  if (!p.startsWith("/")) p = "/" + p;
+  return p;
+}
 
 interface InspectorSidebarProps {
   selectedStep: any;
@@ -433,8 +447,8 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
                       <span className={`px-1.5 py-0.5 rounded dash-badge border shrink-0 ${mc}`}>
                         {t.method.toUpperCase()}
                       </span>
-                      <code className="dash-filepath text-zinc-300 truncate" title={t.route}>
-                        {t.route}
+                      <code className="dash-filepath text-zinc-300 truncate" title={formatRoutePath(t.route)}>
+                        {formatRoutePath(t.route)}
                       </code>
                     </div>
                     {t.reachability && (
@@ -453,52 +467,64 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
       </div>
 
       {/* 2. Middle Execution Trace Pane */}
-      <div className="lg:col-span-2 flex flex-col bg-zinc-950/60 border border-border/60 rounded-2xl p-4 overflow-hidden relative">
+      <div className="lg:col-span-2 flex flex-col bg-[#090B0D] border border-white/10 rounded-[18px] p-5 overflow-hidden relative shadow-2xl">
         {activeTrace ? (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Trace Title & Controls */}
-            <div className="flex items-center justify-between pb-3 border-b border-border/50 mb-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Zap className="w-4 h-4 text-primary shrink-0 animate-pulse" />
-                <h4 className="dash-card-title text-zinc-200 uppercase tracking-wider truncate">
-                  {activeTrace.method} {activeTrace.route}
-                </h4>
+            {/* Trace Title & Controls - Single-line Header (~58px) */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/10 mb-3.5 min-h-[58px] shrink-0">
+              <div className="flex items-center gap-3 min-w-0 pr-2">
+                <Zap className="w-6 h-6 text-[#16C7A1] shrink-0" />
+                <span className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-wide uppercase shrink-0 ${
+                  activeTrace.method?.toUpperCase() === 'POST' ? 'bg-[#16C7A1] text-zinc-950' :
+                  activeTrace.method?.toUpperCase() === 'PUT' ? 'bg-[#F5B800] text-zinc-950' :
+                  activeTrace.method?.toUpperCase() === 'DELETE' ? 'bg-[#FF4D5E] text-white' :
+                  activeTrace.method?.toUpperCase() === 'PATCH' ? 'bg-[#FF8A00] text-white' :
+                  'bg-[#2F80ED] text-white'
+                }`}>
+                  {activeTrace.method}
+                </span>
+                <h3 className="text-[19px] md:text-[20px] font-bold text-[#F7FAFA] truncate font-sans tracking-tight">
+                  {formatRoutePath(activeTrace.route)}
+                </h3>
               </div>
               
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleStep('prev')}
                   disabled={activeStep === 0}
-                  className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="w-9 h-9 rounded-lg bg-[#1B1D20] border border-white/5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition"
+                  title="Previous Step"
                 >
-                  <SkipBack size={14} />
+                  <SkipBack size={15} />
                 </button>
                 <button
                   onClick={isPlaying ? () => setIsPlaying(false) : handlePlay}
-                  className={`p-2 rounded-xl transition ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition shadow-md ${
                     isPlaying
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                      : 'bg-primary text-background hover:bg-primary/90'
+                      ? 'bg-amber-500 text-zinc-950 hover:bg-amber-400'
+                      : 'bg-[#16C7A1] text-[#090B0D] hover:bg-[#16C7A1]/90 shadow-[0_0_15px_rgba(22,199,161,0.25)]'
                   }`}
+                  title={isPlaying ? "Pause Trace" : "Play Trace"}
                 >
-                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                  {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
                 </button>
                 <button
                   onClick={() => handleStep('next')}
                   disabled={activeStep === (activeTrace?.steps.length || 0) - 1}
-                  className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="w-9 h-9 rounded-lg bg-[#1B1D20] border border-white/5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition"
+                  title="Next Step"
                 >
-                  <SkipForward size={14} />
+                  <SkipForward size={15} />
                 </button>
                 
                 {/* Toggle view mode */}
-                <div className="flex bg-zinc-900/80 p-0.5 rounded-lg border border-border/50 gap-0.5 ml-2">
+                <div className="flex bg-[#1B1D20] p-1 rounded-lg border border-white/5 gap-1 ml-1.5">
                   {(["timeline", "graph"] as const).map(mode => (
                     <button
                       key={mode}
                       onClick={() => setViewMode(mode)}
-                      className={`px-2 py-1 rounded dash-btn-sm uppercase transition-all duration-200 ${
-                        viewMode === mode ? "bg-primary text-background" : "text-muted-foreground hover:text-white"
+                      className={`px-2.5 py-1 rounded text-xs font-bold uppercase transition-all duration-200 ${
+                        viewMode === mode ? "bg-[#16C7A1] text-[#090B0D]" : "text-zinc-400 hover:text-white"
                       }`}
                     >
                       {mode}
@@ -508,44 +534,45 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
               </div>
             </div>
 
-            {/* Recruiter-Grade Diagnostics Header Panel */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3 bg-zinc-900/40 p-3 rounded-xl border border-border/40">
-              {/* Confidence Meter */}
-              <div className="flex flex-col justify-center items-center md:border-r border-border/30 pr-1 text-center">
-                <span className="dash-sidebar-cat text-zinc-400">Confidence</span>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="dash-value text-white">{activeTrace.confidence <= 1 ? Math.round(activeTrace.confidence * 100) : Math.round(activeTrace.confidence)}%</span>
+            {/* Metrics Strip (4 columns) */}
+            <div className="grid grid-cols-4 divide-x divide-white/5 bg-[#101214] border border-white/5 rounded-xl p-3.5 mb-4 text-center items-center shrink-0">
+              {/* Confidence */}
+              <div className="flex flex-col justify-center items-center px-1">
+                <span className="text-[11px] font-medium tracking-wider text-[#8F9298] uppercase mb-1">Confidence</span>
+                <div className="flex items-center gap-1 text-[16px] md:text-[18px] font-bold text-[#16C7A1]">
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                  <span>{activeTrace.confidence <= 1 ? Math.round(activeTrace.confidence * 100) : Math.round(activeTrace.confidence)}%</span>
                 </div>
               </div>
 
-              {/* Reachability Badge */}
-              <div className="flex flex-col justify-center items-center md:border-r border-border/30 px-1 text-center">
-                <span className="dash-sidebar-cat text-zinc-400">DB Reachable</span>
+              {/* DB Reachable */}
+              <div className="flex flex-col justify-center items-center px-1">
+                <span className="text-[11px] font-medium tracking-wider text-[#8F9298] uppercase mb-1">DB Reachable</span>
                 {activeTrace.reachability ? (
-                  <Badge variant="success" className="dash-badge mt-1">REACHABLE</Badge>
+                  <span className="bg-[#1B1D20] border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1 rounded-full uppercase">
+                    REACHABLE
+                  </span>
                 ) : (
-                  <Badge variant="secondary" className="dash-badge mt-1 opacity-60">NO DB ACTIVITY</Badge>
+                  <span className="bg-[#1B1D20] border border-white/5 text-[#8F9298] text-xs font-semibold px-3 py-1 rounded-full uppercase">
+                    NO DB ACTIVITY
+                  </span>
                 )}
               </div>
 
-              {/* Authentication Flow Info */}
-              <div className="flex flex-col justify-center items-center md:border-r border-border/30 px-1 text-center">
-                <span className="dash-sidebar-cat text-zinc-400">Auth Flow</span>
-                {activeTrace.authType ? (
-                  <Badge variant="primary" className="dash-badge mt-1 bg-emerald-950/40 text-emerald-400 border-emerald-800/60 uppercase">
-                    {activeTrace.authType}
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="dash-badge mt-1 opacity-60 uppercase">PUBLIC</Badge>
-                )}
+              {/* Auth Flow */}
+              <div className="flex flex-col justify-center items-center px-1">
+                <span className="text-[11px] font-medium tracking-wider text-[#8F9298] uppercase mb-1">Auth Flow</span>
+                <span className="bg-[#1B1D20] border border-white/5 text-[#8F9298] text-xs font-semibold px-3 py-1 rounded-full uppercase">
+                  {activeTrace.authType ? activeTrace.authType.toUpperCase() : "PUBLIC"}
+                </span>
               </div>
 
-              {/* Quick Metrics Bar */}
-              <div className="flex flex-col justify-center items-center text-center">
-                <span className="dash-sidebar-cat text-zinc-400">Complexity</span>
-                <div className="dash-filepath-medium text-primary mt-1">
-                  Σ {activeTrace.metrics.complexity}
+              {/* Complexity */}
+              <div className="flex flex-col justify-center items-center px-1">
+                <span className="text-[11px] font-medium tracking-wider text-[#8F9298] uppercase mb-1">Complexity</span>
+                <div className="text-[16px] md:text-[18px] font-bold">
+                  <span className="text-[#16C7A1] mr-1">Σ</span>
+                  <span className="text-[#F7FAFA]">{activeTrace.metrics?.complexity ?? 0}</span>
                 </div>
               </div>
             </div>
@@ -553,83 +580,88 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
             {/* Interactive Timeline vs ReactFlow Canvas */}
             <div className="flex-1 min-h-0 overflow-y-auto mb-3">
               {viewMode === "timeline" ? (
-              <div className="space-y-0.5 flex flex-col items-center py-2">
-                {activeTrace.steps.map((step, index) => {
-                  const style = CATEGORY_STYLES[step.type] || CATEGORY_STYLES.helper;
-                  const Icon = style.icon;
-                  const hasFile = !!getFileNodeForName(step.name);
-                  const isActive = activeStep === index;
-                  const isVisible = isPlaying ? index <= activeStep : true;
+                <div className="space-y-0 flex flex-col items-center py-2 w-full">
+                  {activeTrace.steps.map((step, index) => {
+                    const style = CATEGORY_STYLES[step.type] || CATEGORY_STYLES.helper;
+                    const Icon = style.icon;
+                    const hasFile = !!getFileNodeForName(step.name);
+                    const isActive = activeStep === index;
+                    const isVisible = isPlaying ? index <= activeStep : true;
+                    const displayName = step.name.split("/").pop() || step.name;
 
-                  return (
-                    <React.Fragment key={index}>
-                      <motion.div
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ 
-                          opacity: isVisible ? 1 : 0.3,
-                          y: 0,
-                          scale: isActive ? 1.02 : 1
-                        }}
-                        transition={{ delay: index * 0.12, duration: 0.25 }}
-                        className="w-full max-w-sm"
-                      >
-                        <div
-                          onClick={() => {
-                            if (hasFile) handleNodeClick(step.name);
-                            setActiveStep(index);
-                            setSelectedStep(step);
-                            setShowInspector(true);
-                          }}
-                          className={`p-2.5 rounded-xl border flex items-center justify-between transition-all duration-200 ${
-                            isActive
-                              ? 'bg-primary/10 border-primary/40 shadow-lg'
-                              : hasFile 
-                                ? 'cursor-pointer hover:scale-[1.02] bg-zinc-900/40 hover:bg-zinc-900/60 border-border/60 hover:border-primary/40 shadow-sm' 
-                                : 'cursor-default bg-zinc-950/30 border-border/30 opacity-70'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 ${
-                              isActive ? 'bg-primary/20 border-primary/60' : `${style.text} ${style.bg} ${style.border}`
-                            }`}>
-                              <Icon className={`w-3 h-3 ${isActive ? 'text-primary' : ''}`} />
-                            </div>
-                            <div className="min-w-0 text-left">
-                              <span className={`dash-sidebar-cat block opacity-70 ${isActive ? 'text-primary' : style.text}`}>
-                                {style.label}
-                              </span>
-                              <span className="dash-filepath-medium text-zinc-200 truncate block">
-                                {step.name}
-                              </span>
-                            </div>
-                          </div>
-                          {isActive && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                          )}
-                          {hasFile && !isActive && (
-                            <Badge variant="secondary" className="dash-badge shrink-0">
-                              INSPECT
-                            </Badge>
-                          )}
-                        </div>
-                      </motion.div>
-                      
-                      {index < activeTrace.steps.length - 1 && (
+                    return (
+                      <React.Fragment key={index}>
                         <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: isVisible ? 1 : 0.3 }}
-                          transition={{ delay: index * 0.12 + 0.06 }}
-                          className="py-1 shrink-0"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ 
+                            opacity: isVisible ? 1 : 0.3,
+                            y: 0,
+                          }}
+                          transition={{ delay: index * 0.08, duration: 0.2 }}
+                          className="w-[90%] max-w-[520px]"
                         >
-                          <ArrowDown className={`w-3.5 h-3.5 ${isActive ? 'text-primary/60' : 'text-zinc-700'}`} />
+                          <div
+                            onClick={() => {
+                              if (hasFile) handleNodeClick(step.name);
+                              setActiveStep(index);
+                              setSelectedStep(step);
+                              setShowInspector(true);
+                            }}
+                            className={`min-h-[72px] h-[74px] rounded-xl px-4 py-3 flex items-center justify-between transition-all duration-200 cursor-pointer ${
+                              isActive
+                                ? 'bg-[#16C7A1]/10 border-2 border-[#16C7A1] shadow-[0_0_15px_rgba(22,199,161,0.15)]'
+                                : `${style.bg} border ${style.border} hover:border-[#16C7A1]/50`
+                            }`}
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div 
+                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                style={{
+                                  backgroundColor: isActive ? 'rgba(22,199,161,0.15)' : style.bgSoft,
+                                  color: isActive ? '#16C7A1' : style.color
+                                }}
+                              >
+                                <Icon className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0 text-left">
+                                <span 
+                                  className="text-[11px] md:text-[12px] font-bold uppercase tracking-wider block"
+                                  style={{ color: isActive ? '#16C7A1' : style.color }}
+                                >
+                                  {style.label}
+                                </span>
+                                <span className="text-[14px] md:text-[15px] font-semibold text-[#F7FAFA] truncate block leading-snug">
+                                  {displayName}
+                                </span>
+                              </div>
+                            </div>
+                            {isActive && (
+                              <div className="w-2.5 h-2.5 rounded-full bg-[#16C7A1] shrink-0 animate-pulse shadow-[0_0_8px_#16C7A1]" />
+                            )}
+                            {hasFile && !isActive && (
+                              <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">
+                                INSPECT
+                              </span>
+                            )}
+                          </div>
                         </motion.div>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            )  : (
-                <div className="w-full h-full rounded-xl border border-border/40 bg-zinc-950/60 overflow-hidden relative">
+                        
+                        {index < activeTrace.steps.length - 1 && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: isVisible ? 1 : 0.3 }}
+                            transition={{ delay: index * 0.08 + 0.04 }}
+                            className="h-[26px] flex items-center justify-center text-[#16C7A1] shrink-0 my-0.5"
+                          >
+                            <ArrowDown className={`w-3.5 h-3.5 ${isActive ? 'text-[#16C7A1]' : 'text-[#16C7A1]/60'}`} />
+                          </motion.div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="w-full h-full rounded-xl border border-white/10 bg-[#090B0D] overflow-hidden relative">
                   <ReactFlow
                     nodes={rfNodes}
                     edges={rfEdges}
@@ -649,15 +681,15 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
             </div>
 
             {/* Trace Meta Info (Env variables list) */}
-            {activeTrace.envVars.length > 0 && (
-              <div className="mt-auto border-t border-border/40 pt-2.5 bg-zinc-900/10 shrink-0">
-                <div className="flex items-center gap-1.5 text-zinc-400 dash-sidebar-cat mb-1.5">
-                  <Key className="w-3 h-3 text-primary shrink-0" />
+            {activeTrace.envVars && activeTrace.envVars.length > 0 && (
+              <div className="mt-auto border-t border-white/10 pt-2.5 bg-[#101214]/50 shrink-0">
+                <div className="flex items-center gap-1.5 text-zinc-400 text-xs mb-1.5 font-medium">
+                  <Key className="w-3 h-3 text-[#16C7A1] shrink-0" />
                   <span>Mapped Environment Configs ({activeTrace.envVars.length})</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {activeTrace.envVars.map(env => (
-                    <code key={env} className="dash-filepath bg-zinc-900/60 border border-border/60 px-1.5 py-0.5 rounded text-primary">
+                    <code key={env} className="dash-filepath bg-[#1B1D20] border border-white/5 px-2 py-0.5 rounded text-[#16C7A1] text-xs">
                       {env}
                     </code>
                   ))}
@@ -667,9 +699,9 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-zinc-500">
-            <Zap className="w-12 h-12 text-zinc-700 mb-2 animate-pulse" />
-            <h4 className="dash-card-title text-zinc-300">Execution Trace Explorer</h4>
-            <p className="dash-body text-zinc-500 max-w-xs mt-1 leading-relaxed">
+            <Zap className="w-10 h-10 text-[#16C7A1]/40 mb-2 animate-pulse" />
+            <h4 className="text-base font-bold text-zinc-200">Execution Trace Explorer</h4>
+            <p className="text-xs text-zinc-400 max-w-xs mt-1 leading-relaxed">
               Select an API route from the endpoints menu on the left to analyze its controller, service layers, helpers, and database connections.
             </p>
           </div>

@@ -18,6 +18,7 @@ export interface SubwayStationData {
   raw?: string;
   layer: LayerType;          // ✅ Layer classification
   layerIndex?: number;       // ✅ Position within layer
+  stationNumber?: string | number; // ✅ Station sequence number (e.g. 01, 02)
   featureId?: string;        // ✅ Parent feature ID
   health: StationHealth;     // ✅ Station health status
   healthScore?: number;      // ✅ Real 0-100 health score

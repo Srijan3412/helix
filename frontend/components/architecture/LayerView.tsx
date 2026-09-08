@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ReactFlow, Background, Controls, Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
+import { ReactFlow, Background, Controls, Node as ReactFlowNode, Edge as ReactFlowEdge, MarkerType } from "@xyflow/react";
 import { getArchitectureLayers } from "../../lib/api/client";
 import LayerNode from "./LayerNode";
 import LayerFileNode from "./LayerFileNode";
 import LayerDetails from "./LayerDetails";
 import { useAnalysisStore } from "../../store/analysis.store";
+import { LAYER_THEME, getLayerTheme } from "./layerTheme";
 import {
   Route, Settings, Cog, Database, Layers, Play, PlayCircle,
   Pause, SkipForward, X, Loader2, Search, Shield, CheckCircle, Wrench
@@ -74,16 +75,16 @@ const LAYER_LABELS: Record<string, string> = {
 };
 
 const LAYER_COLORS: Record<string, string> = {
-  routes: "#3b82f6",       // blue
-  controllers: "#a855f7",  // purple
-  services: "#f97316",     // amber
-  repositories: "#22c55e", // emerald
-  models: "#eab308",       // yellow
-  middleware: "#f472b6",   // pink
-  config: "#8b5cf6",       // violet
-  tests: "#34d399",        // emerald
-  utils: "#f97316",        // orange
-  database: "#ef4444",     // rose
+  routes: "#2F80ED",       // blue
+  controllers: "#9B5CFF",  // purple
+  services: "#F5B800",     // yellow
+  repositories: "#00B8D9", // cyan
+  models: "#FF4D5E",       // coral/red
+  database: "#16C7A1",     // green
+  middleware: "#EC4899",   // pink
+  config: "#8B5CF6",       // violet
+  tests: "#34D399",        // emerald
+  utils: "#F97316",        // orange
 };
 
 const LAYER_ICONS: Record<string, any> = {
@@ -435,15 +436,25 @@ export default function LayerView({ result }: { result: any }) {
       const actualLayers = layerOrder.filter(l => nodesByLayer[l]?.length > 0);
       console.log('✅ [LAYERED VIEW] Actual layers with nodes:', actualLayers);
       const mappedNodes: any[] = [];
-      const mappedEdges = (preGeneratedGraph?.edges ?? []).map((edge: any) => ({
-        ...edge,
-        animated: edge.animated !== undefined ? edge.animated : true,
-        style: edge.style || {
-          stroke: "hsl(var(--primary, 60 100% 50%))",
-          strokeWidth: 2.0,
-          opacity: 0.8
-        },
-      }));
+      const mappedEdges = (preGeneratedGraph?.edges ?? []).map((edge: any) => {
+        const sourceLayer = edge.source?.replace(/^layer-/, "") || "services";
+        const sourceTheme = getLayerTheme(sourceLayer);
+        return {
+          ...edge,
+          animated: edge.animated !== undefined ? edge.animated : true,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: sourceTheme.primary,
+            width: 14,
+            height: 14,
+          },
+          style: edge.style || {
+            stroke: sourceTheme.primary,
+            strokeWidth: 2.0,
+            opacity: 0.65,
+          },
+        };
+      });
 
       // Generate Column Headers
       // ── LAYER HEADERS - VERTICAL LAYOUT ──
@@ -557,15 +568,22 @@ export default function LayerView({ result }: { result: any }) {
 
         // ── CONNECT HEADER TO FIRST FILE ──
         if (filesInLayer.length > 0) {
+          const sourceTheme = getLayerTheme(key);
           mappedEdges.push({
             id: `edge-header-to-first-${key}`,
             source: `layer-${key}`,
             target: filesInLayer[0].id,
             animated: true,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: sourceTheme.primary,
+              width: 14,
+              height: 14,
+            },
             style: {
-              stroke: "hsl(var(--primary, 60 100% 50%))",
+              stroke: sourceTheme.primary,
               strokeWidth: 2.0,
-              opacity: 0.8,
+              opacity: 0.65,
             },
           });
         }
@@ -669,9 +687,9 @@ export default function LayerView({ result }: { result: any }) {
             onToggle: () => { },
             files: fileDataArray,
           },
-          position: { x: xCenter - 110, y: currentY },
+          position: { x: 150, y: currentY },
           style: {
-            width: 220,
+            width: 400,
             opacity,
             transition: "opacity 250ms ease, transform 250ms ease",
             transform: isTourActive && isNodeActive ? "scale(1.04)" : "scale(1)",
@@ -682,14 +700,11 @@ export default function LayerView({ result }: { result: any }) {
       currentY += 90 + LAYER_SPACING; // space below layer card
 
 
-      // If this layer is expanded, place its files vertically below it
-
-
       // Connect this layer to next layer
       if (idx < LAYER_KEYS.length - 1) {
         const nextKey = LAYER_KEYS[idx + 1];
-        // Connect either from the last file (if expanded) or from the layer card itself
         const sourceNodeId = `layer-${key}`;
+        const sourceTheme = getLayerTheme(key);
 
         let edgeDimmed = false;
         if (isTourActive) {
@@ -705,18 +720,16 @@ export default function LayerView({ result }: { result: any }) {
           source: sourceNodeId,
           target: `layer-${nextKey}`,
           animated: !edgeDimmed,
-          label: "⬇",
-          labelStyle: {
-            fill: edgeDimmed ? "#3f3f46" : "hsl(var(--primary))",
-            fontSize: 16,
-            fontWeight: "bold",
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: edgeDimmed ? "#3f3f46" : sourceTheme.primary,
+            width: 14,
+            height: 14,
           },
-          labelBgStyle: { fill: "transparent" },
-          labelShowBg: false,
           style: {
-            stroke: edgeDimmed ? "#3f3f46" : "hsl(var(--primary, 60 100% 50%))",
+            stroke: edgeDimmed ? "#3f3f46" : sourceTheme.primary,
             strokeWidth: edgeDimmed ? 1.5 : 2.5,
-            opacity: edgeDimmed ? 0.15 : 1.0,
+            opacity: edgeDimmed ? 0.15 : 0.65,
             transition: "opacity 250ms, stroke-width 250ms",
           },
         });
