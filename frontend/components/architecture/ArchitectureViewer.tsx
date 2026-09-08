@@ -168,45 +168,45 @@ export default function ArchitectureViewer({
       <div className="absolute bottom-12 right-12 w-96 h-96 bg-[#16C7A1]/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* ── Top Tab Navigation ───────────────────────────────────────── */}
-      <div className="flex items-center justify-center gap-1.5 px-4 py-2 border-b border-[#16C7A1]/20 bg-[#062F38]/90 backdrop-blur-md shrink-0 z-10">
+      <div className="flex items-center justify-center gap-1.5 px-4 py-2 border-b border-[#16C7A1]/20 bg-[#062F38]/90 backdrop-blur-md shrink-0 z-10 overflow-x-auto">
         {TABS.map((tab) => {
           const isActive = activeMode === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveMode(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer w-[145px] shrink-0 ${
                 isActive
                   ? "bg-[#16C7A1] text-[#062F38] shadow-md shadow-[#16C7A1]/20 font-bold"
                   : "text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#084C58]/60"
               }`}
             >
               {tab.icon}
-              <span>{tab.label}</span>
+              <span className="truncate">{tab.label}</span>
             </button>
           );
         })}
       </div>
 
       {/* ── Body: Sidebar + Canvas ────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden p-4 gap-4 bg-[#063D48] relative z-10">
+      <div className="flex flex-1 overflow-hidden p-3 gap-3 bg-[#063D48] relative z-10">
 
         {/* Left Analysis Workspace Panel */}
         {activeMode !== "metro" && (
           <aside
-            className="w-[280px] shrink-0 h-full rounded-[14px] bg-[#062F38] border border-[#16C7A1]/20 shadow-xl overflow-y-auto analysis-scrollbar flex flex-col p-4 select-none"
+            className="w-[230px] shrink-0 h-full rounded-[14px] bg-[#062F38] border border-[#16C7A1]/20 shadow-xl overflow-y-auto analysis-scrollbar flex flex-col p-3 select-none"
             style={{
               scrollbarGutter: "stable",
             }}
           >
             {/* Header Block */}
-            <div className="mb-4 shrink-0">
-              <div className="flex items-center gap-2.5 mb-1">
-                <div className="p-1 rounded-md bg-[#16C7A1]/10 text-[#16C7A1] shrink-0">
-                  <Activity size={20} className="text-[#16C7A1]" />
+            <div className="mb-3 shrink-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <div className="p-1 rounded bg-[#16C7A1]/10 text-[#16C7A1] shrink-0">
+                  <Activity size={16} className="text-[#16C7A1]" />
                 </div>
                 <div>
-                  <h2 className="dash-section-heading text-sm font-bold leading-tight tracking-wider text-[#9BE8E0] uppercase font-sans">
+                  <h2 className="text-[12px] font-bold leading-tight tracking-wider text-[#9BE8E0] uppercase font-sans">
                     {sidebarTitle === "ARCHITECTURE LAYERS" ? (
                       <>
                         ARCHITECTURE LAYERS
@@ -215,16 +215,16 @@ export default function ArchitectureViewer({
                       sidebarTitle
                     )}
                   </h2>
-                  <div className="w-5 h-0.5 bg-[#FF3344] rounded-full mt-1" />
+                  <div className="w-4 h-0.5 bg-[#FF3344] rounded-full mt-0.5" />
                 </div>
               </div>
-              <p className="dash-subtitle text-xs text-[#C3D5D8] leading-relaxed mt-2">
+              <p className="dash-subtitle text-[11px] text-[#C3D5D8] leading-tight mt-1.5">
                 {sidebarDesc}
               </p>
             </div>
 
             {/* Layer Cards */}
-            <div className="space-y-2 flex-1">
+            <div className="space-y-1.5 flex-1">
               {features.map((feat, i) => {
                 const healthBad = feat.health > 0 && feat.health < 40;
                 return (
@@ -233,51 +233,51 @@ export default function ArchitectureViewer({
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="w-full bg-[#084C58]/55 border border-[#0F8E94]/30 rounded-xl p-3 cursor-pointer hover:border-[#16C7A1]/50 hover:bg-[#084C58]/80 transition-all duration-200 flex flex-col gap-1.5"
+                    className="w-full bg-[#084C58]/55 border border-[#0F8E94]/30 rounded-lg p-2.5 cursor-pointer hover:border-[#16C7A1]/50 hover:bg-[#084C58]/80 transition-all duration-200 flex flex-col gap-1"
                     style={{
-                      borderLeftWidth: "3.5px",
+                      borderLeftWidth: "3px",
                       borderLeftColor: feat.color,
                     }}
                   >
                     {/* Top Row: Colored Marker + Layer Title + Chevron */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5 truncate flex-1">
                         <div
-                          className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"
+                          className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
                           style={{
                             backgroundColor: feat.color,
-                            boxShadow: `0 0 6px ${feat.color}40`,
+                            boxShadow: `0 0 5px ${feat.color}40`,
                           }}
                         />
-                        <span className="dash-card-title text-sm font-bold text-[#F7FAFA] lowercase tracking-tight">
+                        <span className="dash-card-title text-[12px] font-bold text-[#F7FAFA] lowercase tracking-tight truncate">
                           {feat.name.toLowerCase()}
                         </span>
                       </div>
-                      <ChevronRight size={16} className="text-[#9BE8E0]/70" />
+                      <ChevronRight size={13} className="text-[#9BE8E0]/70 shrink-0" />
                     </div>
 
                     {/* Middle Row: Metrics */}
-                    <div className="flex items-center gap-2.5 my-0.5 text-xs">
+                    <div className="flex items-center gap-2 my-0.5 text-[11px]">
                       <div className="flex items-center gap-1">
-                        {healthBad && <AlertTriangle size={13} className="text-[#FF3344] shrink-0" />}
-                        <span className={`dash-value text-xs font-bold ${healthBad ? "text-[#FF3344]" : "text-[#F7FAFA]"}`}>
+                        {healthBad && <AlertTriangle size={11} className="text-[#FF3344] shrink-0" />}
+                        <span className={`dash-value text-[11px] font-bold ${healthBad ? "text-[#FF3344]" : "text-[#F7FAFA]"}`}>
                           {feat.health}
                         </span>
-                        <span className="dash-metadata text-[11px] text-[#8EA9AE]">Health</span>
+                        <span className="dash-metadata text-[10px] text-[#8EA9AE]">Health</span>
                       </div>
-                      <span className="text-[#0F8E94]/40 font-light text-[11px]">│</span>
+                      <span className="text-[#0F8E94]/40 font-light text-[10px]">│</span>
                       <div className="flex items-center gap-1">
-                        <span className="dash-value text-xs font-bold text-[#F7FAFA]">
+                        <span className="dash-value text-[11px] font-bold text-[#F7FAFA]">
                           {Math.round(feat.confidence <= 1 ? feat.confidence * 100 : feat.confidence)}%
                         </span>
-                        <span className="dash-metadata text-[11px] text-[#8EA9AE]">Conf</span>
+                        <span className="dash-metadata text-[10px] text-[#8EA9AE]">Conf</span>
                       </div>
                     </div>
 
                     {/* Bottom Row: File Count */}
-                    <div className="flex items-center gap-1.5 text-xs text-[#C3D5D8]">
-                      <Folder size={14} className="text-[#16C7A1] shrink-0" />
-                      <span className="dash-body text-xs">{feat.fileCount} files</span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#C3D5D8]">
+                      <Folder size={12} className="text-[#16C7A1] shrink-0" />
+                      <span className="dash-body text-[11px]">{feat.fileCount} files</span>
                     </div>
                   </motion.div>
                 );
@@ -286,27 +286,27 @@ export default function ArchitectureViewer({
 
             {/* PageRank Importance Section */}
             {topFiles.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-[#16C7A1]/20 shrink-0">
+              <div className="mt-3 pt-2.5 border-t border-[#16C7A1]/20 shrink-0">
                 <div>
-                  <h4 className="dash-eyebrow text-xs font-bold tracking-wider text-[#9BE8E0] uppercase font-sans">
+                  <h4 className="dash-eyebrow text-[10px] font-bold tracking-wider text-[#9BE8E0] uppercase font-sans">
                     PAGERANK IMPORTANCE
                   </h4>
-                  <div className="w-5 h-0.5 bg-[#FF3344] rounded-full mt-1" />
+                  <div className="w-4 h-0.5 bg-[#FF3344] rounded-full mt-0.5" />
                 </div>
-                <div className="space-y-1.5 mt-2.5">
+                <div className="space-y-1 mt-2">
                   {topFiles.map((f, i) => (
                     <div
                       key={i}
-                      className="h-8 flex items-center justify-between px-2.5 rounded-lg bg-[#084C58]/30 border border-[#0F8E94]/20 hover:border-[#16C7A1]/40 transition-colors text-xs"
+                      className="h-7 flex items-center justify-between px-2 rounded-md bg-[#084C58]/30 border border-[#0F8E94]/20 hover:border-[#16C7A1]/40 transition-colors text-[11px]"
                     >
-                      <span className="text-[#16C7A1] font-bold text-xs w-4">
+                      <span className="text-[#16C7A1] font-bold text-[11px] w-3.5">
                         {i + 1}
                       </span>
-                      <span className="dash-filepath text-xs text-[#F7FAFA] font-medium truncate flex-1 px-2">
+                      <span className="dash-filepath text-[11px] text-[#F7FAFA] font-medium truncate flex-1 px-1.5">
                         {f.name}
                       </span>
                       <div
-                        className={`px-2 py-0.5 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 ${
+                        className={`px-1.5 py-0.5 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
                           i === 0
                             ? "bg-[#FF3344]/22 text-[#FF7A84] border border-[#FF3344]/40 shadow-sm"
                             : "bg-[#9BE8E0]/12 text-[#B8E9E6] border border-[#9BE8E0]/20"
@@ -323,11 +323,11 @@ export default function ArchitectureViewer({
                   onClick={() => {
                     setActiveMode("file");
                   }}
-                  className="w-full h-8 mt-2.5 rounded-lg flex items-center justify-center gap-2 bg-[#16C7A1]/12 hover:bg-[#16C7A1]/22 border border-[#16C7A1]/30 hover:border-[#16C7A1]/60 text-[#9BE8E0] hover:text-[#F7FAFA] font-semibold text-xs transition-all duration-200 shadow-md group cursor-pointer"
+                  className="w-full h-7 mt-2 rounded-md flex items-center justify-center gap-1.5 bg-[#16C7A1]/12 hover:bg-[#16C7A1]/22 border border-[#16C7A1]/30 hover:border-[#16C7A1]/60 text-[#9BE8E0] hover:text-[#F7FAFA] font-semibold text-[11px] transition-all duration-200 shadow-sm group cursor-pointer"
                 >
-                  <BarChart2 size={14} className="text-[#16C7A1] group-hover:scale-110 transition-transform" />
-                  <span className="dash-btn-sm">View Full Rankings</span>
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  <BarChart2 size={12} className="text-[#16C7A1] group-hover:scale-110 transition-transform" />
+                  <span className="dash-btn-sm text-[11px]">View Full Rankings</span>
+                  <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             )}
