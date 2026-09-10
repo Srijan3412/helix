@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   ReactFlow,
   Node,
@@ -14,6 +14,7 @@ import {
   Handle,
   Position,
   ReactFlowProvider,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Package, FileCode, CheckSquare, Square } from "lucide-react";
@@ -162,11 +163,41 @@ interface RawFileItem {
   imports: string[];
 }
 
-function PackageGraphInternal({ result }: { result: any }) {
+function PackageGraphInternal({
+  result,
+  externalSearchQuery,
+  isFullScreen,
+  fitViewTrigger,
+  fitRepoTrigger,
+}: {
+  result: any;
+  externalSearchQuery?: string;
+  isFullScreen?: boolean;
+  fitViewTrigger?: number;
+  fitRepoTrigger?: number;
+}) {
   const [showDevDeps, setShowDevDeps] = useState(true);
   const [showProdDeps, setShowProdDeps] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const reactFlow = useReactFlow();
+
+  // Handle Fit View trigger
+  useEffect(() => {
+    if (fitViewTrigger && fitViewTrigger > 0) {
+      reactFlow.fitView({ duration: 300, padding: 0.2 });
+    }
+  }, [fitViewTrigger, reactFlow]);
+
+  // Handle Fit Repository trigger
+  useEffect(() => {
+    if (fitRepoTrigger && fitRepoTrigger > 0) {
+      setShowDevDeps(true);
+      setShowProdDeps(true);
+      setSelectedNodeId(null);
+      reactFlow.fitView({ duration: 400, padding: 0.15 });
+    }
+  }, [fitRepoTrigger, reactFlow]);
 
   // Map package metadata from scan results dynamically
   const packageNodes: RawPackageItem[] = useMemo(() => {
@@ -496,10 +527,28 @@ function PackageGraphInternal({ result }: { result: any }) {
   );
 }
 
-export default function PackageGraph({ result }: { result: any }) {
+export default function PackageGraph({
+  result,
+  externalSearchQuery,
+  isFullScreen,
+  fitViewTrigger,
+  fitRepoTrigger,
+}: {
+  result: any;
+  externalSearchQuery?: string;
+  isFullScreen?: boolean;
+  fitViewTrigger?: number;
+  fitRepoTrigger?: number;
+}) {
   return (
     <ReactFlowProvider>
-      <PackageGraphInternal result={result} />
+      <PackageGraphInternal
+        result={result}
+        externalSearchQuery={externalSearchQuery}
+        isFullScreen={isFullScreen}
+        fitViewTrigger={fitViewTrigger}
+        fitRepoTrigger={fitRepoTrigger}
+      />
     </ReactFlowProvider>
   );
 }

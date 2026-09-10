@@ -45,6 +45,23 @@ export interface SubwayStationData {
   };
 }
 
+export interface FlowGroupData {
+  id: string;
+  featureId: string;
+  featureName?: string;
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  stationsCount: number;
+  endpointsCount: number;
+  stations: SubwayStationData[];
+  endpoints: { method: string; path: string }[];
+  representativeEndpoints?: { method: string; path: string }[];
+  health: number;
+  dependencies: string[];
+}
+
 // ── Feature Flow (Extended) ──
 export interface FeatureFlow {
   id: string;
@@ -57,6 +74,9 @@ export interface FeatureFlow {
   database?: string[];
   databases?: string[];
   auth?: boolean;
+  flowGroups?: FlowGroupData[];
+  stations?: SubwayStationData[];
+  totalStations?: number;
   metrics?: {
     routes?: number;
     services?: number;

@@ -6,6 +6,15 @@ export type LayerType =
   | 'infrastructure' 
   | 'utility';
 
+export const ALL_LAYERS: LayerType[] = [
+  'api',
+  'middleware',
+  'business',
+  'data',
+  'infrastructure',
+  'utility'
+];
+
 export const LAYER_CONFIG: Record<LayerType, {
   label: string;
   emoji: string;

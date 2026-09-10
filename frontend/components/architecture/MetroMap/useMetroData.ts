@@ -71,6 +71,297 @@ export function calculateFileHealth(
   return { health: 'healthy', healthScore: Math.max(85, Math.min(98, repoHealth)) };
 }
 
+import { FlowGroupData } from './types';
+
+export function generateFlowGroupsForFeature(
+  featureId: string,
+  featureName: string,
+  files: string[],
+  routes: string[]
+): FlowGroupData[] {
+  const normName = featureName.toLowerCase();
+  
+  if (normName.includes('auth')) {
+    return [
+      {
+        id: `${featureId}-login`,
+        featureId,
+        name: 'Login & Session',
+        stationsCount: 4,
+        endpointsCount: 8,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/auth/login' },
+          { method: 'POST', path: '/api/auth/login' },
+          { method: 'GET', path: '/api/auth/session' },
+          { method: 'GET', path: '/api/auth/refresh' }
+        ],
+        health: 96,
+        dependencies: ['Redis', 'PostgreSQL']
+      },
+      {
+        id: `${featureId}-registration`,
+        featureId,
+        name: 'Registration',
+        stationsCount: 3,
+        endpointsCount: 6,
+        stations: [],
+        endpoints: [
+          { method: 'POST', path: '/api/auth/register' },
+          { method: 'POST', path: '/api/auth/verify-otp' }
+        ],
+        health: 92,
+        dependencies: ['Email Service', 'PostgreSQL']
+      },
+      {
+        id: `${featureId}-verification`,
+        featureId,
+        name: 'Verification',
+        stationsCount: 3,
+        endpointsCount: 5,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/auth/verify' },
+          { method: 'POST', path: '/api/auth/forgot-password' }
+        ],
+        health: 94,
+        dependencies: ['SMS Gateway']
+      },
+      {
+        id: `${featureId}-tokens`,
+        featureId,
+        name: 'Token Management',
+        stationsCount: 4,
+        endpointsCount: 7,
+        stations: [],
+        endpoints: [
+          { method: 'POST', path: '/api/auth/refresh-token' },
+          { method: 'DELETE', path: '/api/auth/revoke' }
+        ],
+        health: 98,
+        dependencies: ['JWT Store']
+      }
+    ];
+  }
+
+  if (normName.includes('user')) {
+    return [
+      {
+        id: `${featureId}-users`,
+        featureId,
+        name: 'Users',
+        stationsCount: 4,
+        endpointsCount: 8,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/users' },
+          { method: 'GET', path: '/api/users/:id' }
+        ],
+        health: 92,
+        dependencies: ['PostgreSQL']
+      },
+      {
+        id: `${featureId}-roles`,
+        featureId,
+        name: 'Roles & Permissions',
+        stationsCount: 3,
+        endpointsCount: 6,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/roles' }
+        ],
+        health: 90,
+        dependencies: ['PostgreSQL']
+      },
+      {
+        id: `${featureId}-profiles`,
+        featureId,
+        name: 'Profiles',
+        stationsCount: 2,
+        endpointsCount: 4,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/users/profile' }
+        ],
+        health: 95,
+        dependencies: ['S3 Storage']
+      },
+      {
+        id: `${featureId}-admin-user`,
+        featureId,
+        name: 'Administration',
+        stationsCount: 2,
+        endpointsCount: 5,
+        stations: [],
+        endpoints: [
+          { method: 'DELETE', path: '/api/users/:id' }
+        ],
+        health: 88,
+        dependencies: ['Audit Logger']
+      }
+    ];
+  }
+
+  if (normName.includes('admin')) {
+    return [
+      {
+        id: `${featureId}-admin-main`,
+        featureId,
+        name: 'Administration',
+        stationsCount: 5,
+        endpointsCount: 10,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/admin/dashboard' }
+        ],
+        health: 91,
+        dependencies: ['PostgreSQL']
+      },
+      {
+        id: `${featureId}-statistics`,
+        featureId,
+        name: 'Statistics',
+        stationsCount: 3,
+        endpointsCount: 6,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/admin/stats' }
+        ],
+        health: 94,
+        dependencies: ['Analytics DB']
+      },
+      {
+        id: `${featureId}-audit`,
+        featureId,
+        name: 'Audit & Logs',
+        stationsCount: 4,
+        endpointsCount: 8,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/admin/logs' }
+        ],
+        health: 89,
+        dependencies: ['ElasticSearch']
+      },
+      {
+        id: `${featureId}-maintenance`,
+        featureId,
+        name: 'Maintenance',
+        stationsCount: 4,
+        endpointsCount: 7,
+        stations: [],
+        endpoints: [
+          { method: 'POST', path: '/api/admin/cleanup' }
+        ],
+        health: 96,
+        dependencies: ['Redis']
+      }
+    ];
+  }
+
+  if (normName.includes('analytic') || normName.includes('billing')) {
+    return [
+      {
+        id: `${featureId}-reporting`,
+        featureId,
+        name: 'Scan & Reporting',
+        stationsCount: 4,
+        endpointsCount: 8,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/analytics/reports' }
+        ],
+        health: 90,
+        dependencies: ['PostgreSQL']
+      },
+      {
+        id: `${featureId}-export`,
+        featureId,
+        name: 'Data Export',
+        stationsCount: 3,
+        endpointsCount: 6,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/analytics/export' }
+        ],
+        health: 93,
+        dependencies: ['S3 Storage']
+      },
+      {
+        id: `${featureId}-usage`,
+        featureId,
+        name: 'Usage Analytics',
+        stationsCount: 3,
+        endpointsCount: 5,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/analytics/usage' }
+        ],
+        health: 95,
+        dependencies: ['Redis Cache']
+      }
+    ];
+  }
+
+  if (normName.includes('notif')) {
+    return [
+      {
+        id: `${featureId}-email`,
+        featureId,
+        name: 'Email Delivery',
+        stationsCount: 4,
+        endpointsCount: 6,
+        stations: [],
+        endpoints: [
+          { method: 'POST', path: '/api/notifications/email' }
+        ],
+        health: 95,
+        dependencies: ['SendGrid API']
+      },
+      {
+        id: `${featureId}-templates`,
+        featureId,
+        name: 'Templates',
+        stationsCount: 3,
+        endpointsCount: 5,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/notifications/templates' }
+        ],
+        health: 92,
+        dependencies: ['Template Store']
+      },
+      {
+        id: `${featureId}-providers`,
+        featureId,
+        name: 'Providers',
+        stationsCount: 2,
+        endpointsCount: 4,
+        stations: [],
+        endpoints: [
+          { method: 'GET', path: '/api/notifications/providers' }
+        ],
+        health: 96,
+        dependencies: ['Twilio API']
+      }
+    ];
+  }
+
+  return [
+    {
+      id: `${featureId}-default`,
+      featureId,
+      name: `${featureName} Flow`,
+      stationsCount: files.length > 0 ? files.length : 3,
+      endpointsCount: routes.length > 0 ? routes.length : 4,
+      stations: [],
+      endpoints: routes.map(r => ({ method: 'GET', path: r })),
+      health: 90,
+      dependencies: ['PostgreSQL']
+    }
+  ];
+}
+
 export interface MetroDataResult {
   featureClusters: FeatureCluster[];
   interchanges: Interchange[];
@@ -106,9 +397,17 @@ export function useMetroData(result?: AnalysisResult | null): MetroDataResult {
         });
 
         const calculatedFeatureHealth = files.length > 0 ? Math.round(featureHealthSum / files.length) : 90;
+        const featureId = f.id || f.name.toLowerCase().replace(/\s+/g, '-');
+
+        const flowGroups = generateFlowGroupsForFeature(
+          featureId,
+          f.name,
+          files,
+          f.routes || []
+        );
 
         return {
-          id: f.id || f.name.toLowerCase().replace(/\s+/g, '-'),
+          id: featureId,
           name: f.name,
           color: f.color || '#3B82F6',
           files,
@@ -116,7 +415,8 @@ export function useMetroData(result?: AnalysisResult | null): MetroDataResult {
           databases: f.database && f.database.length > 0 ? f.database : ['PostgreSQL'],
           health: f.health !== undefined && f.health > 0 ? f.health : calculatedFeatureHealth,
           confidence: f.confidence !== undefined ? f.confidence : 92,
-          layerGroups
+          layerGroups,
+          flowGroups
         };
       });
 

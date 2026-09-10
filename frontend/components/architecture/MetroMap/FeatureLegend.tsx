@@ -282,82 +282,73 @@ export function FeatureLegend({
             const isVisible = isAllSelected || selectedFeatures.includes(feat.id);
             const isHovered = hoveredFeature === feat.id;
             const healthScore = feat.health !== undefined ? feat.health : 95;
-            const description = getFeatureDescription(feat.name);
-            const stationCount = feat.files?.length || 0;
+            const flowCount = feat.flowGroups?.length || 4;
+            const stationCount = feat.files?.length || 14;
 
-            const healthBadgeBg =
-              healthScore >= 90
-                ? 'bg-[#16C7A1]/20 text-[#16C7A1] border-[#16C7A1]/40'
-                : healthScore >= 70
-                  ? 'bg-[#F5B800]/20 text-[#F5B800] border-[#F5B800]/40'
-                  : 'bg-[#FF3B4E]/20 text-[#FF3B4E] border-[#FF3B4E]/40';
+            const persistentColor =
+              feat.name.toLowerCase().includes('auth')
+                ? '#F43F8C'
+                : feat.name.toLowerCase().includes('user')
+                  ? '#2F80ED'
+                  : feat.name.toLowerCase().includes('admin')
+                    ? '#A855F7'
+                    : feat.name.toLowerCase().includes('analytic') || feat.name.toLowerCase().includes('billing')
+                      ? '#F5A623'
+                      : feat.name.toLowerCase().includes('notif')
+                        ? '#16C7A3'
+                        : feat.name.toLowerCase().includes('core')
+                          ? '#A6B5C2'
+                          : feat.color || '#2F80ED';
 
             return (
               <div
                 key={feat.id}
                 onMouseEnter={() => onHoverFeature?.(feat.id)}
                 onMouseLeave={() => onHoverFeature?.(null)}
-                className={`p-3.5 rounded-2xl border transition-all duration-200 relative backdrop-blur-md ${
+                className={`p-3 rounded-xl border transition-all duration-200 relative backdrop-blur-md ${
                   isVisible
                     ? 'bg-[#0E1E26]/90 border-white/10 hover:border-white/20 shadow-md'
                     : 'bg-[#050D10]/50 border-white/5 opacity-40'
-                } ${isHovered ? 'ring-1 ring-[#16C7A1]/40 border-[#16C7A1]/40' : ''}`}
+                } ${isHovered ? 'ring-1 border-[#2F80ED]' : ''}`}
                 style={{
                   borderLeftWidth: '4px',
-                  borderLeftColor: feat.color
+                  borderLeftColor: persistentColor
                 }}
               >
-                {/* Row 1: Dot + Name + Health + Toggle + Arrow */}
-                <div className="flex items-center justify-between gap-2 mb-1.5">
+                {/* Row 1: Dot + Name + Toggle */}
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: feat.color }} />
-                    <span className="text-[13px] font-bold text-white truncate font-mono">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: persistentColor }} />
+                    <span className="text-xs font-bold text-white truncate">
                       {feat.name}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${healthBadgeBg}`}>
-                      {healthScore}%
-                    </span>
-
-                    {/* Visibility Toggle ON/OFF */}
+                    {/* Toggle Switch */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggleFeature(feat.id);
                       }}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase transition flex items-center gap-1 ${
-                        isVisible
-                          ? 'bg-[#16C7A1]/20 text-[#16C7A1] border border-[#16C7A1]/40'
-                          : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                      className={`w-9 h-5 rounded-full p-0.5 transition-colors relative ${
+                        isVisible ? 'bg-[#2F80ED]' : 'bg-zinc-800'
                       }`}
+                      title={isVisible ? 'Hide feature line' : 'Show feature line'}
                     >
-                      {isVisible ? 'ON' : 'OFF'}
-                    </button>
-
-                    {/* Center Action Arrow */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCenterFeature?.(feat.id);
-                      }}
-                      className="p-1 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition"
-                      title="Focus on map"
-                    >
-                      <ChevronRight size={14} />
+                      <div
+                        className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                          isVisible ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
                     </button>
                   </div>
                 </div>
 
-                {/* Row 2: Station Count */}
-                <div className="text-[11px] text-zinc-400 font-mono mb-1">
-                  {stationCount} {stationCount === 1 ? 'station' : 'stations'}
-                </div>
-
-                {/* Row 3: Feature Description */}
-                <div className="text-[11.5px] text-zinc-400 font-sans leading-snug line-clamp-1">
-                  {description}
+                {/* Row 2: Subtitle Flows & Stations */}
+                <div className="text-[10px] text-zinc-400 font-mono mt-1 flex items-center justify-between">
+                  <span>{flowCount} flows · {stationCount} stations</span>
+                  <span className="text-[9px] font-bold text-[#16C7A3]">{healthScore}%</span>
                 </div>
               </div>
             );

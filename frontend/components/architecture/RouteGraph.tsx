@@ -449,10 +449,21 @@ const nodeTypes = {
 // ==========================================
 interface RouteGraphProps {
   result: any;
+  externalSearchQuery?: string;
+  isFullScreen?: boolean;
+  fitViewTrigger?: number;
+  fitRepoTrigger?: number;
   onOpenExecutionTrace?: (routeId: string) => void;
 }
 
-function RouteGraphCanvas({ result, onOpenExecutionTrace }: RouteGraphProps) {
+function RouteGraphCanvas({
+  result,
+  externalSearchQuery,
+  isFullScreen,
+  fitViewTrigger,
+  fitRepoTrigger,
+  onOpenExecutionTrace,
+}: RouteGraphProps) {
   const reactFlow = useReactFlow();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeMethodFilter, setActiveMethodFilter] = useState<string | null>(null);
@@ -462,6 +473,30 @@ function RouteGraphCanvas({ result, onOpenExecutionTrace }: RouteGraphProps) {
   const [copied, setCopied] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(70);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync external search query
+  useEffect(() => {
+    if (externalSearchQuery !== undefined) {
+      setSearchQuery(externalSearchQuery);
+    }
+  }, [externalSearchQuery]);
+
+  // Handle Fit View trigger
+  useEffect(() => {
+    if (fitViewTrigger && fitViewTrigger > 0) {
+      reactFlow.fitView({ duration: 300, padding: 0.2 });
+    }
+  }, [fitViewTrigger, reactFlow]);
+
+  // Handle Fit Repository trigger
+  useEffect(() => {
+    if (fitRepoTrigger && fitRepoTrigger > 0) {
+      setActiveMethodFilter(null);
+      setSelectedNamespace(null);
+      setSearchQuery("");
+      reactFlow.fitView({ duration: 400, padding: 0.15 });
+    }
+  }, [fitRepoTrigger, reactFlow]);
 
   // Parse raw result routes into normalized items
   const allRoutes: RouteItemData[] = useMemo(() => {
@@ -1133,14 +1168,29 @@ function RouteGraphCanvas({ result, onOpenExecutionTrace }: RouteGraphProps) {
 
 export default function RouteGraph({
   result,
+  externalSearchQuery,
+  isFullScreen,
+  fitViewTrigger,
+  fitRepoTrigger,
   onOpenExecutionTrace,
 }: {
   result: any;
+  externalSearchQuery?: string;
+  isFullScreen?: boolean;
+  fitViewTrigger?: number;
+  fitRepoTrigger?: number;
   onOpenExecutionTrace?: (routeId: string) => void;
 }) {
   return (
     <ReactFlowProvider>
-      <RouteGraphCanvas result={result} onOpenExecutionTrace={onOpenExecutionTrace} />
+      <RouteGraphCanvas
+        result={result}
+        externalSearchQuery={externalSearchQuery}
+        isFullScreen={isFullScreen}
+        fitViewTrigger={fitViewTrigger}
+        fitRepoTrigger={fitRepoTrigger}
+        onOpenExecutionTrace={onOpenExecutionTrace}
+      />
     </ReactFlowProvider>
   );
 }

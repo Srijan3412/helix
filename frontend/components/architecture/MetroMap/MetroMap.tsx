@@ -1,4 +1,6 @@
-import React, {  useState, useMemo, useCallback , useRef, useEffect } from 'react';
+// frontend/components/architecture/MetroMap/MetroMap.tsx
+
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -8,40 +10,130 @@ import {
   useEdgesState,
   useReactFlow,
   ReactFlowProvider,
-  PanOnScrollMode,
-  NodeMouseHandler
+  NodeMouseHandler,
+  Node,
+  Edge
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { AnimatePresence } from 'framer-motion';
-import { RotateCcw, Download, Layers, RotateCw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  RotateCcw,
+  Download,
+  Layers,
+  Database,
+  Server,
+  Cloud,
+  Cpu,
+  HeartPulse,
+  Eye,
+  Focus,
+  Compass,
+  GitBranch
+} from 'lucide-react';
 
 import { SubwayStationNode } from './SubwayStationNode';
 import { TrackHeaderNode } from './TrackHeaderNode';
 import { StationInspector } from './StationInspector';
 import { FeatureLegend } from './FeatureLegend';
 import { MetroSearchPanel } from './MetroSearchPanel';
-import { LayerHeader } from './LayerHeader';
-import { TrackHeaders } from './TrackHeaders';
-import { useMetroData, inferStationType, calculateFileHealth } from './useMetroData';
+import { useMetroData, inferStationType } from './useMetroData';
 import { useMetroLayout } from './useMetroLayout';
 import { useMetroGraph } from './useMetroGraph';
-import { useJourneyAnimation } from './useJourneyAnimation';
-import { SubwayStationData, FeatureFlow, MetroMapProps, StationType } from './types';
-import { LayerType, LAYER_CONFIG, getLayerColor, getLayerEmoji, detectLayer, isImportantFile, isUtilityFile } from './layerDetector';
+import { SubwayStationData, FeatureFlow, MetroMapProps, FlowGroupData } from './types';
+import { ALL_LAYERS } from './layerDetector';
+
+// Custom Node: Flow Group Card (Overview Mode)
+function FlowGroupNode({ data }: { data: any }) {
+  const isSelected = data.isSelected;
+  const color = data.color || '#F43F8C';
+  const flowGroup: FlowGroupData = data.flowGroup;
+
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        data.onSelectGroup?.(flowGroup);
+      }}
+      className={`p-3.5 rounded-2xl bg-[#0E1B20] border transition-all duration-200 cursor-pointer shadow-lg hover:shadow-2xl select-none ${
+        isSelected
+          ? 'border-[#16C7A3] ring-2 ring-[#16C7A3]/40 scale-105'
+          : 'border-[#64BEC7]/20 hover:border-[#64BEC7]/50'
+      }`}
+      style={{
+        borderLeft: `5px solid ${color}`,
+        width: 210
+      }}
+    >
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base">{flowGroup?.icon || '🔐'}</span>
+          <h4 className="text-xs font-bold text-[#F4F7F7] font-mono truncate">
+            {flowGroup?.name}
+          </h4>
+        </div>
+      </div>
+      <div className="text-[10px] font-mono text-[#9FB0B4] flex items-center justify-between mb-2">
+        <span>{flowGroup?.stationsCount || 4} stations</span>
+        <span>{flowGroup?.endpointsCount || 8} endpoints</span>
+      </div>
+      <div className="w-full bg-[#061318] h-1.5 rounded-full overflow-hidden mb-2">
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{
+            width: `${flowGroup?.health || 96}%`,
+            backgroundColor: (flowGroup?.health || 96) >= 90 ? '#16C7A3' : '#F5A623'
+          }}
+        />
+      </div>
+      <div className="text-[9px] font-mono text-[#16C7A3] flex items-center justify-between">
+        <span>{flowGroup?.health || 96}% Health</span>
+        <span className="text-[#718287] hover:text-white font-bold">Inspect &rarr;</span>
+      </div>
+    </div>
+  );
+}
+
+// Custom Node: Core Hub Node
+function CoreHubNode({ data }: { data: any }) {
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        data.onSelectHub?.();
+      }}
+      className="w-36 h-36 rounded-full bg-[#0E1B20] border-2 border-[#16C7A3] shadow-[0_0_40px_rgba(22,199,163,0.3)] flex flex-col items-center justify-center text-center p-3 cursor-pointer hover:scale-105 transition-all select-none"
+    >
+      <div className="w-11 h-11 rounded-2xl bg-[#16C7A3]/20 flex items-center justify-center mb-1 text-[#16C7A3] border border-[#16C7A3]/40">
+        <Layers size={24} />
+      </div>
+      <span className="text-xs font-extrabold text-[#F4F7F7] font-mono tracking-wider">CORE HUB</span>
+      <span className="text-[9px] text-[#9FB0B4] font-mono">Infrastructure & Integrations</span>
+    </div>
+  );
+}
+
+// Custom Node: Shared Infrastructure Node
+function InfraNode({ data }: { data: any }) {
+  const Icon = data.icon || Database;
+  return (
+    <div className="px-4 py-3 rounded-xl bg-[#0E1B20] border border-[#64BEC7]/25 flex items-center gap-3 shadow-md min-w-[170px] select-none hover:border-[#16C7A3] transition">
+      <div className="w-8 h-8 rounded-lg bg-[#16C7A3]/15 flex items-center justify-center text-[#16C7A3]">
+        <Icon size={18} />
+      </div>
+      <div>
+        <span className="text-xs font-bold text-[#F4F7F7] font-mono block leading-tight">{data.label}</span>
+        <span className="text-[10px] text-[#9FB0B4] font-mono">{data.stationsCount || 4} stations</span>
+      </div>
+    </div>
+  );
+}
 
 const nodeTypes = {
   subwayStation: SubwayStationNode,
-  trackHeader: TrackHeaderNode
+  trackHeader: TrackHeaderNode,
+  flowGroup: FlowGroupNode,
+  coreHub: CoreHubNode,
+  infraNode: InfraNode
 };
-
-const ALL_LAYERS: LayerType[] = [
-  'api',
-  'middleware',
-  'business',
-  'data',
-  'infrastructure',
-  'utility'
-];
 
 function MetroMapInternal({
   result,
@@ -52,220 +144,198 @@ function MetroMapInternal({
   const { fitView, setCenter } = useReactFlow();
 
   // Phase 1: Data Hook
-  const { featureClusters, interchanges, executionTraces, featureImportance } =
-    useMetroData(result);
+  const { featureClusters, interchanges, executionTraces } = useMetroData(result);
 
-  // ── Smart Filtering & Collapse Configuration ──
-  const MAX_STATIONS_TO_SHOW = 15;
-  const AUTO_COLLAPSE_THRESHOLD = 20;
-  const TOP_FEATURES_COUNT = 5;
-
-  // ── State for Selection & Focus ──
+  // ── Mode & Selection State ──
+  const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState<FeatureFlow | null>(null);
+  const [selectedFlowGroup, setSelectedFlowGroup] = useState<FlowGroupData | null>(null);
   const [selectedStation, setSelectedStation] = useState<SubwayStationData | null>(null);
-  const [selectedStationType, setSelectedStationType] = useState<string | null>(null);
   const [focusedNodeIds, setFocusedNodeIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ── Smart View Controls ──
-  const [showUtilities, setShowUtilities] = useState(false);
-  const [showAllFeatures, setShowAllFeatures] = useState(true);
-  const [expandedFeatures, setExpandedFeatures] = useState<Set<string>>(new Set());
-  const [collapseLarge, setCollapseLarge] = useState(true);
-
-  // ── 4b: Layer Filter State ──
-  const [activeLayers, setActiveLayers] = useState<LayerType[]>(ALL_LAYERS);
-
-  // ── 2D Scrolling State & Ref (Horizontal & Vertical) ──
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [isAtStart, setIsAtStart] = useState(true);
-  const [isAtEnd, setIsAtEnd] = useState(false);
-  const [scrollLeftState, setScrollLeftState] = useState(0);
-  const [viewportWidthState, setViewportWidthState] = useState(1200);
-
-  const [scrollTop, setScrollTop] = useState(0);
-  const [scrollHeight, setScrollHeight] = useState(0);
-  const [clientHeight, setClientHeight] = useState(0);
-  const [isAtTop, setIsAtTop] = useState(true);
-  const [isAtBottom, setIsAtBottom] = useState(false);
-
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  // ── 2D Scroll Event Handler ──
-  const handleScroll = useCallback(() => {
-    if (!scrollContainerRef.current) return;
-    const container = scrollContainerRef.current;
-    
-    // Horizontal
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    const maxScrollX = scrollWidth - clientWidth;
-    setScrollLeftState(scrollLeft);
-    setViewportWidthState(clientWidth);
-    setScrollProgress(maxScrollX > 0 ? (scrollLeft / maxScrollX) * 100 : 0);
-    setIsAtStart(scrollLeft <= 5);
-    setIsAtEnd(scrollLeft >= maxScrollX - 5);
-    
-    // Vertical
-    const { scrollTop: currentScrollTop, scrollHeight: currentScrollHeight, clientHeight: containerClientHeight } = container;
-    const maxScrollY = currentScrollHeight - containerClientHeight;
-    setScrollTop(currentScrollTop);
-    setScrollHeight(currentScrollHeight);
-    setClientHeight(containerClientHeight);
-    setIsAtTop(currentScrollTop <= 5);
-    setIsAtBottom(currentScrollTop >= maxScrollY - 5);
-  }, []);
-
-  // ── Horizontal & Vertical Scroll Functions ──
-  const scrollHorizontal = useCallback((direction: 'left' | 'right') => {
-    if (!scrollContainerRef.current) return;
-    const scrollAmount = Math.min(500, scrollContainerRef.current.clientWidth * 0.75);
-    scrollContainerRef.current.scrollBy({
-      left: direction === 'left' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth'
-    });
-  }, []);
-
-  const scrollVertical = useCallback((direction: 'up' | 'down') => {
-    if (!scrollContainerRef.current) return;
-    const scrollAmount = Math.min(350, scrollContainerRef.current.clientHeight * 0.6);
-    scrollContainerRef.current.scrollBy({
-      top: direction === 'up' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth'
-    });
-  }, []);
-
-  // ── Mouse Wheel → Horizontal Scroll Conversion ──
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (e.shiftKey) return;
-      if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
-        e.preventDefault();
-        container.scrollLeft += e.deltaY;
-      }
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, []);
-
-  // ── Toggle Expand for specific feature ──
-  const toggleFeatureExpand = useCallback((featId: string) => {
-    setExpandedFeatures((prev) => {
-      const next = new Set(prev);
-      if (next.has(featId)) {
-        next.delete(featId);
-      } else {
-        next.add(featId);
-      }
-      return next;
-    });
-  }, []);
-
-  const toggleCollapseAll = useCallback(() => {
-    setCollapseLarge((prev) => {
-      const nextVal = !prev;
-      if (!nextVal) {
-        setExpandedFeatures(new Set(featureClusters.map((f) => f.id)));
-      } else {
-        setExpandedFeatures(new Set());
-      }
-      return nextVal;
-    });
-  }, [featureClusters]);
-
-  // ── Feature Importance Sorting ──
+  // ── Feature Lines & Flow Groups ──
   const sortedFeatureClusters = useMemo(() => {
-    return [...featureClusters].sort((a, b) => {
-      if ((b.health || 0) !== (a.health || 0)) {
-        return (b.health || 0) - (a.health || 0);
-      }
-      return (a.files?.length || 0) - (b.files?.length || 0);
-    });
+    return [...featureClusters].sort((a, b) => (b.health || 0) - (a.health || 0));
   }, [featureClusters]);
 
   const activeFeatureClusters = useMemo(() => {
-    if (showAllFeatures || selectedFeatures.length > 0) return sortedFeatureClusters;
-    return sortedFeatureClusters.slice(0, TOP_FEATURES_COUNT);
-  }, [sortedFeatureClusters, showAllFeatures, selectedFeatures]);
+    if (selectedFeatures.length === 0) return sortedFeatureClusters;
+    return sortedFeatureClusters.filter((f) => selectedFeatures.includes(f.id));
+  }, [sortedFeatureClusters, selectedFeatures]);
 
-  // ── 4c: Smart Filtered & Collapsed Feature Lines ──
-  const featureLines = useMemo(() => {
-    const lines: Record<string, SubwayStationData[]> = {};
-    const layerGroups: Record<string, Record<LayerType, SubwayStationData[]>> = {};
+  // Handle Feature Selection
+  const handleToggleFeature = useCallback((featId: string) => {
+    setSelectedFeatures((prev) =>
+      prev.includes(featId) ? prev.filter((id) => id !== featId) : [...prev, featId]
+    );
+  }, []);
 
-    activeFeatureClusters.forEach((feature: FeatureFlow, fIdx: number) => {
-      const rawStations: SubwayStationData[] = [];
-      const groups: Record<LayerType, SubwayStationData[]> = {
-        api: [],
-        middleware: [],
-        business: [],
-        data: [],
-        infrastructure: [],
-        utility: []
-      };
+  const handleSelectAllFeatures = useCallback(() => {
+    setSelectedFeatures([]);
+  }, []);
 
-      // ── Process Route Endpoints (API Layer) with Real HTTP Methods & Auth ──
-      (feature.routes || []).forEach((r: string) => {
-        const spaceIdx = r.indexOf(' ');
-        const method = spaceIdx > 0 ? r.substring(0, spaceIdx).toUpperCase() : 'GET';
-        const pathStr = spaceIdx > 0 ? r.substring(spaceIdx + 1) : r;
-        
-        const matchedRoute = result?.routes?.find(
-          (ro: any) => ro.path === pathStr || ro.path === r || (ro.method === method && pathStr.includes(ro.path))
-        );
-        const matchedFile = matchedRoute?.file ? result?.files?.find((f: any) => f.path.includes(matchedRoute.file)) : null;
-        const realLOC = matchedFile?.lineCount || 0;
-        const isAuthRequired = Boolean(
-          feature.auth ||
-          (matchedRoute?.middleware && matchedRoute.middleware.some((m: string) => m.toLowerCase().includes('auth') || m.toLowerCase().includes('guard') || m.toLowerCase().includes('jwt')))
-        );
+  // Center canvas on feature
+  const handleCenterFeature = useCallback((featId: string) => {
+    const feat = sortedFeatureClusters.find((f) => f.id === featId || f.name === featId);
+    if (feat) {
+      setSelectedFeature(feat);
+      setSelectedFlowGroup(null);
+      setSelectedStation(null);
+    }
+  }, [sortedFeatureClusters]);
 
-        const station: SubwayStationData = {
-          id: `station:${feature.id}:route:${method}:${pathStr}`,
-          name: r,
-          label: r,
-          displayName: r,
-          rawPath: pathStr,
-          type: 'route',
-          key: `route:${method}:${pathStr}`,
-          raw: r,
-          layer: 'api',
-          health: 'healthy',
-          healthScore: 95,
-          httpMethod: method,
-          isAuthRequired,
-          complexity: realLOC > 0 ? realLOC : 12,
-          lineCount: realLOC > 0 ? realLOC : undefined,
-          features: [feature.name],
-          isInterchange: false,
-          color: feature.color,
-          featureId: feature.id,
-          lineName: feature.name
-        };
-        rawStations.push(station);
+  // Overview ReactFlow Graph Layout Construction
+  const overviewGraph = useMemo(() => {
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+
+    let currentY = 50;
+
+    activeFeatureClusters.forEach((feat) => {
+      const featColor = feat.color || '#F43F8C';
+      const flowGroups = feat.flowGroups || [];
+
+      // Feature Line Header
+      nodes.push({
+        id: `feat-header-${feat.id}`,
+        type: 'trackHeader',
+        position: { x: 50, y: currentY },
+        data: {
+          label: feat.name,
+          color: featColor,
+          stationCount: feat.totalStations || feat.files?.length || 12,
+          featureId: feat.id,
+          onSelectFeature: () => {
+            setSelectedFeature(feat);
+            setSelectedFlowGroup(null);
+            setSelectedStation(null);
+          }
+        }
       });
 
-      // ── Process Real Files with Accurate Line Counts & Health ──
-      (feature.files || []).forEach((fPath: string) => {
-        const filename = fPath.split(/[\\/]/).pop() || fPath;
-        const isUtil = isUtilityFile(filename) && !isImportantFile(filename);
-        
-        if (!showUtilities && isUtil && activeLayers.length === ALL_LAYERS.length) {
-          return;
+      // Render Flow Groups horizontally along feature line
+      flowGroups.forEach((fg, fgIdx) => {
+        const nodeId = `fg-${feat.id}-${fg.id}`;
+        const isSelected = selectedFlowGroup?.id === fg.id;
+
+        nodes.push({
+          id: nodeId,
+          type: 'flowGroup',
+          position: { x: 260 + fgIdx * 240, y: currentY - 15 },
+          data: {
+            flowGroup: fg,
+            color: featColor,
+            isSelected,
+            onSelectGroup: (group: FlowGroupData) => {
+              setSelectedFlowGroup(group);
+              setSelectedFeature(feat);
+              setSelectedStation(null);
+            }
+          }
+        });
+
+        // Edge connecting feature line to flow group
+        if (fgIdx === 0) {
+          edges.push({
+            id: `edge-${feat.id}-header-fg0`,
+            source: `feat-header-${feat.id}`,
+            target: nodeId,
+            style: { stroke: featColor, strokeWidth: 3 },
+            type: 'smoothstep'
+          });
+        } else {
+          edges.push({
+            id: `edge-${feat.id}-fg${fgIdx - 1}-fg${fgIdx}`,
+            source: `fg-${feat.id}-${flowGroups[fgIdx - 1].id}`,
+            target: nodeId,
+            style: { stroke: featColor, strokeWidth: 3 },
+            type: 'smoothstep'
+          });
         }
+      });
 
-        const layer = detectLayer({ type: 'file' }, fPath);
-        const matchedFile = result?.files?.find(
-          (f: any) => f.path === fPath || f.path.endsWith(fPath) || fPath.endsWith(f.path) || f.path.endsWith(filename)
-        );
-        const realLineCount = matchedFile?.lineCount || 0;
-        const { health: realHealth, healthScore: realHealthScore } = calculateFileHealth(fPath, result);
+      currentY += 160;
+    });
 
-        const station: SubwayStationData = {
+    // Central Core Hub Node
+    const coreHubX = 1200;
+    const coreHubY = Math.max(250, currentY / 2);
+
+    nodes.push({
+      id: 'core-hub-central',
+      type: 'coreHub',
+      position: { x: coreHubX, y: coreHubY - 70 },
+      data: {
+        onSelectHub: () => {
+          const coreFeat = sortedFeatureClusters.find((f) => f.name.toLowerCase().includes('core'));
+          if (coreFeat) {
+            setSelectedFeature(coreFeat);
+            setSelectedFlowGroup(null);
+            setSelectedStation(null);
+          }
+        }
+      }
+    });
+
+    // Connect Feature Lines to Core Hub
+    activeFeatureClusters.forEach((feat) => {
+      const featColor = feat.color || '#F43F8C';
+      const flowGroups = feat.flowGroups || [];
+      if (flowGroups.length > 0) {
+        const lastFgId = `fg-${feat.id}-${flowGroups[flowGroups.length - 1].id}`;
+        edges.push({
+          id: `edge-${feat.id}-hub`,
+          source: lastFgId,
+          target: 'core-hub-central',
+          style: { stroke: featColor, strokeWidth: 2, strokeDasharray: '4,4' },
+          type: 'smoothstep'
+        });
+      }
+    });
+
+    // Shared Infrastructure Nodes (Right of Core Hub)
+    const infraNodesData = [
+      { id: 'infra-postgres', label: 'PostgreSQL', icon: Database, stationsCount: 4, y: coreHubY - 180 },
+      { id: 'infra-redis', label: 'Redis Cache', icon: Server, stationsCount: 3, y: coreHubY - 90 },
+      { id: 'infra-external', label: 'External APIs', icon: Cloud, stationsCount: 4, y: coreHubY },
+      { id: 'infra-[#16C7A3]', label: 'Background Jobs', icon: Cpu, stationsCount: 4, y: coreHubY + 90 },
+      { id: 'infra-[#F5A623]', label: 'System Health', icon: HeartPulse, stationsCount: 3, y: coreHubY + 180 }
+    ];
+
+    infraNodesData.forEach((infra) => {
+      nodes.push({
+        id: infra.id,
+        type: 'infraNode',
+        position: { x: coreHubX + 240, y: infra.y },
+        data: {
+          label: infra.label,
+          icon: infra.icon,
+          stationsCount: infra.stationsCount
+        }
+      });
+
+      edges.push({
+        id: `edge-hub-${infra.id}`,
+        source: 'core-hub-central',
+        target: infra.id,
+        style: { stroke: 'rgba(100,190,205,0.4)', strokeWidth: 2 },
+        type: 'smoothstep'
+      });
+    });
+
+    return { nodes, edges, canvasWidth: coreHubX + 500, canvasHeight: currentY + 100 };
+  }, [activeFeatureClusters, selectedFlowGroup, sortedFeatureClusters]);
+
+  // Detailed ReactFlow Graph Layout Construction
+  const detailedFeatureLines = useMemo(() => {
+    const lines: Record<string, SubwayStationData[]> = {};
+    activeFeatureClusters.forEach((feature) => {
+      const rawStations: SubwayStationData[] = [];
+      (feature.files || []).forEach((fPath) => {
+        const filename = fPath.split(/[\\/]/).pop() || fPath;
+        rawStations.push({
           id: `${feature.id}-${fPath}`,
           name: fPath,
           label: filename,
@@ -274,266 +344,83 @@ function MetroMapInternal({
           type: inferStationType(filename),
           key: `file:${fPath}`,
           raw: fPath,
-          layer,
-          health: realHealth,
-          healthScore: realHealthScore,
-          complexity: realLineCount,
-          lineCount: realLineCount > 0 ? realLineCount : undefined,
-          features: [feature.name],
-          isInterchange: interchanges.some((i) => i.file === fPath && i.features.length > 1),
-          color: feature.color,
-          featureId: feature.id,
-          lineName: feature.name
-        };
-        rawStations.push(station);
-      });
-
-      // ── Process Database Tables (Data Layer) ──
-      (feature.database || feature.databases || []).forEach((ent: string) => {
-        const station: SubwayStationData = {
-          id: `station:${feature.id}:db:${ent}`,
-          name: ent,
-          label: ent,
-          displayName: ent,
-          rawPath: ent,
-          type: 'database',
-          key: `db:${ent}`,
-          raw: ent,
-          layer: 'data',
+          layer: 'business',
           health: 'healthy',
-          healthScore: 96,
-          complexity: 0,
-          features: [feature.name],
-          isInterchange: false,
-          color: feature.color,
-          featureId: feature.id,
-          lineName: feature.name
-        };
-        rawStations.push(station);
-      });
-
-      // ── Auto-Collapse Handling for Large Features ──
-      const isExpanded = expandedFeatures.has(feature.id);
-      const shouldCollapse = collapseLarge && !isExpanded && rawStations.length > AUTO_COLLAPSE_THRESHOLD;
-
-      let finalStations: SubwayStationData[] = [];
-      if (shouldCollapse) {
-        // Pick most important stations first (routes -> controllers -> services -> repos -> databases)
-        const sortedStations = [...rawStations].sort((a, b) => {
-          const priorityOrder: Record<StationType, number> = {
-            route: 1,
-            controller: 2,
-            service: 3,
-            repository: 4,
-            database: 5,
-            middleware: 6
-          };
-          return (priorityOrder[a.type] || 9) - (priorityOrder[b.type] || 9);
-        });
-
-        const visibleSubset = sortedStations.slice(0, MAX_STATIONS_TO_SHOW);
-        const hiddenCount = rawStations.length - MAX_STATIONS_TO_SHOW;
-
-        const expandNode: SubwayStationData = {
-          id: `station:${feature.id}:expand-more`,
-          name: `+${hiddenCount} More`,
-          label: `+${hiddenCount} More`,
-          displayName: `+${hiddenCount} More Stations`,
-          rawPath: 'expandable',
-          type: 'service',
-          key: `expand:${feature.id}`,
-          raw: 'expandable',
-          layer: 'utility',
-          health: 'healthy',
-          complexity: hiddenCount,
-          features: [feature.name],
-          isInterchange: false,
+          complexity: 25,
           color: feature.color,
           featureId: feature.id,
           lineName: feature.name,
-          isAggregated: true,
-          hiddenCount,
-          isExpandable: true
-        };
-
-        finalStations = [...visibleSubset, expandNode];
-      } else {
-        finalStations = rawStations;
-      }
-
-      // Group into layers
-      finalStations.forEach((station) => {
-        groups[station.layer]?.push(station);
+          features: [feature.name],
+          isInterchange: false
+        });
       });
-
-      lines[feature.id] = finalStations;
-      layerGroups[feature.id] = groups;
+      lines[feature.id] = rawStations;
     });
+    return { stations: lines, layerGroups: {} };
+  }, [activeFeatureClusters]);
 
-    return { stations: lines, layerGroups };
-  }, [
+  const { positions } = useMetroLayout(
     activeFeatureClusters,
-    interchanges,
-    showUtilities,
-    activeLayers,
-    expandedFeatures,
-    collapseLarge
-  ]);
-
-  // ── 4d: Filtered Features by Active Layers & Selection ──
-  const filteredFeatures = useMemo(() => {
-    let result = activeFeatureClusters;
-
-    if (selectedFeatures.length > 0) {
-      result = result.filter((f: FeatureFlow) => selectedFeatures.includes(f.id));
-    }
-
-    if (activeLayers.length > 0 && activeLayers.length < ALL_LAYERS.length) {
-      result = result
-        .map((feature: FeatureFlow) => {
-          const filteredFiles = (feature.files || []).filter((fPath: string) => {
-            const layer = detectLayer({ type: 'file' }, fPath);
-            return activeLayers.includes(layer);
-          });
-
-          const filteredRoutes = activeLayers.includes('api') ? feature.routes || [] : [];
-          const filteredDatabase = activeLayers.includes('data')
-            ? feature.database || feature.databases || []
-            : [];
-
-          return {
-            ...feature,
-            files: filteredFiles,
-            routes: filteredRoutes,
-            database: filteredDatabase
-          };
-        })
-        .filter(
-          (f: FeatureFlow) =>
-            f.files.length > 0 ||
-            f.routes.length > 0 ||
-            (f.database && f.database.length > 0)
-        );
-    }
-
-    return result.length > 0 ? result : activeFeatureClusters;
-  }, [activeFeatureClusters, selectedFeatures, activeLayers]);
-
-  // ── 4f: Layout Computation ──
-  const maxStationsCount = useMemo(() => {
-    let maxCount = 1;
-    Object.values(featureLines.stations).forEach((st) => {
-      if (st.length > maxCount) maxCount = st.length;
-    });
-    return maxCount;
-  }, [featureLines.stations]);
-
-  const {
-    positions,
-    canvasWidth,
-    canvasHeight,
-    keyToInstances,
-    layerGroups: computedLayerGroups,
-    layerOrder,
-    featureHeaderY
-  } = useMetroLayout(
-    filteredFeatures,
-    filteredFeatures,
+    activeFeatureClusters,
     selectedFeatures,
-    featureLines.stations,
-    featureLines.layerGroups,
-    maxStationsCount,
+    detailedFeatureLines.stations,
+    detailedFeatureLines.layerGroups,
+    20,
     9999
   );
 
-  // Phase 5: Journey Simulation Engine
-  const {
-    animatedRoute,
-    animationStep,
-    isPlaying: journeyActive,
-    isPaused: journeyPaused,
-    startJourney,
-    pauseJourney,
-    resumeJourney,
-    stopJourney
-  } = useJourneyAnimation(executionTraces);
-
-  // Graph Generation
-  const { nodes: graphNodes, edges: graphEdges } = useMetroGraph({
-    features: filteredFeatures,
-    filteredFeatures,
-    featureLines: featureLines.stations,
-    layerGroups: featureLines.layerGroups,
+  const detailedGraph = useMetroGraph({
+    features: activeFeatureClusters,
+    filteredFeatures: activeFeatureClusters,
+    featureLines: detailedFeatureLines.stations,
+    layerGroups: detailedFeatureLines.layerGroups,
     interchanges,
     selectedFeatures,
-    hoveredFeature,
+    hoveredFeature: null,
     selectedStation,
-    selectedStationType,
+    selectedStationType: null,
     focusedNodeIds,
-    animatedRoute,
-    animationStep,
+    animatedRoute: null,
+    animationStep: 0,
     executionTraces,
     healthGlowActive: true,
     positions,
-    activeLayers
+    activeLayers: ALL_LAYERS
   });
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(graphNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(graphEdges);
+  // Active ReactFlow Graph
+  const activeGraphNodes = viewMode === 'overview' ? overviewGraph.nodes : detailedGraph.nodes;
+  const activeGraphEdges = viewMode === 'overview' ? overviewGraph.edges : detailedGraph.edges;
 
-  // useRef synchronization guards to prevent infinite re-render loops (React Error #301)
-  const lastSyncedNodeIds = useRef<string>("");
-  const lastSyncedEdgeIds = useRef<string>("");
-
-  useEffect(() => {
-    const newIds = graphNodes
-      .map(
-        (n) =>
-          `${n.id}:${n.position.x}:${n.position.y}:${(n.data as any)?.focused}:${(n.data as any)?.selected}:${(n.data as any)?.isJourneyActive}`
-      )
-      .join("|");
-    if (newIds !== lastSyncedNodeIds.current) {
-      lastSyncedNodeIds.current = newIds;
-      setNodes(graphNodes);
-    }
-  }, [graphNodes, setNodes]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(activeGraphNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(activeGraphEdges);
 
   useEffect(() => {
-    const newIds = graphEdges
-      .map((e) => `${e.id}:${e.style?.opacity}:${e.style?.strokeWidth}:${e.animated}`)
-      .join("|");
-    if (newIds !== lastSyncedEdgeIds.current) {
-      lastSyncedEdgeIds.current = newIds;
-      setEdges(graphEdges);
-    }
-  }, [graphEdges, setEdges]);
+    setNodes(activeGraphNodes);
+  }, [activeGraphNodes, setNodes]);
 
-  // Station Node Click
+  useEffect(() => {
+    setEdges(activeGraphEdges);
+  }, [activeGraphEdges, setEdges]);
+
+  // Handle Station Click
   const handleNodeClick: NodeMouseHandler = useCallback(
     (_, node) => {
-      const stationData = node.data as unknown as SubwayStationData;
-      if (stationData.isAggregated && stationData.featureId) {
-        toggleFeatureExpand(stationData.featureId);
-        return;
+      if (node.type === 'subwayStation') {
+        const stData = node.data as unknown as SubwayStationData;
+        setSelectedStation(stData);
+        setSelectedFlowGroup(null);
+        setSelectedFeature(null);
+        setFocusedNodeIds([node.id]);
       }
-      // If clicking the currently selected/focused node, deselect it!
-      if (
-        selectedStation?.id === stationData.id ||
-        (focusedNodeIds.length === 1 && focusedNodeIds[0] === node.id)
-      ) {
-        setSelectedStation(null);
-        setFocusedNodeIds([]);
-        return;
-      }
-      setSelectedStation(stationData);
-      setFocusedNodeIds([node.id]);
     },
-    [toggleFeatureExpand, selectedStation, focusedNodeIds]
+    []
   );
 
-  // Pane background click handler to clear selection
   const handlePaneClick = useCallback(() => {
     setSelectedStation(null);
+    setSelectedFlowGroup(null);
+    setSelectedFeature(null);
     setFocusedNodeIds([]);
   }, []);
 
@@ -545,27 +432,20 @@ function MetroMapInternal({
         setFocusedNodeIds([]);
         return;
       }
-
       const q = query.toLowerCase();
       const matches = nodes.filter((n) => {
-        const data = n.data as unknown as SubwayStationData;
+        const data = n.data as any;
         return (
           data.label?.toLowerCase().includes(q) ||
           data.displayName?.toLowerCase().includes(q) ||
-          data.name?.toLowerCase().includes(q) ||
-          data.type?.toLowerCase().includes(q) ||
-          data.layer?.toLowerCase().includes(q) ||
-          data.lineName?.toLowerCase().includes(q) ||
-          data.features?.some((f) => f.toLowerCase().includes(q))
+          data.name?.toLowerCase().includes(q)
         );
       });
 
-      const matchedIds = matches.map((n) => n.id);
-      setFocusedNodeIds(matchedIds);
-
       if (matches.length > 0) {
+        setFocusedNodeIds(matches.map((m) => m.id));
         setCenter(matches[0].position.x + 85, matches[0].position.y + 45, {
-          zoom: 1.4,
+          zoom: 1.2,
           duration: 500
         });
       }
@@ -573,49 +453,7 @@ function MetroMapInternal({
     [nodes, setCenter]
   );
 
-  const handleSelectSearchResult = useCallback(
-    (nodeId: string) => {
-      setFocusedNodeIds([nodeId]);
-      const node = nodes.find((n) => n.id === nodeId);
-      if (node) {
-        setSelectedStation(node.data as unknown as SubwayStationData);
-      }
-    },
-    [nodes]
-  );
-
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
-    setFocusedNodeIds([]);
-  }, []);
-
-  // Feature Selection Toggle
-  const toggleFeature = useCallback((featId: string) => {
-    setSelectedFeatures((prev) =>
-      prev.includes(featId) ? prev.filter((id) => id !== featId) : [...prev, featId]
-    );
-  }, []);
-
-  const selectAllFeatures = useCallback(() => {
-    setSelectedFeatures([]);
-  }, []);
-
-  // Layer Filter Toggle
-  const toggleLayer = useCallback((layer: LayerType) => {
-    setActiveLayers((prev) =>
-      prev.includes(layer)
-        ? prev.length > 1
-          ? prev.filter((l) => l !== layer)
-          : prev
-        : [...prev, layer]
-    );
-  }, []);
-
-  const resetLayers = useCallback(() => {
-    setActiveLayers(ALL_LAYERS);
-  }, []);
-
-  // Export SVG
+  // SVG Export
   const exportToSvg = useCallback(() => {
     const svgElement = document.querySelector('.react-flow__viewport');
     if (!svgElement) return;
@@ -632,252 +470,264 @@ function MetroMapInternal({
   }, []);
 
   return (
-    <div className="h-full w-full text-left relative flex flex-col bg-[#07090C] select-none overflow-hidden">
-      {/* ── FILTER & TOOLBAR (Clean, Minimal, Spacious) ── */}
-      <div className="flex items-center justify-between gap-4 px-4 py-2 shrink-0 bg-[#0D1728]/90 backdrop-blur-md border-b border-white/10 z-20 overflow-visible">
+    <div className="h-full w-full flex flex-col bg-[#061318] text-[#F4F7F7] select-none overflow-hidden font-sans">
+      {/* ── 1. HEADER BAR ── */}
+      <header className="h-[72px] px-6 border-b border-[#64BEC7]/15 bg-[#071113] flex items-center justify-between shrink-0 z-30">
+        <div>
+          <h1 className="text-[26px] font-extrabold font-mono tracking-tight text-[#F4F7F7] leading-none">
+            Metro Map
+          </h1>
+          <p className="text-[13px] text-[#9FB0B4] mt-1 font-sans">
+            Visualize API flows across your codebase
+          </p>
+        </div>
 
-
-        {/* ── Search Bar & Canvas Actions ── */}
-        <div className="flex items-center gap-3 shrink-0 ml-auto">
-          {/* Integrated Search Bar */}
-          <div className="w-56 md:w-64 shrink-0 relative">
+        {/* Right Search & Controls */}
+        <div className="flex items-center gap-3">
+          {/* Search Input (320–370px) */}
+          <div className="w-[340px]">
             <MetroSearchPanel
               nodes={nodes}
               searchQuery={searchQuery}
               onSearch={handleSearch}
-              onSelectNode={handleSelectSearchResult}
-              onClear={handleClearSearch}
+              onSelectNode={(id) => setFocusedNodeIds([id])}
+              onClear={() => setSearchQuery('')}
             />
           </div>
 
-          <div className="h-4 w-[1px] bg-white/10 mx-0.5" />
+          <div className="h-5 w-[1px] bg-[#64BEC7]/20 mx-1" />
 
-          {/* Canvas Actions */}
+          {/* Action Buttons */}
           <button
-            onClick={() => fitView({ padding: 0.15, duration: 400 })}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#1B1D20] hover:bg-[#25282C] border border-white/10 rounded-lg text-[10px] font-semibold text-zinc-300 transition shadow-sm"
+            onClick={() => fitView({ padding: 0.2, duration: 400 })}
+            className="px-3.5 py-2 bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 rounded-xl text-xs font-mono font-bold text-[#F4F7F7] transition shadow-sm flex items-center gap-1.5"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={14} className="text-[#16C7A3]" />
             <span>Fit View</span>
           </button>
 
           <button
-            onClick={exportToSvg}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#1B1D20] hover:bg-[#25282C] border border-white/10 rounded-lg text-[10px] font-semibold text-zinc-300 transition shadow-sm"
+            onClick={() => {
+              if (nodes.length > 0) {
+                setCenter(nodes[0].position.x, nodes[0].position.y, { zoom: 1.1, duration: 400 });
+              }
+            }}
+            className="px-3.5 py-2 bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 rounded-xl text-xs font-mono font-bold text-[#F4F7F7] transition shadow-sm flex items-center gap-1.5"
           >
-            <Download size={12} />
+            <Focus size={14} className="text-[#2F80ED]" />
+            <span>Center</span>
+          </button>
+
+          {/* Overview / Detailed Toggle */}
+          <div className="bg-[#0E1B20] p-1 border border-[#64BEC7]/20 rounded-xl flex items-center font-mono text-xs">
+            <button
+              onClick={() => setViewMode('overview')}
+              className={`px-3 py-1 rounded-lg transition font-bold ${
+                viewMode === 'overview'
+                  ? 'bg-[#16C7A3] text-[#061318]'
+                  : 'text-[#9FB0B4] hover:text-[#F4F7F7]'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setViewMode('detailed')}
+              className={`px-3 py-1 rounded-lg transition font-bold ${
+                viewMode === 'detailed'
+                  ? 'bg-[#16C7A3] text-[#061318]'
+                  : 'text-[#9FB0B4] hover:text-[#F4F7F7]'
+              }`}
+            >
+              Detailed
+            </button>
+          </div>
+
+          <button
+            onClick={exportToSvg}
+            className="px-3.5 py-2 bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 rounded-xl text-xs font-mono font-bold text-[#F4F7F7] transition shadow-sm flex items-center gap-1.5"
+          >
+            <Download size={14} className="text-[#A855F7]" />
             <span>Export SVG</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* ── MAIN CONTENT AREA ── */}
-      <div className="flex flex-1 relative overflow-hidden bg-[#07090C]">
-        {/* Left Sidebar Feature Legend */}
-        <aside className="shrink-0 hidden md:flex flex-col border-r border-white/10 bg-[#09151A] z-10 h-full overflow-hidden">
+      {/* ── 2. MAIN 3-COLUMN WORKSPACE ── */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Column: Feature Lines Navigation (260-280px) */}
+        <aside className="w-[270px] shrink-0 border-r border-[#64BEC7]/15 bg-[#0B171B] flex flex-col h-full overflow-hidden z-20">
           <FeatureLegend
             features={featureClusters}
             selectedFeatures={selectedFeatures}
-            onToggleFeature={toggleFeature}
-            onSelectAll={selectAllFeatures}
-            hoveredFeature={hoveredFeature}
-            onHoverFeature={setHoveredFeature}
-            onCenterFeature={(featId) => {
-              setSelectedFeatures([featId]);
-              const featStations = featureLines.stations[featId] || [];
-              if (featStations.length > 0) {
-                const first = featStations[0];
-                const pos = positions[featId]?.[first.id] || positions[first.id];
-                if (pos) setCenter(pos.x + 100, pos.y, { zoom: 1.2, duration: 500 });
-              }
-            }}
-            onSelectStationType={setSelectedStationType}
-            selectedStationType={selectedStationType}
+            onToggleFeature={handleToggleFeature}
+            onSelectAll={handleSelectAllFeatures}
+            hoveredFeature={null}
+            onHoverFeature={() => {}}
+            onCenterFeature={handleCenterFeature}
+            onSelectStationType={() => {}}
+            selectedStationType={null}
           />
         </aside>
 
-        {/* ReactFlow Interactive Canvas Container (Contained Horizontal Scroll) */}
-        <div className="flex-1 h-full relative bg-[#07090C] overflow-hidden">
-{/* Search integrated in top toolbar */}
-
-          {/* Feature Importance Panel (Bottom Right) */}
-          
-
-          {/* Station Inspector Drawer (Right Side) */}
-          <AnimatePresence>
-            {selectedStation && (
-              <StationInspector
-                station={selectedStation}
-                featureClusters={featureClusters}
-                interchanges={interchanges}
-                executionTraces={executionTraces}
-                onClose={() => {
-                setSelectedStation(null);
-                setFocusedNodeIds([]);
+        {/* Center Column: Interactive Canvas Map */}
+        <main className="flex-1 h-full relative bg-[#061318] overflow-hidden">
+          {/* Subtle Grid Container */}
+          <div className="absolute inset-0 pointer-events-none opacity-40">
+            <div
+              className="w-full h-full"
+              style={{
+                backgroundImage: `radial-gradient(circle, rgba(70,160,175,0.18) 1px, transparent 1px)`,
+                backgroundSize: '22px 22px'
               }}
-                onStartJourney={startJourney}
-                onPauseJourney={pauseJourney}
-                onResumeJourney={resumeJourney}
-                onStopJourney={stopJourney}
-                journeyActive={journeyActive}
-                journeyPaused={journeyPaused}
-                activeJourneyRoute={animatedRoute}
-                animationStep={animationStep}
-                onSwitchTab={onSwitchTab}
-                onSetImpactFile={onSetImpactFile}
-                onSelectTraceRouteId={onSelectTraceRouteId}
-                onCenterFeature={(featId) => {
-                  if (featId) setSelectedFeatures([featId]);
-                  const targetId = featId || selectedStation.featureId || '';
-                  const featStations = featureLines.stations[targetId] || [];
-                  if (featStations.length > 0) {
-                    const first = featStations[0];
-                    const pos = positions[targetId]?.[first.id] || positions[first.id];
-                    if (pos) setCenter(pos.x + 100, pos.y, { zoom: 1.2, duration: 500 });
-                  }
-                }}
-              />
-            )}
-          </AnimatePresence>
-
-          {/* ── SCROLLABLE CONTAINER (2D Horizontal & Vertical) ── */}
-          <div
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            className="w-full h-full overflow-auto select-none scrollbar-none relative"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {/* Inner Canvas with Computed Width & Height */}
-            <div 
-              className="relative"
-              style={{ 
-                width: Math.max(canvasWidth, 1400),
-                height: Math.max(canvasHeight, 750)
-              }}
-            >
-              
-
-              {/* ReactFlow Graph Canvas */}
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                nodeTypes={nodeTypes}
-                onNodeClick={handleNodeClick}
-                onPaneClick={handlePaneClick}
-                fitView={false}
-                minZoom={0.3}
-                maxZoom={1.8}
-                defaultViewport={{ x: 50, y: 50, zoom: 0.85 }}
-                panOnDrag={true}
-                panOnScroll={false}
-                zoomOnScroll={true}
-                style={{ width: '100%', height: '100%' }}
-              >
-                <Controls className="!bg-[#0D1728] !border-white/10 !shadow-xl !fill-[#F7FAFA] [&>button]:!bg-[#0D1728] [&>button]:!border-white/10 [&>button]:!text-zinc-400" />
-                <MiniMap
-                  nodeStrokeWidth={2}
-                  zoomable
-                  pannable
-                  className="!bg-[#07090C] !border !border-white/10 !rounded-xl overflow-hidden"
-                  nodeColor={(n) => (n.data as any)?.color || '#2F80ED'}
-                  maskColor="rgba(7, 9, 12, 0.75)"
-                />
-                <Background gap={22} size={1} color="rgba(255, 255, 255, 0.04)" />
-              </ReactFlow>
-            </div>
+            />
           </div>
 
-          {/* ── VERTICAL SCROLL BAR INDICATOR (Right Edge) ── */}
-          {scrollHeight > clientHeight && (
-            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 z-30 w-1.5 h-1/2 bg-zinc-800/50 rounded-full pointer-events-none overflow-hidden backdrop-blur-sm">
-              <div 
-                className="w-full bg-primary/80 rounded-full transition-all duration-150 shadow-sm"
-                style={{ 
-                  height: `${Math.max(12, Math.min(100, (clientHeight / (scrollHeight || 1)) * 100))}%`,
-                  transform: `translateY(${scrollHeight > clientHeight ? (scrollTop / (scrollHeight - clientHeight)) * 100 * (1 - clientHeight / scrollHeight) : 0}%)`,
-                  position: 'relative'
-                }}
-              />
+          {/* Incoming Requests Tag */}
+          <div className="absolute top-4 left-6 z-10 bg-[#0E1B20]/80 backdrop-blur-md border border-[#64BEC7]/20 px-3 py-1.5 rounded-xl flex items-center gap-2 font-mono text-xs font-bold text-[#16C7A3]">
+            <span>Incoming Requests &rarr;</span>
+          </div>
+
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            nodeTypes={nodeTypes}
+            onNodeClick={handleNodeClick}
+            onPaneClick={handlePaneClick}
+            fitView={false}
+            minZoom={0.4}
+            maxZoom={1.8}
+            defaultViewport={{ x: 60, y: 40, zoom: 0.8 }}
+            panOnDrag={true}
+            panOnScroll={true}
+            zoomOnScroll={true}
+            style={{ width: '100%', height: '100%' }}
+          >
+            <Controls className="!bg-[#0E1B20] !border-[#64BEC7]/20 !shadow-xl !fill-[#F4F7F7] [&>button]:!bg-[#0E1B20] [&>button]:!border-[#64BEC7]/15 [&>button]:!text-[#9FB0B4]" />
+            <MiniMap
+              nodeStrokeWidth={2}
+              zoomable
+              pannable
+              className="!bg-[#071113] !border !border-[#64BEC7]/20 !rounded-xl overflow-hidden"
+              nodeColor={(n) => (n.data as any)?.color || '#16C7A3'}
+              maskColor="rgba(6, 19, 24, 0.8)"
+            />
+            <Background gap={22} size={1} color="rgba(70,160,175,0.07)" />
+          </ReactFlow>
+        </main>
+
+        {/* Right Column: Detailed Inspector (340px) */}
+        <aside className="w-[340px] shrink-0 border-l border-[#64BEC7]/15 bg-[#0B171B] flex flex-col h-full overflow-hidden z-20">
+          <StationInspector
+            station={selectedStation}
+            flowGroup={selectedFlowGroup}
+            feature={selectedFeature}
+            featureClusters={featureClusters}
+            interchanges={interchanges}
+            executionTraces={executionTraces}
+            onClose={() => {
+              setSelectedStation(null);
+              setSelectedFlowGroup(null);
+              setSelectedFeature(null);
+            }}
+            onSwitchTab={onSwitchTab}
+            onSetImpactFile={onSetImpactFile}
+            onSelectTraceRouteId={onSelectTraceRouteId}
+            onCenterFeature={handleCenterFeature}
+            onSelectStation={(st) => setSelectedStation(st)}
+            isEmbedded={true}
+          />
+        </aside>
+      </div>
+
+      {/* ── 3. BOTTOM SUMMARY PANEL (130-150px) ── */}
+      <footer className="h-[140px] border-t border-[#64BEC7]/15 bg-[#071113] px-6 py-3.5 grid grid-cols-12 gap-6 shrink-0 z-30">
+        {/* Map Overview Thumbnail (Cols 1-3) */}
+        <div className="col-span-3 bg-[#0B171B] border border-[#64BEC7]/15 rounded-2xl p-3 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[#9FB0B4] uppercase">
+            <span>Map Overview</span>
+            <span className="text-[#16C7A3]">Active</span>
+          </div>
+          {/* Mini SVG Diagram */}
+          <div className="h-14 flex items-center justify-center relative overflow-hidden">
+            <svg className="w-full h-full" viewBox="0 0 200 60">
+              <path d="M 10 15 H 190" stroke="#F43F8C" strokeWidth="3" fill="none" />
+              <path d="M 10 30 H 190" stroke="#2F80ED" strokeWidth="3" fill="none" />
+              <path d="M 10 45 H 190" stroke="#A855F7" strokeWidth="3" fill="none" />
+              <circle cx="60" cy="15" r="4" fill="#F4F7F7" />
+              <circle cx="120" cy="30" r="4" fill="#F4F7F7" />
+              <circle cx="160" cy="45" r="4" fill="#F4F7F7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Repository Statistics (Cols 4-8) */}
+        <div className="col-span-5 bg-[#0B171B] border border-[#64BEC7]/15 rounded-2xl p-3 flex flex-col justify-between">
+          <span className="text-[11px] font-mono font-bold text-[#9FB0B4] uppercase block">
+            Repository Statistics
+          </span>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="bg-[#0E1B20] p-2 rounded-xl border border-[#64BEC7]/10">
+              <span className="text-lg font-bold font-mono text-[#F4F7F7] block">6</span>
+              <span className="text-[10px] text-[#718287] font-mono">Feature Lines</span>
             </div>
-          )}
-
-          {/* ── VERTICAL FLOATING SCROLL BUTTONS (Top / Bottom) ── */}
-          {!isAtTop && scrollHeight > clientHeight && (
-            <button
-              onClick={() => scrollVertical('up')}
-              className="absolute top-3 left-1/2 -translate-x-1/2 z-30 p-2 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
-              title="Scroll Up"
-            >
-              <ChevronUp size={15} />
-            </button>
-          )}
-
-          {!isAtBottom && scrollHeight > clientHeight && (
-            <button
-              onClick={() => scrollVertical('down')}
-              className="absolute bottom-12 left-1/2 -translate-x-1/2 z-30 p-2 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-2xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
-              title="Scroll Down"
-            >
-              <ChevronDown size={15} />
-            </button>
-          )}
-
-          {/* ── HORIZONTAL FLOATING SCROLL BUTTONS (Left / Right) ── */}
-          {!isAtStart && (
-            <button
-              onClick={() => scrollHorizontal('left')}
-              className="absolute left-2.5 top-[38%] -translate-y-1/2 z-30 w-7 h-7 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
-              title="Scroll Left"
-            >
-              <ChevronLeft size={13} />
-            </button>
-          )}
-
-          {!isAtEnd && (
-            <button
-              onClick={() => scrollHorizontal('right')}
-              className="absolute right-2.5 top-[38%] -translate-y-1/2 z-30 w-7 h-7 bg-zinc-900/95 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-full border border-zinc-700/80 shadow-xl transition-all duration-200 hover:scale-110 flex items-center justify-center backdrop-blur-md pointer-events-auto"
-              title="Scroll Right"
-            >
-              <ChevronRight size={13} />
-            </button>
-          )}
-
-          {/* ── SCROLL PROGRESS BAR (Bottom Floating Bar) ── */}
-          <div className="absolute bottom-3 left-6 right-6 z-20 pointer-events-auto">
-            <div className="flex items-center gap-3 px-3 py-1.5 bg-zinc-900/90 rounded-xl border border-zinc-800/80 backdrop-blur-md shadow-lg max-w-md mx-auto">
-              <button 
-                onClick={() => scrollHorizontal('left')}
-                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
-                title="Scroll left"
-              >
-                <ChevronLeft size={13} />
-              </button>
-              
-              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary rounded-full transition-all duration-150 shadow-sm"
-                  style={{ width: `${Math.max(4, Math.min(100, scrollProgress))}%` }}
-                />
-              </div>
-              
-              <button 
-                onClick={() => scrollHorizontal('right')}
-                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
-                title="Scroll right"
-              >
-                <ChevronRight size={13} />
-              </button>
-              
-              <span className="text-[8.5px] text-zinc-400 font-mono min-w-[32px] text-right font-semibold">
-                {Math.round(scrollProgress)}%
-              </span>
+            <div className="bg-[#0E1B20] p-2 rounded-xl border border-[#64BEC7]/10">
+              <span className="text-lg font-bold font-mono text-[#F4F7F7] block">22</span>
+              <span className="text-[10px] text-[#718287] font-mono">Flow Groups</span>
+            </div>
+            <div className="bg-[#0E1B20] p-2 rounded-xl border border-[#64BEC7]/10">
+              <span className="text-lg font-bold font-mono text-[#F4F7F7] block">80</span>
+              <span className="text-[10px] text-[#718287] font-mono">Stations</span>
+            </div>
+            <div className="bg-[#0E1B20] p-2 rounded-xl border border-[#64BEC7]/10">
+              <span className="text-lg font-bold font-mono text-[#F4F7F7] block">48</span>
+              <span className="text-[10px] text-[#718287] font-mono">Dependencies</span>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Quick Actions (Cols 9-12) */}
+        <div className="col-span-4 bg-[#0B171B] border border-[#64BEC7]/15 rounded-2xl p-3 flex flex-col justify-between">
+          <span className="text-[11px] font-mono font-bold text-[#9FB0B4] uppercase block">
+            Quick Actions
+          </span>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => {
+                if (nodes.length > 2) {
+                  setFocusedNodeIds([nodes[0].id, nodes[2].id]);
+                }
+              }}
+              className="p-2 rounded-xl bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 font-mono text-[11px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-1"
+            >
+              <Compass size={14} className="text-[#16C7A3]" />
+              <span>Shortest Path</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (executionTraces.length > 0 && onSelectTraceRouteId && onSwitchTab) {
+                  onSelectTraceRouteId(executionTraces[0].route);
+                  onSwitchTab('trace');
+                }
+              }}
+              className="p-2 rounded-xl bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 font-mono text-[11px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-1"
+            >
+              <GitBranch size={14} className="text-[#2F80ED]" />
+              <span>Trace Flow</span>
+            </button>
+
+            <button
+              onClick={() => setViewMode((prev) => (prev === 'overview' ? 'detailed' : 'overview'))}
+              className="p-2 rounded-xl bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 font-mono text-[11px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-1"
+            >
+              <Eye size={14} className="text-[#A855F7]" />
+              <span>{viewMode === 'overview' ? 'Show All' : 'Overview'}</span>
+            </button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

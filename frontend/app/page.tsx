@@ -2122,23 +2122,23 @@ export default function Home() {
 
             {/* ─── ROUTES TAB ─── */}
             {activeResultTab === "routes" && (
-              <div className="w-full max-w-[1200px] mx-auto space-y-6 text-left">
+              <div className="w-full max-w-[1200px] mx-auto space-y-4 text-left">
                 {/* Header Block */}
-                <div className="mb-2">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
+                <div className="mb-1">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
                     Route Analysis
                   </p>
-                  <h2 className="text-3xl font-extrabold text-[#F7FAFA] mt-1">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#F7FAFA] mt-0.5">
                     API Endpoints
                   </h2>
                 </div>
 
                 {/* Search and Summary Filters Bar */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 mb-1">
                   <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#82AEB5]" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#82AEB5]" />
                     <input
-                      className="w-full pl-11 pr-10 py-3 text-sm font-mono bg-[#062F38] border border-[#16C7A1]/20 rounded-xl text-[#F7FAFA] placeholder-[#82AEB5] focus:outline-none focus:border-[#16C7A1] transition-colors"
+                      className="w-full pl-9 pr-9 py-2 text-xs font-mono bg-[#062F38] border border-[#16C7A1]/20 rounded-xl text-[#F7FAFA] placeholder-[#82AEB5] focus:outline-none focus:border-[#16C7A1] transition-colors"
                       placeholder="Search routes by path, method, or file..."
                       value={routeSearch}
                       onChange={(e) => setRouteSearch(e.target.value)}
@@ -2146,16 +2146,16 @@ export default function Home() {
                     {routeSearch && (
                       <button
                         onClick={() => setRouteSearch("")}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#82AEB5] hover:text-[#F7FAFA] p-1"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#82AEB5] hover:text-[#F7FAFA] p-1"
                       >
-                        <X size={15} />
+                        <X size={13} />
                       </button>
                     )}
                   </div>
 
                   {/* Summary Filters */}
                   {result.metadata?.routeMetrics && (
-                    <div className="flex gap-2 shrink-0 flex-wrap items-center">
+                    <div className="flex gap-1.5 shrink-0 flex-wrap items-center">
                       {Object.entries(
                         result.metadata.routeMetrics as unknown as Record<
                           string,
@@ -2181,7 +2181,7 @@ export default function Home() {
                               onClick={() => {
                                 setRouteSearch(isFilterActive ? "" : methodUpper);
                               }}
-                              className={`px-3 py-1.5 rounded-xl border text-xs font-bold font-mono tracking-wide uppercase transition-all duration-200 cursor-pointer ${style} ${
+                              className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold font-mono tracking-wide uppercase transition-all duration-200 cursor-pointer ${style} ${
                                 isFilterActive ? "ring-2 ring-[#16C7A1] scale-105" : "hover:opacity-90"
                               }`}
                             >
@@ -2196,7 +2196,7 @@ export default function Home() {
                 {traceRoute && renderExecutionTrace()}
 
                 {/* Route Cards List */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {(result.routes ?? [])
                     .filter((r: RouteNode) => {
                       if (!routeSearch) return true;
@@ -2254,22 +2254,22 @@ export default function Home() {
                         <div
                           key={`${route.method}-${route.path}-${idx}`}
                           onClick={() => setTraceRoute(isTraced ? null : route)}
-                          className={`w-full min-h-[150px] p-6 sm:p-7 rounded-[20px] bg-[#052D35]/90 border transition-all duration-200 cursor-pointer group shadow-xl shadow-teal-950/40 relative select-none flex flex-col justify-between ${
+                          className={`w-full p-3.5 sm:p-4 rounded-xl bg-[#052D35]/90 border transition-all duration-200 cursor-pointer group shadow-md relative select-none flex flex-col justify-between ${
                             isTraced
                               ? "bg-[#073E48] border-[#16C7A1] ring-2 ring-[#16C7A1]/50"
                               : "border-[#16C7A1]/16 hover:border-[#16C7A1]/60 hover:bg-[#073640]"
                           }`}
                           style={{
-                            borderLeftWidth: "6px",
+                            borderLeftWidth: "4px",
                             borderLeftColor: accent.leftBorder,
                           }}
                         >
                           {/* Main 3-zone layout */}
-                          <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr_auto] items-center gap-5 sm:gap-7">
+                          <div className="grid grid-cols-1 sm:grid-cols-[76px_1fr_auto] items-center gap-3 sm:gap-4">
                             {/* 1. HTTP Method Badge */}
                             <div className="shrink-0 flex sm:block">
                               <div
-                                className={`w-[118px] sm:w-[120px] h-[64px] rounded-[14px] flex items-center justify-center font-bold text-[28px] sm:text-[30px] font-sans tracking-wide border ${accent.badge}`}
+                                className={`w-[72px] sm:w-[76px] h-[34px] sm:h-[36px] rounded-lg flex items-center justify-center font-bold text-xs sm:text-sm font-mono tracking-wide border ${accent.badge}`}
                               >
                                 {methodUpper}
                               </div>
@@ -2277,50 +2277,50 @@ export default function Home() {
 
                             {/* 2. Route Path + Description */}
                             <div className="min-w-0 flex-1">
-                              <code className="text-[24px] sm:text-[28px] font-mono font-semibold text-[#F7FAFA] leading-tight tracking-tight block">
+                              <code className="text-sm sm:text-base font-mono font-semibold text-[#F7FAFA] leading-tight tracking-tight block">
                                 {cleanPath}
                               </code>
-                              <p className="text-[19px] sm:text-[21px] text-[#A8CBD0] leading-snug mt-1 font-sans">
+                              <p className="text-xs sm:text-sm text-[#A8CBD0] leading-snug mt-0.5 font-sans">
                                 {description}
                               </p>
                             </div>
 
                             {/* 3. Actions: Chevron + Vertical Ellipsis */}
-                            <div className="flex items-center gap-2 sm:gap-3 shrink-0 self-center justify-end">
+                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-center justify-end">
                               <ChevronRight
-                                size={26}
-                                className="text-[#9BE8E0]/70 group-hover:text-[#F7FAFA] group-hover:translate-x-1.5 transition-all duration-200"
+                                size={18}
+                                className="text-[#9BE8E0]/70 group-hover:text-[#F7FAFA] group-hover:translate-x-1 transition-all duration-200"
                               />
                               <div
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setTraceRoute(isTraced ? null : route);
                                 }}
-                                className="p-1.5 rounded-lg text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#084C58] transition-colors"
+                                className="p-1 rounded-lg text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#084C58] transition-colors"
                               >
-                                <MoreVertical size={24} />
+                                <MoreVertical size={16} />
                               </div>
                             </div>
                           </div>
 
                           {/* Metadata Row */}
-                          <div className="mt-4 pt-3 border-t border-[#16C7A1]/10 flex items-center flex-wrap gap-2.5 sm:gap-3.5 text-[13px]">
+                          <div className="mt-2.5 pt-2 border-t border-[#16C7A1]/10 flex items-center flex-wrap gap-2 text-[11px]">
                             {/* Status Pill */}
-                            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#16C7A1]/10 border border-[#16C7A1]/30 text-[#16C7A1] font-semibold text-[12px]">
-                              <span className="w-2 h-2 rounded-full bg-[#16C7A1] animate-pulse" />
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#16C7A1]/10 border border-[#16C7A1]/30 text-[#16C7A1] font-semibold text-[10px]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#16C7A1] animate-pulse" />
                               {(route.middleware?.length ?? 0) > 0 ? "PROTECTED" : "API"}
                             </span>
 
                             {/* Source File */}
                             {route.file && (
-                              <span className="font-mono text-[#8EA9AE] text-[13px] truncate max-w-[420px]" title={route.file}>
+                              <span className="font-mono text-[#8EA9AE] text-[11px] truncate max-w-[360px]" title={route.file}>
                                 {route.file}
                               </span>
                             )}
 
                             {/* Group Tag */}
                             {route.group && (
-                              <span className="px-2.5 py-0.5 rounded-md bg-[#083E48] border border-[#176873]/60 text-[12px] font-mono text-[#9BE8E0]">
+                              <span className="px-2 py-0.5 rounded-md bg-[#083E48] border border-[#176873]/60 text-[10px] font-mono text-[#9BE8E0]">
                                 {route.group}
                               </span>
                             )}
@@ -2329,7 +2329,7 @@ export default function Home() {
                             {(route.middleware ?? []).map((m) => (
                               <span
                                 key={m}
-                                className="px-2 py-0.5 rounded-md bg-[#094752] border border-[#16C7A1]/30 text-[11px] text-[#16C7A1] font-mono"
+                                className="px-1.5 py-0.5 rounded-md bg-[#094752] border border-[#16C7A1]/30 text-[10px] text-[#16C7A1] font-mono"
                               >
                                 {m}
                               </span>
