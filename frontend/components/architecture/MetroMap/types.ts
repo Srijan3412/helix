@@ -171,6 +171,7 @@ export interface MetroGraphProps {
   getStationNumber?: (feature: FeatureFlow, index: number) => string;
   getComplexityScore?: (filePath: string) => number;
   onStationClick?: (stationId: string, stationRaw: string, feature: FeatureFlow) => void;
+  selectedStationType?: string | null;
   expandedStation?: string | null;
   setExpandedStation?: (id: string | null) => void;
   result?: any;

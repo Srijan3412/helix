@@ -64,6 +64,7 @@ function MetroMapInternal({
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [selectedStation, setSelectedStation] = useState<SubwayStationData | null>(null);
+  const [selectedStationType, setSelectedStationType] = useState<string | null>(null);
   const [focusedNodeIds, setFocusedNodeIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -467,6 +468,7 @@ function MetroMapInternal({
     selectedFeatures,
     hoveredFeature,
     selectedStation,
+    selectedStationType,
     focusedNodeIds,
     animatedRoute,
     animationStep,
@@ -672,7 +674,7 @@ function MetroMapInternal({
       {/* ── MAIN CONTENT AREA ── */}
       <div className="flex flex-1 relative overflow-hidden bg-[#07090C]">
         {/* Left Sidebar Feature Legend */}
-        <aside className="w-52 shrink-0 hidden md:flex flex-col border-r border-white/10 bg-[#0D1728]/50 z-10 overflow-y-auto">
+        <aside className="shrink-0 hidden md:flex flex-col border-r border-white/10 bg-[#09151A] z-10 h-full overflow-hidden">
           <FeatureLegend
             features={featureClusters}
             selectedFeatures={selectedFeatures}
@@ -680,6 +682,17 @@ function MetroMapInternal({
             onSelectAll={selectAllFeatures}
             hoveredFeature={hoveredFeature}
             onHoverFeature={setHoveredFeature}
+            onCenterFeature={(featId) => {
+              setSelectedFeatures([featId]);
+              const featStations = featureLines.stations[featId] || [];
+              if (featStations.length > 0) {
+                const first = featStations[0];
+                const pos = positions[featId]?.[first.id] || positions[first.id];
+                if (pos) setCenter(pos.x + 100, pos.y, { zoom: 1.2, duration: 500 });
+              }
+            }}
+            onSelectStationType={setSelectedStationType}
+            selectedStationType={selectedStationType}
           />
         </aside>
 
@@ -713,6 +726,16 @@ function MetroMapInternal({
                 onSwitchTab={onSwitchTab}
                 onSetImpactFile={onSetImpactFile}
                 onSelectTraceRouteId={onSelectTraceRouteId}
+                onCenterFeature={(featId) => {
+                  if (featId) setSelectedFeatures([featId]);
+                  const targetId = featId || selectedStation.featureId || '';
+                  const featStations = featureLines.stations[targetId] || [];
+                  if (featStations.length > 0) {
+                    const first = featStations[0];
+                    const pos = positions[targetId]?.[first.id] || positions[first.id];
+                    if (pos) setCenter(pos.x + 100, pos.y, { zoom: 1.2, duration: 500 });
+                  }
+                }}
               />
             )}
           </AnimatePresence>
@@ -747,9 +770,9 @@ function MetroMapInternal({
                 minZoom={0.3}
                 maxZoom={1.8}
                 defaultViewport={{ x: 50, y: 50, zoom: 0.85 }}
-                panOnDrag={false}
+                panOnDrag={true}
                 panOnScroll={false}
-                zoomOnScroll={false}
+                zoomOnScroll={true}
                 style={{ width: '100%', height: '100%' }}
               >
                 <Controls className="!bg-[#0D1728] !border-white/10 !shadow-xl !fill-[#F7FAFA] [&>button]:!bg-[#0D1728] [&>button]:!border-white/10 [&>button]:!text-zinc-400" />

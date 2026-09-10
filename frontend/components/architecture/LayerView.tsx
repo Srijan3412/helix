@@ -893,7 +893,7 @@ export default function LayerView({ result }: { result: any }) {
 
   if (isLoading) {
     return (
-      <div className="h-[480px] flex flex-col items-center justify-center text-zinc-550 gap-2 bg-zinc-950/40 border border-border/60 rounded-2xl">
+      <div className="h-full flex flex-col items-center justify-center text-zinc-555 gap-2 bg-zinc-950/40 border border-border/60 rounded-2xl">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <span className="text-xs font-semibold">Analyzing system architecture layers...</span>
       </div>
@@ -901,9 +901,9 @@ export default function LayerView({ result }: { result: any }) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[550px] text-left">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full text-left">
       {/* Canvas */}
-      <div className="lg:col-span-3 rounded-2xl border border-border/60 bg-zinc-950/60 overflow-hidden relative">
+      <div className="lg:col-span-3 rounded-2xl border border-border/60 bg-zinc-950/60 overflow-hidden relative h-full">
 
         {/* Left Toolbar controls: Quick search */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-zinc-900/90 border border-border/60 rounded-xl px-2.5 py-1.5 shadow-lg backdrop-blur-md">
@@ -1028,7 +1028,7 @@ export default function LayerView({ result }: { result: any }) {
       </div>
 
       {/* Inspector Details Sidebar */}
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-1 h-full">
         {selectedFile ? (
           <LayerDetails
             filePath={selectedFile}

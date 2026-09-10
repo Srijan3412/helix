@@ -2106,7 +2106,7 @@ export default function Home() {
 
             {/* ─── ARCHITECTURE TAB ─── */}
             {activeResultTab === "arch" && (
-              <div className="w-full" style={{ height: "calc(100vh - 48px)" }}>
+              <div className="w-full" style={{ height: "calc(100vh - 140px)", minHeight: "650px" }}>
                 <ArchitectureViewer
                   result={result}
                   currentJobId={currentJobId!}

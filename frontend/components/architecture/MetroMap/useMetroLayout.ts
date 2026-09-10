@@ -2,19 +2,12 @@
 
 import { useMemo } from 'react';
 import { FeatureFlow } from './types';
-import { LayerType, getLayerOrder } from './layerDetector';
+import { LayerType } from './layerDetector';
 
 const START_X = 80;
-const START_Y = 50;
-const STATION_SPACING = 195; // 142px node + 53px gap
-const LAYER_ROW_HEIGHT = 118; // 82px node + 36px gap
-const STATION_CARD_HEIGHT = 86;
-const HEADER_HEIGHT = 32;
-const HEADER_GAP = 22;
-const HEADER_RESERVED = HEADER_HEIGHT + HEADER_GAP; // 54px
-const INTER_TRACK_GAP = 70; // Clean separation between tracks
-const PADDING_RIGHT = 300;
-const PADDING_BOTTOM = 200;
+const START_Y = 60;
+const STATION_SPACING_X = 125; // 102px node + 23px gap
+const LINE_ROW_HEIGHT = 120;   // Row height between feature lines
 
 export const DEFAULT_LAYER_ORDER: LayerType[] = [
   'api',
@@ -24,6 +17,32 @@ export const DEFAULT_LAYER_ORDER: LayerType[] = [
   'infrastructure',
   'utility'
 ];
+
+export function getFeaturePrefix(featureName: string, fIdx: number): string {
+  const name = featureName.toLowerCase();
+  if (name.includes('auth')) return 'A';
+  if (name.includes('user')) return 'U';
+  if (name.includes('admin') || name.includes('control')) return 'D';
+  if (name.includes('log') || name.includes('analytic')) return 'L';
+  if (name.includes('notif') || name.includes('email') || name.includes('alert')) return 'N';
+  if (name.includes('core') || name.includes('system') || name.includes('infra') || name.includes('db')) return 'C';
+  if (name.includes('pay') || name.includes('stripe')) return 'P';
+  
+  const clean = featureName.replace(/[^a-zA-Z]/g, '');
+  return clean ? clean[0].toUpperCase() : `F${fIdx + 1}`;
+}
+
+export function getFeatureDescription(featureName: string): string {
+  const name = featureName.toLowerCase();
+  if (name.includes('auth')) return 'Auth, sessions & access control';
+  if (name.includes('user')) return 'Users, profiles & teams';
+  if (name.includes('admin') || name.includes('control')) return 'Admin, settings & configuration';
+  if (name.includes('log') || name.includes('analytic')) return 'Analytics, events & monitoring';
+  if (name.includes('notif') || name.includes('email') || name.includes('alert')) return 'Email, alerts & messaging';
+  if (name.includes('core') || name.includes('system') || name.includes('infra') || name.includes('db')) return 'Database, cache & external services';
+  if (name.includes('pay') || name.includes('stripe')) return 'Payments, billing & checkout';
+  return 'Business logic & component pipeline';
+}
 
 export function useMetroLayout(
   features: FeatureFlow[],
@@ -40,49 +59,106 @@ export function useMetroLayout(
     const featureStartY: Record<string, number> = {};
 
     const featuresToLayout = filteredFeatures.length > 0 ? filteredFeatures : features;
-    let currentTrackY = START_Y;
     let maxContentX = START_X;
+    let maxContentY = START_Y;
 
-    featuresToLayout.forEach((feature, fIdx) => {
+    // Identify feature roles
+    const isCoreFeature = (f: FeatureFlow) => {
+      const name = f.name.toLowerCase();
+      return name.includes('core') || name.includes('system') || name.includes('database') || name.includes('infra');
+    };
+
+    const isRightFeature = (f: FeatureFlow) => {
+      const name = f.name.toLowerCase();
+      return name.includes('notif') || name.includes('email') || name.includes('payment');
+    };
+
+    const leftFeatures = featuresToLayout.filter((f) => !isCoreFeature(f) && !isRightFeature(f));
+    const coreFeatures = featuresToLayout.filter(isCoreFeature);
+    const rightFeatures = featuresToLayout.filter(isRightFeature);
+
+    if (leftFeatures.length === 0 && featuresToLayout.length > 0) {
+      leftFeatures.push(...featuresToLayout);
+    }
+
+    let leftRowIdx = 0;
+    // 1. Layout Left Horizontal Feature Lines
+    leftFeatures.forEach((feature) => {
       posMap[feature.id] = {};
+      const stations = featureLines[feature.id] || [];
+      const lineY = START_Y + leftRowIdx * LINE_ROW_HEIGHT;
 
-      const groups = layerGroups[feature.id] || ({} as Record<LayerType, any[]>);
-      const sortedLayers = (Object.keys(groups) as LayerType[])
-        .filter((k) => groups[k] && groups[k].length > 0)
-        .sort((a, b) => getLayerOrder(a) - getLayerOrder(b));
+      featureHeaderY[feature.id] = lineY - 32;
+      featureStartY[feature.id] = lineY;
 
-      // Anchor Header at currentTrackY
-      featureHeaderY[feature.id] = currentTrackY;
-      featureStartY[feature.id] = currentTrackY;
+      stations.forEach((station, sIdx) => {
+        const x = START_X + sIdx * STATION_SPACING_X;
+        const y = lineY;
+        posMap[feature.id][station.id] = { x, y };
 
-      // First station starts after header reserved space
-      const firstStationY = currentTrackY + HEADER_RESERVED;
-      const layerCount = Math.max(1, sortedLayers.length);
-
-      sortedLayers.forEach((layer, layerIdx) => {
-        const stations: any[] = groups[layer] || [];
-        const layerY = firstStationY + layerIdx * LAYER_ROW_HEIGHT;
-
-        stations.forEach((station: any, colIdx: number) => {
-          const x = START_X + colIdx * STATION_SPACING;
-          posMap[feature.id][station.id] = { x, y: layerY };
-
-          if (x + 220 > maxContentX) {
-            maxContentX = x + 220;
-          }
-        });
+        if (x + 140 > maxContentX) maxContentX = x + 140;
       });
 
-      // Calculate track height based on number of active layers
-      const trackHeight = (layerCount - 1) * LAYER_ROW_HEIGHT + STATION_CARD_HEIGHT;
-      const trackBottomY = firstStationY + trackHeight;
-
-      // Next track starts with inter-track gap
-      currentTrackY = trackBottomY + INTER_TRACK_GAP;
+      leftRowIdx++;
+      if (lineY + 100 > maxContentY) maxContentY = lineY + 100;
     });
 
-    const canvasWidth = Math.max(maxContentX + PADDING_RIGHT, 1400);
-    const canvasHeight = Math.max(currentTrackY + PADDING_BOTTOM, 800);
+    // Central Core Hub position
+    const hubX = Math.max(520, maxContentX + 40);
+    const hubY = START_Y + Math.max(1, Math.floor(leftFeatures.length / 2)) * LINE_ROW_HEIGHT - 30;
+
+    posMap['core-hub-center'] = {
+      'core-hub-node': { x: hubX, y: hubY }
+    };
+
+    // 2. Layout Core System Vertical Line (at hubX + 130)
+    const coreLineX = hubX + 130;
+    let coreY = START_Y;
+
+    coreFeatures.forEach((feature) => {
+      posMap[feature.id] = {};
+      const stations = featureLines[feature.id] || [];
+
+      featureHeaderY[feature.id] = coreY - 32;
+      featureStartY[feature.id] = coreY;
+
+      stations.forEach((station, sIdx) => {
+        const x = coreLineX;
+        const y = coreY + sIdx * 75;
+        posMap[feature.id][station.id] = { x, y };
+
+        if (y + 100 > maxContentY) maxContentY = y + 100;
+      });
+
+      coreY += stations.length * 75 + 80;
+    });
+
+    // 3. Layout Right Features
+    let rightRowIdx = 0;
+    const rightStartX = coreLineX + 140;
+
+    rightFeatures.forEach((feature) => {
+      posMap[feature.id] = {};
+      const stations = featureLines[feature.id] || [];
+      const lineY = hubY + rightRowIdx * LINE_ROW_HEIGHT;
+
+      featureHeaderY[feature.id] = lineY - 32;
+      featureStartY[feature.id] = lineY;
+
+      stations.forEach((station, sIdx) => {
+        const x = rightStartX + sIdx * STATION_SPACING_X;
+        const y = lineY;
+        posMap[feature.id][station.id] = { x, y };
+
+        if (x + 140 > maxContentX) maxContentX = x + 140;
+      });
+
+      rightRowIdx++;
+      if (lineY + 100 > maxContentY) maxContentY = lineY + 100;
+    });
+
+    const canvasWidth = Math.max(maxContentX + 250, 1400);
+    const canvasHeight = Math.max(maxContentY + 150, 750);
 
     return {
       positions: posMap,
@@ -94,7 +170,10 @@ export function useMetroLayout(
       layerGroups,
       layerOrder: DEFAULT_LAYER_ORDER,
       featureHeaderY,
-      featureStartY
+      featureStartY,
+      hubX,
+      hubY
     };
   }, [features, filteredFeatures, selectedFeatures, featureLines, layerGroups, maxStationsCount, stationsPerPage]);
 }
+

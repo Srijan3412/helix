@@ -391,7 +391,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
 
   if (isLoading) {
     return (
-      <div className="h-[480px] flex flex-col items-center justify-center text-zinc-500 gap-2 bg-zinc-950/40 border border-border/60 rounded-2xl">
+      <div className="h-full flex flex-col items-center justify-center text-zinc-500 gap-2 bg-zinc-950/40 border border-border/60 rounded-2xl">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <span className="dash-metadata">Generating execution traces from API mappings...</span>
       </div>
@@ -399,7 +399,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[600px] text-left">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full text-left">
       {/* 1. Routes List Pane */}
       <div className="lg:col-span-1 flex flex-col bg-zinc-950/40 border border-border/60 rounded-2xl p-4 space-y-3 overflow-hidden">
         <div className="relative">
@@ -709,7 +709,7 @@ const handleStep = useCallback((direction: 'prev' | 'next') => {
       </div>
 
       {/* 3. Right details panel / Inspector */}
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-1 h-full">
         {selectedFile ? (
           <div className="h-full flex flex-col space-y-3">
             <LayerDetails
