@@ -34,8 +34,9 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
 
   // Find isTopFile matching LayerView.tsx logic
   const isTopFile = useMemo(() => {
+    const safeLayer = String(layerName || "").toLowerCase();
     const layerData = result?.architecture?.layers?.find(
-      (l: any) => l.name?.toLowerCase() === layerName?.toLowerCase()
+      (l: any) => String(l?.name || "").toLowerCase() === safeLayer
     );
     const filesInLayer = layerData?.files || [];
     const getFileMetrics = (path: string) => {
@@ -59,14 +60,14 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
   }, [filePath, result]);
 
   const getFileIcon = () => {
-    const ext = filename.split('.').pop()?.toLowerCase();
+    const ext = String(filename || "").split('.').pop()?.toLowerCase();
     const isTypeScript = ext === 'ts' || ext === 'tsx';
     const isJavaScript = ext === 'js' || ext === 'jsx';
     const isJson = ext === 'json';
     const isMarkdown = ext === 'md' || ext === 'mdx';
     const isConfig = ext === 'yml' || ext === 'yaml' || ext === 'toml';
-    const isDatabase = layerName?.toLowerCase() === 'database' || filePath.includes('DB:') || filePath.includes('ENTITY:');
-    const isRoute = layerName?.toLowerCase() === 'routes';
+    const isDatabase = String(layerName || "").toLowerCase() === 'database' || String(filePath || "").includes('DB:') || String(filePath || "").includes('ENTITY:');
+    const isRoute = String(layerName || "").toLowerCase() === 'routes';
 
     if (isDatabase) {
       return <Database className="w-4 h-4 text-rose-400 shrink-0" />;
@@ -93,10 +94,10 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
   };
 
   const getFileTypeLabel = () => {
-    const ext = filename.split('.').pop()?.toLowerCase();
-    const isDatabase = layerName?.toLowerCase() === 'database' || filePath.includes('DB:') || filePath.includes('ENTITY:');
+    const ext = String(filename || "").split('.').pop()?.toLowerCase();
+    const isDatabase = String(layerName || "").toLowerCase() === 'database' || String(filePath || "").includes('DB:') || String(filePath || "").includes('ENTITY:');
     if (isDatabase) return 'DB';
-    if (layerName?.toLowerCase() === 'routes') return 'API';
+    if (String(layerName || "").toLowerCase() === 'routes') return 'API';
     if (ext === 'ts' || ext === 'tsx') return 'TS';
     if (ext === 'js' || ext === 'jsx') return 'JS';
     if (ext === 'json') return 'JSON';
@@ -113,7 +114,7 @@ export default function LayerDetails({ filePath, layerName, result, onClose }: L
     return Math.abs(hash % 20) + 1;
   };
 
-  const isRouteFile = layerName?.toLowerCase() === 'routes' || result?.routes?.some((r: any) => r.file === filePath);
+  const isRouteFile = String(layerName || "").toLowerCase() === 'routes' || result?.routes?.some((r: any) => r.file === filePath);
 
   return (
     <Card className="p-5 flex flex-col h-full bg-zinc-950/95 border border-border/80 shadow-2xl overflow-y-auto text-left space-y-4">

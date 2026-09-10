@@ -78,8 +78,8 @@ export function FeatureLegend({
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (f) =>
-          f.name.toLowerCase().includes(q) ||
-          getFeatureDescription(f.name).toLowerCase().includes(q)
+          String(f?.name || '').toLowerCase().includes(q) ||
+          getFeatureDescription(f?.name || '').toLowerCase().includes(q)
       );
     }
 
@@ -119,7 +119,7 @@ export function FeatureLegend({
     features.forEach((f) => {
       (f.routes || []).forEach(() => counts.route++);
       (f.files || []).forEach((file) => {
-        const lower = file.toLowerCase();
+        const lower = String(file || '').toLowerCase();
         if (lower.includes('middleware') || lower.includes('guard') || lower.includes('auth')) {
           counts.middleware++;
         } else if (lower.includes('service') || lower.includes('usecase')) {
@@ -285,18 +285,19 @@ export function FeatureLegend({
             const flowCount = feat.flowGroups?.length || 4;
             const stationCount = feat.files?.length || 14;
 
+            const safeName = String(feat?.name || '').toLowerCase();
             const persistentColor =
-              feat.name.toLowerCase().includes('auth')
+              safeName.includes('auth')
                 ? '#F43F8C'
-                : feat.name.toLowerCase().includes('user')
+                : safeName.includes('user')
                   ? '#2F80ED'
-                  : feat.name.toLowerCase().includes('admin')
+                  : safeName.includes('admin')
                     ? '#A855F7'
-                    : feat.name.toLowerCase().includes('analytic') || feat.name.toLowerCase().includes('billing')
+                    : safeName.includes('analytic') || safeName.includes('billing')
                       ? '#F5A623'
-                      : feat.name.toLowerCase().includes('notif')
+                      : safeName.includes('notif')
                         ? '#16C7A3'
-                        : feat.name.toLowerCase().includes('core')
+                        : safeName.includes('core')
                           ? '#A6B5C2'
                           : feat.color || '#2F80ED';
 

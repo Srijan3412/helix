@@ -22,7 +22,7 @@ import { detectLayer, LayerType } from './layerDetector';
  * Maps a file path or name to its architectural role
  */
 export function inferStationType(fileName: string): StationType {
-  const lower = fileName.toLowerCase();
+  const lower = String(fileName || '').toLowerCase();
   if (lower.includes('route') || lower.startsWith('/api') || lower.startsWith('/') || lower.startsWith('get ') || lower.startsWith('post ') || lower.startsWith('put ') || lower.startsWith('delete ')) return 'route';
   if (lower.includes('controller') || lower.includes('handler')) return 'controller';
   if (lower.includes('middleware') || lower.includes('guard') || lower.includes('auth')) return 'middleware';
@@ -79,7 +79,7 @@ export function generateFlowGroupsForFeature(
   files: string[],
   routes: string[]
 ): FlowGroupData[] {
-  const normName = featureName.toLowerCase();
+  const normName = String(featureName || '').toLowerCase();
   
   if (normName.includes('auth')) {
     return [
@@ -397,11 +397,11 @@ export function useMetroData(result?: AnalysisResult | null): MetroDataResult {
         });
 
         const calculatedFeatureHealth = files.length > 0 ? Math.round(featureHealthSum / files.length) : 90;
-        const featureId = f.id || f.name.toLowerCase().replace(/\s+/g, '-');
+        const featureId = f.id || String(f?.name || 'feature').toLowerCase().replace(/\s+/g, '-');
 
         const flowGroups = generateFlowGroupsForFeature(
           featureId,
-          f.name,
+          f?.name || 'Feature',
           files,
           f.routes || []
         );

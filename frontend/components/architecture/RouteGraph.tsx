@@ -110,19 +110,19 @@ const NAMESPACE_PRESETS: Record<string, NamespaceMeta> = {
 
 function getNamespaceMeta(ns: string): NamespaceMeta {
   if (NAMESPACE_PRESETS[ns]) return NAMESPACE_PRESETS[ns];
-  const lower = ns.toLowerCase();
+  const lower = String(ns || "").toLowerCase();
   for (const [key, meta] of Object.entries(NAMESPACE_PRESETS)) {
     if (key !== "/" && lower.includes(key.replace("/", ""))) {
       return meta;
     }
   }
-  return { color: "#16C7A1", icon: RouteIcon, title: ns.replace("/", "").toUpperCase() || "CORE" };
+  return { color: "#16C7A1", icon: RouteIcon, title: String(ns || "").replace("/", "").toUpperCase() || "CORE" };
 }
 
 // --- Subfamily Classifier ---
 function categorizeEndpointFamily(path: string, method: string): string {
-  const lower = path.toLowerCase();
-  const m = method.toUpperCase();
+  const lower = String(path || "").toLowerCase();
+  const m = String(method || "GET").toUpperCase();
 
   if (lower.includes("session") || lower.includes("token") || lower.includes("refresh")) return "Session";
   if (lower.includes("login") || lower.includes("signup") || lower.includes("logout") || lower.includes("auth"))
@@ -318,7 +318,7 @@ function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
                 <div className="space-y-1">
                   {familyRoutes.map((route) => {
                     const isSelected = selectedRouteId === route.id;
-                    const method = route.method.toUpperCase();
+                    const method = String(route.method || "GET").toUpperCase();
                     const cfg = METHOD_CONFIG[method] || METHOD_CONFIG.GET;
 
                     // Method Dimming logic: if filter is active and doesn't match, dim to 0.2
@@ -326,11 +326,12 @@ function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
                       !activeMethodFilter || activeMethodFilter === "all" || activeMethodFilter === method;
 
                     // Search Dimming logic
+                    const q = String(searchQuery || "").toLowerCase();
                     const matchesSearch =
                       !searchQuery ||
-                      route.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      route.controller.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      route.method.toLowerCase().includes(searchQuery.toLowerCase());
+                      String(route.path || "").toLowerCase().includes(q) ||
+                      String(route.controller || "").toLowerCase().includes(q) ||
+                      String(route.method || "").toLowerCase().includes(q);
 
                     const isRowDimmed = !matchesMethod || !matchesSearch;
 

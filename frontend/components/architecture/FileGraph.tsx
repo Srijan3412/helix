@@ -108,7 +108,7 @@ const GROUP_META: Record<string, { icon: any; color: string; label: string }> = 
 };
 
 function inferCategoryAndLevel(filename: string): { category: DependencyCategory; level: number } {
-  const lower = filename.toLowerCase();
+  const lower = String(filename || "").toLowerCase();
 
   if (
     lower.includes("app.") ||
@@ -151,7 +151,7 @@ function inferCategoryAndLevel(filename: string): { category: DependencyCategory
 }
 
 function getFileExtensionBadge(filename: string) {
-  const ext = filename.split(".").pop()?.toLowerCase() || "";
+  const ext = String(filename || "").split(".").pop()?.toLowerCase() || "";
   switch (ext) {
     case "tsx":
       return { label: "TSX", color: "#16C7A3", bg: "rgba(22, 199, 163, 0.15)" };

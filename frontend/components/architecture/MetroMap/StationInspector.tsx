@@ -366,7 +366,7 @@ export function StationInspector({
           </div>
 
           <p className="text-xs text-[#9FB0B4] leading-relaxed">
-            {flowGroup.description || `Handles ${flowGroup.name.toLowerCase()} operations and workflow logic.`}
+            {flowGroup.description || `Handles ${String(flowGroup.name || 'group').toLowerCase()} operations and workflow logic.`}
           </p>
         </div>
 

@@ -41,7 +41,7 @@ export function MetroSearchPanel({
           data.type?.toLowerCase().includes(q) ||
           data.layer?.toLowerCase().includes(q) ||
           data.lineName?.toLowerCase().includes(q) ||
-          data.features?.some((f) => f.toLowerCase().includes(q))
+          data.features?.some((f) => String(f || '').toLowerCase().includes(q))
         );
       })
       .slice(0, 10);

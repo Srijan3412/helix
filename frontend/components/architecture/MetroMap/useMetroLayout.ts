@@ -19,7 +19,7 @@ export const DEFAULT_LAYER_ORDER: LayerType[] = [
 ];
 
 export function getFeaturePrefix(featureName: string, fIdx: number): string {
-  const name = featureName.toLowerCase();
+  const name = String(featureName || "").toLowerCase();
   if (name.includes('auth')) return 'A';
   if (name.includes('user')) return 'U';
   if (name.includes('admin') || name.includes('control')) return 'D';
@@ -28,12 +28,12 @@ export function getFeaturePrefix(featureName: string, fIdx: number): string {
   if (name.includes('core') || name.includes('system') || name.includes('infra') || name.includes('db')) return 'C';
   if (name.includes('pay') || name.includes('stripe')) return 'P';
   
-  const clean = featureName.replace(/[^a-zA-Z]/g, '');
+  const clean = String(featureName || "").replace(/[^a-zA-Z]/g, '');
   return clean ? clean[0].toUpperCase() : `F${fIdx + 1}`;
 }
 
 export function getFeatureDescription(featureName: string): string {
-  const name = featureName.toLowerCase();
+  const name = String(featureName || "").toLowerCase();
   if (name.includes('auth')) return 'Auth, sessions & access control';
   if (name.includes('user')) return 'Users, profiles & teams';
   if (name.includes('admin') || name.includes('control')) return 'Admin, settings & configuration';
@@ -64,12 +64,12 @@ export function useMetroLayout(
 
     // Identify feature roles
     const isCoreFeature = (f: FeatureFlow) => {
-      const name = f.name.toLowerCase();
+      const name = String(f?.name || "").toLowerCase();
       return name.includes('core') || name.includes('system') || name.includes('database') || name.includes('infra');
     };
 
     const isRightFeature = (f: FeatureFlow) => {
-      const name = f.name.toLowerCase();
+      const name = String(f?.name || "").toLowerCase();
       return name.includes('notif') || name.includes('email') || name.includes('payment');
     };
 

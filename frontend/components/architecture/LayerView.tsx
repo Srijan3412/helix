@@ -118,7 +118,8 @@ const LAYERS_CONFIG: LayerMeta[] = [
 ];
 
 function getLayerTheme(id: string) {
-  const meta = LAYERS_CONFIG.find((l) => l.id.toLowerCase() === id.toLowerCase() || l.name.toLowerCase() === id.toLowerCase());
+  const safeId = String(id || "").toLowerCase();
+  const meta = LAYERS_CONFIG.find((l) => String(l.id || "").toLowerCase() === safeId || String(l.name || "").toLowerCase() === safeId);
   return {
     primary: meta?.color || "#60A5FA",
     bgColor: meta?.bgColor || "rgba(96, 165, 250, 0.12)",
@@ -173,7 +174,7 @@ export default function LayerView({
       };
 
       layersData.forEach((layer: any) => {
-        const layerName = layer.name?.toLowerCase() || '';
+        const layerName = String(layer?.name || '').toLowerCase();
         if (converted.hasOwnProperty(layerName)) {
           converted[layerName] = layer.files || [];
         }
@@ -206,7 +207,8 @@ export default function LayerView({
           database: 'database',
           file: 'services'
         };
-        const layerKey = layerMap[node.type] || node.type.toLowerCase();
+        const nodeType = String(node?.type || '').toLowerCase();
+        const layerKey = layerMap[node?.type] || layerMap[nodeType] || nodeType || 'services';
         if (graphLayers[layerKey]) {
           graphLayers[layerKey].push(node.id);
         }
@@ -243,20 +245,20 @@ export default function LayerView({
     ];
 
     for (const f of files) {
-      const pathLower = f.path.toLowerCase();
-      if (pathLower.startsWith("route:") || pathLower.startsWith("env:") || pathLower.startsWith("db:") || pathLower.startsWith("entity:")) {
+      const pathLower = String(f?.path || f || "").toLowerCase();
+      if (!pathLower || pathLower.startsWith("route:") || pathLower.startsWith("env:") || pathLower.startsWith("db:") || pathLower.startsWith("entity:")) {
         continue;
       }
       let matched = false;
       for (const r of rules) {
-        if (r.regex.test(f.path)) {
-          classified[r.key].push(f.path);
+        if (r.regex.test(f?.path || f || "")) {
+          classified[r.key].push(f?.path || f);
           matched = true;
           break;
         }
       }
-      if (!matched && (/(^|\/)(prisma|drizzle|migrations?|supabase\/migrations|db\/migrations|sql)(\/|$)/i.test(f.path) || /\bprisma\b|schema\.prisma|\bconnection\b|\bdb\b/i.test(f.path))) {
-        classified.database.push(f.path);
+      if (!matched && (/(^|\/)(prisma|drizzle|migrations?|supabase\/migrations|db\/migrations|sql)(\/|$)/i.test(f?.path || f || "") || /\bprisma\b|schema\.prisma|\bconnection\b|\bdb\b/i.test(f?.path || f || ""))) {
+        classified.database.push(f?.path || f);
       }
     }
 
@@ -286,7 +288,7 @@ export default function LayerView({
   const topFilesList = useMemo(() => {
     const files = selectedLayerFiles.length > 0 ? selectedLayerFiles : ["index.ts", "auth.ts", "users.ts", "projects.ts", "scan.ts"];
     return files.slice(0, 5).map((f: string, i: number) => ({
-      name: f.split(/[\\/]/).pop() || f,
+      name: (f ? String(f).split(/[\\/]/).pop() : "") || f || "",
       loc: `${Math.max(0.8, 2.4 - i * 0.4).toFixed(1)}K`,
       score: (4.8 - i * 0.2).toFixed(1)
     }));
@@ -294,18 +296,17 @@ export default function LayerView({
 
   // Search & Focus matching logic
   const searchHits = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = String(searchQuery || "").trim().toLowerCase();
     if (!q) return [];
-
-
 
     const hits: { layer: string; path: string; filename: string }[] = [];
     LAYERS_CONFIG.forEach((l) => {
       const key = l.id;
       const files = layers[key] || [];
       files.forEach((file: string) => {
-        const filename = file.split(/[\\/]/).pop() || file;
-        if (filename.toLowerCase().includes(q) || file.toLowerCase().includes(q)) {
+        if (!file) return;
+        const filename = String(file).split(/[\\/]/).pop() || file;
+        if (filename.toLowerCase().includes(q) || String(file).toLowerCase().includes(q)) {
           hits.push({ layer: key, path: file, filename });
         }
       });
@@ -353,7 +354,7 @@ export default function LayerView({
       };
 
       (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
-        const rawLayer = node.layer || "Services";
+        const rawLayer = String(node?.layer || "Services");
         const layerName = layerMap[rawLayer.toLowerCase()] || rawLayer;
         if (!nodesByLayer[layerName]) {
           nodesByLayer[layerName] = [];
@@ -395,11 +396,11 @@ export default function LayerView({
       const LAYER_SPACING = 40; // Gap between layers
 
       actualLayers.forEach((layerName) => {
-        const key = layerName.toLowerCase();
+        const key = String(layerName || "").toLowerCase();
         const filesInLayer = nodesByLayer[layerName] || [];
 
         // Get layer metrics from backend data if available
-        const layerMetrics = layersData?.find((l: any) => l.name?.toLowerCase() === key);
+        const layerMetrics = layersData?.find((l: any) => String(l?.name || "").toLowerCase() === key);
         let health = layerMetrics?.health || 0;
         let confidence = layerMetrics?.confidence !== undefined
           ? (layerMetrics.confidence <= 1 ? layerMetrics.confidence * 100 : layerMetrics.confidence)
@@ -557,7 +558,7 @@ export default function LayerView({
       }
 
       // Get layer metrics from backend data
-      const layerMetrics = layersData?.find((l: any) => l.name?.toLowerCase() === key);
+      const layerMetrics = layersData?.find((l: any) => String(l?.name || "").toLowerCase() === key);
       const health = layerMetrics?.health || 0;
       const confidenceVal = layerMetrics?.confidence !== undefined
         ? (layerMetrics.confidence <= 1 ? layerMetrics.confidence * 100 : layerMetrics.confidence)
@@ -966,7 +967,7 @@ export default function LayerView({
             {inspectorTab === "overview" && (
               <div className="flex flex-col gap-3">
                 <p className="text-[11px] text-[#9FB0B3] leading-relaxed">
-                  Contains all {selectedLayerMeta.name.toLowerCase()} logic and modular entry points for this application layer.
+                  Contains all {String(selectedLayerMeta?.name || 'layer').toLowerCase()} logic and modular entry points for this application layer.
                 </p>
 
                 {/* Compact Tile Grid */}
