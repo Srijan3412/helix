@@ -323,7 +323,7 @@ export default function ArchitectureViewer({
       {/* ── Standard Embedded Architecture Workspace ─────────────────────── */}
       <div className="flex flex-col h-full w-full bg-[#061015] rounded-xl overflow-hidden border border-[#16C7A3]/20 relative text-left">
         {/* Top Navigation Bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-[#16C7A3]/15 bg-[#0A171F] shrink-0 z-10">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-[#16C7A3]/15 bg-[#0A171F] shrink-0 z-10 gap-2">
           <div className="flex items-center gap-1.5 overflow-x-auto">
             {TABS.map((tab) => {
               const isActive = activeMode === tab.id;
@@ -344,55 +344,14 @@ export default function ArchitectureViewer({
             })}
           </div>
 
-          <button
-            onClick={() => setIsFullScreen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#16C7A3]/15 hover:bg-[#16C7A3]/25 border border-[#16C7A3]/30 text-[#9BE8E0] hover:text-[#F7FAFA] text-xs font-bold transition-all cursor-pointer shrink-0 ml-2"
-            title="Expand to Full-Screen Architecture Workspace"
-          >
-            <Maximize2 size={13} className="text-[#16C7A3]" />
-            <span>Full-Screen Workspace</span>
-          </button>
-        </div>
-
-        {/* Header Title Treatment */}
-        <div className="flex items-center justify-between px-5 py-2.5 bg-[#050C10] border-b border-[#16C7A3]/10 shrink-0">
-          <div>
-            <h2 className="text-sm font-bold text-[#F7FAFA] tracking-tight">
-              {activeTabMeta.title}
-            </h2>
-            <p className="text-xs text-[#8EA9AE] mt-0.5 font-medium">
-              {activeTabMeta.subtitle}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search
-                size={13}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8EA9AE]"
-              />
-              <input
-                type="text"
-                placeholder="Search graph..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-[180px] h-[30px] pl-8 pr-7 rounded-lg bg-[#0E1B20] border border-[#16C7A3]/20 text-xs text-[#F7FAFA] placeholder-[#8EA9AE] focus:outline-none focus:border-[#16C7A3]"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8EA9AE] hover:text-white"
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setFitViewTrigger((prev) => prev + 1)}
-              className="px-2.5 py-1 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] border border-[#16C7A3]/20 text-[#F7FAFA] text-xs font-semibold cursor-pointer"
+              onClick={() => setIsFullScreen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#16C7A3]/15 hover:bg-[#16C7A3]/25 border border-[#16C7A3]/30 text-[#9BE8E0] hover:text-[#F7FAFA] text-xs font-bold transition-all cursor-pointer shrink-0"
+              title="Expand to Full-Screen Architecture Workspace"
             >
-              Fit View
+              <Maximize2 size={13} className="text-[#16C7A3]" />
+              <span>Full-Screen Workspace</span>
             </button>
           </div>
         </div>
@@ -469,40 +428,6 @@ export default function ArchitectureViewer({
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsPresentationMode(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] border border-[#16C7A3]/20 text-[#F7FAFA] text-xs font-semibold transition-colors cursor-pointer"
-                  title="Presentation Mode"
-                >
-                  <Eye size={13} className="text-[#16C7A3]" />
-                  <span>Presentation</span>
-                </button>
-
-                <button
-                  onClick={() => setIsFullScreen(false)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#E83E5B]/20 hover:bg-[#E83E5B]/35 border border-[#E83E5B]/40 text-[#FF7A84] text-xs font-bold transition-colors cursor-pointer"
-                  title="Exit Full-Screen (Esc)"
-                >
-                  <Minimize2 size={13} />
-                  <span>Exit</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Sub Header Title Bar & Controls */}
-          {!isPresentationMode && (
-            <div className="flex items-center justify-between px-6 h-[46px] bg-[#050C10] border-b border-[#16C7A3]/10 shrink-0 z-20">
-              <div>
-                <h1 className="text-base font-bold text-[#F7FAFA] tracking-tight leading-none">
-                  {activeTabMeta.title}
-                </h1>
-                <p className="text-xs text-[#8EA9AE] mt-0.5 leading-none">
-                  {activeTabMeta.subtitle}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2.5">
                 {activeMode === "layer" && (
                   <div className="hidden lg:flex items-center gap-1 bg-[#0E1B20] border border-[#16C7A3]/20 rounded-lg p-1">
                     <Filter size={12} className="text-[#16C7A3] ml-1 mr-0.5" />
@@ -522,45 +447,22 @@ export default function ArchitectureViewer({
                   </div>
                 )}
 
-                <div className="relative">
-                  <Search
-                    size={13}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8EA9AE]"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search graph..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-[200px] sm:w-[240px] h-[30px] pl-8 pr-7 rounded-lg bg-[#0E1B20] border border-[#16C7A3]/25 text-xs text-[#F7FAFA] placeholder-[#8EA9AE] focus:outline-none focus:border-[#16C7A3]"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8EA9AE] hover:text-white"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
-
                 <button
-                  onClick={() => setFitViewTrigger((prev) => prev + 1)}
-                  className="flex items-center gap-1 px-3 py-1 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] border border-[#16C7A3]/25 text-[#F7FAFA] text-xs font-semibold transition-colors cursor-pointer"
+                  onClick={() => setIsPresentationMode(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] border border-[#16C7A3]/20 text-[#F7FAFA] text-xs font-semibold transition-colors cursor-pointer"
+                  title="Presentation Mode"
                 >
-                  <Compass size={13} className="text-[#16C7A3]" />
-                  <span>Fit View</span>
+                  <Eye size={13} className="text-[#16C7A3]" />
+                  <span>Presentation</span>
                 </button>
 
                 <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setActiveLayerFilter("all");
-                    setFitRepoTrigger((prev) => prev + 1);
-                  }}
-                  className="flex items-center gap-1 px-3 py-1 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] border border-[#16C7A3]/25 text-[#F7FAFA] text-xs font-semibold transition-colors cursor-pointer"
+                  onClick={() => setIsFullScreen(false)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#E83E5B]/20 hover:bg-[#E83E5B]/35 border border-[#E83E5B]/40 text-[#FF7A84] text-xs font-bold transition-colors cursor-pointer"
+                  title="Exit Full-Screen (Esc)"
                 >
-                  <span>Repository Overview</span>
+                  <Minimize2 size={13} />
+                  <span>Exit</span>
                 </button>
               </div>
             </div>

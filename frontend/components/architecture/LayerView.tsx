@@ -688,7 +688,7 @@ export default function LayerView({
   }
 
   return (
-    <div className="w-full bg-[#071113] text-[#F4F7F7] p-5 rounded-2xl border border-[rgba(120,200,210,0.12)] shadow-2xl flex flex-col gap-5 relative overflow-hidden font-sans">
+    <div className="w-full h-full bg-[#071113] text-[#F4F7F7] p-5 rounded-2xl border border-[rgba(120,200,210,0.12)] shadow-2xl flex flex-col gap-4 relative overflow-y-auto font-sans custom-scrollbar">
       {/* fine spatial background grid */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-40" 
@@ -698,37 +698,36 @@ export default function LayerView({
         }} 
       />
 
-      {/* ── 1. PAGE HEADER ── */}
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[rgba(120,200,210,0.12)]">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#F4F7F7] flex items-center gap-2">
-            <Layers className="w-6 h-6 text-[#2F80ED]" />
-            Layered View
-          </h1>
-          <p className="text-xs text-[#9FB0B3] mt-0.5">
-            Explore your codebase in layers — from routes to external services
-          </p>
+      {/* ── 1. COMPACT TOP TOOLBAR ── */}
+      <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-3 pb-3 border-b border-[rgba(120,200,210,0.1)]">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-[#2F80ED]/15 border border-[#2F80ED]/30 flex items-center justify-center text-[#2F80ED] shrink-0">
+            <Layers size={16} />
+          </div>
+          <span className="text-xs font-mono text-[#8EA9AE]">
+            {totalFiles} Files Across {LAYERS_CONFIG.length} Architectural Layers
+          </span>
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-72 sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9FB0B3]" />
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9FB0B3]" />
             <input
               type="text"
               placeholder="Search files, endpoints, or dependencies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0C171B] border border-[rgba(120,200,210,0.18)] rounded-lg pl-9 pr-3 py-2 text-xs text-[#F4F7F7] placeholder-[#9FB0B3]/60 focus:outline-none focus:border-[#2F80ED] transition"
+              className="w-full bg-[#0C171B] border border-[rgba(120,200,210,0.18)] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#F4F7F7] placeholder-[#9FB0B3]/60 focus:outline-none focus:border-[#2F80ED] transition"
             />
           </div>
-          <button className="px-3 py-2 rounded-lg bg-[#0C171B] border border-[rgba(120,200,210,0.18)] text-xs font-semibold text-[#9FB0B3] hover:text-[#F4F7F7] hover:border-[rgba(120,200,210,0.35)] transition flex items-center gap-1.5 shrink-0">
+          <button className="px-3 py-1.5 rounded-lg bg-[#0C171B] border border-[rgba(120,200,210,0.18)] text-xs font-semibold text-[#9FB0B3] hover:text-[#F4F7F7] hover:border-[rgba(120,200,210,0.35)] transition flex items-center gap-1.5 shrink-0 cursor-pointer">
             <GitBranch className="w-3.5 h-3.5" />
-            Tree View
+            <span>Tree View</span>
           </button>
-          <button className="px-3 py-2 rounded-lg bg-[#2F80ED]/15 border border-[#2F80ED]/40 text-xs font-semibold text-[#60A5FA] hover:bg-[#2F80ED]/25 transition flex items-center gap-1.5 shrink-0">
+          <button className="px-3 py-1.5 rounded-lg bg-[#2F80ED]/15 border border-[#2F80ED]/40 text-xs font-semibold text-[#60A5FA] hover:bg-[#2F80ED]/25 transition flex items-center gap-1.5 shrink-0 cursor-pointer">
             <Download className="w-3.5 h-3.5" />
-            Export
+            <span>Export</span>
           </button>
         </div>
       </div>
@@ -736,7 +735,7 @@ export default function LayerView({
       {/* ── 2. SUMMARY METRICS STRIP ── */}
       <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         <div className="bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-3 flex flex-col justify-center">
-          <span className="text-xl font-bold text-[#F4F7F7]">6</span>
+          <span className="text-xl font-bold text-[#F4F7F7]">{LAYERS_CONFIG.length}</span>
           <span className="text-[11px] font-medium text-[#9FB0B3]">Layers</span>
         </div>
         <div className="bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-3 flex flex-col justify-center">
@@ -767,13 +766,16 @@ export default function LayerView({
       {/* ── 3. MAIN THREE-COLUMN WORKSPACE ── */}
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         
-        {/* LEFT COLUMN: Layer Descriptions (280px / 3 cols) */}
-        <div className="lg:col-span-3 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-3.5 flex flex-col gap-2.5">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[#9FB0B3] pb-1 border-b border-[rgba(120,200,210,0.1)]">
-            Layer Descriptions
+        {/* LEFT COLUMN: Layer Descriptions / Layer Management (280px / 3 cols) */}
+        <div className="lg:col-span-3 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-3.5 flex flex-col gap-2.5 max-h-[580px]">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#9FB0B3] pb-1.5 border-b border-[rgba(120,200,210,0.1)] flex items-center justify-between">
+            <span>Layer Management</span>
+            <span className="text-[10px] font-mono text-[#16C7A3] bg-[#16C7A3]/10 px-1.5 py-0.5 rounded border border-[#16C7A3]/25">
+              {LAYERS_CONFIG.length} Layers
+            </span>
           </div>
 
-          <div className="flex flex-col gap-2 overflow-y-auto max-h-[560px] pr-1 custom-scrollbar">
+          <div className="flex flex-col gap-2 overflow-y-auto max-h-[500px] pr-1.5 custom-scrollbar">
             {LAYERS_CONFIG.map((layer) => {
               const Icon = layer.icon;
               const isSelected = selectedLayerId === layer.id;
@@ -781,16 +783,16 @@ export default function LayerView({
                 <button
                   key={layer.id}
                   onClick={() => handleSelectLayer(layer.id)}
-                  className={`w-full text-left p-3 rounded-lg border transition-all flex items-center justify-between gap-2 ${
+                  className={`w-full text-left p-2.5 rounded-lg border transition-all flex items-center justify-between gap-2 cursor-pointer ${
                     isSelected
-                      ? "bg-[#101D21] border-[#2F80ED] shadow-md"
+                      ? "bg-[#101D21] border-[#2F80ED] shadow-md ring-1 ring-[#2F80ED]/40"
                       : "bg-[#071113]/60 border-[rgba(120,200,210,0.08)] hover:border-[rgba(120,200,210,0.25)] hover:bg-[#101D21]/60"
                   }`}
                   style={{
                     borderColor: isSelected ? layer.color : undefined,
                   }}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span
                       className="text-xs font-extrabold"
                       style={{ color: layer.color }}
@@ -798,10 +800,10 @@ export default function LayerView({
                       {layer.num}
                     </span>
                     <div
-                      className="p-1.5 rounded-md shrink-0"
+                      className="p-1 rounded-md shrink-0"
                       style={{ backgroundColor: layer.bgColor }}
                     >
-                      <Icon size={14} style={{ color: layer.color }} />
+                      <Icon size={13} style={{ color: layer.color }} />
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-xs font-bold text-[#F4F7F7] truncate">
@@ -813,7 +815,7 @@ export default function LayerView({
                     </div>
                   </div>
                   <ChevronRight
-                    size={14}
+                    size={13}
                     className={`shrink-0 transition-transform ${
                       isSelected ? "text-[#F4F7F7] translate-x-0.5" : "text-[#9FB0B3]/40"
                     }`}
