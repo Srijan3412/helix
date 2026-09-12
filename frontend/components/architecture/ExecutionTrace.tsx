@@ -574,66 +574,48 @@ export default function ExecutionTrace({
 
   return (
     <div className="h-full w-full bg-[#061318] flex flex-col overflow-hidden text-left font-sans select-none relative">
-      {/* ── 1. Page Header Row (55-65px Height) ─────────────────────────── */}
+      {/* ── 1. SINGLE UNIFIED HEADER TOOLBAR (60px) ─────────────────────────── */}
       <div className="h-[60px] px-4 bg-[#071219] border-b border-[rgba(100,190,205,0.14)] flex items-center justify-between shrink-0 z-20 gap-4">
-        <div>
-          <h1 className="text-[21px] font-bold text-[#F2F7F7] tracking-tight leading-none">
-            Execution Trace
-          </h1>
-          <p className="text-[12px] text-[#8FA4A8] font-normal mt-1 leading-none">
-            Trace API endpoints through the application
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="relative w-[260px]">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#728589]" />
-            <input
-              type="text"
-              placeholder="Search endpoints..."
-              value={routeSearch}
-              onChange={(e) => setRouteSearch(e.target.value)}
-              className="w-full h-9 pl-8 pr-7 rounded-lg bg-[#0A171C] border border-[rgba(100,190,205,0.16)] text-xs text-[#F2F7F7] placeholder-[#728589] focus:outline-none focus:border-[#16C7A3] transition-colors"
-            />
-            {routeSearch && (
-              <button
-                onClick={() => setRouteSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#728589] hover:text-[#F2F7F7]"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
-
-          <button
-            onClick={handleFitView}
-            className="h-9 px-3.5 rounded-lg bg-[#0A171C] hover:bg-[#0E1C21] border border-[rgba(100,190,205,0.18)] text-[#A4B5B8] hover:text-[#F2F7F7] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            title="Fit / Reset Execution View"
-          >
-            <span>Fit View</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── 2. Compact Execution Toolbar Row (58-64px Height) ─────────────── */}
-      <div className="h-[60px] px-4 bg-[#071219] border-b border-[rgba(100,190,205,0.14)] flex items-center justify-between shrink-0 z-10 gap-3">
-        {/* Left: Endpoint Information (Merged into Toolbar) */}
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            onClick={() => onSwitchTab?.("layer")}
-            className="w-8 h-8 rounded-lg bg-[#0A171C] hover:bg-[#0E1C21] border border-[rgba(100,190,205,0.18)] text-[#A4B5B8] hover:text-[#F2F7F7] flex items-center justify-center cursor-pointer transition-colors shrink-0"
-            title="Back to Architecture Explorer"
-          >
-            <ChevronLeft size={16} />
-          </button>
-
+        {/* Left: Title & Subtitle */}
+        <div className="flex items-center gap-3 shrink-0">
           <div className="w-8 h-8 rounded-lg bg-[#16C7A3]/15 border border-[#16C7A3]/30 flex items-center justify-center text-[#16C7A3] shrink-0">
             <Zap size={16} />
           </div>
+          <div>
+            <h1 className="text-[15px] font-bold text-[#F2F7F7] tracking-tight leading-tight">
+              Execution Trace
+            </h1>
+            <p className="text-[11px] text-[#8FA4A8] font-normal leading-none mt-0.5">
+              Trace API endpoints through the application
+            </p>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-2.5 min-w-0">
+        {/* Center: Search Bar */}
+        <div className="relative flex-1 max-w-sm min-w-[200px]">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#728589]" />
+          <input
+            type="text"
+            placeholder="Search endpoints..."
+            value={routeSearch}
+            onChange={(e) => setRouteSearch(e.target.value)}
+            className="w-full h-8 pl-8 pr-7 rounded-lg bg-[#0A171C] border border-[rgba(100,190,205,0.16)] text-xs text-[#F2F7F7] placeholder-[#728589] focus:outline-none focus:border-[#16C7A3] transition-colors"
+          />
+          {routeSearch && (
+            <button
+              onClick={() => setRouteSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#728589] hover:text-[#F2F7F7]"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        {/* Right: Active Endpoint Badge & Actions */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#0A171C] border border-[rgba(100,190,205,0.18)]">
             <span
-              className={`px-2.5 py-0.5 rounded text-xs font-black font-mono tracking-wider border shrink-0 ${
+              className={`px-2 py-0.5 rounded text-[10px] font-black font-mono tracking-wider border shrink-0 ${
                 METHOD_STYLES[activeTrace.method]?.bg || "bg-[#16C7A3]/20"
               } ${METHOD_STYLES[activeTrace.method]?.text || "text-[#16C7A3]"} ${
                 METHOD_STYLES[activeTrace.method]?.border || "border-[#16C7A3]/40"
@@ -641,21 +623,20 @@ export default function ExecutionTrace({
             >
               {activeTrace.method}
             </span>
-
-            <div className="min-w-0">
-              <span className="text-sm font-bold text-[#F2F7F7] font-mono tracking-wide truncate block leading-tight">
-                {activeTrace.path}
-              </span>
-              <p className="text-[11px] text-[#8FA4A8] truncate mt-0.5 leading-none">
-                Trace and visualize the execution flow from entry point to response
-              </p>
-            </div>
+            <span className="text-xs font-mono font-bold text-[#F2F7F7] max-w-[180px] truncate">
+              {activeTrace.path}
+            </span>
           </div>
-        </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 bg-[#0A171C] border border-[rgba(100,190,205,0.18)] rounded-lg px-2.5 py-1.5 text-xs text-[#A4B5B8]">
+          <button
+            onClick={handleFitView}
+            className="h-8 px-3 rounded-lg bg-[#0A171C] hover:bg-[#0E1C21] border border-[rgba(100,190,205,0.18)] text-[#A4B5B8] hover:text-[#F2F7F7] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            title="Fit / Reset Execution View"
+          >
+            <span>Fit View</span>
+          </button>
+
+          <div className="hidden lg:flex items-center gap-1.5 bg-[#0A171C] border border-[rgba(100,190,205,0.18)] rounded-lg px-2.5 py-1 text-xs text-[#A4B5B8]">
             <span className="text-[10px] font-semibold text-[#728589]">Env</span>
             <select
               value={environment}
@@ -676,17 +657,10 @@ export default function ExecutionTrace({
 
           <button
             onClick={() => copyJsonPayload(window.location.href)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A171C] hover:bg-[#0E1C21] border border-[rgba(100,190,205,0.18)] text-[#F2F7F7] text-xs font-semibold cursor-pointer transition-colors"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0A171C] hover:bg-[#0E1C21] border border-[rgba(100,190,205,0.18)] text-[#F2F7F7] text-xs font-semibold cursor-pointer transition-colors"
           >
-            <Share2 size={13} className="text-[#16C7A3]" />
+            <Share2 size={12} className="text-[#16C7A3]" />
             <span>Share</span>
-          </button>
-
-          <button
-            className="w-8 h-8 rounded-lg bg-[#0A171C] hover:bg-[#0E1C21] border border-[rgba(100,190,205,0.18)] text-[#A4B5B8] hover:text-[#F2F7F7] flex items-center justify-center cursor-pointer transition-colors"
-            title="More Options"
-          >
-            <MoreVertical size={15} />
           </button>
 
           <button
@@ -694,9 +668,9 @@ export default function ExecutionTrace({
               setIsPlaying(true);
               setTimeout(() => setIsPlaying(false), 1200);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#16C7A3] hover:bg-[#16C7A3]/90 text-[#061318] text-xs font-bold cursor-pointer transition-all shadow-md shadow-[#16C7A3]/20 shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#16C7A3] hover:bg-[#16C7A3]/90 text-[#061318] text-xs font-bold cursor-pointer transition-all shadow-md shadow-[#16C7A3]/20 shrink-0"
           >
-            <RotateCcw size={13} className={isPlaying ? "animate-spin" : ""} />
+            <RotateCcw size={12} className={isPlaying ? "animate-spin" : ""} />
             <span>Run Again</span>
           </button>
         </div>

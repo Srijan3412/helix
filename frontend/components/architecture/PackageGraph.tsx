@@ -430,34 +430,35 @@ function PackageGraphInternal({
       className="h-full w-full relative bg-[#07090C] overflow-hidden select-none font-sans"
       onClick={() => setSelectedNodeId(null)}
     >
-      {/* ── Top-Left: Compact Header Card (340px) ────────────────────────── */}
-      <div className="absolute top-4 left-4 z-20 bg-[#0D1728]/95 backdrop-blur-md rounded-2xl p-4 border border-white/[0.08] shadow-xl w-[340px] text-left pointer-events-auto">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#3288F5]/15 border border-[#3288F5]/35 flex items-center justify-center shrink-0">
-            <Package size={20} className="text-[#3288F5]" />
+      {/* ── TOP HEADER CONTROL BAR ────────────────────────────────────── */}
+      <div className="absolute top-3 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-3 bg-[#08151E]/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/[0.08] shadow-2xl pointer-events-auto">
+        {/* Left: Title & Subtitle */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-[#3288F5]/15 border border-[#3288F5]/30 flex items-center justify-center text-[#3288F5] shrink-0">
+            <Package size={17} />
           </div>
           <div>
-            <h2 className="text-[20px] font-bold text-[#F4F7F7] leading-tight">
+            <h2 className="text-[14px] font-bold text-[#F7FAFA] leading-tight flex items-center gap-2">
               Package Dependencies
             </h2>
-            <p className="text-[14px] text-[#91A0AA] mt-0.5 font-normal">
+            <p className="text-[11px] text-[#82AEB5] leading-none mt-0.5">
               {prodCount} production + {devCount} dev dependencies
             </p>
           </div>
         </div>
-      </div>
 
-      {/* ── Top-Right: Compact Show devDependencies Control ─────────────── */}
-      <div className="absolute top-4 right-4 z-20 pointer-events-auto">
-        <label className="h-[42px] px-4 rounded-xl bg-[#0D1728]/95 backdrop-blur-md border border-white/[0.08] shadow-xl flex items-center gap-2.5 cursor-pointer hover:bg-[#121f36] transition-colors">
-          <input
-            type="checkbox"
-            checked={showDevDeps}
-            onChange={(e) => setShowDevDeps(e.target.checked)}
-            className="w-4 h-4 rounded bg-[#101827] border-white/20 text-[#3288F5] focus:ring-0 focus:ring-offset-0 cursor-pointer"
-          />
-          <span className="text-[14px] font-medium text-[#F4F7F7]">Show devDependencies</span>
-        </label>
+        {/* Right: Controls */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <label className="h-8 px-3 rounded-lg bg-[#050E14] border border-white/[0.08] flex items-center gap-2 cursor-pointer hover:bg-white/[0.04] transition-colors">
+            <input
+              type="checkbox"
+              checked={showDevDeps}
+              onChange={(e) => setShowDevDeps(e.target.checked)}
+              className="w-3.5 h-3.5 rounded bg-[#101827] border-white/20 text-[#3288F5] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            />
+            <span className="text-xs font-medium text-[#F7FAFA]">Show devDependencies</span>
+          </label>
+        </div>
       </div>
 
       {/* ── Bottom-Left: Package Types Panel ─────────────────────────────── */}

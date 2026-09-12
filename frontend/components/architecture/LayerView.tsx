@@ -701,13 +701,18 @@ export default function LayerView({
 
       {/* ── 1. COMPACT TOP TOOLBAR ── */}
       <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-3 pb-3 border-b border-[rgba(120,200,210,0.1)]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-[#2F80ED]/15 border border-[#2F80ED]/30 flex items-center justify-center text-[#2F80ED] shrink-0">
             <Layers size={16} />
           </div>
-          <span className="text-xs font-mono text-[#8EA9AE]">
-            {totalFiles} Files Across {LAYERS_CONFIG.length} Architectural Layers
-          </span>
+          <div>
+            <h2 className="text-[14px] font-bold text-[#F4F7F7] leading-tight">
+              Layered Architecture
+            </h2>
+            <p className="text-[11px] text-[#8EA9AE] leading-none mt-0.5">
+              Visualize software layers, boundaries and dependencies
+            </p>
+          </div>
         </div>
 
         {/* Controls */}

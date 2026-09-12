@@ -496,34 +496,55 @@ function FileGraphInternal({
 
   return (
     <div className="h-full w-full relative bg-[#050B10] overflow-hidden flex flex-col font-sans select-none text-left">
-      <div className="absolute top-4 left-6 z-20 flex items-center gap-2 bg-[#0E1B20] p-1 rounded-lg border border-[#16C7A3]/20 shadow-xl">
-        <button
-          onClick={() => setViewMode("graph")}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold cursor-pointer ${
-            viewMode === "graph" ? "bg-[#16C7A3] text-[#061015]" : "text-[#8EA9AE] hover:text-white"
-          }`}
-        >
-          <GitBranch size={13} />
-          <span>Graph</span>
-        </button>
-        <button
-          onClick={() => setViewMode("grid")}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold cursor-pointer ${
-            viewMode === "grid" ? "bg-[#16C7A3] text-[#061015]" : "text-[#8EA9AE] hover:text-white"
-          }`}
-        >
-          <LayoutGrid size={13} />
-          <span>Grid</span>
-        </button>
-        <button
-          onClick={() => setViewMode("list")}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold cursor-pointer ${
-            viewMode === "list" ? "bg-[#16C7A3] text-[#061015]" : "text-[#8EA9AE] hover:text-white"
-          }`}
-        >
-          <List size={13} />
-          <span>List</span>
-        </button>
+      {/* ── TOP HEADER CONTROL BAR ────────────────────────────────────── */}
+      <div className="absolute top-3 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-3 bg-[#08151E]/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/[0.08] shadow-2xl">
+        {/* Left: Title & Subtitle */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-[#16C7A1]/15 border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
+            <Network size={17} />
+          </div>
+          <div>
+            <h2 className="text-[14px] font-bold text-[#F7FAFA] leading-tight flex items-center gap-2">
+              Dependency Graph
+            </h2>
+            <p className="text-[11px] text-[#82AEB5] leading-none mt-0.5">
+              Visualize packages, imports and relationships
+            </p>
+          </div>
+        </div>
+
+        {/* Right: View Mode Toggle */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-1 bg-[#050E14] border border-white/[0.08] rounded-xl p-1">
+            <button
+              onClick={() => setViewMode("graph")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                viewMode === "graph" ? "bg-[#16C7A3] text-[#061015]" : "text-[#8EA9AE] hover:text-white"
+              }`}
+            >
+              <GitBranch size={13} />
+              <span>Graph</span>
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                viewMode === "grid" ? "bg-[#16C7A3] text-[#061015]" : "text-[#8EA9AE] hover:text-white"
+              }`}
+            >
+              <LayoutGrid size={13} />
+              <span>Grid</span>
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                viewMode === "list" ? "bg-[#16C7A3] text-[#061015]" : "text-[#8EA9AE] hover:text-white"
+              }`}
+            >
+              <List size={13} />
+              <span>List</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {viewMode === "graph" && (
