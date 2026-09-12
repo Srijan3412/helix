@@ -321,9 +321,9 @@ export default function ArchitectureViewer({
   return (
     <>
       {/* ── Standard Embedded Architecture Workspace ─────────────────────── */}
-      <div className="flex flex-col h-full w-full bg-[#061015] rounded-xl overflow-hidden border border-[#16C7A3]/20 relative text-left">
-        {/* Top Navigation Bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-[#16C7A3]/15 bg-[#0A171F] shrink-0 z-10 gap-2">
+      <div className="flex flex-col h-full w-full bg-[#061318] rounded-xl overflow-hidden border border-[rgba(80,180,195,0.14)] relative text-left">
+        {/* Top Navigation Bar (56-62px) */}
+        <div className="flex items-center justify-between px-4 h-[58px] border-b border-[rgba(80,180,195,0.12)] bg-[#07151A] shrink-0 z-10 gap-2">
           <div className="flex items-center gap-1.5 overflow-x-auto">
             {TABS.map((tab) => {
               const isActive = activeMode === tab.id;
@@ -331,9 +331,9 @@ export default function ArchitectureViewer({
                 <button
                   key={tab.id}
                   onClick={() => setActiveMode(tab.id)}
-                  className={`flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0 ${
+                  className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer shrink-0 ${
                     isActive
-                      ? "bg-[#16C7A3] text-[#061015] font-bold shadow-md shadow-[#16C7A3]/20"
+                      ? "bg-[#16C7A3] text-[#061015] font-bold shadow-sm"
                       : "text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#0E202B]"
                   }`}
                 >
@@ -347,7 +347,7 @@ export default function ArchitectureViewer({
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setIsFullScreen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#16C7A3]/15 hover:bg-[#16C7A3]/25 border border-[#16C7A3]/30 text-[#9BE8E0] hover:text-[#F7FAFA] text-xs font-bold transition-all cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#16C7A3]/10 hover:bg-[#16C7A3]/20 border border-[#16C7A3]/25 text-[#9BE8E0] hover:text-[#F7FAFA] text-xs font-bold transition-all cursor-pointer shrink-0"
               title="Expand to Full-Screen Architecture Workspace"
             >
               <Maximize2 size={13} className="text-[#16C7A3]" />
@@ -357,7 +357,7 @@ export default function ArchitectureViewer({
         </div>
 
         {/* Canvas Body */}
-        <div className="flex-1 relative overflow-hidden bg-[#050B10]">
+        <div className="flex-1 relative overflow-hidden bg-[#061318]">
           {renderCanvasContent()}
         </div>
 
