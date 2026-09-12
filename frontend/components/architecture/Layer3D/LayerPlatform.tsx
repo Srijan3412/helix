@@ -5,16 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { LayerItemData } from './types';
-import { Route, Terminal, Cog, Database, Shield, Cloud } from 'lucide-react';
-
-const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
-  routes: Route,
-  controllers: Terminal,
-  services: Cog,
-  repositories: Database,
-  middleware: Shield,
-  external: Cloud,
-};
+import { Globe } from 'lucide-react';
 
 interface LayerPlatformProps {
   layer: LayerItemData;
@@ -36,70 +27,86 @@ export const LayerPlatform: React.FC<LayerPlatformProps> = ({
   searchMatch = true,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const beamPulseRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Smooth hover and selection elevation lerp
-  const targetY = yPos + (isSelected ? 0.22 : hovered ? 0.12 : 0);
-  const targetScale = isSelected ? 1.035 : hovered ? 1.018 : 1.0;
+  // Smooth hover and selection elevation
+  const targetY = yPos + (isSelected ? 0.25 : hovered ? 0.12 : 0);
+  const targetScale = isSelected ? 1.025 : hovered ? 1.012 : 1.0;
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (!groupRef.current) return;
-    const factor = Math.min(1, delta * 10);
+    const factor = Math.min(1, delta * 12);
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, factor);
-    
+
     const curScale = groupRef.current.scale.x;
     const nextScale = THREE.MathUtils.lerp(curScale, targetScale, factor);
     groupRef.current.scale.set(nextScale, nextScale, nextScale);
+
+    // Subtle breathing pulse on the cyan beam if routes layer
+    if (beamPulseRef.current && layer.id === 'routes') {
+      const pulse = 1 + Math.sin(state.clock.getElapsedTime() * 3) * 0.08;
+      beamPulseRef.current.scale.set(pulse, 1, pulse);
+    }
   });
 
-  const IconComponent = ICON_MAP[layer.id] || Route;
-
-  // Generate deterministic mini 3D cityscape module blocks on top of the platform
-  const moduleBlocks = useMemo(() => {
-    const blocks: Array<{
-      x: number;
-      z: number;
-      w: number;
-      h: number;
-      d: number;
-      color: string;
-      isCylinder?: boolean;
-    }> = [];
-
-    // Base seed from layer id
-    let seed = layer.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    const pseudoRandom = () => {
-      seed = (seed * 9301 + 49297) % 233280;
-      return seed / 233280;
-    };
-
-    const count = Math.min(Math.max(fileCount > 0 ? Math.min(fileCount, 8) : 5, 4), 9);
-    const gridCols = 4;
-
-    for (let i = 0; i < count; i++) {
-      const col = i % gridCols;
-      const row = Math.floor(i / gridCols);
-      const x = -1.8 + col * 1.15 + (pseudoRandom() - 0.5) * 0.25;
-      const z = -0.75 + row * 1.35 + (pseudoRandom() - 0.5) * 0.2;
-      const w = 0.45 + pseudoRandom() * 0.35;
-      const d = 0.45 + pseudoRandom() * 0.35;
-      const h = 0.18 + pseudoRandom() * 0.45;
-
-      const isCylinder = layer.id === 'repositories' && i % 2 === 1;
-
-      blocks.push({
-        x,
-        z,
-        w,
-        h,
-        d,
-        color: layer.color,
-        isCylinder,
-      });
+  // Deterministic layer-specific module layout
+  const layerModules = useMemo(() => {
+    switch (layer.id) {
+      case 'routes':
+        return [
+          { x: -1.8, z: -0.7, w: 0.6, d: 0.5, h: 0.16, label: 'GET', color: '#00E5FF' },
+          { x: -1.0, z: -0.7, w: 0.6, d: 0.5, h: 0.22, label: 'POST', color: '#2F80ED' },
+          { x: -1.8, z: 0.1, w: 0.6, d: 0.5, h: 0.14, label: 'PUT', color: '#8B5CF6' },
+          { x: -1.0, z: 0.1, w: 0.6, d: 0.5, h: 0.12, label: 'DELETE', color: '#FF3344' },
+          { x: 1.8, z: 0.7, w: 0.5, d: 0.4, h: 0.18, label: 'OPT', color: '#00E5FF' },
+        ];
+      case 'controllers':
+        return [
+          { x: -1.6, z: -0.5, w: 0.75, d: 0.55, h: 0.20, label: 'AuthHandler', color: '#8B5CF6' },
+          { x: -0.6, z: -0.5, w: 0.75, d: 0.55, h: 0.24, label: 'UserHandler', color: '#8B5CF6' },
+          { x: 0.6, z: -0.5, w: 0.75, d: 0.55, h: 0.18, label: 'ScanHandler', color: '#A855F7' },
+          { x: 1.6, z: -0.5, w: 0.75, d: 0.55, h: 0.22, label: 'ReportHandler', color: '#A855F7' },
+          { x: -0.6, z: 0.4, w: 0.65, d: 0.45, h: 0.15, label: 'Validator', color: '#C084FC' },
+          { x: 0.6, z: 0.4, w: 0.65, d: 0.45, h: 0.15, label: 'Transformer', color: '#C084FC' },
+        ];
+      case 'services':
+        return [
+          { x: -1.5, z: -0.4, w: 0.8, d: 0.6, h: 0.26, label: 'AnalysisEngine', color: '#F59E0B' },
+          { x: -0.4, z: -0.4, w: 0.8, d: 0.6, h: 0.22, label: 'ParserService', color: '#F59E0B' },
+          { x: 0.7, z: -0.4, w: 0.8, d: 0.6, h: 0.28, label: 'GraphBuilder', color: '#FBBF24' },
+          { x: 1.7, z: -0.4, w: 0.7, d: 0.5, h: 0.19, label: 'AuthService', color: '#FBBF24' },
+          { x: 0.2, z: 0.45, w: 0.7, d: 0.45, h: 0.16, label: 'Notification', color: '#FCD34D' },
+        ];
+      case 'repositories':
+        return [
+          { x: -1.5, z: -0.4, w: 0.65, d: 0.65, h: 0.25, isCylinder: true, label: 'UserRepo', color: '#EC4899' },
+          { x: -0.5, z: -0.4, w: 0.65, d: 0.65, h: 0.30, isCylinder: true, label: 'ScanRepo', color: '#EC4899' },
+          { x: 0.5, z: -0.4, w: 0.65, d: 0.65, h: 0.28, isCylinder: true, label: 'ReportRepo', color: '#F472B6' },
+          { x: 1.5, z: -0.4, w: 0.65, d: 0.65, h: 0.22, isCylinder: true, label: 'CacheStore', color: '#F472B6' },
+          { x: 0.0, z: 0.45, w: 0.75, d: 0.45, h: 0.15, label: 'PoolManager', color: '#F43F7A' },
+        ];
+      case 'middleware':
+        return [
+          { x: -1.4, z: -0.4, w: 0.7, d: 0.55, h: 0.22, label: 'AuthGuard', color: '#14B8A6' },
+          { x: -0.4, z: -0.4, w: 0.7, d: 0.55, h: 0.19, label: 'RateLimiter', color: '#14B8A6' },
+          { x: 0.6, z: -0.4, w: 0.7, d: 0.55, h: 0.24, label: 'CorsFilter', color: '#2DD4BF' },
+          { x: 1.5, z: -0.4, w: 0.7, d: 0.55, h: 0.17, label: 'Logger', color: '#2DD4BF' },
+          { x: 0.1, z: 0.45, w: 0.8, d: 0.45, h: 0.16, label: 'ErrorHandler', color: '#5EEAD4' },
+        ];
+      case 'external':
+        return [
+          { x: -1.4, z: -0.4, w: 0.75, d: 0.55, h: 0.22, label: 'GitHubAPI', color: '#60A5FA' },
+          { x: -0.3, z: -0.4, w: 0.75, d: 0.55, h: 0.25, label: 'StripePayment', color: '#60A5FA' },
+          { x: 0.8, z: -0.4, w: 0.75, d: 0.55, h: 0.20, label: 'EmailGateway', color: '#93C5FD' },
+          { x: 1.7, z: -0.4, w: 0.65, d: 0.5, h: 0.18, label: 'S3Storage', color: '#93C5FD' },
+        ];
+      default:
+        return [];
     }
+  }, [layer.id]);
 
-    return blocks;
-  }, [layer.id, layer.color, fileCount]);
+  const isRoutes = layer.id === 'routes';
 
   return (
     <group
@@ -119,56 +126,146 @@ export const LayerPlatform: React.FC<LayerPlatformProps> = ({
         document.body.style.cursor = 'auto';
       }}
     >
-      {/* Main Extruded Symmetrical Slab */}
+      {/* ── 1. MAIN THICK BEVELED ARCHITECTURAL SLAB ── */}
       <RoundedBox
-        args={[6.4, 0.42, 3.4]}
+        args={[5.2, 0.44, 2.8]}
         radius={0.08}
         smoothness={4}
         position={[0, 0, 0]}
       >
         <meshStandardMaterial
-          color={isSelected ? layer.color : '#0A151D'}
-          roughness={0.25}
-          metalness={0.75}
-          emissive={layer.color}
-          emissiveIntensity={isSelected ? 0.38 : hovered ? 0.22 : 0.08}
+          color={isSelected ? '#14202C' : '#0F1822'}
+          roughness={0.42}
+          metalness={0.28}
+          emissive={isSelected ? layer.color : '#0A121A'}
+          emissiveIntensity={isSelected ? 0.25 : hovered ? 0.15 : 0.04}
           transparent
-          opacity={searchMatch ? 0.94 : 0.4}
+          opacity={searchMatch ? 0.98 : 0.45}
         />
       </RoundedBox>
 
-      {/* Glowing Top Surface Inset Plate */}
-      <mesh position={[0, 0.215, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[6.1, 3.1]} />
+      {/* ── 2. TOP FACE RECESSED METALLIC PLATE ── */}
+      <mesh position={[0, 0.221, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[4.96, 2.56]} />
         <meshStandardMaterial
-          color={layer.color}
-          roughness={0.3}
-          metalness={0.4}
-          transparent
-          opacity={isSelected ? 0.3 : hovered ? 0.22 : 0.12}
+          color={isSelected ? '#182736' : '#121E2A'}
+          roughness={0.35}
+          metalness={0.35}
         />
       </mesh>
 
-      {/* 3D Modular Blocks on Top Face */}
+      {/* ── 3. GLOWING NEON CONTOUR BASE RIM ── */}
+      <mesh position={[0, -0.21, 0]}>
+        <boxGeometry args={[5.22, 0.03, 2.82]} />
+        <meshBasicMaterial
+          color={layer.glowColor || layer.color}
+          transparent
+          opacity={isSelected ? 0.9 : hovered ? 0.6 : 0.25}
+        />
+      </mesh>
+
+      {/* ── 4. SURFACE CONDUIT GROOVES & INDICATORS (Industrial Details) ── */}
+      <group position={[0, 0.223, 0]}>
+        {/* Horizontal conduit line */}
+        <mesh position={[0, 0, 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[4.2, 0.03]} />
+          <meshBasicMaterial color={layer.color} transparent opacity={isSelected ? 0.7 : 0.3} />
+        </mesh>
+        {/* Micro indicator LEDs */}
+        <mesh position={[2.0, 0.01, 0.9]}>
+          <boxGeometry args={[0.2, 0.02, 0.1]} />
+          <meshStandardMaterial color="#0A141C" roughness={0.2} metalness={0.8} />
+        </mesh>
+        <mesh position={[2.0, 0.025, 0.9]}>
+          <boxGeometry args={[0.06, 0.01, 0.04]} />
+          <meshBasicMaterial color="#00E5FF" />
+        </mesh>
+        <mesh position={[2.1, 0.025, 0.9]}>
+          <boxGeometry args={[0.06, 0.01, 0.04]} />
+          <meshBasicMaterial color="#F59E0B" />
+        </mesh>
+      </group>
+
+      {/* ── 5. ROUTES LAYER SPECIFIC: PHYSICAL GATEWAY & CYAN LIGHT BEAM ── */}
+      {isRoutes && (
+        <group position={[0.4, 0.22, -0.2]}>
+          {/* Raised Gateway Industrial Housing Base */}
+          <RoundedBox args={[1.35, 0.24, 0.95]} radius={0.04} smoothness={3} position={[-0.45, 0.12, 0]}>
+            <meshStandardMaterial color="#182736" roughness={0.35} metalness={0.4} />
+          </RoundedBox>
+
+          {/* Vertical Gateway Sign Slab (/api/v1/*) */}
+          <RoundedBox args={[0.9, 0.85, 0.1]} radius={0.04} smoothness={3} position={[-0.45, 0.55, 0]}>
+            <meshStandardMaterial
+              color="#0B151F"
+              roughness={0.2}
+              metalness={0.6}
+              emissive="#00D2FF"
+              emissiveIntensity={0.2}
+            />
+          </RoundedBox>
+
+          {/* Glowing Front Badge on Gateway Sign */}
+          <Html position={[-0.45, 0.55, 0.06]} transform distanceFactor={5.5} style={{ pointerEvents: 'none' }}>
+            <div className="flex flex-col items-center justify-center p-2 text-center select-none">
+              <div className="text-[12px] font-mono font-black text-[#F4F7F7] tracking-wider drop-shadow-[0_0_8px_rgba(0,229,255,0.6)]">
+                /api/v1/*
+              </div>
+              <div className="mt-1.5 w-7 h-7 rounded-full bg-[#00E5FF]/20 border border-[#00E5FF] flex items-center justify-center shadow-[0_0_12px_rgba(0,229,255,0.5)]">
+                <Globe size={15} className="text-[#00E5FF]" />
+              </div>
+            </div>
+          </Html>
+
+          {/* Cyan Light Beam Emitter Base (Raised block next to gateway) */}
+          <RoundedBox args={[0.65, 0.32, 0.65]} radius={0.04} smoothness={3} position={[0.65, 0.16, 0]}>
+            <meshStandardMaterial color="#182736" roughness={0.35} metalness={0.4} />
+          </RoundedBox>
+
+          {/* Glowing Concentric Base Ring */}
+          <mesh position={[0.65, 0.325, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.12, 0.24, 24]} />
+            <meshBasicMaterial color="#00E5FF" side={THREE.DoubleSide} />
+          </mesh>
+
+          {/* Vertical Cyan Light Column / Beam */}
+          <mesh ref={beamPulseRef} position={[0.65, 0.95, 0]}>
+            <cylinderGeometry args={[0.07, 0.07, 1.25, 16]} />
+            <meshBasicMaterial color="#00E5FF" transparent opacity={0.85} />
+          </mesh>
+
+          {/* Neon Conduit Pipes connecting Gateway to Emitter */}
+          <mesh position={[0.1, 0.16, 0.15]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.025, 0.025, 0.6, 12]} />
+            <meshBasicMaterial color="#00E5FF" />
+          </mesh>
+          <mesh position={[0.1, 0.16, -0.15]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.025, 0.025, 0.6, 12]} />
+            <meshBasicMaterial color="#F59E0B" />
+          </mesh>
+        </group>
+      )}
+
+      {/* ── 6. DATA-DRIVEN 3D MODULE BLOCKS ── */}
       <group position={[0, 0.22, 0]}>
-        {moduleBlocks.map((blk, bi) => {
+        {layerModules.map((blk, bi) => {
           if (blk.isCylinder) {
             return (
               <group key={bi} position={[blk.x, blk.h / 2, blk.z]}>
                 <mesh>
-                  <cylinderGeometry args={[blk.w * 0.45, blk.w * 0.45, blk.h, 16]} />
+                  <cylinderGeometry args={[blk.w * 0.45, blk.w * 0.45, blk.h, 20]} />
                   <meshStandardMaterial
-                    color="#111E26"
+                    color="#13202C"
                     roughness={0.3}
-                    metalness={0.8}
+                    metalness={0.7}
                     emissive={blk.color}
-                    emissiveIntensity={0.25}
+                    emissiveIntensity={0.18}
                   />
                 </mesh>
-                {/* Glowing disc cap */}
+                {/* Glowing Top Cap */}
                 <mesh position={[0, blk.h / 2 + 0.005, 0]}>
-                  <cylinderGeometry args={[blk.w * 0.45, blk.w * 0.45, 0.02, 16]} />
-                  <meshBasicMaterial color={layer.glowColor || blk.color} />
+                  <cylinderGeometry args={[blk.w * 0.42, blk.w * 0.42, 0.02, 20]} />
+                  <meshBasicMaterial color={blk.color} />
                 </mesh>
               </group>
             );
@@ -176,94 +273,60 @@ export const LayerPlatform: React.FC<LayerPlatformProps> = ({
 
           return (
             <group key={bi} position={[blk.x, blk.h / 2, blk.z]}>
-              {/* Base block structure */}
               <mesh>
                 <boxGeometry args={[blk.w, blk.h, blk.d]} />
                 <meshStandardMaterial
-                  color="#0D1A22"
+                  color="#13202C"
                   roughness={0.3}
-                  metalness={0.8}
+                  metalness={0.7}
                   emissive={blk.color}
-                  emissiveIntensity={0.2}
+                  emissiveIntensity={0.16}
                 />
               </mesh>
-              {/* Glowing top cap */}
+              {/* Glowing Colored Top Surface */}
               <mesh position={[0, blk.h / 2 + 0.005, 0]}>
                 <boxGeometry args={[blk.w * 0.92, 0.02, blk.d * 0.92]} />
-                <meshBasicMaterial color={layer.glowColor || blk.color} />
+                <meshBasicMaterial color={blk.color} />
               </mesh>
             </group>
           );
         })}
       </group>
 
-      {/* Front Edge Interactive Tag via HTML overlay */}
-      <Html
-        position={[-3.05, 0, 1.72]}
-        transform
-        distanceFactor={6.8}
-        zIndexRange={[100, 0]}
-        style={{ pointerEvents: 'none' }}
-      >
-        <div
-          className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg border backdrop-blur-md transition-all duration-300 select-none ${
-            isSelected
-              ? 'bg-[#081216]/95 scale-105 shadow-xl'
-              : hovered
-              ? 'bg-[#081216]/90'
-              : 'bg-[#081216]/80'
-          }`}
-          style={{
-            borderColor: isSelected ? layer.color : hovered ? layer.borderColor : 'rgba(255,255,255,0.08)',
-            boxShadow: isSelected ? `0 0 20px ${layer.bgColor}` : '0 4px 12px rgba(0,0,0,0.5)',
-          }}
+      {/* ── 7. INTEGRATED FRONT-FACE LAYER LABEL (Matching Reference Design) ── */}
+      <group position={[-1.25, 0, 1.41]}>
+        <Html
+          transform
+          distanceFactor={5.6}
+          zIndexRange={[100, 0]}
+          style={{ pointerEvents: 'none' }}
         >
-          {/* Layer Number Badge */}
-          <span
-            className="text-xs font-black px-1.5 py-0.5 rounded tracking-wider"
-            style={{
-              color: layer.color,
-              backgroundColor: layer.bgColor,
-              border: `1px solid ${layer.borderColor}`,
-            }}
-          >
-            {layer.num}
-          </span>
+          <div className="flex items-center gap-3.5 select-none w-[340px] text-left">
+            {/* Illuminated Layer Number Block Badge */}
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center font-mono font-extrabold text-xl shadow-lg shrink-0 border"
+              style={{
+                backgroundColor: isSelected ? layer.color : '#0B1C28',
+                color: isSelected ? '#061318' : layer.glowColor || layer.color,
+                borderColor: layer.color,
+                boxShadow: `0 0 16px ${layer.bgColor}`,
+              }}
+            >
+              {layer.num}
+            </div>
 
-          {/* Layer Icon */}
-          <div className="p-1 rounded" style={{ backgroundColor: layer.bgColor }}>
-            <IconComponent size={14} style={{ color: layer.color }} />
+            {/* Layer Typography */}
+            <div className="flex flex-col min-w-0">
+              <h3 className="text-base font-extrabold text-[#F4F7F7] tracking-tight leading-none">
+                {layer.name}
+              </h3>
+              <p className="text-[11px] font-medium text-[#A4B5B8] leading-tight mt-1 truncate">
+                {layer.shortDesc}
+              </p>
+            </div>
           </div>
-
-          {/* Layer Name */}
-          <span className="text-xs font-extrabold text-[#F4F7F7] tracking-wide whitespace-nowrap">
-            {layer.name}
-          </span>
-
-          {/* Optional Code Badge or File Count */}
-          {layer.badgeText && (
-            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/50 text-[#9FB0B3] border border-white/10 hidden sm:inline-block">
-              {layer.badgeText}
-            </span>
-          )}
-        </div>
-      </Html>
-
-      {/* Right Edge File Count Badge */}
-      <Html
-        position={[2.9, 0, 1.72]}
-        transform
-        distanceFactor={6.8}
-        zIndexRange={[100, 0]}
-        style={{ pointerEvents: 'none' }}
-      >
-        <div
-          className="px-2 py-0.5 rounded text-[10px] font-mono font-bold text-[#9FB0B3] bg-black/60 border border-white/10 select-none whitespace-nowrap"
-          style={{ borderColor: isSelected ? layer.borderColor : 'rgba(255,255,255,0.08)' }}
-        >
-          {fileCount} {fileCount === 1 ? 'file' : 'files'}
-        </div>
-      </Html>
+        </Html>
+      </group>
     </group>
   );
 };

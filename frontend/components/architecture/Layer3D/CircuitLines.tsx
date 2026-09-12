@@ -13,52 +13,63 @@ interface CircuitPathData {
 export const CircuitLines: React.FC = () => {
   const particlesRef = useRef<THREE.Group>(null);
 
-  // Generate 3D Orthogonal Circuit Traces
+  // Generate 3D Orthogonal Circuit Traces matching platform stack
   const paths: CircuitPathData[] = useMemo(() => {
     return [
-      // Left Bus: Top to Middle
+      // Left Bus: Routes to Repositories & Database
       {
         points: [
-          new THREE.Vector3(-3.25, 2.7, 0),
-          new THREE.Vector3(-4.0, 2.7, 0),
-          new THREE.Vector3(-4.0, 1.2, 0),
-          new THREE.Vector3(-3.25, 1.2, 0),
+          new THREE.Vector3(-2.65, 2.25, 0),
+          new THREE.Vector3(-3.4, 2.25, 0),
+          new THREE.Vector3(-3.4, -0.45, 0),
+          new THREE.Vector3(-3.85, -0.95, 0.3),
         ],
-        color: '#00D2FF',
+        color: '#00E5FF',
         speed: 0.8,
       },
-      // Left Bus: Middleware to Database
+      // Left Bus: Repositories to Database Node
       {
         points: [
-          new THREE.Vector3(-3.25, -0.6, 0),
-          new THREE.Vector3(-4.4, -0.6, 0),
-          new THREE.Vector3(-4.4, -1.2, 0.4),
-          new THREE.Vector3(-3.9, -1.2, 0.4),
+          new THREE.Vector3(-2.65, -0.45, 0),
+          new THREE.Vector3(-3.3, -0.45, 0),
+          new THREE.Vector3(-3.3, -0.95, 0.3),
+          new THREE.Vector3(-3.85, -0.95, 0.3),
         ],
-        color: '#2F80ED',
-        speed: 0.6,
-      },
-      // Right Bus: Top to External APIs
-      {
-        points: [
-          new THREE.Vector3(3.25, 2.6, 0),
-          new THREE.Vector3(4.2, 2.6, 0),
-          new THREE.Vector3(4.2, -0.5, 0),
-          new THREE.Vector3(4.5, -1.8, 0.4),
-        ],
-        color: '#60A5FA',
+        color: '#EC4899',
         speed: 0.7,
       },
-      // Layer 3 to Layer 4 interconnect
+      // Right Bus: Services to External APIs
       {
         points: [
-          new THREE.Vector3(3.25, 0.5, 0),
-          new THREE.Vector3(3.7, 0.5, 0),
-          new THREE.Vector3(3.7, -0.5, 0),
-          new THREE.Vector3(3.25, -0.5, 0),
+          new THREE.Vector3(2.65, 0.45, 0),
+          new THREE.Vector3(3.4, 0.45, 0),
+          new THREE.Vector3(3.4, -1.35, 0),
+          new THREE.Vector3(3.85, -1.85, 0.3),
+        ],
+        color: '#60A5FA',
+        speed: 0.75,
+      },
+      // Layer 1 to Layer 2 vertical bus (Routes to Controllers)
+      {
+        points: [
+          new THREE.Vector3(2.65, 2.25, 0),
+          new THREE.Vector3(3.0, 2.25, 0),
+          new THREE.Vector3(3.0, 1.35, 0),
+          new THREE.Vector3(2.65, 1.35, 0),
+        ],
+        color: '#8B5CF6',
+        speed: 0.9,
+      },
+      // Layer 2 to Layer 3 vertical bus (Controllers to Services)
+      {
+        points: [
+          new THREE.Vector3(-2.65, 1.35, 0),
+          new THREE.Vector3(-3.0, 1.35, 0),
+          new THREE.Vector3(-3.0, 0.45, 0),
+          new THREE.Vector3(-2.65, 0.45, 0),
         ],
         color: '#F59E0B',
-        speed: 0.9,
+        speed: 0.85,
       },
     ];
   }, []);
@@ -90,7 +101,6 @@ export const CircuitLines: React.FC = () => {
         const lineGeo = new THREE.BufferGeometry().setFromPoints(p.points);
         return (
           <group key={i}>
-            {/* Base line */}
             <primitive
               object={
                 new THREE.Line(
@@ -98,17 +108,17 @@ export const CircuitLines: React.FC = () => {
                   new THREE.LineBasicMaterial({
                     color: p.color,
                     transparent: true,
-                    opacity: 0.5,
+                    opacity: 0.45,
                     linewidth: 1.5,
                   })
                 )
               }
             />
 
-            {/* Circuit Nodes / Endpoints */}
+            {/* Circuit Endpoints */}
             {p.points.map((pt, pti) => (
               <mesh key={pti} position={pt}>
-                <sphereGeometry args={[0.04, 12, 12]} />
+                <sphereGeometry args={[0.035, 12, 12]} />
                 <meshBasicMaterial color={p.color} />
               </mesh>
             ))}
@@ -120,7 +130,7 @@ export const CircuitLines: React.FC = () => {
       <group ref={particlesRef}>
         {paths.map((p, i) => (
           <mesh key={i}>
-            <sphereGeometry args={[0.075, 12, 12]} />
+            <sphereGeometry args={[0.065, 12, 12]} />
             <meshBasicMaterial color="#FFFFFF" />
           </mesh>
         ))}

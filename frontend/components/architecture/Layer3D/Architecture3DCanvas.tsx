@@ -11,7 +11,7 @@ import { DatabaseNode } from './DatabaseNode';
 import { ExternalApiNode } from './ExternalApiNode';
 import { CircuitLines } from './CircuitLines';
 import { ContextualOverlays } from './ContextualOverlays';
-import { RotateCcw, ZoomIn, ZoomOut, Eye, Sparkles } from 'lucide-react';
+import { RotateCcw, ZoomIn, ZoomOut, Sparkles } from 'lucide-react';
 
 export const LAYERS_3D_CONFIG: LayerItemData[] = [
   {
@@ -21,7 +21,7 @@ export const LAYERS_3D_CONFIG: LayerItemData[] = [
     shortDesc: 'API endpoints & HTTP handlers',
     tag: 'API LAYER',
     color: '#2F80ED',
-    glowColor: '#00D2FF',
+    glowColor: '#00E5FF',
     bgColor: 'rgba(47, 128, 237, 0.15)',
     borderColor: 'rgba(47, 128, 237, 0.4)',
     badgeText: '/api/v1/*',
@@ -46,7 +46,7 @@ export const LAYERS_3D_CONFIG: LayerItemData[] = [
     name: 'Services',
     shortDesc: 'Business logic & core operations',
     tag: 'BUSINESS LAYER',
-    color: '#F5A623',
+    color: '#F59E0B',
     glowColor: '#FCD34D',
     bgColor: 'rgba(245, 166, 35, 0.15)',
     borderColor: 'rgba(245, 166, 35, 0.4)',
@@ -59,10 +59,10 @@ export const LAYERS_3D_CONFIG: LayerItemData[] = [
     name: 'Repositories',
     shortDesc: 'Data access & database operations',
     tag: 'DATA LAYER',
-    color: '#F43F7A',
+    color: '#EC4899',
     glowColor: '#F472B6',
-    bgColor: 'rgba(244, 63, 122, 0.15)',
-    borderColor: 'rgba(244, 63, 122, 0.4)',
+    bgColor: 'rgba(236, 72, 153, 0.15)',
+    borderColor: 'rgba(236, 72, 153, 0.4)',
     badgeText: '🗄 Storage',
     files: [],
   },
@@ -72,10 +72,10 @@ export const LAYERS_3D_CONFIG: LayerItemData[] = [
     name: 'Middleware',
     shortDesc: 'Auth, logging & request pipeline',
     tag: 'PIPELINE LAYER',
-    color: '#16C7A3',
+    color: '#14B8A6',
     glowColor: '#34D399',
-    bgColor: 'rgba(22, 199, 163, 0.15)',
-    borderColor: 'rgba(22, 199, 163, 0.4)',
+    bgColor: 'rgba(20, 184, 166, 0.15)',
+    borderColor: 'rgba(20, 184, 166, 0.4)',
     badgeText: '🛡 Guard',
     files: [],
   },
@@ -85,10 +85,10 @@ export const LAYERS_3D_CONFIG: LayerItemData[] = [
     name: 'External Services',
     shortDesc: 'Third-party APIs & integrations',
     tag: 'INTEGRATION LAYER',
-    color: '#3B82F6',
+    color: '#60A5FA',
     glowColor: '#93C5FD',
-    bgColor: 'rgba(59, 130, 246, 0.15)',
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+    bgColor: 'rgba(96, 165, 250, 0.15)',
+    borderColor: 'rgba(96, 165, 250, 0.4)',
     badgeText: '☁ Cloud APIs',
     files: [],
   },
@@ -101,10 +101,10 @@ function ArchitectureSceneContent({
   onSelectLayer,
   searchQuery = '',
 }: Architecture3DProps) {
-  // Compute vertical spacing: 6 platforms from top to bottom
+  // Compute vertical spacing: 6 platforms spaced by 0.90 units
   const layerPositions = useMemo(() => {
     return LAYERS_3D_CONFIG.map((layer, index) => {
-      const y = 2.45 - index * 1.02;
+      const y = 2.25 - index * 0.90;
       return {
         ...layer,
         yPos: y,
@@ -116,23 +116,23 @@ function ArchitectureSceneContent({
 
   return (
     <>
-      {/* Lights matching dark cyber aesthetic */}
-      <ambientLight intensity={0.65} />
-      <directionalLight position={[7, 10, 8]} intensity={1.5} color="#FFFFFF" />
-      <directionalLight position={[-8, 4, -6]} intensity={0.9} color="#00D2FF" />
-      <directionalLight position={[0, -5, 5]} intensity={0.4} color="#8B5CF6" />
+      {/* Lights matching dark technical product render */}
+      <ambientLight intensity={0.65} color="#0E1A24" />
+      <directionalLight position={[8, 12, 8]} intensity={1.6} color="#FFFFFF" />
+      <directionalLight position={[-8, 6, -4]} intensity={0.7} color="#00D2FF" />
+      <directionalLight position={[4, -4, 6]} intensity={0.3} color="#F59E0B" />
 
       {/* Dynamic spot/point light focused on selected layer */}
       {selectedLayer && (
         <pointLight
-          position={[0, selectedLayer.yPos + 0.8, 2.5]}
-          intensity={2.0}
+          position={[0, selectedLayer.yPos + 0.6, 2.2]}
+          intensity={1.8}
           color={selectedLayer.color}
-          distance={6}
+          distance={5.5}
         />
       )}
 
-      {/* 3D Stack Platforms */}
+      {/* 3D Architecture Stack */}
       <group position={[0, 0, 0]}>
         {layerPositions.map((layer, idx) => {
           const fileList = layers[layer.id] || [];
@@ -160,15 +160,15 @@ function ArchitectureSceneContent({
 
       {/* Contextual 3D Nodes */}
       <DatabaseNode
-        position={[-4.5, -1.2, 0.4]}
+        position={[-4.0, -0.95, 0.3]}
         onSelectRepositoryLayer={() => onSelectLayer('repositories')}
       />
       <ExternalApiNode
-        position={[4.6, -2.1, 0.4]}
+        position={[4.0, -1.85, 0.3]}
         onSelectExternalLayer={() => onSelectLayer('external')}
       />
 
-      {/* Glowing Circuit Trace Lines */}
+      {/* Clean Orthogonal Circuit Trace Lines */}
       <CircuitLines />
     </>
   );
@@ -186,10 +186,13 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
     if (controlsRef.current) {
       const camera = controlsRef.current.object as THREE.PerspectiveCamera;
       if (camera) {
+        camera.position.set(7.2, 6.2, 8.5);
         camera.zoom = 1;
+        camera.lookAt(0, -0.2, 0);
         camera.updateProjectionMatrix();
       }
-      controlsRef.current.reset();
+      controlsRef.current.target.set(0, -0.2, 0);
+      controlsRef.current.update();
     }
   };
 
@@ -197,7 +200,7 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
     if (controlsRef.current) {
       const camera = controlsRef.current.object as THREE.PerspectiveCamera;
       if (camera) {
-        camera.zoom = Math.min(camera.zoom * 1.25, 2.8);
+        camera.zoom = Math.min(camera.zoom * 1.2, 2.5);
         camera.updateProjectionMatrix();
       }
     }
@@ -207,28 +210,28 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
     if (controlsRef.current) {
       const camera = controlsRef.current.object as THREE.PerspectiveCamera;
       if (camera) {
-        camera.zoom = Math.max(camera.zoom / 1.25, 0.5);
+        camera.zoom = Math.max(camera.zoom / 1.2, 0.6);
         camera.updateProjectionMatrix();
       }
     }
   };
 
   return (
-    <div className="relative w-full h-full min-h-[580px] bg-[#071115] rounded-xl overflow-hidden select-none flex flex-col justify-between border border-[rgba(120,200,210,0.14)]">
-      {/* Background Subtle Cyber Grid */}
+    <div className="relative w-full h-full min-h-[580px] bg-[#061015] rounded-xl overflow-hidden select-none flex flex-col justify-between border border-[rgba(120,200,210,0.14)]">
+      {/* Background Subtle Technical Grid */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-20"
+        className="absolute inset-0 pointer-events-none opacity-15"
         style={{
           backgroundImage:
             'linear-gradient(rgba(0, 210, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 210, 255, 0.08) 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
+          backgroundSize: '28px 28px',
         }}
       />
 
-      {/* Contextual HTML Overlays (Incoming Requests, HTTP Request card, Response card, Rules callout) */}
+      {/* Clean Contextual Overlays */}
       <ContextualOverlays />
 
-      {/* Three.js Fiber Canvas Viewport */}
+      {/* Three.js Fiber Canvas Viewport with Stable Isometric Camera */}
       <div className="absolute inset-0 z-10">
         <Canvas
           dpr={[1, 2]}
@@ -238,15 +241,16 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
             powerPreference: 'high-performance',
           }}
         >
-          <PerspectiveCamera makeDefault position={[8.5, 6.0, 9.2]} fov={36} />
+          <PerspectiveCamera makeDefault position={[7.2, 6.2, 8.5]} fov={38} />
           <OrbitControls
             ref={controlsRef}
+            target={[0, -0.2, 0]}
             enablePan={true}
-            enableZoom={false}
-            minDistance={6}
-            maxDistance={22}
-            maxPolarAngle={Math.PI / 2 - 0.05}
-            minPolarAngle={Math.PI / 6}
+            enableZoom={true}
+            minDistance={7.5}
+            maxDistance={18}
+            maxPolarAngle={Math.PI / 2.2}
+            minPolarAngle={Math.PI / 4}
             dampingFactor={0.06}
           />
           <Suspense fallback={null}>
@@ -260,16 +264,16 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
         </Canvas>
       </div>
 
-      {/* Floating Canvas Controls HUD at Bottom */}
-      <div className="relative z-30 mt-auto flex items-center justify-between p-3 border-t border-[rgba(120,200,210,0.1)] bg-[#071115]/80 backdrop-blur-md text-[10px] text-[#9FB0B3]">
+      {/* Floating Controls HUD at Bottom */}
+      <div className="relative z-30 mt-auto flex items-center justify-between p-3 border-t border-[rgba(120,200,210,0.1)] bg-[#071115]/85 backdrop-blur-md text-[10px] text-[#9FB0B3]">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 font-mono text-[#60A5FA]">
             <Sparkles size={11} className="text-[#00D2FF]" />
-            <span>Interactive 3D Isometric Stack</span>
+            <span>3D Physical Architectural Stack</span>
           </span>
           <span className="text-[#9FB0B3]/40">|</span>
           <span className="hidden sm:inline-block font-mono text-[9px] text-[#9FB0B3]/60">
-            Drag to Orbit • Click layer to Inspect
+            Isometric View • Drag to Orbit • Click platform to Inspect
           </span>
         </div>
 
@@ -290,7 +294,7 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
           </button>
           <button
             onClick={handleResetView}
-            className="flex items-center gap-1 px-2.5 h-7 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 transition shadow-sm cursor-pointer"
+            className="flex items-center gap-1 px-2.5 h-7 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 transition shadow-sm cursor-pointer font-mono"
           >
             <RotateCcw size={10} className="text-[#00D2FF]" />
             <span>Fit Stack</span>

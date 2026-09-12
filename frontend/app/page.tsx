@@ -1987,7 +1987,13 @@ export default function Home() {
       </motion.aside>
 
       {/* ── Main Content ──────────────────────────────────────────────── */}
-      <main className="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden bg-[#063D48] relative text-[#F7FAFA] w-full max-w-full">
+      <main
+        className={`flex-1 min-w-0 h-full ${
+          activeResultTab === "arch" || activeResultTab === "routes"
+            ? "overflow-hidden flex flex-col"
+            : "overflow-y-auto overflow-x-hidden"
+        } bg-[#063D48] relative text-[#F7FAFA] w-full max-w-full`}
+      >
         
         {/* Top-Right Decorative Solid Red Corner Circle (Safely clipped) */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -2005,7 +2011,7 @@ export default function Home() {
             transition={{ duration: 0.15 }}
             className={
               activeResultTab === "arch" || activeResultTab === "routes"
-                ? "h-[calc(100vh-80px)] p-3 sm:p-4 relative z-10 w-full min-w-0"
+                ? "flex-1 min-h-0 h-full p-2.5 sm:p-3 relative z-10 w-full min-w-0 flex flex-col overflow-hidden"
                 : "min-h-full py-7 px-8 sm:px-10 pb-16 relative z-10 w-full"
             }
           >
@@ -2122,7 +2128,7 @@ export default function Home() {
 
             {/* ─── ARCHITECTURE TAB ─── */}
             {activeResultTab === "arch" && (
-              <div className="w-full h-full min-w-0">
+              <div className="w-full h-full min-w-0 min-h-0 flex-1 overflow-hidden">
                 <ArchitectureViewer
                   result={result}
                   currentJobId={currentJobId!}
@@ -2138,7 +2144,7 @@ export default function Home() {
 
             {/* ─── ROUTES TAB ─── */}
             {activeResultTab === "routes" && (
-              <div className="w-full h-full min-w-0">
+              <div className="w-full h-full min-w-0 min-h-0 flex-1 overflow-hidden">
                 <RouteAnalysisWorkspace
                   result={result}
                   onSwitchTab={(tab) => {

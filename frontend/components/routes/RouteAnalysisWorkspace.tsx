@@ -971,10 +971,10 @@ export default function RouteAnalysisWorkspace({
   };
 
   return (
-    <div className="w-full h-full min-h-[750px] bg-[#06181D] text-[#F2F7F7] font-sans flex flex-col gap-4 text-left select-none overflow-hidden">
+    <div className="w-full h-full min-h-0 bg-[#06181D] text-[#F2F7F7] font-sans flex flex-col gap-3 text-left select-none overflow-hidden p-3 sm:p-3.5 rounded-2xl border border-[rgba(50,190,190,0.12)]">
       
       {/* ── 1. GLOBAL ROUTE ANALYSIS HEADER ───────────────────────────────── */}
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-[rgba(50,190,190,0.16)] shrink-0">
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-2.5 border-b border-[rgba(50,190,190,0.16)] shrink-0">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9BE8E0]">
             ROUTE ANALYSIS
@@ -1043,10 +1043,10 @@ export default function RouteAnalysisWorkspace({
       </header>
 
       {/* ── 2. THREE-COLUMN WORKSPACE ──────────────────────────────────────── */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch min-h-0 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch min-h-0 overflow-hidden">
         
-        {/* ── COLUMN 1: ENDPOINT BROWSER (350px / 3.5 cols) ────────────────── */}
-        <aside className="lg:col-span-3 xl:col-span-3 bg-[#0A2025] border border-[rgba(50,190,190,0.16)] rounded-2xl p-3 flex flex-col gap-2.5 overflow-hidden h-full select-none">
+        {/* ── COLUMN 1: ENDPOINT BROWSER (3 cols) ────────────────── */}
+        <aside className="lg:col-span-3 xl:col-span-3 bg-[#0A2025] border border-[rgba(50,190,190,0.16)] rounded-2xl p-3 flex flex-col gap-2.5 overflow-hidden h-full min-h-0 select-none">
           {/* Top Search & Filter Bar */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="relative flex-1">
@@ -1100,7 +1100,7 @@ export default function RouteAnalysisWorkspace({
           </div>
 
           {/* Accordion Grouped Module List */}
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0">
             {Object.entries(groupedRoutes).map(([moduleName, routes]) => {
               const isOpen = openModules[moduleName] ?? true;
               const ModuleIcon = MODULE_ICONS[moduleName] || Folder;
@@ -1178,7 +1178,7 @@ export default function RouteAnalysisWorkspace({
         </aside>
 
         {/* ── COLUMN 2: SELECTED ENDPOINT WORKSPACE (Center / 6 cols) ───────── */}
-        <main className="lg:col-span-6 xl:col-span-6 bg-[#0A2025] border border-[rgba(50,190,190,0.16)] rounded-2xl p-4 sm:p-5 flex flex-col gap-4 overflow-y-auto h-full custom-scrollbar text-left">
+        <main className="lg:col-span-6 xl:col-span-6 bg-[#0A2025] border border-[rgba(50,190,190,0.16)] rounded-2xl p-4 sm:p-5 flex flex-col gap-4 overflow-y-auto h-full min-h-0 custom-scrollbar text-left">
           
           {/* Breadcrumbs */}
           <div className="flex items-center gap-2 text-[11px] font-mono text-[#94ADB2] shrink-0">
@@ -1723,7 +1723,7 @@ export default function RouteAnalysisWorkspace({
         </main>
 
         {/* ── COLUMN 3: ROUTE INFORMATION INSPECTOR (Right / 3 cols) ─────────── */}
-        <aside className="lg:col-span-3 xl:col-span-3 bg-[#0A2025] border border-[rgba(50,190,190,0.16)] rounded-2xl p-3.5 flex flex-col gap-3.5 overflow-y-auto h-full custom-scrollbar text-left select-none">
+        <aside className="lg:col-span-3 xl:col-span-3 bg-[#0A2025] border border-[rgba(50,190,190,0.16)] rounded-2xl p-3.5 flex flex-col gap-3.5 overflow-y-auto h-full min-h-0 custom-scrollbar text-left select-none">
           
           {/* Header */}
           <div className="flex items-center justify-between pb-2 border-b border-[rgba(50,190,190,0.14)] shrink-0">

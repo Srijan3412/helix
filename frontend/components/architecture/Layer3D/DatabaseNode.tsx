@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { Database } from 'lucide-react';
 
@@ -12,7 +12,7 @@ interface DatabaseNodeProps {
 }
 
 export const DatabaseNode: React.FC<DatabaseNodeProps> = ({
-  position = [-4.6, -1.3, 0.4],
+  position = [-4.0, -0.95, 0.3],
   onSelectRepositoryLayer,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
@@ -20,7 +20,7 @@ export const DatabaseNode: React.FC<DatabaseNodeProps> = ({
 
   useFrame((state) => {
     if (ringRef.current) {
-      ringRef.current.rotation.z = state.clock.getElapsedTime() * 0.5;
+      ringRef.current.rotation.z = state.clock.getElapsedTime() * 0.4;
     }
   });
 
@@ -40,61 +40,56 @@ export const DatabaseNode: React.FC<DatabaseNodeProps> = ({
         document.body.style.cursor = 'auto';
       }}
     >
-      {/* Hexagonal pedestal base */}
-      <mesh position={[0, -0.25, 0]}>
-        <cylinderGeometry args={[0.95, 1.1, 0.2, 6]} />
+      {/* Industrial Pedestal Base */}
+      <RoundedBox args={[1.5, 0.16, 1.5]} radius={0.04} smoothness={3} position={[0, -0.25, 0]}>
         <meshStandardMaterial
-          color="#071216"
-          roughness={0.2}
-          metalness={0.9}
-          emissive="#2F80ED"
-          emissiveIntensity={0.15}
+          color="#101C26"
+          roughness={0.35}
+          metalness={0.4}
         />
-      </mesh>
+      </RoundedBox>
 
-      {/* Stacked 3D Database Cylinders */}
+      {/* Stacked 3D Database Platters */}
       {[0, 1, 2].map((idx) => (
-        <group key={idx} position={[0, idx * 0.26, 0]}>
-          {/* Cylinder Platter */}
+        <group key={idx} position={[0, idx * 0.22, 0]}>
           <mesh>
-            <cylinderGeometry args={[0.7, 0.7, 0.18, 24]} />
+            <cylinderGeometry args={[0.55, 0.55, 0.15, 24]} />
             <meshStandardMaterial
-              color="#0E222D"
-              roughness={0.2}
-              metalness={0.85}
-              emissive="#00D2FF"
-              emissiveIntensity={0.3}
+              color="#132330"
+              roughness={0.25}
+              metalness={0.7}
+              emissive="#EC4899"
+              emissiveIntensity={0.2}
             />
           </mesh>
-
           {/* Glowing Disk Accent Ring */}
-          <mesh position={[0, 0.095, 0]}>
-            <cylinderGeometry args={[0.68, 0.68, 0.02, 24]} />
-            <meshBasicMaterial color="#00E5FF" />
+          <mesh position={[0, 0.08, 0]}>
+            <cylinderGeometry args={[0.53, 0.53, 0.015, 24]} />
+            <meshBasicMaterial color="#EC4899" />
           </mesh>
         </group>
       ))}
 
-      {/* Holographic glowing ring around the database */}
-      <mesh ref={ringRef} position={[0, 0.35, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.9, 0.98, 32]} />
-        <meshBasicMaterial color="#2F80ED" transparent opacity={0.6} side={THREE.DoubleSide} />
+      {/* Rotating Accent Ring */}
+      <mesh ref={ringRef} position={[0, 0.28, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.72, 0.78, 32]} />
+        <meshBasicMaterial color="#EC4899" transparent opacity={0.5} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* HTML Label / Badge */}
+      {/* Integrated Label Badge */}
       <Html
-        position={[0, -0.65, 0.9]}
+        position={[0, -0.55, 0.8]}
         transform
-        distanceFactor={7}
+        distanceFactor={6.2}
         zIndexRange={[100, 0]}
         style={{ pointerEvents: 'none' }}
       >
-        <div className="flex flex-col items-center bg-[#071216]/95 border border-[#2F80ED]/50 px-3 py-1.5 rounded-lg backdrop-blur-md shadow-2xl select-none min-w-[110px]">
-          <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#60A5FA] uppercase tracking-wider">
-            <Database size={11} className="text-[#00E5FF]" />
+        <div className="flex flex-col items-center bg-[#08151E]/95 border border-[#EC4899]/40 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-xl select-none min-w-[105px]">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono font-black text-[#F472B6] uppercase tracking-wider">
+            <Database size={11} className="text-[#EC4899]" />
             <span>Database</span>
           </div>
-          <span className="text-[9px] font-mono text-[#9FB0B3] mt-0.5">
+          <span className="text-[8.5px] font-mono text-[#9FB0B3] mt-0.5">
             PostgreSQL / SQL
           </span>
         </div>
