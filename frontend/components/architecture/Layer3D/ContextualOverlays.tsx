@@ -1,26 +1,12 @@
 'use client';
 
 import React from 'react';
-import { ArrowDown, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export const ContextualOverlays: React.FC = () => {
   return (
     <>
-      {/* ── 1. TOP ANNOTATION: Incoming Requests (Directly above Routes beam) ── */}
-      <div className="absolute top-3.5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#08151D]/90 border border-[#00D2FF]/40 shadow-[0_0_16px_rgba(0,210,255,0.25)] backdrop-blur-md">
-          <div className="w-2 h-2 rounded-full bg-[#00E5FF] animate-ping" />
-          <span className="text-[11px] font-mono font-black text-[#F4F7F7] tracking-wider uppercase">
-            INCOMING REQUESTS
-          </span>
-        </div>
-        <div className="flex flex-col items-center mt-1">
-          <div className="w-0.5 h-3.5 bg-gradient-to-b from-[#00E5FF] to-transparent animate-pulse" />
-          <ArrowDown size={13} className="text-[#00E5FF] -mt-0.5 animate-bounce" />
-        </div>
-      </div>
-
-      {/* ── 2. TOP-RIGHT: HTTP Request Card ── */}
+      {/* ── 1. TOP-RIGHT: HTTP Request Card ── */}
       <div className="absolute top-4 right-4 z-20 hidden md:flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#08151E]/90 border border-[#00E5FF]/25 shadow-xl backdrop-blur-md min-w-[190px] pointer-events-none text-left">
         <div className="text-[9px] font-mono font-black uppercase text-[#60A5FA] tracking-wider">
           HTTP Request
@@ -41,7 +27,7 @@ export const ContextualOverlays: React.FC = () => {
         </div>
       </div>
 
-      {/* ── 3. MID-RIGHT: Response Card ── */}
+      {/* ── 2. MID-RIGHT: Response Card ── */}
       <div className="absolute top-28 right-4 z-20 hidden md:flex flex-col gap-1.5 p-2.5 rounded-xl bg-[#08151E]/90 border border-[#16C7A3]/25 shadow-xl backdrop-blur-md min-w-[190px] pointer-events-none text-left">
         <div className="flex items-center justify-between pb-1 border-b border-white/5">
           <span className="text-[9px] font-mono font-black uppercase text-[#9FB0B3] tracking-wider">

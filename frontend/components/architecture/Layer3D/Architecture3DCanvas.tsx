@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef, Suspense } from 'react';
+import React, { useMemo, useRef, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -101,10 +101,10 @@ function ArchitectureSceneContent({
   onSelectLayer,
   searchQuery = '',
 }: Architecture3DProps) {
-  // Compute vertical spacing: 6 platforms spaced by 0.90 units
+  // Compute vertical spacing: 6 platforms spaced by 0.85 units (total span from 2.0 down to -2.25)
   const layerPositions = useMemo(() => {
     return LAYERS_3D_CONFIG.map((layer, index) => {
-      const y = 2.25 - index * 0.90;
+      const y = 2.0 - index * 0.85;
       return {
         ...layer,
         yPos: y,
@@ -116,11 +116,19 @@ function ArchitectureSceneContent({
 
   return (
     <>
-      {/* Lights matching dark technical product render */}
-      <ambientLight intensity={0.65} color="#0E1A24" />
-      <directionalLight position={[8, 12, 8]} intensity={1.6} color="#FFFFFF" />
-      <directionalLight position={[-8, 6, -4]} intensity={0.7} color="#00D2FF" />
-      <directionalLight position={[4, -4, 6]} intensity={0.3} color="#F59E0B" />
+      {/* Precision architectural lighting with soft shadows */}
+      <ambientLight intensity={0.8} color="#0E1F2E" />
+      <directionalLight
+        position={[9, 14, 9]}
+        intensity={2.2}
+        color="#FFFFFF"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0001}
+      />
+      <directionalLight position={[-7, 8, -4]} intensity={1.1} color="#00D2FF" />
+      <directionalLight position={[2, 4, 8]} intensity={0.8} color="#38BDF8" />
+      <directionalLight position={[-4, -6, 5]} intensity={0.4} color="#F59E0B" />
 
       {/* Dynamic spot/point light focused on selected layer */}
       {selectedLayer && (
@@ -160,11 +168,11 @@ function ArchitectureSceneContent({
 
       {/* Contextual 3D Nodes */}
       <DatabaseNode
-        position={[-4.0, -0.95, 0.3]}
+        position={[-3.8, -0.55, 0.3]}
         onSelectRepositoryLayer={() => onSelectLayer('repositories')}
       />
       <ExternalApiNode
-        position={[4.0, -1.85, 0.3]}
+        position={[3.8, -1.40, 0.3]}
         onSelectExternalLayer={() => onSelectLayer('external')}
       />
 
@@ -186,12 +194,12 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
     if (controlsRef.current) {
       const camera = controlsRef.current.object as THREE.PerspectiveCamera;
       if (camera) {
-        camera.position.set(7.2, 6.2, 8.5);
+        camera.position.set(6.8, 5.2, 7.8);
         camera.zoom = 1;
-        camera.lookAt(0, -0.2, 0);
+        camera.lookAt(0, -0.15, 0);
         camera.updateProjectionMatrix();
       }
-      controlsRef.current.target.set(0, -0.2, 0);
+      controlsRef.current.target.set(0, -0.15, 0);
       controlsRef.current.update();
     }
   };
@@ -218,9 +226,9 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
 
   return (
     <div className="relative w-full h-full min-h-[580px] bg-[#061015] rounded-xl overflow-hidden select-none flex flex-col justify-between border border-[rgba(120,200,210,0.14)]">
-      {/* Background Subtle Technical Grid */}
+      {/* Background Subtle Technical Grid (Quiet opacity) */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-15"
+        className="absolute inset-0 pointer-events-none opacity-10"
         style={{
           backgroundImage:
             'linear-gradient(rgba(0, 210, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 210, 255, 0.08) 1px, transparent 1px)',
@@ -231,9 +239,10 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
       {/* Clean Contextual Overlays */}
       <ContextualOverlays />
 
-      {/* Three.js Fiber Canvas Viewport with Stable Isometric Camera */}
+      {/* Three.js Fiber Canvas Viewport with Precision 3/4 Isometric Perspective */}
       <div className="absolute inset-0 z-10">
         <Canvas
+          shadows
           dpr={[1, 2]}
           gl={{
             antialias: true,
@@ -241,16 +250,16 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
             powerPreference: 'high-performance',
           }}
         >
-          <PerspectiveCamera makeDefault position={[7.2, 6.2, 8.5]} fov={38} />
+          <PerspectiveCamera makeDefault position={[6.8, 5.2, 7.8]} fov={36} />
           <OrbitControls
             ref={controlsRef}
-            target={[0, -0.2, 0]}
+            target={[0, -0.15, 0]}
             enablePan={true}
             enableZoom={true}
-            minDistance={7.5}
+            minDistance={6.5}
             maxDistance={18}
-            maxPolarAngle={Math.PI / 2.2}
-            minPolarAngle={Math.PI / 4}
+            maxPolarAngle={Math.PI / 2.15}
+            minPolarAngle={Math.PI / 4.5}
             dampingFactor={0.06}
           />
           <Suspense fallback={null}>
@@ -280,24 +289,25 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleZoomIn}
-            className="w-7 h-7 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 flex items-center justify-center transition shadow-sm cursor-pointer"
-            title="Zoom In 3D Canvas"
+            className="p-1.5 rounded-lg bg-[#0E1C21] hover:bg-[#14262E] text-[#9FB0B3] hover:text-[#F4F7F7] border border-[rgba(120,200,210,0.15)] transition"
+            title="Zoom In"
           >
-            <ZoomIn size={12} className="text-[#00D2FF]" />
+            <ZoomIn size={12} />
           </button>
           <button
             onClick={handleZoomOut}
-            className="w-7 h-7 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 flex items-center justify-center transition shadow-sm cursor-pointer"
-            title="Zoom Out 3D Canvas"
+            className="p-1.5 rounded-lg bg-[#0E1C21] hover:bg-[#14262E] text-[#9FB0B3] hover:text-[#F4F7F7] border border-[rgba(120,200,210,0.15)] transition"
+            title="Zoom Out"
           >
-            <ZoomOut size={12} className="text-[#00D2FF]" />
+            <ZoomOut size={12} />
           </button>
           <button
             onClick={handleResetView}
-            className="flex items-center gap-1 px-2.5 h-7 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 transition shadow-sm cursor-pointer font-mono"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0E1C21] hover:bg-[#14262E] text-[#9FB0B3] hover:text-[#F4F7F7] border border-[rgba(120,200,210,0.15)] transition font-mono text-[10px]"
+            title="Reset to Default Isometric View"
           >
-            <RotateCcw size={10} className="text-[#00D2FF]" />
-            <span>Fit Stack</span>
+            <RotateCcw size={11} />
+            <span>Reset View</span>
           </button>
         </div>
       </div>
