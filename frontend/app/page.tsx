@@ -1991,7 +1991,11 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.15 }}
-            className="min-h-full py-7 px-8 sm:px-10 pb-16 relative z-10 w-full"
+            className={
+              activeResultTab === "arch"
+                ? "h-[calc(100vh-80px)] p-3 sm:p-4 relative z-10 w-full min-w-0"
+                : "min-h-full py-7 px-8 sm:px-10 pb-16 relative z-10 w-full"
+            }
           >
             {/* ─── OVERVIEW TAB ─── */}
             {activeResultTab === "overview" && (
@@ -2106,7 +2110,7 @@ export default function Home() {
 
             {/* ─── ARCHITECTURE TAB ─── */}
             {activeResultTab === "arch" && (
-              <div className="w-full" style={{ height: "calc(100vh - 140px)", minHeight: "650px" }}>
+              <div className="w-full h-full min-w-0">
                 <ArchitectureViewer
                   result={result}
                   currentJobId={currentJobId!}

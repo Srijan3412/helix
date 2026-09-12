@@ -498,7 +498,7 @@ function MetroMapInternal({
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search stations, files, or flows..."
+              placeholder="Search stations, files, or services..."
               className="w-full bg-[#0A171C] border border-[rgba(80,180,200,0.16)] rounded-lg pl-8 pr-7 py-1.5 text-xs text-[#F4F7F7] placeholder-[#718287] focus:outline-none focus:border-[#16C7A3] transition-colors"
             />
             {searchQuery && (
