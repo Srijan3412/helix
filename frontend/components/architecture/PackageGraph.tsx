@@ -516,7 +516,8 @@ function PackageGraphInternal({
           nodeStrokeWidth={3}
           zoomable
           pannable
-          className="!bg-[#0D1728] !border-white/[0.08] rounded-xl overflow-hidden shadow-2xl !right-4 !bottom-4"
+          style={{ width: 180, height: 110 }}
+          className="!bg-[#0D1728] !border-white/[0.08] rounded-xl overflow-hidden shadow-2xl !right-4 !bottom-4 !w-[180px] !h-[110px]"
           nodeColor={(n) => {
             return n.type === "packageNode" ? "#16C7A3" : "#3288F5";
           }}

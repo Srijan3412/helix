@@ -651,7 +651,8 @@ function MetroMapInternal({
               nodeStrokeWidth={2}
               zoomable
               pannable
-              className="!bg-[#071219] !border !border-[rgba(80,180,200,0.2)] !rounded-xl overflow-hidden !bottom-4 !left-4"
+              style={{ width: 180, height: 110 }}
+              className="!bg-[#071219] !border !border-[rgba(80,180,200,0.2)] !rounded-xl overflow-hidden !bottom-4 !left-4 !w-[180px] !h-[110px] shadow-xl"
               nodeColor={(n) => (n.data as any)?.color || '#16C7A3'}
               maskColor="rgba(6, 19, 24, 0.75)"
             />

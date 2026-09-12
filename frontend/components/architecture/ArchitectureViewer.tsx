@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getArchitectureLayers } from "../../lib/api/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -61,40 +62,30 @@ const TABS: TabItem[] = [
     id: "route",
     label: "Route Graph",
     icon: <Route size={14} />,
-    title: "Route Endpoint Graph",
-    subtitle: "Visualize API routes, handlers and service dependencies",
+    title: "Route Graph",
+    subtitle: "Inspect HTTP endpoints, paths, handlers and flows",
   },
   {
     id: "dependency",
     label: "Package Dependencies",
     icon: <Package size={14} />,
     title: "Package Dependencies",
-    subtitle: "Visualize project packages and their relationships",
+    subtitle: "Analyze third-party dependencies, licenses and health",
   },
   {
     id: "trace",
     label: "Execution Trace",
     icon: <GitBranch size={14} />,
     title: "Execution Trace",
-    subtitle: "Trace API endpoints through the application",
+    subtitle: "Step through end-to-end request pipelines and call stacks",
   },
   {
     id: "metro",
     label: "Metro Map",
     icon: <Map size={14} />,
     title: "Metro Map",
-    subtitle: "Navigate your codebase like a transit system",
+    subtitle: "Subway-style architectural transit and data flow overview",
   },
-];
-
-const LAYER_FOCUS_OPTIONS = [
-  { id: "all", label: "All Layers", color: "#16C7A3" },
-  { id: "routes", label: "Routes", color: "#3288F5" },
-  { id: "controllers", label: "Controllers", color: "#8B5CF6" },
-  { id: "services", label: "Services", color: "#F5A623" },
-  { id: "repositories", label: "Repositories", color: "#00B8D9" },
-  { id: "models", label: "Models", color: "#E83E5B" },
-  { id: "database", label: "Database", color: "#16C7A3" },
 ];
 
 interface ArchitectureViewerProps {
@@ -118,7 +109,11 @@ export default function ArchitectureViewer({
   const [searchQuery, setSearchQuery] = useState("");
   const [fitViewTrigger, setFitViewTrigger] = useState(0);
   const [fitRepoTrigger, setFitRepoTrigger] = useState(0);
-  const [activeLayerFilter, setActiveLayerFilter] = useState<string>("all");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const activeTabMeta = TABS.find((t) => t.id === activeMode) || TABS[1];
 
@@ -262,7 +257,6 @@ export default function ArchitectureViewer({
           <LayerView
             result={result}
             searchQuery={searchQuery}
-            activeLayerFilter={activeLayerFilter}
           />
         )}
         {activeMode === "file" && (
@@ -331,7 +325,7 @@ export default function ArchitectureViewer({
                 <button
                   key={tab.id}
                   onClick={() => setActiveMode(tab.id)}
-                  className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer shrink-0 ${
+                  className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ${
                     isActive
                       ? "bg-[#16C7A3] text-[#061015] font-bold shadow-sm"
                       : "text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#0E202B]"
@@ -391,13 +385,13 @@ export default function ArchitectureViewer({
       </div>
 
       {/* ── True Full-Screen Architecture Workspace (100vw x 100vh) ──────── */}
-      {isFullScreen && (
-        <div className="fixed inset-0 z-50 bg-[#061015] flex flex-col overflow-hidden select-none font-sans text-left">
+      {isFullScreen && mounted && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-[#061015] flex flex-col overflow-hidden select-none font-sans text-left">
           {/* Top Architecture Navigation */}
           {!isPresentationMode && (
             <div className="flex items-center justify-between px-4 h-[52px] bg-[#0A171F] border-b border-[#16C7A3]/20 shrink-0 z-30">
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 pr-3 border-r border-[#16C7A3]/20">
+                <div className="flex items-center gap-2 pr-3 border-r border-[#16C7A3]/20 shrink-0">
                   <div className="p-1 rounded bg-[#16C7A3]/15 text-[#16C7A3]">
                     <Sparkles size={15} />
                   </div>
@@ -406,14 +400,14 @@ export default function ArchitectureViewer({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 overflow-x-auto">
                   {TABS.map((tab) => {
                     const isActive = activeMode === tab.id;
                     return (
                       <button
                         key={tab.id}
                         onClick={() => setActiveMode(tab.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                           isActive
                             ? "bg-[#16C7A3] text-[#061015] font-bold shadow-md shadow-[#16C7A3]/20"
                             : "text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#0E202B]"
@@ -427,29 +421,10 @@ export default function ArchitectureViewer({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {activeMode === "layer" && (
-                  <div className="hidden lg:flex items-center gap-1 bg-[#0E1B20] border border-[#16C7A3]/20 rounded-lg p-1">
-                    <Filter size={12} className="text-[#16C7A3] ml-1 mr-0.5" />
-                    {LAYER_FOCUS_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => setActiveLayerFilter(opt.id)}
-                        className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
-                          activeLayerFilter === opt.id
-                            ? "bg-[#16C7A3] text-[#061015]"
-                            : "text-[#8EA9AE] hover:text-[#F7FAFA]"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setIsPresentationMode(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] border border-[#16C7A3]/20 text-[#F7FAFA] text-xs font-semibold transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] border border-[#16C7A3]/20 text-[#F7FAFA] text-xs font-semibold transition-colors cursor-pointer shrink-0"
                   title="Presentation Mode"
                 >
                   <Eye size={13} className="text-[#16C7A3]" />
@@ -458,7 +433,7 @@ export default function ArchitectureViewer({
 
                 <button
                   onClick={() => setIsFullScreen(false)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#E83E5B]/20 hover:bg-[#E83E5B]/35 border border-[#E83E5B]/40 text-[#FF7A84] text-xs font-bold transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#E83E5B]/20 hover:bg-[#E83E5B]/35 border border-[#E83E5B]/40 text-[#FF7A84] text-xs font-bold transition-colors cursor-pointer shrink-0"
                   title="Exit Full-Screen (Esc)"
                 >
                   <Minimize2 size={13} />
@@ -524,7 +499,8 @@ export default function ArchitectureViewer({
               </div>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
