@@ -11,7 +11,7 @@ import { DatabaseNode } from './DatabaseNode';
 import { ExternalApiNode } from './ExternalApiNode';
 import { CircuitLines } from './CircuitLines';
 import { ContextualOverlays } from './ContextualOverlays';
-import { RotateCcw, ZoomIn, Eye, Sparkles } from 'lucide-react';
+import { RotateCcw, ZoomIn, ZoomOut, Eye, Sparkles } from 'lucide-react';
 
 export const LAYERS_3D_CONFIG: LayerItemData[] = [
   {
@@ -184,7 +184,32 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
 
   const handleResetView = () => {
     if (controlsRef.current) {
+      const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+      if (camera) {
+        camera.zoom = 1;
+        camera.updateProjectionMatrix();
+      }
       controlsRef.current.reset();
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (controlsRef.current) {
+      const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+      if (camera) {
+        camera.zoom = Math.min(camera.zoom * 1.25, 2.8);
+        camera.updateProjectionMatrix();
+      }
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (controlsRef.current) {
+      const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+      if (camera) {
+        camera.zoom = Math.max(camera.zoom / 1.25, 0.5);
+        camera.updateProjectionMatrix();
+      }
     }
   };
 
@@ -217,7 +242,7 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
           <OrbitControls
             ref={controlsRef}
             enablePan={true}
-            enableZoom={true}
+            enableZoom={false}
             minDistance={6}
             maxDistance={22}
             maxPolarAngle={Math.PI / 2 - 0.05}
@@ -244,14 +269,28 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
           </span>
           <span className="text-[#9FB0B3]/40">|</span>
           <span className="hidden sm:inline-block font-mono text-[9px] text-[#9FB0B3]/60">
-            Drag to Orbit • Scroll to Zoom • Click layer to Inspect
+            Drag to Orbit • Click layer to Inspect
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleZoomIn}
+            className="w-7 h-7 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 flex items-center justify-center transition shadow-sm cursor-pointer"
+            title="Zoom In 3D Canvas"
+          >
+            <ZoomIn size={12} className="text-[#00D2FF]" />
+          </button>
+          <button
+            onClick={handleZoomOut}
+            className="w-7 h-7 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 flex items-center justify-center transition shadow-sm cursor-pointer"
+            title="Zoom Out 3D Canvas"
+          >
+            <ZoomOut size={12} className="text-[#00D2FF]" />
+          </button>
           <button
             onClick={handleResetView}
-            className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 transition shadow-sm"
+            className="flex items-center gap-1 px-2.5 h-7 rounded bg-[#0E1E26] border border-[rgba(120,200,210,0.2)] text-[#F4F7F7] hover:bg-[#152B36] hover:border-[#00D2FF]/50 transition shadow-sm cursor-pointer"
           >
             <RotateCcw size={10} className="text-[#00D2FF]" />
             <span>Fit Stack</span>

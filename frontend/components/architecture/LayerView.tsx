@@ -773,15 +773,15 @@ export default function LayerView({
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         
         {/* LEFT COLUMN: Layer Descriptions / Layer Management (280px / 3 cols) */}
-        <div className="lg:col-span-3 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-3.5 flex flex-col gap-2.5 max-h-[580px]">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[#9FB0B3] pb-1.5 border-b border-[rgba(120,200,210,0.1)] flex items-center justify-between">
+        <div className="lg:col-span-3 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-3.5 flex flex-col gap-2.5 max-h-[580px] min-h-[420px]">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#9FB0B3] pb-1.5 border-b border-[rgba(120,200,210,0.1)] flex items-center justify-between shrink-0">
             <span>Layer Management</span>
             <span className="text-[10px] font-mono text-[#16C7A3] bg-[#16C7A3]/10 px-1.5 py-0.5 rounded border border-[#16C7A3]/25">
               {LAYERS_CONFIG.length} Layers
             </span>
           </div>
 
-          <div className="flex flex-col gap-2 overflow-y-auto max-h-[500px] pr-1.5 custom-scrollbar">
+          <div className="flex-1 flex flex-col gap-2 overflow-y-auto max-h-[520px] pr-1.5 custom-scrollbar">
             {LAYERS_CONFIG.map((layer) => {
               const Icon = layer.icon;
               const isSelected = selectedLayerId === layer.id;
@@ -844,7 +844,7 @@ export default function LayerView({
 
         {/* RIGHT COLUMN: Layer Inspector (320px / 3 cols) */}
         {selectedLayerMeta && isInspectorOpen && (
-          <div className="lg:col-span-3 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-4 flex flex-col gap-3">
+          <div className="lg:col-span-3 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-4 flex flex-col gap-3 max-h-[580px] overflow-y-auto custom-scrollbar">
             {/* Inspector Header */}
             <div className="flex items-center justify-between pb-2 border-b border-[rgba(120,200,210,0.1)]">
               <div className="flex items-center gap-2">

@@ -677,4 +677,31 @@ html, body {
   scrollbar-width: thin;
   scrollbar-color: #0F8E94 transparent;
   scrollbar-gutter: stable;
+}
+
+/* ========================================
+   GLOBAL CUSTOM SCROLLBAR UTILITIES
+   ======================================== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(6, 19, 24, 0.6);
+  border-radius: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(120, 200, 210, 0.28);
+  border-radius: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(22, 199, 163, 0.6);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 200, 210, 0.28) rgba(6, 19, 24, 0.6);
 }
