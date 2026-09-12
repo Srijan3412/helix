@@ -160,6 +160,18 @@ const ArchitectureViewer = dynamic(
   },
 );
 
+const RouteAnalysisWorkspace = dynamic(
+  () => import("../components/routes/RouteAnalysisWorkspace"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full text-zinc-500 text-xs font-mono">
+        Loading route analysis workspace…
+      </div>
+    ),
+  },
+);
+
 
 
 const IngestionControl = dynamic(
@@ -1992,7 +2004,7 @@ export default function Home() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.15 }}
             className={
-              activeResultTab === "arch"
+              activeResultTab === "arch" || activeResultTab === "routes"
                 ? "h-[calc(100vh-80px)] p-3 sm:p-4 relative z-10 w-full min-w-0"
                 : "min-h-full py-7 px-8 sm:px-10 pb-16 relative z-10 w-full"
             }
@@ -2126,223 +2138,18 @@ export default function Home() {
 
             {/* ─── ROUTES TAB ─── */}
             {activeResultTab === "routes" && (
-              <div className="w-full max-w-[1200px] mx-auto space-y-4 text-left">
-                {/* Header Block */}
-                <div className="mb-1">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
-                    Route Analysis
-                  </p>
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#F7FAFA] mt-0.5">
-                    API Endpoints
-                  </h2>
-                </div>
-
-                {/* Search and Summary Filters Bar */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 mb-1">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#82AEB5]" />
-                    <input
-                      className="w-full pl-9 pr-9 py-2 text-xs font-mono bg-[#062F38] border border-[#16C7A1]/20 rounded-xl text-[#F7FAFA] placeholder-[#82AEB5] focus:outline-none focus:border-[#16C7A1] transition-colors"
-                      placeholder="Search routes by path, method, or file..."
-                      value={routeSearch}
-                      onChange={(e) => setRouteSearch(e.target.value)}
-                    />
-                    {routeSearch && (
-                      <button
-                        onClick={() => setRouteSearch("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#82AEB5] hover:text-[#F7FAFA] p-1"
-                      >
-                        <X size={13} />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Summary Filters */}
-                  {result.metadata?.routeMetrics && (
-                    <div className="flex gap-1.5 shrink-0 flex-wrap items-center">
-                      {Object.entries(
-                        result.metadata.routeMetrics as unknown as Record<
-                          string,
-                          number
-                        >,
-                      )
-                        .filter(([k]) => k !== "total" && k !== "others")
-                        .map(([method, count]) => {
-                          const methodUpper = method.toUpperCase();
-                          const badgeStyles: Record<string, string> = {
-                            GET: "bg-[#16C7A1]/15 text-[#16C7A1] border-[#16C7A1]/40",
-                            POST: "bg-[#4B83FF]/15 text-[#4B83FF] border-[#4B83FF]/40",
-                            PUT: "bg-[#F5B800]/15 text-[#F5B800] border-[#F5B800]/40",
-                            PATCH: "bg-[#FB923C]/15 text-[#FB923C] border-[#FB923C]/40",
-                            DELETE: "bg-[#FF3344]/15 text-[#FF3344] border-[#FF3344]/40",
-                          };
-                          const style = badgeStyles[methodUpper] || "bg-white/10 text-zinc-300 border-zinc-700/60";
-                          const isFilterActive = routeSearch.toUpperCase() === methodUpper;
-
-                          return (count as number) > 0 ? (
-                            <button
-                              key={method}
-                              onClick={() => {
-                                setRouteSearch(isFilterActive ? "" : methodUpper);
-                              }}
-                              className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold font-mono tracking-wide uppercase transition-all duration-200 cursor-pointer ${style} ${
-                                isFilterActive ? "ring-2 ring-[#16C7A1] scale-105" : "hover:opacity-90"
-                              }`}
-                            >
-                              {methodUpper}: {count as number}
-                            </button>
-                          ) : null;
-                        })}
-                    </div>
-                  )}
-                </div>
-
-                {traceRoute && renderExecutionTrace()}
-
-                {/* Route Cards List */}
-                <div className="space-y-3">
-                  {(result.routes ?? [])
-                    .filter((r: RouteNode) => {
-                      if (!routeSearch) return true;
-                      const q = routeSearch.toLowerCase();
-                      const cleanP = formatRoutePath(r.path).toLowerCase();
-                      const rawP = (r.path || "").toLowerCase();
-                      const m = (r.method || "").toLowerCase();
-                      const f = (r.file || "").toLowerCase();
-                      const desc = getRouteDescription(r).toLowerCase();
-                      return cleanP.includes(q) || rawP.includes(q) || m.includes(q) || f.includes(q) || desc.includes(q);
-                    })
-                    .map((route: RouteNode, idx: number) => {
-                      const methodUpper = (route.method || "GET").toUpperCase();
-                      const methodAccentColors: Record<string, { badge: string; leftBorder: string; text: string }> = {
-                        GET: {
-                          badge: "bg-[#16C7A1]/15 text-[#16C7A1] border-[#16C7A1]/40",
-                          leftBorder: "#16C7A1",
-                          text: "#16C7A1",
-                        },
-                        POST: {
-                          badge: "bg-[#4B83FF]/15 text-[#4B83FF] border-[#4B83FF]/40",
-                          leftBorder: "#4B83FF",
-                          text: "#4B83FF",
-                        },
-                        PUT: {
-                          badge: "bg-[#F5B800]/15 text-[#F5B800] border-[#F5B800]/40",
-                          leftBorder: "#F5B800",
-                          text: "#F5B800",
-                        },
-                        PATCH: {
-                          badge: "bg-[#FB923C]/15 text-[#FB923C] border-[#FB923C]/40",
-                          leftBorder: "#FB923C",
-                          text: "#FB923C",
-                        },
-                        DELETE: {
-                          badge: "bg-[#FF3344]/15 text-[#FF3344] border-[#FF3344]/40",
-                          leftBorder: "#FF3344",
-                          text: "#FF3344",
-                        },
-                      };
-
-                      const accent = methodAccentColors[methodUpper] || {
-                        badge: "bg-white/10 text-zinc-300 border-zinc-700/60",
-                        leftBorder: "#16C7A1",
-                        text: "#16C7A1",
-                      };
-
-                      const isTraced =
-                        traceRoute?.path === route.path &&
-                        traceRoute?.method === route.method;
-                      const cleanPath = formatRoutePath(route.path);
-                      const description = getRouteDescription(route);
-
-                      return (
-                        <div
-                          key={`${route.method}-${route.path}-${idx}`}
-                          onClick={() => setTraceRoute(isTraced ? null : route)}
-                          className={`w-full p-3.5 sm:p-4 rounded-xl bg-[#052D35]/90 border transition-all duration-200 cursor-pointer group shadow-md relative select-none flex flex-col justify-between ${
-                            isTraced
-                              ? "bg-[#073E48] border-[#16C7A1] ring-2 ring-[#16C7A1]/50"
-                              : "border-[#16C7A1]/16 hover:border-[#16C7A1]/60 hover:bg-[#073640]"
-                          }`}
-                          style={{
-                            borderLeftWidth: "4px",
-                            borderLeftColor: accent.leftBorder,
-                          }}
-                        >
-                          {/* Main 3-zone layout */}
-                          <div className="grid grid-cols-1 sm:grid-cols-[76px_1fr_auto] items-center gap-3 sm:gap-4">
-                            {/* 1. HTTP Method Badge */}
-                            <div className="shrink-0 flex sm:block">
-                              <div
-                                className={`w-[72px] sm:w-[76px] h-[34px] sm:h-[36px] rounded-lg flex items-center justify-center font-bold text-xs sm:text-sm font-mono tracking-wide border ${accent.badge}`}
-                              >
-                                {methodUpper}
-                              </div>
-                            </div>
-
-                            {/* 2. Route Path + Description */}
-                            <div className="min-w-0 flex-1">
-                              <code className="text-sm sm:text-base font-mono font-semibold text-[#F7FAFA] leading-tight tracking-tight block">
-                                {cleanPath}
-                              </code>
-                              <p className="text-xs sm:text-sm text-[#A8CBD0] leading-snug mt-0.5 font-sans">
-                                {description}
-                              </p>
-                            </div>
-
-                            {/* 3. Actions: Chevron + Vertical Ellipsis */}
-                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-center justify-end">
-                              <ChevronRight
-                                size={18}
-                                className="text-[#9BE8E0]/70 group-hover:text-[#F7FAFA] group-hover:translate-x-1 transition-all duration-200"
-                              />
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTraceRoute(isTraced ? null : route);
-                                }}
-                                className="p-1 rounded-lg text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#084C58] transition-colors"
-                              >
-                                <MoreVertical size={16} />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Metadata Row */}
-                          <div className="mt-2.5 pt-2 border-t border-[#16C7A1]/10 flex items-center flex-wrap gap-2 text-[11px]">
-                            {/* Status Pill */}
-                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#16C7A1]/10 border border-[#16C7A1]/30 text-[#16C7A1] font-semibold text-[10px]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#16C7A1] animate-pulse" />
-                              {(route.middleware?.length ?? 0) > 0 ? "PROTECTED" : "API"}
-                            </span>
-
-                            {/* Source File */}
-                            {route.file && (
-                              <span className="font-mono text-[#8EA9AE] text-[11px] truncate max-w-[360px]" title={route.file}>
-                                {route.file}
-                              </span>
-                            )}
-
-                            {/* Group Tag */}
-                            {route.group && (
-                              <span className="px-2 py-0.5 rounded-md bg-[#083E48] border border-[#176873]/60 text-[10px] font-mono text-[#9BE8E0]">
-                                {route.group}
-                              </span>
-                            )}
-
-                            {/* Middleware Tags */}
-                            {(route.middleware ?? []).map((m) => (
-                              <span
-                                key={m}
-                                className="px-1.5 py-0.5 rounded-md bg-[#094752] border border-[#16C7A1]/30 text-[10px] text-[#16C7A1] font-mono"
-                              >
-                                {m}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
+              <div className="w-full h-full min-w-0">
+                <RouteAnalysisWorkspace
+                  result={result}
+                  onSwitchTab={(tab) => {
+                    if (tab === "arch") setActiveResultTab("arch");
+                    else setActiveResultTab(tab as any);
+                  }}
+                  onSelectTraceRouteId={(routeId) => {
+                    setSelectedTraceRouteId(routeId);
+                    setActiveResultTab("arch");
+                  }}
+                />
               </div>
             )}
 
