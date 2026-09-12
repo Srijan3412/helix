@@ -27,6 +27,7 @@ import {
   Sliders,
 } from "lucide-react";
 import { useAnalysisStore } from "../../store/analysis.store";
+import { Architecture3DViewer } from "./Layer3D";
 
 // --- Semantic Layer Metadata System ---
 export interface LayerMeta {
@@ -827,104 +828,13 @@ export default function LayerView({
         </div>
 
         {/* CENTER COLUMN: 3D Layered Architecture Canvas (6 cols) */}
-        <div className="lg:col-span-6 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-4 relative min-h-[560px] flex flex-col justify-between overflow-hidden">
-          {/* Subtle Grid overlay */}
-          <div 
-            className="absolute inset-0 pointer-events-none opacity-20"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(90, 180, 190, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(90, 180, 190, 0.1) 1px, transparent 1px)',
-              backgroundSize: '24px 24px'
-            }}
+        <div className="lg:col-span-6 min-h-[580px] flex flex-col">
+          <Architecture3DViewer
+            layers={layers}
+            selectedLayerId={selectedLayerId}
+            onSelectLayer={handleSelectLayer}
+            searchQuery={searchQuery}
           />
-
-          {/* Top Annotation: Incoming Requests */}
-          <div className="relative z-10 flex flex-col items-center">
-            <span className="text-[10px] font-bold text-[#60A5FA] tracking-wider uppercase bg-[#2F80ED]/10 border border-[#2F80ED]/30 px-2.5 py-0.5 rounded-full">
-              Incoming Requests
-            </span>
-            <div className="w-0.5 h-4 bg-gradient-to-b from-[#2F80ED] to-transparent my-1 animate-pulse" />
-          </div>
-
-          {/* Isometric 3D Stack Visualization */}
-          <div className="relative z-10 my-auto flex flex-col items-center gap-3 py-2">
-            {LAYERS_CONFIG.map((layer) => {
-              const Icon = layer.icon;
-              const isSelected = selectedLayerId === layer.id;
-              const fileCount = (layers[layer.id] || []).length;
-
-              return (
-                <div
-                  key={layer.id}
-                  onClick={() => handleSelectLayer(layer.id)}
-                  className={`w-4/5 max-w-[420px] h-[58px] rounded-lg p-3 cursor-pointer transition-all duration-300 relative flex items-center justify-between border ${
-                    isSelected
-                      ? "scale-105 shadow-2xl z-20"
-                      : "opacity-80 hover:opacity-100 hover:scale-[1.02]"
-                  }`}
-                  style={{
-                    backgroundColor: isSelected ? layer.bgColor : "rgba(16, 29, 33, 0.85)",
-                    borderColor: layer.color,
-                    boxShadow: isSelected ? `0 10px 30px ${layer.bgColor}` : "0 4px 15px rgba(0,0,0,0.3)",
-                    transform: isSelected ? "perspective(500px) rotateX(10deg) scale(1.04)" : "perspective(500px) rotateX(12deg)",
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-black" style={{ color: layer.color }}>
-                      {layer.num}
-                    </span>
-                    <Icon size={16} style={{ color: layer.color }} />
-                    <span className="text-xs font-bold text-[#F4F7F7]">{layer.name}</span>
-                  </div>
-
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/40 text-[#9FB0B3] border border-white/5">
-                    {fileCount} files
-                  </span>
-
-                  {/* Contextual Annotation Callouts */}
-                  {layer.id === "routes" && (
-                    <div className="absolute -right-32 top-0 bg-[#071113]/95 border border-[#2F80ED]/40 rounded-lg p-2 text-[9px] font-mono text-[#9FB0B3] hidden sm:block shadow-xl">
-                      <div className="text-[8px] font-bold text-[#60A5FA] uppercase">HTTP Request</div>
-                      <div className="text-emerald-400 font-bold mt-0.5">GET /api/v1/users</div>
-                    </div>
-                  )}
-
-                  {layer.id === "controllers" && (
-                    <div className="absolute -left-36 top-0 bg-[#071113]/95 border border-[#8B5CF6]/40 rounded-lg p-2 text-[9px] font-mono text-[#9FB0B3] hidden sm:block shadow-xl">
-                      <div className="text-[8px] font-bold text-[#8B5CF6] uppercase">Rules</div>
-                      <div>Validation & Auth</div>
-                    </div>
-                  )}
-
-                  {layer.id === "repositories" && (
-                    <div className="absolute -left-28 bottom-0 bg-[#071113]/95 border border-[#F43F7A]/40 rounded-lg p-2 text-[9px] font-mono text-[#9FB0B3] hidden sm:block shadow-xl flex items-center gap-1.5">
-                      <Database className="w-3.5 h-3.5 text-[#F43F7A]" />
-                      <span>PostgreSQL DB</span>
-                    </div>
-                  )}
-
-                  {layer.id === "external" && (
-                    <div className="absolute -right-36 bottom-0 bg-[#071113]/95 border border-[#60A5FA]/40 rounded-lg p-2 text-[9px] font-mono text-[#9FB0B3] hidden sm:block shadow-xl">
-                      <div className="text-[8px] font-bold text-[#60A5FA] uppercase">External APIs</div>
-                      <div>Payment, Auth & SMS</div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Canvas Controls */}
-          <div className="relative z-10 flex items-center justify-between text-[10px] text-[#9FB0B3] border-t border-[rgba(120,200,210,0.1)] pt-2">
-            <span className="font-mono">Zoom: 100% | Interactive Isometric Stack</span>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setSelectedLayerId("routes")} 
-                className="px-2 py-0.5 rounded bg-[#101D21] border border-[rgba(120,200,210,0.15)] hover:text-[#F4F7F7]"
-              >
-                Fit Stack
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* RIGHT COLUMN: Layer Inspector (320px / 3 cols) */}
