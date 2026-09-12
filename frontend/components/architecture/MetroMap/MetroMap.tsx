@@ -27,21 +27,25 @@ import {
   Eye,
   Focus,
   Compass,
-  GitBranch
+  GitBranch,
+  Search,
+  X,
+  Plus,
+  Minus,
+  Maximize2
 } from 'lucide-react';
 
 import { SubwayStationNode } from './SubwayStationNode';
 import { TrackHeaderNode } from './TrackHeaderNode';
 import { StationInspector } from './StationInspector';
 import { FeatureLegend } from './FeatureLegend';
-import { MetroSearchPanel } from './MetroSearchPanel';
 import { useMetroData, inferStationType } from './useMetroData';
 import { useMetroLayout } from './useMetroLayout';
 import { useMetroGraph } from './useMetroGraph';
 import { SubwayStationData, FeatureFlow, MetroMapProps, FlowGroupData } from './types';
 import { ALL_LAYERS } from './layerDetector';
 
-// Custom Node: Flow Group Card (Overview Mode)
+// Custom Node: Flow Group Card (Overview Mode, compact 145px x 88px)
 function FlowGroupNode({ data }: { data: any }) {
   const isSelected = data.isSelected;
   const color = data.color || '#F43F8C';
@@ -53,40 +57,41 @@ function FlowGroupNode({ data }: { data: any }) {
         e.stopPropagation();
         data.onSelectGroup?.(flowGroup);
       }}
-      className={`p-3.5 rounded-2xl bg-[#0E1B20] border transition-all duration-200 cursor-pointer shadow-lg hover:shadow-2xl select-none ${
+      className={`p-2.5 rounded-xl bg-[#0E1B20] border transition-all duration-150 cursor-pointer shadow-md select-none ${
         isSelected
-          ? 'border-[#16C7A3] ring-2 ring-[#16C7A3]/40 scale-105'
-          : 'border-[#64BEC7]/20 hover:border-[#64BEC7]/50'
+          ? 'border-[#16C7A3] ring-2 ring-[#16C7A3]/40 shadow-lg scale-105'
+          : 'border-[rgba(80,180,200,0.18)] hover:border-[#16C7A3]/50 hover:bg-[#122229]'
       }`}
       style={{
-        borderLeft: `5px solid ${color}`,
-        width: 210
+        borderLeft: `4px solid ${color}`,
+        width: 148,
+        minHeight: 84
       }}
     >
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-base">{flowGroup?.icon || '🔐'}</span>
-          <h4 className="text-xs font-bold text-[#F4F7F7] font-mono truncate">
-            {flowGroup?.name}
-          </h4>
-        </div>
+      <div className="flex items-center gap-1.5 mb-1 min-w-0">
+        <span className="text-xs shrink-0">{flowGroup?.icon || '🔐'}</span>
+        <h4 className="text-[11px] font-bold text-[#F4F7F7] font-mono truncate">
+          {flowGroup?.name}
+        </h4>
       </div>
-      <div className="text-[10px] font-mono text-[#9FB0B4] flex items-center justify-between mb-2">
+
+      <div className="text-[9.5px] font-mono text-[#9FB0B4] flex items-center justify-between mb-1.5">
         <span>{flowGroup?.stationsCount || 4} stations</span>
-        <span>{flowGroup?.endpointsCount || 8} endpoints</span>
+        <span>{flowGroup?.endpointsCount || 8} eps</span>
       </div>
-      <div className="w-full bg-[#061318] h-1.5 rounded-full overflow-hidden mb-2">
+
+      <div className="w-full bg-[#061318] h-1.5 rounded-full overflow-hidden mb-1">
         <div
-          className="h-full rounded-full transition-all duration-300"
+          className="h-full rounded-full"
           style={{
             width: `${flowGroup?.health || 96}%`,
             backgroundColor: (flowGroup?.health || 96) >= 90 ? '#16C7A3' : '#F5A623'
           }}
         />
       </div>
+
       <div className="text-[9px] font-mono text-[#16C7A3] flex items-center justify-between">
         <span>{flowGroup?.health || 96}% Health</span>
-        <span className="text-[#718287] hover:text-white font-bold">Inspect &rarr;</span>
       </div>
     </div>
   );
@@ -100,13 +105,13 @@ function CoreHubNode({ data }: { data: any }) {
         e.stopPropagation();
         data.onSelectHub?.();
       }}
-      className="w-36 h-36 rounded-full bg-[#0E1B20] border-2 border-[#16C7A3] shadow-[0_0_40px_rgba(22,199,163,0.3)] flex flex-col items-center justify-center text-center p-3 cursor-pointer hover:scale-105 transition-all select-none"
+      className="w-28 h-28 rounded-full bg-[#0E1B20] border-2 border-[#16C7A3] shadow-[0_0_30px_rgba(22,199,163,0.25)] flex flex-col items-center justify-center text-center p-2 cursor-pointer hover:scale-105 transition-all select-none"
     >
-      <div className="w-11 h-11 rounded-2xl bg-[#16C7A3]/20 flex items-center justify-center mb-1 text-[#16C7A3] border border-[#16C7A3]/40">
-        <Layers size={24} />
+      <div className="w-8 h-8 rounded-xl bg-[#16C7A3]/20 flex items-center justify-center mb-1 text-[#16C7A3] border border-[#16C7A3]/40">
+        <Layers size={18} />
       </div>
-      <span className="text-xs font-extrabold text-[#F4F7F7] font-mono tracking-wider">CORE HUB</span>
-      <span className="text-[9px] text-[#9FB0B4] font-mono">Infrastructure & Integrations</span>
+      <span className="text-[10.5px] font-extrabold text-[#F4F7F7] font-mono tracking-wider">CORE HUB</span>
+      <span className="text-[8.5px] text-[#9FB0B4] font-mono leading-tight">Infrastructure</span>
     </div>
   );
 }
@@ -115,13 +120,13 @@ function CoreHubNode({ data }: { data: any }) {
 function InfraNode({ data }: { data: any }) {
   const Icon = data.icon || Database;
   return (
-    <div className="px-4 py-3 rounded-xl bg-[#0E1B20] border border-[#64BEC7]/25 flex items-center gap-3 shadow-md min-w-[170px] select-none hover:border-[#16C7A3] transition">
-      <div className="w-8 h-8 rounded-lg bg-[#16C7A3]/15 flex items-center justify-center text-[#16C7A3]">
-        <Icon size={18} />
+    <div className="px-3 py-2 rounded-xl bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] flex items-center gap-2.5 shadow-sm min-w-[145px] select-none hover:border-[#16C7A3] transition">
+      <div className="w-6 h-6 rounded-lg bg-[#16C7A3]/15 flex items-center justify-center text-[#16C7A3] shrink-0">
+        <Icon size={14} />
       </div>
       <div>
-        <span className="text-xs font-bold text-[#F4F7F7] font-mono block leading-tight">{data.label}</span>
-        <span className="text-[10px] text-[#9FB0B4] font-mono">{data.stationsCount || 4} stations</span>
+        <span className="text-[11px] font-bold text-[#F4F7F7] font-mono block leading-tight">{data.label}</span>
+        <span className="text-[9px] text-[#9FB0B4] font-mono">{data.stationsCount || 4} stations</span>
       </div>
     </div>
   );
@@ -141,7 +146,7 @@ function MetroMapInternal({
   onSetImpactFile,
   onSelectTraceRouteId
 }: MetroMapProps) {
-  const { fitView, setCenter } = useReactFlow();
+  const { fitView, setCenter, zoomIn, zoomOut } = useReactFlow();
 
   // Phase 1: Data Hook
   const { featureClusters, interchanges, executionTraces } = useMetroData(result);
@@ -154,6 +159,7 @@ function MetroMapInternal({
   const [selectedStation, setSelectedStation] = useState<SubwayStationData | null>(null);
   const [focusedNodeIds, setFocusedNodeIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
   // ── Feature Lines & Flow Groups ──
   const sortedFeatureClusters = useMemo(() => {
@@ -183,10 +189,11 @@ function MetroMapInternal({
       setSelectedFeature(feat);
       setSelectedFlowGroup(null);
       setSelectedStation(null);
+      setIsInspectorOpen(true);
     }
   }, [sortedFeatureClusters]);
 
-  // Overview ReactFlow Graph Layout Construction
+  // Overview ReactFlow Graph Layout Construction (Lanes with 170px vertical spacing)
   const overviewGraph = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
@@ -197,21 +204,17 @@ function MetroMapInternal({
       const featColor = feat.color || '#F43F8C';
       const flowGroups = feat.flowGroups || [];
 
-      // Feature Line Header
+      // Feature Line Header (Sitting to the left of the lane)
       nodes.push({
         id: `feat-header-${feat.id}`,
         type: 'trackHeader',
-        position: { x: 50, y: currentY },
+        position: { x: 40, y: currentY },
         data: {
-          label: feat.name,
+          name: feat.name,
           color: featColor,
           stationCount: feat.totalStations || feat.files?.length || 12,
-          featureId: feat.id,
-          onSelectFeature: () => {
-            setSelectedFeature(feat);
-            setSelectedFlowGroup(null);
-            setSelectedStation(null);
-          }
+          lineNumber: feat.id.slice(0, 3).toUpperCase(),
+          health: feat.health || 95,
         }
       });
 
@@ -223,7 +226,7 @@ function MetroMapInternal({
         nodes.push({
           id: nodeId,
           type: 'flowGroup',
-          position: { x: 260 + fgIdx * 240, y: currentY - 15 },
+          position: { x: 230 + fgIdx * 165, y: currentY - 10 },
           data: {
             flowGroup: fg,
             color: featColor,
@@ -232,6 +235,7 @@ function MetroMapInternal({
               setSelectedFlowGroup(group);
               setSelectedFeature(feat);
               setSelectedStation(null);
+              setIsInspectorOpen(true);
             }
           }
         });
@@ -242,7 +246,7 @@ function MetroMapInternal({
             id: `edge-${feat.id}-header-fg0`,
             source: `feat-header-${feat.id}`,
             target: nodeId,
-            style: { stroke: featColor, strokeWidth: 3 },
+            style: { stroke: featColor, strokeWidth: 2.5 },
             type: 'smoothstep'
           });
         } else {
@@ -250,23 +254,23 @@ function MetroMapInternal({
             id: `edge-${feat.id}-fg${fgIdx - 1}-fg${fgIdx}`,
             source: `fg-${feat.id}-${flowGroups[fgIdx - 1].id}`,
             target: nodeId,
-            style: { stroke: featColor, strokeWidth: 3 },
+            style: { stroke: featColor, strokeWidth: 2.5 },
             type: 'smoothstep'
           });
         }
       });
 
-      currentY += 160;
+      currentY += 165;
     });
 
     // Central Core Hub Node
-    const coreHubX = 1200;
-    const coreHubY = Math.max(250, currentY / 2);
+    const coreHubX = 940;
+    const coreHubY = Math.max(220, currentY / 2);
 
     nodes.push({
       id: 'core-hub-central',
       type: 'coreHub',
-      position: { x: coreHubX, y: coreHubY - 70 },
+      position: { x: coreHubX, y: coreHubY - 55 },
       data: {
         onSelectHub: () => {
           const coreFeat = sortedFeatureClusters.find((f) => f.name.toLowerCase().includes('core'));
@@ -274,6 +278,7 @@ function MetroMapInternal({
             setSelectedFeature(coreFeat);
             setSelectedFlowGroup(null);
             setSelectedStation(null);
+            setIsInspectorOpen(true);
           }
         }
       }
@@ -289,7 +294,7 @@ function MetroMapInternal({
           id: `edge-${feat.id}-hub`,
           source: lastFgId,
           target: 'core-hub-central',
-          style: { stroke: featColor, strokeWidth: 2, strokeDasharray: '4,4' },
+          style: { stroke: featColor, strokeWidth: 1.5, strokeDasharray: '4,4' },
           type: 'smoothstep'
         });
       }
@@ -297,18 +302,18 @@ function MetroMapInternal({
 
     // Shared Infrastructure Nodes (Right of Core Hub)
     const infraNodesData = [
-      { id: 'infra-postgres', label: 'PostgreSQL', icon: Database, stationsCount: 4, y: coreHubY - 180 },
-      { id: 'infra-redis', label: 'Redis Cache', icon: Server, stationsCount: 3, y: coreHubY - 90 },
+      { id: 'infra-postgres', label: 'PostgreSQL', icon: Database, stationsCount: 4, y: coreHubY - 140 },
+      { id: 'infra-redis', label: 'Redis Cache', icon: Server, stationsCount: 3, y: coreHubY - 70 },
       { id: 'infra-external', label: 'External APIs', icon: Cloud, stationsCount: 4, y: coreHubY },
-      { id: 'infra-[#16C7A3]', label: 'Background Jobs', icon: Cpu, stationsCount: 4, y: coreHubY + 90 },
-      { id: 'infra-[#F5A623]', label: 'System Health', icon: HeartPulse, stationsCount: 3, y: coreHubY + 180 }
+      { id: 'infra-jobs', label: 'Background Jobs', icon: Cpu, stationsCount: 4, y: coreHubY + 70 },
+      { id: 'infra-health', label: 'System Health', icon: HeartPulse, stationsCount: 3, y: coreHubY + 140 }
     ];
 
     infraNodesData.forEach((infra) => {
       nodes.push({
         id: infra.id,
         type: 'infraNode',
-        position: { x: coreHubX + 240, y: infra.y },
+        position: { x: coreHubX + 180, y: infra.y },
         data: {
           label: infra.label,
           icon: infra.icon,
@@ -320,12 +325,12 @@ function MetroMapInternal({
         id: `edge-hub-${infra.id}`,
         source: 'core-hub-central',
         target: infra.id,
-        style: { stroke: 'rgba(100,190,205,0.4)', strokeWidth: 2 },
+        style: { stroke: 'rgba(80,180,200,0.3)', strokeWidth: 1.5 },
         type: 'smoothstep'
       });
     });
 
-    return { nodes, edges, canvasWidth: coreHubX + 500, canvasHeight: currentY + 100 };
+    return { nodes, edges, canvasWidth: coreHubX + 420, canvasHeight: currentY + 80 };
   }, [activeFeatureClusters, selectedFlowGroup, sortedFeatureClusters]);
 
   // Detailed ReactFlow Graph Layout Construction
@@ -412,6 +417,7 @@ function MetroMapInternal({
         setSelectedFlowGroup(null);
         setSelectedFeature(null);
         setFocusedNodeIds([node.id]);
+        setIsInspectorOpen(true);
       }
     },
     []
@@ -438,14 +444,15 @@ function MetroMapInternal({
         return (
           data.label?.toLowerCase().includes(q) ||
           data.displayName?.toLowerCase().includes(q) ||
-          data.name?.toLowerCase().includes(q)
+          data.name?.toLowerCase().includes(q) ||
+          data.flowGroup?.name?.toLowerCase().includes(q)
         );
       });
 
       if (matches.length > 0) {
         setFocusedNodeIds(matches.map((m) => m.id));
-        setCenter(matches[0].position.x + 85, matches[0].position.y + 45, {
-          zoom: 1.2,
+        setCenter(matches[0].position.x + 75, matches[0].position.y + 40, {
+          zoom: 1.1,
           duration: 500
         });
       }
@@ -470,92 +477,103 @@ function MetroMapInternal({
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-[#061318] text-[#F4F7F7] select-none overflow-hidden font-sans">
-      {/* ── 1. HEADER BAR ── */}
-      <header className="h-[72px] px-6 border-b border-[#64BEC7]/15 bg-[#071113] flex items-center justify-between shrink-0 z-30">
+    <div className="h-full w-full flex flex-col bg-[#061318] text-[#F4F7F7] select-none overflow-hidden font-sans text-left">
+      {/* ── 1. SINGLE COMPACT PAGE HEADER ROW (60-64px) ── */}
+      <header className="h-[60px] px-4 border-b border-[rgba(80,180,200,0.14)] bg-[#071219] flex items-center justify-between shrink-0 z-30 gap-3">
         <div>
-          <h1 className="text-[26px] font-extrabold font-mono tracking-tight text-[#F4F7F7] leading-none">
+          <h1 className="text-[20px] font-bold text-[#F4F7F7] leading-none">
             Metro Map
           </h1>
-          <p className="text-[13px] text-[#9FB0B4] mt-1 font-sans">
+          <p className="text-[12px] text-[#9FB0B4] mt-1 font-normal leading-none">
             Visualize API flows across your codebase
           </p>
         </div>
 
-        {/* Right Search & Controls */}
-        <div className="flex items-center gap-3">
-          {/* Search Input (320–370px) */}
-          <div className="w-[340px]">
-            <MetroSearchPanel
-              nodes={nodes}
-              searchQuery={searchQuery}
-              onSearch={handleSearch}
-              onSelectNode={(id) => setFocusedNodeIds([id])}
-              onClear={() => setSearchQuery('')}
+        {/* Right Search & Controls Grouped on Single Row */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Unified Search Input */}
+          <div className="relative w-[270px]">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#718287] pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search stations, files, or flows..."
+              className="w-full bg-[#0A171C] border border-[rgba(80,180,200,0.16)] rounded-lg pl-8 pr-7 py-1.5 text-xs text-[#F4F7F7] placeholder-[#718287] focus:outline-none focus:border-[#16C7A3] transition-colors"
             />
+            {searchQuery && (
+              <button
+                onClick={() => handleSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#718287] hover:text-[#F4F7F7]"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
 
-          <div className="h-5 w-[1px] bg-[#64BEC7]/20 mx-1" />
+          <div className="h-4 w-[1px] bg-[rgba(80,180,200,0.2)] mx-0.5" />
 
-          {/* Action Buttons */}
+          {/* Fit View Button */}
           <button
-            onClick={() => fitView({ padding: 0.2, duration: 400 })}
-            className="px-3.5 py-2 bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 rounded-xl text-xs font-mono font-bold text-[#F4F7F7] transition shadow-sm flex items-center gap-1.5"
+            onClick={() => fitView({ padding: 0.25, duration: 400 })}
+            className="px-3 py-1.5 bg-[#0A171C] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] rounded-lg text-xs font-semibold text-[#A4B5B8] hover:text-[#F4F7F7] transition flex items-center gap-1.5 cursor-pointer"
           >
-            <RotateCcw size={14} className="text-[#16C7A3]" />
+            <RotateCcw size={12} className="text-[#16C7A3]" />
             <span>Fit View</span>
           </button>
 
+          {/* Center Button */}
           <button
             onClick={() => {
               if (nodes.length > 0) {
-                setCenter(nodes[0].position.x, nodes[0].position.y, { zoom: 1.1, duration: 400 });
+                setCenter(nodes[0].position.x + 80, nodes[0].position.y + 40, { zoom: 1.0, duration: 400 });
               }
             }}
-            className="px-3.5 py-2 bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 rounded-xl text-xs font-mono font-bold text-[#F4F7F7] transition shadow-sm flex items-center gap-1.5"
+            className="px-3 py-1.5 bg-[#0A171C] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] rounded-lg text-xs font-semibold text-[#A4B5B8] hover:text-[#F4F7F7] transition flex items-center gap-1.5 cursor-pointer"
           >
-            <Focus size={14} className="text-[#2F80ED]" />
+            <Focus size={12} className="text-[#2F80ED]" />
             <span>Center</span>
           </button>
 
           {/* Overview / Detailed Toggle */}
-          <div className="bg-[#0E1B20] p-1 border border-[#64BEC7]/20 rounded-xl flex items-center font-mono text-xs">
+          <div className="bg-[#0A171C] p-0.5 border border-[rgba(80,180,200,0.18)] rounded-lg flex items-center text-xs font-semibold">
             <button
               onClick={() => setViewMode('overview')}
-              className={`px-3 py-1 rounded-lg transition font-bold ${
+              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${
                 viewMode === 'overview'
-                  ? 'bg-[#16C7A3] text-[#061318]'
-                  : 'text-[#9FB0B4] hover:text-[#F4F7F7]'
+                  ? 'bg-[#16C7A3] text-[#061318] font-bold'
+                  : 'text-[#A4B5B8] hover:text-[#F4F7F7]'
               }`}
             >
               Overview
             </button>
             <button
               onClick={() => setViewMode('detailed')}
-              className={`px-3 py-1 rounded-lg transition font-bold ${
+              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${
                 viewMode === 'detailed'
-                  ? 'bg-[#16C7A3] text-[#061318]'
-                  : 'text-[#9FB0B4] hover:text-[#F4F7F7]'
+                  ? 'bg-[#16C7A3] text-[#061318] font-bold'
+                  : 'text-[#A4B5B8] hover:text-[#F4F7F7]'
               }`}
             >
               Detailed
             </button>
           </div>
 
+          {/* Export SVG */}
           <button
             onClick={exportToSvg}
-            className="px-3.5 py-2 bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 rounded-xl text-xs font-mono font-bold text-[#F4F7F7] transition shadow-sm flex items-center gap-1.5"
+            className="px-3 py-1.5 bg-[#0A171C] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] rounded-lg text-xs font-semibold text-[#A4B5B8] hover:text-[#F4F7F7] transition flex items-center gap-1.5 cursor-pointer"
           >
-            <Download size={14} className="text-[#A855F7]" />
+            <Download size={12} className="text-[#8B5CF6]" />
             <span>Export SVG</span>
           </button>
         </div>
       </header>
 
       {/* ── 2. MAIN 3-COLUMN WORKSPACE ── */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Column: Feature Lines Navigation (260-280px) */}
-        <aside className="w-[270px] shrink-0 border-r border-[#64BEC7]/15 bg-[#0B171B] flex flex-col h-full overflow-hidden z-20">
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
+        {/* Left Column: Feature Lines Sidebar (260px) */}
+        <aside className="w-[260px] shrink-0 h-full flex flex-col overflow-hidden z-20">
           <FeatureLegend
             features={featureClusters}
             selectedFeatures={selectedFeatures}
@@ -569,21 +587,21 @@ function MetroMapInternal({
           />
         </aside>
 
-        {/* Center Column: Interactive Canvas Map */}
+        {/* Center Column: Interactive Canvas Map (Dominant 55-65%+, expands when inspector closed) */}
         <main className="flex-1 h-full relative bg-[#061318] overflow-hidden">
           {/* Subtle Grid Container */}
-          <div className="absolute inset-0 pointer-events-none opacity-40">
+          <div className="absolute inset-0 pointer-events-none opacity-30">
             <div
               className="w-full h-full"
               style={{
-                backgroundImage: `radial-gradient(circle, rgba(70,160,175,0.18) 1px, transparent 1px)`,
-                backgroundSize: '22px 22px'
+                backgroundImage: `radial-gradient(circle, rgba(80,180,200,0.15) 1px, transparent 1px)`,
+                backgroundSize: '24px 24px'
               }}
             />
           </div>
 
           {/* Incoming Requests Tag */}
-          <div className="absolute top-4 left-6 z-10 bg-[#0E1B20]/80 backdrop-blur-md border border-[#64BEC7]/20 px-3 py-1.5 rounded-xl flex items-center gap-2 font-mono text-xs font-bold text-[#16C7A3]">
+          <div className="absolute top-3 left-4 z-10 bg-[#0A171C]/90 backdrop-blur-md border border-[rgba(80,180,200,0.2)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-mono text-[11px] font-bold text-[#16C7A3] shadow-sm">
             <span>Incoming Requests &rarr;</span>
           </div>
 
@@ -596,112 +614,139 @@ function MetroMapInternal({
             onNodeClick={handleNodeClick}
             onPaneClick={handlePaneClick}
             fitView={false}
-            minZoom={0.4}
-            maxZoom={1.8}
-            defaultViewport={{ x: 60, y: 40, zoom: 0.8 }}
+            minZoom={0.3}
+            maxZoom={2.0}
+            defaultViewport={{ x: 40, y: 30, zoom: 0.85 }}
             panOnDrag={true}
             panOnScroll={true}
             zoomOnScroll={true}
             style={{ width: '100%', height: '100%' }}
           >
-            <Controls className="!bg-[#0E1B20] !border-[#64BEC7]/20 !shadow-xl !fill-[#F4F7F7] [&>button]:!bg-[#0E1B20] [&>button]:!border-[#64BEC7]/15 [&>button]:!text-[#9FB0B4]" />
+            {/* Floating Controls in Bottom-Right */}
+            <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 bg-[#0A171C]/90 backdrop-blur-md border border-[rgba(80,180,200,0.2)] p-1 rounded-xl shadow-lg">
+              <button
+                onClick={() => zoomOut({ duration: 300 })}
+                className="w-7 h-7 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer"
+                title="Zoom Out"
+              >
+                <Minus size={13} />
+              </button>
+              <button
+                onClick={() => zoomIn({ duration: 300 })}
+                className="w-7 h-7 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer"
+                title="Zoom In"
+              >
+                <Plus size={13} />
+              </button>
+              <button
+                onClick={() => fitView({ padding: 0.2, duration: 400 })}
+                className="px-2.5 h-7 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[11px] font-mono text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer"
+                title="Fit View"
+              >
+                Fit
+              </button>
+            </div>
+
             <MiniMap
               nodeStrokeWidth={2}
               zoomable
               pannable
-              className="!bg-[#071113] !border !border-[#64BEC7]/20 !rounded-xl overflow-hidden"
+              className="!bg-[#071219] !border !border-[rgba(80,180,200,0.2)] !rounded-xl overflow-hidden !bottom-4 !left-4"
               nodeColor={(n) => (n.data as any)?.color || '#16C7A3'}
-              maskColor="rgba(6, 19, 24, 0.8)"
+              maskColor="rgba(6, 19, 24, 0.75)"
             />
-            <Background gap={22} size={1} color="rgba(70,160,175,0.07)" />
+            <Background gap={24} size={1} color="rgba(80,180,200,0.06)" />
           </ReactFlow>
         </main>
 
-        {/* Right Column: Detailed Inspector (340px) */}
-        <aside className="w-[340px] shrink-0 border-l border-[#64BEC7]/15 bg-[#0B171B] flex flex-col h-full overflow-hidden z-20">
-          <StationInspector
-            station={selectedStation}
-            flowGroup={selectedFlowGroup}
-            feature={selectedFeature}
-            featureClusters={featureClusters}
-            interchanges={interchanges}
-            executionTraces={executionTraces}
-            onClose={() => {
-              setSelectedStation(null);
-              setSelectedFlowGroup(null);
-              setSelectedFeature(null);
-            }}
-            onSwitchTab={onSwitchTab}
-            onSetImpactFile={onSetImpactFile}
-            onSelectTraceRouteId={onSelectTraceRouteId}
-            onCenterFeature={handleCenterFeature}
-            onSelectStation={(st) => setSelectedStation(st)}
-            isEmbedded={true}
-          />
-        </aside>
+        {/* Right Column: Detailed Inspector (320px, collapsible) */}
+        {isInspectorOpen && (
+          <aside className="w-[320px] shrink-0 border-l border-[rgba(80,180,200,0.14)] bg-[#08171C] flex flex-col h-full overflow-hidden z-20">
+            <StationInspector
+              station={selectedStation}
+              flowGroup={selectedFlowGroup}
+              feature={selectedFeature}
+              featureClusters={featureClusters}
+              interchanges={interchanges}
+              executionTraces={executionTraces}
+              onClose={() => {
+                setSelectedStation(null);
+                setSelectedFlowGroup(null);
+                setSelectedFeature(null);
+                setIsInspectorOpen(false);
+              }}
+              onSwitchTab={onSwitchTab}
+              onSetImpactFile={onSetImpactFile}
+              onSelectTraceRouteId={onSelectTraceRouteId}
+              onCenterFeature={handleCenterFeature}
+              onSelectStation={(st) => setSelectedStation(st)}
+              isEmbedded={true}
+            />
+          </aside>
+        )}
       </div>
 
-      {/* ── 3. BOTTOM SUMMARY PANEL (130-150px) ── */}
-      <footer className="h-[140px] border-t border-[#64BEC7]/15 bg-[#071113] px-6 py-3.5 grid grid-cols-12 gap-6 shrink-0 z-30">
-        {/* Map Overview Thumbnail (Cols 1-3) */}
-        <div className="col-span-3 bg-[#0B171B] border border-[#64BEC7]/15 rounded-2xl p-3 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[#9FB0B4] uppercase">
+      {/* ── 3. BOTTOM SUMMARY PANEL (125-140px Height) ── */}
+      <footer className="h-[130px] border-t border-[rgba(80,180,200,0.14)] bg-[#071219] px-4 py-2.5 grid grid-cols-12 gap-3.5 shrink-0 z-30">
+        {/* Map Overview Thumbnail (Cols 1-3 ~25%) */}
+        <div className="col-span-3 bg-[#0A171C] border border-[rgba(80,180,200,0.14)] rounded-xl p-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10.5px] font-mono font-bold text-[#9FB0B4] uppercase">
             <span>Map Overview</span>
-            <span className="text-[#16C7A3]">Active</span>
+            <span className="text-[#16C7A3] text-[9.5px]">Active</span>
           </div>
           {/* Mini SVG Diagram */}
-          <div className="h-14 flex items-center justify-center relative overflow-hidden">
-            <svg className="w-full h-full" viewBox="0 0 200 60">
-              <path d="M 10 15 H 190" stroke="#F43F8C" strokeWidth="3" fill="none" />
-              <path d="M 10 30 H 190" stroke="#2F80ED" strokeWidth="3" fill="none" />
-              <path d="M 10 45 H 190" stroke="#A855F7" strokeWidth="3" fill="none" />
-              <circle cx="60" cy="15" r="4" fill="#F4F7F7" />
-              <circle cx="120" cy="30" r="4" fill="#F4F7F7" />
-              <circle cx="160" cy="45" r="4" fill="#F4F7F7" />
+          <div className="h-12 flex items-center justify-center relative overflow-hidden">
+            <svg className="w-full h-full" viewBox="0 0 200 50">
+              <path d="M 10 12 H 190" stroke="#F43F8C" strokeWidth="2.5" fill="none" />
+              <path d="M 10 25 H 190" stroke="#2F80ED" strokeWidth="2.5" fill="none" />
+              <path d="M 10 38 H 190" stroke="#8B5CF6" strokeWidth="2.5" fill="none" />
+              <circle cx="50" cy="12" r="3.5" fill="#F4F7F7" />
+              <circle cx="110" cy="25" r="3.5" fill="#F4F7F7" />
+              <circle cx="150" cy="38" r="3.5" fill="#F4F7F7" />
             </svg>
           </div>
         </div>
 
-        {/* Repository Statistics (Cols 4-8) */}
-        <div className="col-span-5 bg-[#0B171B] border border-[#64BEC7]/15 rounded-2xl p-3 flex flex-col justify-between">
-          <span className="text-[11px] font-mono font-bold text-[#9FB0B4] uppercase block">
+        {/* Repository Statistics (Cols 4-8 ~40%) */}
+        <div className="col-span-5 bg-[#0A171C] border border-[rgba(80,180,200,0.14)] rounded-xl p-2.5 flex flex-col justify-between">
+          <span className="text-[10.5px] font-mono font-bold text-[#9FB0B4] uppercase block">
             Repository Statistics
           </span>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div className="bg-[#0E1B20] p-2 rounded-xl border border-[#64BEC7]/10">
-              <span className="text-lg font-bold font-mono text-[#F4F7F7] block">6</span>
-              <span className="text-[10px] text-[#718287] font-mono">Feature Lines</span>
+          <div className="grid grid-cols-4 gap-1.5 text-center">
+            <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
+              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">6</span>
+              <span className="text-[9.5px] text-[#718287] font-mono">Feature Lines</span>
             </div>
-            <div className="bg-[#0E1B20] p-2 rounded-xl border border-[#64BEC7]/10">
-              <span className="text-lg font-bold font-mono text-[#F4F7F7] block">22</span>
-              <span className="text-[10px] text-[#718287] font-mono">Flow Groups</span>
+            <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
+              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">22</span>
+              <span className="text-[9.5px] text-[#718287] font-mono">Flow Groups</span>
             </div>
-            <div className="bg-[#0E1B20] p-2 rounded-xl border border-[#64BEC7]/10">
-              <span className="text-lg font-bold font-mono text-[#F4F7F7] block">80</span>
-              <span className="text-[10px] text-[#718287] font-mono">Stations</span>
+            <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
+              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">80</span>
+              <span className="text-[9.5px] text-[#718287] font-mono">Stations</span>
             </div>
-            <div className="bg-[#0E1B20] p-2 rounded-xl border border-[#64BEC7]/10">
-              <span className="text-lg font-bold font-mono text-[#F4F7F7] block">48</span>
-              <span className="text-[10px] text-[#718287] font-mono">Dependencies</span>
+            <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
+              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">48</span>
+              <span className="text-[9.5px] text-[#718287] font-mono">Dependencies</span>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions (Cols 9-12) */}
-        <div className="col-span-4 bg-[#0B171B] border border-[#64BEC7]/15 rounded-2xl p-3 flex flex-col justify-between">
-          <span className="text-[11px] font-mono font-bold text-[#9FB0B4] uppercase block">
+        {/* Quick Actions (Cols 9-12 ~35%) */}
+        <div className="col-span-4 bg-[#0A171C] border border-[rgba(80,180,200,0.14)] rounded-xl p-2.5 flex flex-col justify-between">
+          <span className="text-[10.5px] font-mono font-bold text-[#9FB0B4] uppercase block">
             Quick Actions
           </span>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             <button
               onClick={() => {
                 if (nodes.length > 2) {
                   setFocusedNodeIds([nodes[0].id, nodes[2].id]);
                 }
               }}
-              className="p-2 rounded-xl bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 font-mono text-[11px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-1"
+              className="p-1.5 rounded-lg bg-[#071219] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] font-mono text-[10px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer"
             >
-              <Compass size={14} className="text-[#16C7A3]" />
+              <Compass size={13} className="text-[#16C7A3]" />
               <span>Shortest Path</span>
             </button>
 
@@ -712,17 +757,17 @@ function MetroMapInternal({
                   onSwitchTab('trace');
                 }
               }}
-              className="p-2 rounded-xl bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 font-mono text-[11px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-1"
+              className="p-1.5 rounded-lg bg-[#071219] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] font-mono text-[10px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer"
             >
-              <GitBranch size={14} className="text-[#2F80ED]" />
+              <GitBranch size={13} className="text-[#2F80ED]" />
               <span>Trace Flow</span>
             </button>
 
             <button
               onClick={() => setViewMode((prev) => (prev === 'overview' ? 'detailed' : 'overview'))}
-              className="p-2 rounded-xl bg-[#0E1B20] hover:bg-[#14262E] border border-[#64BEC7]/20 font-mono text-[11px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-1"
+              className="p-1.5 rounded-lg bg-[#071219] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] font-mono text-[10px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer"
             >
-              <Eye size={14} className="text-[#A855F7]" />
+              <Eye size={13} className="text-[#8B5CF6]" />
               <span>{viewMode === 'overview' ? 'Show All' : 'Overview'}</span>
             </button>
           </div>
