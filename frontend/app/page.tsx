@@ -1970,6 +1970,8 @@ export default function Home() {
                 { id: "impact", label: "Impact & Risk" },
                 { id: "compare", label: "Compare Scans" },
                 { id: "env", label: "Environment" },
+                { id: "ai-architect", label: "AI Architect" },
+                { id: "onboarding", label: "Onboarding" },
               ];
               return visibleTabs.map((tab) => {
                 const isActive = activeResultTab === tab.id;
@@ -1982,6 +1984,8 @@ export default function Home() {
                   impact: Zap,
                   compare: GitCompare,
                   env: Settings,
+                  "ai-architect": Sparkles,
+                  onboarding: Terminal,
                 };
                 const Icon = icons[tab.id as keyof typeof icons] || Layers;
 
@@ -2740,7 +2744,7 @@ export default function Home() {
             )}
 
             {/* ─── AI ARCHITECT TAB ─── */}
-            {activeResultTab === "ai-architect" && result.aiSummary && (
+            {activeResultTab === "ai-architect" && (
               <div className="w-full max-w-[1450px] mx-auto space-y-4 text-left">
                 {/* ── Header ── */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
@@ -2839,7 +2843,7 @@ export default function Home() {
                       PROJECT PURPOSE
                     </h4>
                     <p className="text-[14px] sm:text-[15px] leading-[1.65] text-[#D0E1E3] font-normal">
-                      {result.aiSummary.purpose ? (
+                      {result.aiSummary?.purpose ? (
                         result.aiSummary.purpose
                       ) : (
                         <>
@@ -2885,7 +2889,7 @@ export default function Home() {
                         </div>
                         <div className="min-w-0">
                           <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
-                            {result.aiSummary.stack?.framework || "Fastify"}
+                            {result.aiSummary?.stack?.framework || "Fastify"}
                           </div>
                           <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
                             Framework
@@ -2903,7 +2907,7 @@ export default function Home() {
                         </div>
                         <div className="min-w-0">
                           <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
-                            {result.aiSummary.stack?.language || "TypeScript"}
+                            {result.aiSummary?.stack?.language || "TypeScript"}
                           </div>
                           <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
                             Language
@@ -2921,7 +2925,7 @@ export default function Home() {
                         </div>
                         <div className="min-w-0">
                           <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
-                            {result.aiSummary.stack?.runtime || "Node.js"}
+                            {result.aiSummary?.stack?.runtime || "Node.js"}
                           </div>
                           <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
                             Runtime
@@ -2939,7 +2943,7 @@ export default function Home() {
                         </div>
                         <div className="min-w-0">
                           <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
-                            {result.aiSummary.stack?.orm || "Drizzle"}
+                            {result.aiSummary?.stack?.orm || "Drizzle"}
                           </div>
                           <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
                             ORM
@@ -2957,7 +2961,7 @@ export default function Home() {
                         </div>
                         <div className="min-w-0">
                           <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
-                            {(result.aiSummary.stack as any)?.auth || (result.aiSummary.stack as any)?.authentication || "JWT"}
+                            {(result.aiSummary?.stack as any)?.auth || (result.aiSummary?.stack as any)?.authentication || "JWT"}
                           </div>
                           <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
                             Authentication
@@ -2975,7 +2979,7 @@ export default function Home() {
                         </div>
                         <div className="min-w-0">
                           <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
-                            {result.aiSummary.stack?.packageManager || "npm"}
+                            {result.aiSummary?.stack?.packageManager || "npm"}
                           </div>
                           <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
                             Package Manager
@@ -3006,31 +3010,31 @@ export default function Home() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8 text-xs sm:text-[13px]">
                         <div className="flex items-center justify-between py-0.5 border-b border-[rgba(155,232,224,0.06)]">
                           <span className="text-[#8EA9AE]">Framework:</span>
-                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary.stack?.framework || "Fastify"}</span>
+                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary?.stack?.framework || "Fastify"}</span>
                         </div>
                         <div className="flex items-center justify-between py-0.5 border-b border-[rgba(155,232,224,0.06)]">
                           <span className="text-[#8EA9AE]">Database:</span>
-                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary.stack?.database || "PostgreSQL"}</span>
+                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary?.stack?.database || "PostgreSQL"}</span>
                         </div>
                         <div className="flex items-center justify-between py-0.5 border-b border-[rgba(155,232,224,0.06)]">
                           <span className="text-[#8EA9AE]">Language:</span>
-                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary.stack?.language || "TypeScript"}</span>
+                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary?.stack?.language || "TypeScript"}</span>
                         </div>
                         <div className="flex items-center justify-between py-0.5 border-b border-[rgba(155,232,224,0.06)]">
                           <span className="text-[#8EA9AE]">ORM:</span>
-                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary.stack?.orm || "Drizzle"}</span>
+                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary?.stack?.orm || "Drizzle"}</span>
                         </div>
                         <div className="flex items-center justify-between py-0.5 border-b border-[rgba(155,232,224,0.06)]">
                           <span className="text-[#8EA9AE]">Runtime:</span>
-                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary.stack?.runtime || "Node.js"}</span>
+                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary?.stack?.runtime || "Node.js"}</span>
                         </div>
                         <div className="flex items-center justify-between py-0.5 border-b border-[rgba(155,232,224,0.06)]">
                           <span className="text-[#8EA9AE]">Authentication:</span>
-                          <span className="font-semibold text-[#F7FAFA] font-mono">{(result.aiSummary.stack as any)?.auth || (result.aiSummary.stack as any)?.authentication || "JWT"}</span>
+                          <span className="font-semibold text-[#F7FAFA] font-mono">{(result.aiSummary?.stack as any)?.auth || (result.aiSummary?.stack as any)?.authentication || "JWT"}</span>
                         </div>
                         <div className="flex items-center justify-between py-0.5 border-b border-[rgba(155,232,224,0.06)] sm:col-span-2">
                           <span className="text-[#8EA9AE]">Package Manager:</span>
-                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary.stack?.packageManager || "npm"}</span>
+                          <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary?.stack?.packageManager || "npm"}</span>
                         </div>
                       </div>
                     </div>
