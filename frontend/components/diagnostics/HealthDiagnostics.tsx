@@ -83,10 +83,10 @@ export default function HealthDiagnostics({
     <div className="w-full max-w-[1080px] text-left relative space-y-[18px]">
       {/* ── 1. COMPACT PAGE HEADER ── */}
       <div>
-        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#16C7A1]">
+        <p className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8]">
           CODE QUALITY
         </p>
-        <h1 className="text-3xl sm:text-[34px] font-bold text-[#F7FAFA] tracking-tight leading-tight mt-1">
+        <h1 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-1">
           Health Diagnostics
         </h1>
       </div>
@@ -94,23 +94,23 @@ export default function HealthDiagnostics({
       {/* ── 2. FOUR COMPACT METRIC CARDS (100–105px height, no icons/arrows/progress bars) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mt-5">
         {/* Card 1: HEALTH SCORE */}
-        <div className="h-[105px] rounded-[12px] bg-[rgba(8,55,65,0.82)] border border-[rgba(155,232,224,0.08)] p-4 flex flex-col justify-between shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8EA9AE]">
+        <div className="h-[105px] rounded-[14px] bg-[rgba(8,55,65,0.82)] border border-[rgba(32,214,216,0.18)] p-4 flex flex-col justify-between shadow-sm">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#9BC9CE]">
             HEALTH SCORE
           </span>
           <div>
             <span className="text-[34px] font-bold font-mono text-[#FF3344] leading-none">
               {score}
             </span>
-            <span className="text-[11px] font-mono text-[#8EA9AE] ml-1.5">
+            <span className="text-[11px] font-mono text-[#9BC9CE] ml-1.5">
               /100
             </span>
           </div>
         </div>
 
         {/* Card 2: CYCLES */}
-        <div className="h-[105px] rounded-[12px] bg-[rgba(8,55,65,0.82)] border border-[rgba(155,232,224,0.08)] p-4 flex flex-col justify-between shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8EA9AE]">
+        <div className="h-[105px] rounded-[14px] bg-[rgba(8,55,65,0.82)] border border-[rgba(32,214,216,0.18)] p-4 flex flex-col justify-between shadow-sm">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#9BC9CE]">
             CYCLES
           </span>
           <div>
@@ -121,8 +121,8 @@ export default function HealthDiagnostics({
         </div>
 
         {/* Card 3: DEAD CODE */}
-        <div className="h-[105px] rounded-[12px] bg-[rgba(8,55,65,0.82)] border border-[rgba(155,232,224,0.08)] p-4 flex flex-col justify-between shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8EA9AE]">
+        <div className="h-[105px] rounded-[14px] bg-[rgba(8,55,65,0.82)] border border-[rgba(32,214,216,0.18)] p-4 flex flex-col justify-between shadow-sm">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#9BC9CE]">
             DEAD CODE
           </span>
           <div>
@@ -133,8 +133,8 @@ export default function HealthDiagnostics({
         </div>
 
         {/* Card 4: BROKEN IMPORTS */}
-        <div className="h-[105px] rounded-[12px] bg-[rgba(8,55,65,0.82)] border border-[rgba(155,232,224,0.08)] p-4 flex flex-col justify-between shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8EA9AE]">
+        <div className="h-[105px] rounded-[14px] bg-[rgba(8,55,65,0.82)] border border-[rgba(32,214,216,0.18)] p-4 flex flex-col justify-between shadow-sm">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#9BC9CE]">
             BROKEN IMPORTS
           </span>
           <div>
@@ -146,8 +146,8 @@ export default function HealthDiagnostics({
       </div>
 
       {/* ── 3. GOD SERVICES (Compact Flat Analytical List) ── */}
-      <div className="rounded-[12px] bg-[rgba(8,55,65,0.82)] border border-[rgba(155,232,224,0.08)] p-5 shadow-sm">
-        <h2 className="text-[13px] font-bold tracking-wider uppercase text-[#FF3344] mb-3">
+      <div className="rounded-[16px] bg-[rgba(8,55,65,0.82)] border border-[rgba(32,214,216,0.18)] p-5 shadow-sm">
+        <h2 className="text-[13px] font-bold tracking-[1px] uppercase text-[#FF3344] mb-3">
           GOD SERVICES ({effectiveGodServices.length})
         </h2>
 
@@ -156,7 +156,7 @@ export default function HealthDiagnostics({
             <div
               key={service.file + index}
               onClick={() => onSelectFile?.(service.file)}
-              className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-[rgba(155,232,224,0.04)] transition-colors cursor-pointer group"
+              className="flex items-center justify-between py-1.5 px-2.5 rounded-[8px] hover:bg-[rgba(32,214,216,0.06)] transition-colors cursor-pointer group"
             >
               {/* File Path */}
               <span className="font-mono text-[12px] sm:text-[13px] text-[#C3D5D8] group-hover:text-white truncate max-w-[70%]">
@@ -168,7 +168,7 @@ export default function HealthDiagnostics({
                 <span className="px-2.5 py-0.5 rounded-full border border-[#FF3344]/40 text-[#FF4D5E] text-[11px] font-mono font-medium">
                   {service.methods ?? 0} methods
                 </span>
-                <span className="px-2 py-0.5 rounded-full border border-[rgba(155,232,224,0.15)] bg-[rgba(6,47,56,0.6)] text-[#8EA9AE] text-[10px] font-mono font-medium">
+                <span className="px-2 py-0.5 rounded-full border border-[rgba(32,214,216,0.20)] bg-[rgba(6,47,56,0.6)] text-[#9BC9CE] text-[10px] font-mono font-medium">
                   LOC
                 </span>
               </div>
@@ -178,8 +178,8 @@ export default function HealthDiagnostics({
       </div>
 
       {/* ── 4. DEAD CODE (Compact 2-Column List) ── */}
-      <div className="rounded-[12px] bg-[rgba(8,55,65,0.82)] border border-[rgba(155,232,224,0.08)] p-5 shadow-sm">
-        <h2 className="text-[13px] font-bold tracking-wider uppercase text-[#9BE8E0] mb-3">
+      <div className="rounded-[16px] bg-[rgba(8,55,65,0.82)] border border-[rgba(32,214,216,0.18)] p-5 shadow-sm">
+        <h2 className="text-[13px] font-bold tracking-[1px] uppercase text-[#20D6D8] mb-3">
           DEAD CODE ({effectiveDeadCode.length})
         </h2>
 
@@ -188,7 +188,7 @@ export default function HealthDiagnostics({
             <div
               key={filePath + index}
               onClick={() => onSelectFile?.(filePath)}
-              className="font-mono text-[12px] sm:text-[13px] text-[#8EA9AE] hover:text-[#9BE8E0] transition-colors truncate py-0.5 cursor-pointer"
+              className="font-mono text-[12px] sm:text-[13px] text-[#9BC9CE] hover:text-[#20D6D8] transition-colors truncate py-0.5 cursor-pointer"
             >
               {filePath}
             </div>

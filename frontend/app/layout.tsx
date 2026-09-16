@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "projectAnalyser — Understand Any Codebase in 30 Seconds",
+  title: "projectAnalyser — Understand Any Codebase in Minutes",
   description: "Upload ZIPs or paste GitHub URLs to automatically discover routing patterns, dependency maps, and configuration settings.",
 };
 

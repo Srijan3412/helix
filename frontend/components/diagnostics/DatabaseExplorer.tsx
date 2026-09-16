@@ -123,14 +123,14 @@ export default function DatabaseExplorer({
       {/* ── 1. HEADER AREA ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#16C7A1] flex items-center gap-1.5">
-            <Database size={14} className="text-[#16C7A1]" />
+          <p className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8] flex items-center gap-1.5">
+            <Database size={14} className="text-[#20D6D8]" />
             DATABASE ANALYSIS
           </p>
           <h1 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-1">
             Schema & Entities
           </h1>
-          <p className="text-sm text-[#82AEB5] mt-1">
+          <p className="text-sm text-[#9BC9CE] mt-1">
             Explore the structure of your database and its entities.
           </p>
         </div>

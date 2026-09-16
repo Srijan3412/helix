@@ -55,19 +55,19 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
           className="text-center mb-12"
         >
           {/* Eyebrow Pill */}
-          <div className="inline-flex items-center gap-2 h-7 px-3.5 rounded-full bg-[rgba(0,200,170,0.08)] border border-[rgba(0,220,190,0.25)] mb-3.5 shadow-sm">
-            <span className="text-[12px] font-bold uppercase tracking-[3px] text-[#79E1D7]">
-              ✦ TRANSPARENT PRICING
+          <div className="inline-flex items-center gap-2 h-7 px-3.5 rounded-full bg-[rgba(32,214,216,0.10)] border border-[rgba(32,214,216,0.25)] mb-3.5 shadow-sm">
+            <span className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8]">
+              TRANSPARENT PRICING
             </span>
           </div>
 
           {/* Main Heading */}
-          <h2 className="text-3xl sm:text-[42px] font-bold text-white tracking-tight leading-tight mb-2.5">
+          <h2 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
             Choose Your Plan
           </h2>
 
           {/* Subtitle */}
-          <p className="text-[#AFC9CE] text-[15px] sm:text-[16px] leading-relaxed max-w-[700px] mx-auto">
+          <p className="text-[#9BC9CE] text-[15px] sm:text-[16px] leading-relaxed max-w-[700px] mx-auto">
             Start for free with 2 repository scans. Upgrade as your team grows.
           </p>
         </motion.div>
@@ -90,8 +90,8 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
                 className={`relative rounded-[20px] p-8 sm:p-9 min-h-[520px] flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                   isPro
-                    ? 'bg-[#DDF6F1] text-[#073942] border-2 border-[#79E1D7] shadow-[0_12px_40px_rgba(70,230,210,0.18)] scale-[1.02] z-20'
-                    : 'bg-[#104957] text-[#D5E8EB] border border-[rgba(121,225,215,0.22)] hover:border-[rgba(121,225,215,0.45)] shadow-lg'
+                    ? 'bg-[#DDF6F1] text-[#073942] border-2 border-[#20D6D8] shadow-[0_12px_40px_rgba(32,214,216,0.18)] scale-[1.02] z-20'
+                    : 'bg-[#104957] text-[#D5E8EB] border border-[rgba(32,214,216,0.22)] hover:border-[rgba(32,214,216,0.45)] shadow-lg'
                 }`}
               >
                 {/* Overlapping RECOMMENDED Badge for Professional with gentle micro-float */}
@@ -99,7 +99,7 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                   <motion.div
                     animate={{ y: [-1, 1, -1] }}
                     transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                    className="absolute -top-[16px] left-1/2 -translate-x-1/2 h-8 px-5 rounded-full bg-[#72DDD2] text-[#073942] text-[12px] font-bold uppercase tracking-[1.5px] shadow-md flex items-center justify-center pointer-events-none"
+                    className="absolute -top-[16px] left-1/2 -translate-x-1/2 h-8 px-5 rounded-full bg-[#20D6D8] text-[#073942] text-[12px] font-bold uppercase tracking-[1.5px] shadow-md flex items-center justify-center pointer-events-none"
                   >
                     RECOMMENDED
                   </motion.div>
@@ -111,7 +111,7 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                     <div className={`w-16 h-16 rounded-[16px] flex items-center justify-center mb-4 ${
                       isPro
                         ? 'bg-[#c2eee5] text-[#073942]'
-                        : 'bg-[#185d6e] text-[#79E1D7]'
+                        : 'bg-[#185d6e] text-[#20D6D8]'
                     }`}>
                       {isTrial && <Layers className="w-8 h-8" />}
                       {isPro && <Zap className="w-8 h-8 fill-[#073942]" />}
@@ -119,13 +119,13 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                     </div>
 
                     {/* Plan Title & Subtitle */}
-                    <h3 className={`text-[24px] font-bold tracking-tight mb-1 ${
+                    <h3 className={`text-[22px] sm:text-[24px] font-bold tracking-tight mb-1 ${
                       isPro ? 'text-[#073942]' : 'text-white'
                     }`}>
                       {plan.name}
                     </h3>
-                    <p className={`text-[15px] ${
-                      isPro ? 'text-[#234B53]' : 'text-[#A9C2C7]'
+                    <p className={`text-[14px] ${
+                      isPro ? 'text-[#234B53]' : 'text-[#9BC9CE]'
                     }`}>
                       {isTrial
                         ? 'Get started with Helix.'

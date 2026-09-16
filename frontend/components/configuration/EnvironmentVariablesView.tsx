@@ -16,6 +16,8 @@ import {
   ChevronRight,
   ChevronUp,
   X,
+  ShieldAlert,
+  Sliders,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EnvironmentVariable } from "@shared/types";
@@ -45,9 +47,6 @@ const DEFAULT_DESCRIPTIONS: Record<string, string> = {
 
 interface EnvVarCardConfig {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  iconBg: string;
-  iconColor: string;
-  accentBorder: string;
   category: "General" | "Security" | "External API";
   isHighRisk: boolean;
   description: string;
@@ -57,13 +56,9 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   const upper = name.toUpperCase();
   const desc = DEFAULT_DESCRIPTIONS[upper] || `${name} environment configuration`;
 
-  // Specific mappings matching target screenshot
   if (upper === "NODE_ENV") {
     return {
       icon: Monitor,
-      iconBg: "#B5E5E5",
-      iconColor: "#073B43",
-      accentBorder: "#54C9D0",
       category: "General",
       isHighRisk: false,
       description: desc,
@@ -73,9 +68,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "APP_URL") {
     return {
       icon: Link2,
-      iconBg: "#F5EEEE",
-      iconColor: "#123F45",
-      accentBorder: "#E0F2F1",
       category: "General",
       isHighRisk: false,
       description: desc,
@@ -85,9 +77,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "RESEND_API_KEY") {
     return {
       icon: Lock,
-      iconBg: "#E2384C",
-      iconColor: "#FFFFFF",
-      accentBorder: "#E2384C",
       category: "Security",
       isHighRisk: true,
       description: desc,
@@ -97,9 +86,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "APP_NAME") {
     return {
       icon: LayoutGrid,
-      iconBg: "#B5E5E5",
-      iconColor: "#073B43",
-      accentBorder: "#54C9D0",
       category: "General",
       isHighRisk: false,
       description: desc,
@@ -109,9 +95,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "EMAIL_FROM") {
     return {
       icon: Mail,
-      iconBg: "#F5EEEE",
-      iconColor: "#123F45",
-      accentBorder: "#E0F2F1",
       category: "General",
       isHighRisk: false,
       description: desc,
@@ -121,9 +104,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "SMTP_USER") {
     return {
       icon: Mail,
-      iconBg: "#F5EEEE",
-      iconColor: "#123F45",
-      accentBorder: "#E2384C",
       category: "General",
       isHighRisk: false,
       description: desc,
@@ -133,9 +113,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "SMTP_HOST") {
     return {
       icon: Database,
-      iconBg: "#B5E5E5",
-      iconColor: "#073B43",
-      accentBorder: "#54C9D0",
       category: "General",
       isHighRisk: false,
       description: desc,
@@ -145,9 +122,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "EMAIL_DOMAIN") {
     return {
       icon: Globe,
-      iconBg: "#F5EEEE",
-      iconColor: "#123F45",
-      accentBorder: "#E0F2F1",
       category: "General",
       isHighRisk: false,
       description: desc,
@@ -157,9 +131,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "NEXT_PUBLIC_API_URL") {
     return {
       icon: ExternalLink,
-      iconBg: "#F5EEEE",
-      iconColor: "#123F45",
-      accentBorder: "#E0F2F1",
       category: "External API",
       isHighRisk: false,
       description: desc,
@@ -169,9 +140,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "SENDGRID_API_KEY") {
     return {
       icon: Lock,
-      iconBg: "#E2384C",
-      iconColor: "#FFFFFF",
-      accentBorder: "#E2384C",
       category: "Security",
       isHighRisk: true,
       description: desc,
@@ -181,9 +149,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "SMTP_PASS") {
     return {
       icon: Lock,
-      iconBg: "#E2384C",
-      iconColor: "#FFFFFF",
-      accentBorder: "#E2384C",
       category: "Security",
       isHighRisk: true,
       description: desc,
@@ -193,16 +158,13 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper === "SUPABASE_ANON_KEY") {
     return {
       icon: Database,
-      iconBg: "#B5E5E5",
-      iconColor: "#073B43",
-      accentBorder: "#54C9D0",
       category: "Security",
       isHighRisk: true,
       description: desc,
     };
   }
 
-  // Fallback heuristic
+  // Heuristic fallbacks
   if (
     criticality === "HIGH" ||
     upper.includes("KEY") ||
@@ -212,9 +174,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   ) {
     return {
       icon: Lock,
-      iconBg: "#E2384C",
-      iconColor: "#FFFFFF",
-      accentBorder: "#E2384C",
       category: "Security",
       isHighRisk: true,
       description: desc,
@@ -224,9 +183,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
   if (upper.includes("URL") || upper.includes("API") || category === "External API") {
     return {
       icon: ExternalLink,
-      iconBg: "#F5EEEE",
-      iconColor: "#123F45",
-      accentBorder: "#E0F2F1",
       category: "External API",
       isHighRisk: false,
       description: desc,
@@ -235,9 +191,6 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
 
   return {
     icon: Settings,
-    iconBg: "#B5E5E5",
-    iconColor: "#073B43",
-    accentBorder: "#54C9D0",
     category: "General",
     isHighRisk: false,
     description: desc,
@@ -247,7 +200,7 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
 export default function EnvironmentVariablesView({ envVars }: EnvironmentVariablesViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedVarNames, setExpandedVarNames] = useState<Record<string, boolean>>({
-    APP_NAME: true, // Expanded by default to match target screenshot
+    APP_NAME: true, // Default expanded as in specification
   });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [customEnvVars, setCustomEnvVars] = useState<EnvironmentVariable[]>([]);
@@ -324,156 +277,195 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
   };
 
   return (
-    <div className="w-full max-w-[1450px] mx-auto text-left relative select-none">
-      {/* ── 1. Top-Right Decorative Red Circle with Dotted Grid Pattern ── */}
-      <div className="absolute -top-14 -right-14 w-72 h-72 sm:w-84 sm:h-84 rounded-full bg-[#E2384C] pointer-events-none overflow-hidden z-0 shadow-2xl">
+    <div className="w-full max-w-[1450px] mx-auto text-left relative select-none rounded-[28px] overflow-hidden p-6 sm:p-8 bg-gradient-to-b from-[#003F46] via-[#002D33] to-[#00535A] shadow-2xl border border-[rgba(32,214,216,0.18)]">
+      {/* ── 1. ABSTRACT CURVED / CIRCULAR DECORATIVE CORNER SHAPES ── */}
+      {/* Top-Right Decorative Shapes: Nested Red & Cyan Circular Arcs */}
+      <div className="absolute -top-24 -right-24 w-96 h-96 pointer-events-none overflow-hidden z-0">
+        {/* Outer Pale Cyan Arc */}
+        <div className="absolute top-0 right-0 w-88 h-88 rounded-full border-[22px] border-[#B8F1F0]/15" />
+        {/* Middle Vibrant Cyan Arc */}
+        <div className="absolute top-6 right-6 w-72 h-72 rounded-full border-[18px] border-[#46D9DC]/25" />
+        {/* Inner Solid Red Circle with Dotted Texture */}
+        <div className="absolute top-14 right-14 w-56 h-56 rounded-full bg-gradient-to-br from-[#F34A57] to-[#E52B3A] shadow-[0_10px_35px_rgba(229,43,58,0.4)] overflow-hidden">
+          <div
+            className="w-full h-full opacity-30"
+            style={{
+              backgroundImage: "radial-gradient(circle, #FFFFFF 1.5px, transparent 1.5px)",
+              backgroundSize: "14px 14px",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Bottom-Left Decorative Shapes: Subtle Organic Curves & Dotted Matrix */}
+      <div className="absolute -bottom-28 -left-28 w-80 h-80 pointer-events-none overflow-hidden z-0">
+        <div className="absolute bottom-4 left-4 w-64 h-64 rounded-full bg-[#E52B3A]/20 blur-xl" />
+        <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full border-[14px] border-[#20D6D8]/20" />
         <div
-          className="w-full h-full opacity-35"
+          className="absolute bottom-8 left-8 w-40 h-40 opacity-25"
           style={{
-            backgroundImage: "radial-gradient(circle, #FFFFFF 1.5px, transparent 1.5px)",
-            backgroundSize: "16px 16px",
+            backgroundImage: "radial-gradient(circle, #20D6D8 1.5px, transparent 1.5px)",
+            backgroundSize: "12px 12px",
           }}
         />
       </div>
 
-      <div className="relative z-10 space-y-6">
-        {/* ── 2. TWO-COLUMN HEADER ROW ── */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
-          {/* Left Column: Icon + Labels */}
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#E2384C] flex items-center justify-center text-white shadow-lg shadow-[#E2384C]/30 shrink-0 mt-0.5">
-              <Settings className="w-6 h-6 text-white" />
+      {/* Main Content Container */}
+      <div className="relative z-10 space-y-7">
+        {/* ── 2. PAGE HEADER WITH ICON BOX ── */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-2">
+          {/* Left Column: 64x64px Red Icon + Eyebrow + Title + Subtitle */}
+          <div className="flex items-start gap-4 sm:gap-5">
+            {/* Header Icon Block */}
+            <div className="w-16 h-16 rounded-[16px] bg-gradient-to-br from-[#F04452] to-[#E52B3A] border border-[#FF6675]/40 flex items-center justify-center text-white shadow-[0_4px_22px_rgba(229,43,58,0.38)] shrink-0 mt-0.5">
+              <Settings className="w-7 h-7 text-white stroke-[2.2]" />
             </div>
+
             <div>
-              <p className="text-[13px] font-bold uppercase tracking-[2px] text-[#8EDDE0]">
+              {/* Eyebrow */}
+              <p className="text-[12px] sm:text-[13px] font-bold uppercase tracking-[2px] text-[#20D6D8]">
                 CONFIGURATION
               </p>
-              <h1 className="text-3xl sm:text-[36px] font-extrabold text-[#F5F7F7] tracking-tight leading-tight mt-0.5">
+              {/* Large Bold Title */}
+              <h1 className="text-3xl sm:text-[40px] font-extrabold text-[#F5FAFA] tracking-tight leading-tight mt-0.5">
                 Environment Variables
               </h1>
-              <p className="text-sm sm:text-base text-[#A9C7CA] mt-1 font-normal">
-                Manage your environment variables and configuration settings.
+              {/* Descriptive Subtitle */}
+              <p className="text-sm sm:text-[15px] text-[#9BC9CE] mt-1 font-normal">
+                Manage application configuration, secrets and environment settings.
               </p>
             </div>
           </div>
 
-          {/* Right Column: Total Variables Statistics Card */}
-          <div className="bg-[#063F48]/90 border border-[#177A83]/70 rounded-2xl px-5 py-3.5 flex items-center gap-4 shadow-sm shrink-0 backdrop-blur-sm">
-            <div className="w-10 h-10 rounded-xl bg-[#54C9D0]/20 border border-[#54C9D0]/30 text-[#54C9D0] flex items-center justify-center shrink-0">
-              <Database className="w-5 h-5" />
+          {/* Right Column: Glassmorphism Summary Pill */}
+          <div className="bg-[rgba(4,58,64,0.72)] border border-[rgba(32,214,216,0.28)] rounded-2xl px-5 py-3 flex items-center gap-3.5 shadow-sm backdrop-blur-md shrink-0 self-start md:self-auto">
+            <div className="w-9 h-9 rounded-xl bg-[rgba(32,214,216,0.15)] border border-[rgba(32,214,216,0.35)] text-[#20D6D8] flex items-center justify-center shrink-0">
+              <Sliders className="w-4.5 h-4.5" />
             </div>
             <div>
-              <span className="text-[11px] text-[#A9C7CA] font-medium block leading-tight">
+              <span className="text-[11px] text-[#9BC9CE] font-semibold uppercase tracking-wider block leading-tight">
                 Total Variables
               </span>
-              <span className="text-[15px] font-bold text-[#F5F7F7] font-mono block mt-0.5">
-                {allEnvVars.length} variables
+              <span className="text-[15px] font-bold text-[#F5FAFA] font-mono block mt-0.5">
+                {allEnvVars.length} configured
               </span>
             </div>
           </div>
         </header>
 
-        {/* ── 3. SEARCH BAR & ADD VARIABLE ACTION ROW ── */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-          {/* Search Box with RED Search Icon & Ctrl K Shortcut */}
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#E2384C]" />
+        {/* ── 3. GLASSMORPHISM SEARCH BAR & ADD VARIABLE BUTTON ── */}
+        <div className="flex flex-col sm:flex-row items-center gap-3.5 w-full">
+          {/* Glassmorphism Search Input */}
+          <div className="relative flex-1 w-full group">
+            <Search className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#20D6D8] transition-colors group-focus-within:text-[#46E1E0]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search env vars..."
-              className="w-full h-12 rounded-2xl bg-[#03282F]/75 border border-[#2B9299]/70 pl-11 pr-24 text-sm text-[#F5F7F7] placeholder-[#79A4A8] focus:outline-none focus:border-[#54C9D0] transition-colors"
+              placeholder="Search variables by name, category, or description..."
+              className="w-full h-[54px] rounded-[14px] bg-[rgba(0,45,52,0.65)] border border-[rgba(30,210,215,0.35)] pl-12 pr-24 text-[14px] text-[#F5FAFA] placeholder-[#79A4A8] backdrop-blur-md focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/50 focus:shadow-[0_0_18px_rgba(32,214,216,0.25)] transition-all duration-200"
             />
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-              <span className="px-2 py-0.5 rounded-md bg-[#063F48] border border-[#177A83]/60 text-[10px] font-mono text-[#A9C7CA]">
-                Ctrl
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+              <span className="px-2 py-0.5 rounded-md bg-[rgba(4,58,64,0.8)] border border-[rgba(32,214,216,0.25)] text-[10px] font-mono font-medium text-[#9BC9CE]">
+                ⌘
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-[#063F48] border border-[#177A83]/60 text-[10px] font-mono text-[#A9C7CA]">
+              <span className="px-2 py-0.5 rounded-md bg-[rgba(4,58,64,0.8)] border border-[rgba(32,214,216,0.25)] text-[10px] font-mono font-medium text-[#9BC9CE]">
                 K
               </span>
             </div>
           </div>
 
-          {/* Add Variable Button */}
+          {/* Add Variable Action Button */}
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="h-12 px-6 rounded-2xl bg-[#E2384C] hover:bg-[#E2384C]/90 text-white font-bold text-sm shadow-lg shadow-[#E2384C]/25 flex items-center justify-center gap-2 transition cursor-pointer shrink-0"
+            className="h-[54px] px-6 rounded-[14px] bg-gradient-to-r from-[#E52B3A] to-[#F04452] hover:brightness-110 text-white font-bold text-sm shadow-[0_4px_18px_rgba(229,43,58,0.32)] flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shrink-0 hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Plus size={16} className="stroke-[2.5]" />
+            <Plus size={18} className="stroke-[2.5]" />
             <span>Add Variable</span>
           </button>
         </div>
 
-        {/* ── 4. VARIABLE CARDS GRID (2 Columns with Colored Left Accent Border) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-start">
+        {/* ── 4. 2-COLUMN VARIABLE CARDS GRID ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5 items-start">
           {filteredVars.map((envVar, idx) => {
             const config = getEnvVarConfig(envVar.name, envVar.category, envVar.criticality);
             const IconComp = config.icon;
             const isExpanded = !!expandedVarNames[envVar.name];
 
             return (
-              <div
-                key={idx}
+              <motion.div
+                key={envVar.name + idx}
+                layout
                 onClick={() => toggleExpand(envVar.name)}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group ${
+                className={`p-5 sm:p-6 rounded-[20px] transition-all duration-200 cursor-pointer relative overflow-hidden backdrop-blur-md group ${
                   isExpanded
-                    ? "bg-[#07454E] border-[#54C9D0] ring-1 ring-[#54C9D0]/50 shadow-lg"
-                    : "bg-[#063F48] border-[#177A83]/70 hover:border-[#54C9D0]/80 hover:bg-[#07454E]/80 shadow-sm"
+                    ? "bg-gradient-to-br from-[rgba(32,214,216,0.10)] via-[rgba(4,58,64,0.85)] to-[rgba(0,35,40,0.92)] border border-[#20D6D8] ring-1 ring-[#20D6D8]/40 shadow-[0_8px_30px_rgba(0,35,40,0.6),0_0_20px_rgba(32,214,216,0.15)]"
+                    : config.isHighRisk
+                    ? "bg-gradient-to-br from-[rgba(229,43,58,0.08)] via-[rgba(4,58,64,0.72)] to-[rgba(0,35,40,0.85)] border border-[rgba(229,43,58,0.45)] hover:border-[rgba(229,43,58,0.75)] hover:shadow-[0_8px_25px_rgba(0,35,40,0.5),0_0_15px_rgba(229,43,58,0.2)] hover:-translate-y-0.5"
+                    : "bg-gradient-to-br from-[rgba(32,214,216,0.05)] via-[rgba(4,58,64,0.72)] to-[rgba(0,35,40,0.85)] border border-[rgba(31,190,195,0.28)] hover:border-[rgba(32,214,216,0.6)] hover:bg-[rgba(5,72,79,0.85)] hover:shadow-[0_8px_25px_rgba(0,35,40,0.5),0_0_15px_rgba(32,214,216,0.15)] hover:-translate-y-0.5"
                 }`}
-                style={{
-                  borderLeftWidth: "6px",
-                  borderLeftColor: config.accentBorder,
-                }}
               >
-                {/* Main Card Content Row */}
-                <div className="flex items-center justify-between gap-3">
-                  {/* Left: Icon + Name + Description */}
+                {/* Subtle Diagonal Curved Highlight Inside Card */}
+                <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-bl from-white/[0.04] to-transparent pointer-events-none rounded-tr-[20px]" />
+
+                {/* Main Card Header / Content Row */}
+                <div className="flex items-center justify-between gap-3 relative z-10">
+                  {/* Left: Colored Circular Icon + Name + Description */}
                   <div className="flex items-center gap-3.5 min-w-0">
+                    {/* Circular Icon Container */}
                     <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
-                      style={{
-                        backgroundColor: config.iconBg,
-                        color: config.iconColor,
-                      }}
+                      className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                        config.category === "Security"
+                          ? "bg-[rgba(230,45,60,0.15)] border border-[rgba(229,43,58,0.45)] text-[#E52B3A]"
+                          : config.category === "External API"
+                          ? "bg-[rgba(32,214,216,0.12)] border border-[rgba(32,214,216,0.35)] text-[#20D6D8]"
+                          : "bg-[rgba(20,190,195,0.15)] border border-[rgba(32,214,216,0.4)] text-[#20D6D8]"
+                      }`}
                     >
-                      <IconComp className="w-5 h-5" style={{ color: config.iconColor }} />
+                      <IconComp className="w-5 h-5 stroke-[2.2]" />
                     </div>
 
                     <div className="min-w-0">
-                      <code className="text-sm font-bold font-mono text-[#F5F7F7] block leading-tight truncate">
+                      {/* Variable Name */}
+                      <code className="text-[14px] sm:text-[15px] font-bold font-mono text-[#F3FAFA] tracking-[0.4px] block leading-tight truncate">
                         {envVar.name}
                       </code>
-                      <span className="text-xs text-[#A9C7CA] mt-0.5 block truncate leading-tight">
+                      {/* Subtitle / Description */}
+                      <span className="text-[12px] sm:text-[13px] text-[#9BC9CE] mt-0.5 block truncate leading-tight">
                         {config.description}
                       </span>
                     </div>
                   </div>
 
-                  {/* Right: Badges + Chevron Navigation */}
+                  {/* Right: Semantic Badges + Expand Indicator */}
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Category Badge */}
                     {config.category === "Security" ? (
-                      <span className="px-3 py-1 rounded-full bg-transparent border border-[#54C9D0]/60 text-[#54C9D0] text-xs font-bold">
+                      <span className="px-3 py-1.5 rounded-[10px] bg-[rgba(229,43,58,0.14)] border border-[rgba(229,43,58,0.4)] text-[#FF7582] text-xs font-semibold">
                         Security
                       </span>
+                    ) : config.category === "External API" ? (
+                      <span className="px-3 py-1.5 rounded-[10px] bg-[rgba(32,214,216,0.12)] border border-[rgba(32,214,216,0.35)] text-[#46E1E0] text-xs font-semibold">
+                        External API
+                      </span>
                     ) : (
-                      <span className="px-3 py-1 rounded-full bg-[#B5E5E5] text-[#073B43] text-xs font-bold">
-                        {config.category}
+                      <span className="px-3 py-1.5 rounded-[10px] bg-[rgba(32,214,216,0.12)] border border-[rgba(32,214,216,0.35)] text-[#20D6D8] text-xs font-semibold">
+                        General
                       </span>
                     )}
 
-                    {/* HIGH RISK Badge */}
+                    {/* Prominent HIGH RISK Badge with Red Glow */}
                     {config.isHighRisk && (
-                      <span className="px-2.5 py-1 rounded-full bg-[#E2384C] text-white text-[11px] font-bold uppercase tracking-wider shadow-xs">
+                      <span className="px-2.5 py-1.5 rounded-[10px] bg-[rgba(230,35,50,0.18)] border border-[#E83245] text-[#FF6675] text-[11px] font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(232,50,69,0.25)] flex items-center gap-1">
+                        <ShieldAlert className="w-3 h-3 text-[#FF6675]" />
                         HIGH RISK
                       </span>
                     )}
 
-                    {/* Arrow / Chevron */}
-                    <div className="pl-1 text-[#A9C7CA] group-hover:text-[#54C9D0] transition-colors">
+                    {/* Chevron Indicator */}
+                    <div className="pl-1 text-[#9BC9CE] group-hover:text-[#20D6D8] transition-colors">
                       {isExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-[#54C9D0]" />
+                        <ChevronUp className="w-5 h-5 text-[#20D6D8]" />
                       ) : (
                         <ChevronRight className="w-5 h-5" />
                       )}
@@ -481,60 +473,61 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
                   </div>
                 </div>
 
-                {/* ── 5. EXPANDED CODE USAGES SECTION ── */}
+                {/* ── 5. EXPANDED CODE USAGES & REFERENCES SECTION ── */}
                 <AnimatePresence>
                   {isExpanded && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
+                      transition={{ duration: 0.22 }}
+                      className="overflow-hidden relative z-10"
                     >
-                      <div className="mt-3.5 pt-3.5 border-t border-[#177A83]/40 space-y-3">
-                        <p className="text-xs text-[#A9C7CA] font-medium">
-                          Usages in code:{" "}
-                          <span className="text-[#F5F7F7] font-bold font-mono">
+                      <div className="mt-4 pt-4 border-t border-[rgba(40,180,190,0.20)] space-y-3.5">
+                        {/* Usages in code */}
+                        <div className="flex items-center text-xs text-[#9BC9CE]">
+                          <span>Usages in code:</span>
+                          <span className="text-[#F5FAFA] font-bold font-mono text-sm ml-1.5">
                             {envVar.usages || 6}
                           </span>
-                        </p>
+                        </div>
 
-                        {/* USED BY */}
+                        {/* USED BY Section */}
                         <div>
-                          <span className="text-[10px] font-bold text-[#A9C7CA] uppercase tracking-wider block mb-1.5">
+                          <span className="text-[11px] font-bold text-[#20D6D8] uppercase tracking-[1px] block mb-2">
                             USED BY:
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-2">
                             {(envVar.usedBy && envVar.usedBy.length > 0
                               ? envVar.usedBy
                               : ["email.service.ts", "email.service.ts"]
                             ).map((file, fIdx) => (
-                              <code
+                              <span
                                 key={fIdx}
-                                className="px-2.5 py-1 rounded-lg bg-[#042A31] border border-[#177A83]/50 text-xs font-mono text-[#A8E1E3]"
+                                className="px-2.5 py-1.5 rounded-[8px] bg-[rgba(0,170,180,0.14)] border border-[rgba(32,214,216,0.25)] text-xs font-mono text-[#A8E1E3] shadow-xs"
                               >
                                 {file.split(/[\\/]/).pop()}
-                              </code>
+                              </span>
                             ))}
                           </div>
                         </div>
 
-                        {/* DECLARED IN FILES */}
+                        {/* DECLARED IN FILES Section */}
                         <div>
-                          <span className="text-[10px] font-bold text-[#A9C7CA] uppercase tracking-wider block mb-1.5">
+                          <span className="text-[11px] font-bold text-[#20D6D8] uppercase tracking-[1px] block mb-2">
                             DECLARED IN FILES:
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-2">
                             {(envVar.files && envVar.files.length > 0
                               ? envVar.files
                               : ["email.service.ts", "email.service.ts"]
                             ).map((file, fIdx) => (
-                              <code
+                              <span
                                 key={fIdx}
-                                className="px-2.5 py-1 rounded-lg bg-[#042A31] border border-[#177A83]/50 text-xs font-mono text-[#A8E1E3]"
+                                className="px-2.5 py-1.5 rounded-[8px] bg-[rgba(0,170,180,0.14)] border border-[rgba(32,214,216,0.25)] text-xs font-mono text-[#A8E1E3] shadow-xs"
                               >
                                 {file.split(/[\\/]/).pop()}
-                              </code>
+                              </span>
                             ))}
                           </div>
                         </div>
@@ -542,68 +535,77 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             );
           })}
         </div>
       </div>
 
-      {/* ── 6. ADD VARIABLE MODAL ── */}
+      {/* ── 6. ADD VARIABLE MODAL (Aligned to Health Diagnostics Glass Theme) ── */}
       <AnimatePresence>
         {isAddModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#063F48] border border-[#2B9299] rounded-3xl p-6 w-full max-w-md shadow-2xl text-left"
+              initial={{ opacity: 0, scale: 0.94, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 10 }}
+              className="bg-gradient-to-b from-[#003F46] via-[#002D33] to-[#00535A] border border-[rgba(32,214,216,0.35)] rounded-[24px] p-6 sm:p-7 w-full max-w-md shadow-2xl text-left relative overflow-hidden"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-[#177A83]/40">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#E2384C] flex items-center justify-center text-white">
-                    <Plus size={16} />
+              {/* Modal Corner Accent */}
+              <div className="absolute -top-12 -right-12 w-36 h-36 bg-[#E52B3A]/20 rounded-full blur-xl pointer-events-none" />
+
+              <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(32,214,216,0.20)] relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#F04452] to-[#E52B3A] flex items-center justify-center text-white shadow-md">
+                    <Plus size={18} className="stroke-[2.5]" />
                   </div>
-                  <h3 className="text-lg font-bold text-[#F5F7F7]">Add Environment Variable</h3>
+                  <h3 className="text-lg font-bold text-[#F5FAFA]">Add Environment Variable</h3>
                 </div>
                 <button
                   onClick={() => setIsAddModalOpen(false)}
-                  className="text-[#A9C7CA] hover:text-white p-1 rounded-lg"
+                  className="text-[#9BC9CE] hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
 
-              <form onSubmit={handleAddVariable} className="mt-4 space-y-4">
+              <form onSubmit={handleAddVariable} className="mt-5 space-y-4 relative z-10">
                 <div>
-                  <label className="text-xs font-bold text-[#A9C7CA] block mb-1">Variable Name</label>
+                  <label className="text-xs font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1.5">
+                    Variable Name
+                  </label>
                   <input
                     type="text"
                     required
                     value={newVarName}
                     onChange={(e) => setNewVarName(e.target.value)}
                     placeholder="e.g. STRIPE_SECRET_KEY"
-                    className="w-full h-11 px-3.5 rounded-xl bg-[#03282F] border border-[#177A83] text-sm font-mono text-[#F5F7F7] focus:outline-none focus:border-[#54C9D0]"
+                    className="w-full h-11 px-3.5 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.3)] text-sm font-mono text-[#F5FAFA] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#A9C7CA] block mb-1">Description</label>
+                  <label className="text-xs font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1.5">
+                    Description
+                  </label>
                   <input
                     type="text"
                     value={newVarDesc}
                     onChange={(e) => setNewVarDesc(e.target.value)}
                     placeholder="e.g. Secret API key for Stripe payment processing"
-                    className="w-full h-11 px-3.5 rounded-xl bg-[#03282F] border border-[#177A83] text-sm text-[#F5F7F7] focus:outline-none focus:border-[#54C9D0]"
+                    className="w-full h-11 px-3.5 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.3)] text-sm text-[#F5FAFA] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/50"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-[#A9C7CA] block mb-1">Category</label>
+                    <label className="text-xs font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1.5">
+                      Category
+                    </label>
                     <select
                       value={newVarCategory}
                       onChange={(e) => setNewVarCategory(e.target.value as any)}
-                      className="w-full h-11 px-3 rounded-xl bg-[#03282F] border border-[#177A83] text-xs font-bold text-[#F5F7F7] focus:outline-none focus:border-[#54C9D0]"
+                      className="w-full h-11 px-3 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.3)] text-xs font-bold text-[#F5FAFA] focus:outline-none focus:border-[#20D6D8]"
                     >
                       <option value="General">General</option>
                       <option value="Security">Security</option>
@@ -612,11 +614,13 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-[#A9C7CA] block mb-1">Risk Level</label>
+                    <label className="text-xs font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1.5">
+                      Risk Level
+                    </label>
                     <select
                       value={newVarCriticality}
                       onChange={(e) => setNewVarCriticality(e.target.value as any)}
-                      className="w-full h-11 px-3 rounded-xl bg-[#03282F] border border-[#177A83] text-xs font-bold text-[#F5F7F7] focus:outline-none focus:border-[#54C9D0]"
+                      className="w-full h-11 px-3 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.3)] text-xs font-bold text-[#F5FAFA] focus:outline-none focus:border-[#20D6D8]"
                     >
                       <option value="LOW">Normal (Low Risk)</option>
                       <option value="HIGH">HIGH RISK</option>
@@ -624,17 +628,17 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2.5 pt-2">
+                <div className="flex items-center justify-end gap-2.5 pt-3">
                   <button
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl bg-[#03282F] border border-[#177A83] text-xs font-bold text-[#A9C7CA] hover:text-white"
+                    className="px-4 py-2.5 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.25)] text-xs font-bold text-[#9BC9CE] hover:text-white transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-[#E2384C] hover:bg-[#E2384C]/90 text-white text-xs font-bold shadow-md shadow-[#E2384C]/25"
+                    className="px-5 py-2.5 rounded-[12px] bg-gradient-to-r from-[#E52B3A] to-[#F04452] hover:brightness-110 text-white text-xs font-bold shadow-md shadow-[#E52B3A]/30 transition cursor-pointer"
                   >
                     Save Variable
                   </button>

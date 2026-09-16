@@ -1085,13 +1085,13 @@ export default function RouteAnalysisWorkspace({
       {/* ── 1. GLOBAL ROUTE ANALYSIS HEADER ───────────────────────────────── */}
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-2.5 border-b border-[rgba(50,190,190,0.16)] shrink-0">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9BE8E0]">
+          <p className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8]">
             ROUTE ANALYSIS
           </p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#F2F7F7] tracking-tight leading-tight mt-0.5">
+          <h1 className="text-2xl sm:text-[32px] font-extrabold text-[#F2F7F7] tracking-tight leading-tight mt-0.5">
             API Endpoints
           </h1>
-          <p className="text-xs text-[#94ADB2] mt-0.5">
+          <p className="text-xs sm:text-sm text-[#9BC9CE] mt-0.5">
             Browse and explore all API endpoints
           </p>
         </div>

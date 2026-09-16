@@ -176,11 +176,11 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           
           {/* Left Column: Messaging & CTA */}
           <div className="lg:col-span-5 flex flex-col items-start text-left">
-            <div className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#9BE8E0] mb-3.5">
+            <div className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8] mb-3.5">
               CODE BETTER, FASTER
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[58px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.02] mb-4">
+            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.05] mb-4">
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -205,11 +205,11 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                 transition={{ duration: 0.45, delay: 0.2, ease: "easeOut" }}
                 className="inline-block text-[#FF3344]"
               >
-                30 Seconds
+                In Minutes, Not Days
               </motion.span>
             </h1>
 
-            <p className="text-[#C3D5D8] text-base sm:text-[17px] leading-[1.55] max-w-[460px] mb-7">
+            <p className="text-[#9BC9CE] text-[15px] sm:text-[16px] leading-relaxed max-w-[460px] mb-7">
               Understand what any codebase does, from architecture and dependencies to routes, database schemas, and code health diagnostics in seconds.
             </p>
 
@@ -217,7 +217,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
             <div className="flex flex-wrap items-center gap-4 mb-3">
               <button
                 onClick={onGetStarted}
-                className="group h-[52px] px-8 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white text-[15px] font-bold shadow-lg shadow-red-500/20 flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
+                className="group h-[52px] px-8 rounded-[12px] bg-[#FF3344] hover:bg-[#e02636] text-white text-[15px] font-bold shadow-lg shadow-red-500/20 flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
               >
                 <span>Start Free Trial</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
@@ -225,39 +225,39 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
 
               <a
                 href="#features"
-                className="h-[52px] px-7 rounded-[10px] bg-transparent hover:bg-[rgba(155,232,224,0.08)] text-[#F7FAFA] border border-[rgba(155,232,224,0.25)] hover:border-[rgba(155,232,224,0.45)] text-[15px] font-semibold flex items-center transition-all duration-200 hover:-translate-y-0.5"
+                className="h-[52px] px-7 rounded-[12px] bg-transparent hover:bg-[rgba(155,232,224,0.08)] text-[#F7FAFA] border border-[rgba(155,232,224,0.25)] hover:border-[rgba(155,232,224,0.45)] text-[15px] font-semibold flex items-center transition-all duration-200 hover:-translate-y-0.5"
               >
                 Explore Features
               </a>
             </div>
 
-            <p className="text-xs text-[#8EA9AE] mb-8">
-              No credit card, No credit cards, Don't even.
+            <p className="text-xs text-[#9BC9CE] mb-8">
+              No credit card required. Instant analysis.
             </p>
 
             {/* Proof Statistics Row */}
             <div className="flex items-center gap-7 text-xs sm:text-sm font-semibold text-white">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#9BE8E0]" />
+                <Users className="w-4 h-4 text-[#20D6D8]" />
                 <div>
-                  <div className="font-bold text-[#F7FAFA] text-sm">10K+</div>
-                  <div className="text-[11px] text-[#C3D5D8] font-normal">Developers</div>
+                  <div className="font-bold text-[#F7FAFA] text-sm font-mono">10K+</div>
+                  <div className="text-[11px] text-[#9BC9CE] font-normal uppercase tracking-wider">Developers</div>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-[#9BE8E0] fill-[#9BE8E0]" />
+                <Star className="w-4 h-4 text-[#20D6D8] fill-[#20D6D8]" />
                 <div>
-                  <div className="font-bold text-[#F7FAFA] text-sm">4.9/5</div>
-                  <div className="text-[11px] text-[#C3D5D8] font-normal">User Rating</div>
+                  <div className="font-bold text-[#F7FAFA] text-sm font-mono">4.9/5</div>
+                  <div className="text-[11px] text-[#9BC9CE] font-normal uppercase tracking-wider">User Rating</div>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Server className="w-4 h-4 text-[#9BE8E0]" />
+                <Server className="w-4 h-4 text-[#20D6D8]" />
                 <div>
-                  <div className="font-bold text-[#F7FAFA] text-sm">50K+</div>
-                  <div className="text-[11px] text-[#C3D5D8] font-normal">Repositories</div>
+                  <div className="font-bold text-[#F7FAFA] text-sm font-mono">50K+</div>
+                  <div className="text-[11px] text-[#9BC9CE] font-normal uppercase tracking-wider">Repositories</div>
                 </div>
               </div>
             </div>
@@ -405,10 +405,13 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           transition={{ duration: 0.5 }}
           className="text-center mb-10 sm:mb-12"
         >
-          <h2 className="text-3xl sm:text-[40px] font-bold text-[#F7FAFA] tracking-tight mb-2.5">
+          <div className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8] mb-2.5">
+            PLATFORM CAPABILITIES
+          </div>
+          <h2 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
             Eight Engines, <span className="text-[#FF3344]">One Powerful Platform</span>
           </h2>
-          <p className="text-[#C3D5D8] text-[15px] sm:text-[16px] max-w-[600px] mx-auto leading-relaxed">
+          <p className="text-[#9BC9CE] text-[15px] sm:text-[16px] max-w-[600px] mx-auto leading-relaxed">
             Comprehensive analysis, clear explanations, and real-time collaboration.
           </p>
         </motion.div>
@@ -422,16 +425,16 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.35, delay: i * 0.05 }}
-              className="p-6 rounded-[18px] bg-[rgba(8,55,65,0.72)] border border-[rgba(155,232,224,0.18)] hover:border-[rgba(155,232,224,0.45)] hover:bg-[rgba(12,70,80,0.88)] transition-all duration-200 hover:-translate-y-1 group flex flex-col justify-between shadow-md"
+              className="p-6 rounded-[20px] bg-[rgba(8,55,65,0.72)] border border-[rgba(32,214,216,0.20)] hover:border-[rgba(32,214,216,0.5)] hover:bg-[rgba(12,70,80,0.88)] transition-all duration-200 hover:-translate-y-1 group flex flex-col justify-between shadow-md backdrop-blur-md"
             >
               <div>
                 <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-105 ${f.badgeBg}`}>
                   <f.icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-[#F7FAFA] mb-2 group-hover:text-[#9BE8E0] transition-colors">
+                <h3 className="text-[17px] sm:text-[18px] font-bold text-[#F7FAFA] mb-2 group-hover:text-[#20D6D8] transition-colors">
                   {f.title}
                 </h3>
-                <p className="text-sm text-[#C3D5D8] leading-relaxed">
+                <p className="text-[13px] sm:text-[14px] text-[#9BC9CE] leading-relaxed">
                   {f.desc}
                 </p>
               </div>
@@ -455,11 +458,11 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           ].map((s, i) => (
             <div
               key={i}
-              className="p-4 sm:p-5 rounded-[18px] bg-[rgba(8,55,65,0.72)] border border-[rgba(155,232,224,0.18)] text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(155,232,224,0.35)]"
+              className="p-4 sm:p-5 rounded-[18px] bg-[rgba(8,55,65,0.72)] border border-[rgba(32,214,216,0.20)] text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(32,214,216,0.4)]"
             >
-              <s.icon className="w-5 h-5 text-[#9BE8E0] mx-auto mb-2" />
-              <div className="text-xl font-bold text-[#F7FAFA]">{s.value}</div>
-              <div className="text-[11px] text-[#8EA9AE] mt-0.5 uppercase tracking-wider">{s.label}</div>
+              <s.icon className="w-5 h-5 text-[#20D6D8] mx-auto mb-2" />
+              <div className="text-xl font-bold font-mono text-[#F7FAFA]">{s.value}</div>
+              <div className="text-[11px] font-bold text-[#9BC9CE] mt-0.5 uppercase tracking-[1px]">{s.label}</div>
             </div>
           ))}
         </motion.div>
@@ -481,18 +484,18 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           transition={{ duration: 0.5 }}
           className="text-center mb-10 sm:mb-12"
         >
-          <div className="text-[13px] font-bold uppercase tracking-[0.22em] text-[#FF3344] mb-2.5">
-            F A Q
+          <div className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8] mb-2.5">
+            FREQUENTLY ASKED
           </div>
-          <h2 className="text-4xl sm:text-[48px] font-bold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
-            Frequently Asked <span className="text-[#FF3344]">Questions</span>
+          <h2 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
+            Common <span className="text-[#FF3344]">Questions</span>
           </h2>
-          <p className="text-[#C3D5D8] text-[16px] sm:text-[17px] max-w-[640px] mx-auto leading-relaxed">
+          <p className="text-[#9BC9CE] text-[15px] sm:text-[16px] max-w-[640px] mx-auto leading-relaxed">
             Everything you need to know about Archaeologist, in one place.
           </p>
         </motion.div>
 
-        {/* 2-Column FAQ Grid (Exact 20px gap, 20px radius, 56px icon block, 44px round button) */}
+        {/* 2-Column FAQ Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
           {faqs.map((faq, i) => {
             const isOpen = openFaqs.includes(i);
@@ -506,8 +509,8 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                 transition={{ duration: 0.35, delay: i * 0.08 }}
                 className={`rounded-[20px] bg-[rgba(8,70,80,0.65)] border transition-all duration-200 p-6 sm:p-7 ${
                   isOpen
-                    ? 'border-[#16C7A1] shadow-[0_0_0_1px_rgba(22,199,161,0.15)] bg-[rgba(8,70,80,0.85)]'
-                    : 'border-[rgba(155,232,224,0.20)] hover:border-[rgba(155,232,224,0.38)]'
+                    ? 'border-[#20D6D8] shadow-[0_0_0_1px_rgba(32,214,216,0.25)] bg-[rgba(8,70,80,0.85)]'
+                    : 'border-[rgba(32,214,216,0.20)] hover:border-[rgba(32,214,216,0.40)]'
                 }`}
               >
                 <div
@@ -519,21 +522,21 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                     <div className={`w-14 h-14 rounded-[14px] flex items-center justify-center shrink-0 ${faq.iconBg}`}>
                       <faq.icon className="w-6 h-6 stroke-[2.2]" />
                     </div>
-                    {/* 20px Question Text */}
-                    <h3 className="text-[18px] sm:text-[20px] font-semibold text-[#F7FAFA] leading-snug">
+                    {/* Question Text */}
+                    <h3 className="text-[17px] sm:text-[18px] font-bold text-[#F7FAFA] leading-snug">
                       {faq.q}
                     </h3>
                   </div>
 
                   {/* 44x44 Circular Expand Button */}
-                  <div className={`w-11 h-11 rounded-full bg-[rgba(155,232,224,0.10)] flex items-center justify-center text-[#9BE8E0] shrink-0 transition-transform duration-200 ${
-                    isOpen ? 'rotate-180 bg-[rgba(22,199,161,0.25)] text-[#16C7A1]' : ''
+                  <div className={`w-11 h-11 rounded-full bg-[rgba(32,214,216,0.12)] flex items-center justify-center text-[#20D6D8] shrink-0 transition-transform duration-200 ${
+                    isOpen ? 'rotate-180 bg-[rgba(32,214,216,0.25)] text-[#46E1E0]' : ''
                   }`}>
                     <ChevronDown className="w-5 h-5" />
                   </div>
                 </div>
 
-                {/* 16px Answer Text */}
+                {/* Answer Text */}
                 <AnimatePresence>
                   {isOpen && (
                     <motion.div
@@ -541,7 +544,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="overflow-hidden mt-4 pt-4 border-t border-[rgba(155,232,224,0.12)] text-[#C3D5D8] text-[15px] sm:text-[16px] leading-[1.55] max-w-[520px]"
+                      className="overflow-hidden mt-4 pt-4 border-t border-[rgba(32,214,216,0.15)] text-[#9BC9CE] text-[14px] sm:text-[15px] leading-relaxed max-w-[520px]"
                     >
                       {faq.a}
                     </motion.div>
@@ -560,14 +563,14 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="group min-h-[200px] rounded-[22px] bg-[rgba(8,76,88,0.85)] border border-[rgba(155,232,224,0.20)] p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden"
+          className="group min-h-[200px] rounded-[24px] bg-[rgba(8,76,88,0.85)] border border-[rgba(32,214,216,0.22)] p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden backdrop-blur-md"
         >
           
           {/* Left Decorative Subtle Arc Background */}
-          <div className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-[#16C7A1]/10 pointer-events-none" />
+          <div className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-[#20D6D8]/10 pointer-events-none" />
           
           {/* Right Decorative Pale Mint Quarter-Circle */}
-          <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-[#9BE8E0]/15 pointer-events-none" />
+          <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-[#20D6D8]/15 pointer-events-none" />
 
           {/* Left Content */}
           <div className="flex items-center gap-5 text-left z-10">
@@ -577,10 +580,10 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
             </div>
 
             <div>
-              <h2 className="text-2xl sm:text-[34px] font-bold text-[#F7FAFA] tracking-tight leading-tight">
-                Ready to understand <span className="text-[#FF3344]">In 30 Seconds?</span>
+              <h2 className="text-2xl sm:text-[32px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight">
+                Ready to understand <span className="text-[#FF3344]">In Minutes?</span>
               </h2>
-              <p className="text-[#C3D5D8] text-sm sm:text-base mt-1.5">
+              <p className="text-[#9BC9CE] text-sm sm:text-[15px] mt-1.5">
                 Start your 14-day free trial to craft your precision.
               </p>
             </div>
@@ -590,14 +593,14 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           <div className="flex flex-col items-center md:items-end gap-2.5 shrink-0 z-10 w-full md:w-auto">
             <button
               onClick={onGetStarted}
-              className="group/btn w-full md:w-auto h-[52px] px-8 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-[15px] sm:text-[16px] shadow-xl shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2"
+              className="group/btn w-full md:w-auto h-[52px] px-8 rounded-[12px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-[15px] sm:text-[16px] shadow-xl shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <span>Get Started Free</span>
               <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/btn:translate-x-1" />
             </button>
             
             {/* Hand-drawn style sub-annotation */}
-            <div className="flex items-center gap-1.5 text-xs text-[#9BE8E0] italic">
+            <div className="flex items-center gap-1.5 text-xs text-[#20D6D8] italic">
               <span>No credit card required!</span>
             </div>
           </div>

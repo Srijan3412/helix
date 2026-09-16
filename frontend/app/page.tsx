@@ -1674,7 +1674,7 @@ export default function Home() {
           </div>
           <h1 className="text-4xl sm:text-[56px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.05] mb-4">
             Understand Any Codebase <br />
-            In <span className="text-[#FF3344]">30</span> <span className="text-[#16C7A1]">Seconds</span>
+            In <span className="text-[#FF3344]">Minutes</span>, Not <span className="text-[#16C7A1]">Days</span>
           </h1>
           <p className="text-sm sm:text-base text-[#C3D5D8] max-w-2xl mx-auto font-normal leading-relaxed">
             AST Engine → Graph Engine → Route Engine → Database Engine → Auth Engine → Architecture Engine → AI
@@ -2749,14 +2749,14 @@ export default function Home() {
                 {/* ── Header ── */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
                   <div>
-                    <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#16C7A1] flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#16C7A1]" />
+                    <p className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#20D6D8]" />
                       AI ANALYSIS
                     </p>
-                    <h1 className="text-3xl sm:text-[36px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-1">
+                    <h1 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-1">
                       AI Architect
                     </h1>
-                    <p className="text-sm sm:text-base text-[#C3D5D8] mt-1">
+                    <p className="text-sm sm:text-base text-[#9BC9CE] mt-1">
                       Intelligent codebase analysis & insights
                     </p>
                   </div>
@@ -3529,12 +3529,12 @@ export default function Home() {
 
             <button
               onClick={() => setIsChatOpen(!isChatOpen)}
-              className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-emerald-400 text-neutral-950 flex items-center justify-center shadow-2xl hover:scale-105 transition cursor-pointer"
+              className="w-14 h-14 rounded-full bg-gradient-to-br from-[#20D6D8] to-[#12B5B7] hover:from-[#46E1E0] hover:to-[#20D6D8] text-white flex items-center justify-center shadow-[0_4px_22px_rgba(32,214,216,0.38)] hover:scale-105 transition-all duration-200 cursor-pointer"
             >
               {isChatOpen ? (
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6 text-white stroke-[2.2]" />
               ) : (
-                <MessageSquare className="w-5 h-5" />
+                <MessageSquare className="w-6 h-6 text-white stroke-[2.2]" />
               )}
             </button>
           </div>
