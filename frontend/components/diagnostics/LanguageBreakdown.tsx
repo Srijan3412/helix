@@ -237,13 +237,13 @@ export default function LanguageBreakdown({
   const visibleEntrypoints = isExpanded ? entryPoints : entryPoints.slice(0, 5);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-4 items-start text-left w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-4 items-start text-left w-full h-auto min-h-0">
       {/* ─── LEFT: LANGUAGE BREAKDOWN ─── */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col"
+        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col h-auto min-h-0"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-3">
@@ -259,11 +259,6 @@ export default function LanguageBreakdown({
                 Distribution of code across your repository
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A3D46] border border-[#176873] text-[#9BE8E0] text-xs font-medium cursor-default">
-            <span>By lines</span>
-            <ChevronDown size={14} className="text-[#82AEB5]" />
           </div>
         </div>
 
@@ -405,7 +400,7 @@ export default function LanguageBreakdown({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.06 }}
-        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col"
+        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col h-auto min-h-0"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-3">
@@ -422,14 +417,6 @@ export default function LanguageBreakdown({
               </p>
             </div>
           </div>
-
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#0A3D46] hover:bg-[#0E4954] border border-[#176873] text-[#9BE8E0] text-xs font-medium transition-colors"
-          >
-            <span>{isExpanded ? "Collapse" : "View all"}</span>
-            <ArrowRight size={13} className="text-[#16C7A1]" />
-          </button>
         </div>
 
         {/* Scrollable / Stacked Entrypoints List */}

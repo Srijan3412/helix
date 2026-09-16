@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   Suspense,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -170,6 +171,11 @@ const RouteAnalysisWorkspace = dynamic(
       </div>
     ),
   },
+);
+
+const EnvironmentVariablesView = dynamic(
+  () => import("../components/configuration/EnvironmentVariablesView"),
+  { ssr: false }
 );
 
 
@@ -747,8 +753,18 @@ function buildExecutionTrace(route: RouteNode, result: any) {
 
 export default function Home() {
   const router = useRouter();
-  const { currentJobId, status, result, setJob, setStatus, setResult, reset } =
-    useAnalysisStore();
+  const {
+    currentJobId,
+    status,
+    result,
+    repoUrl,
+    sourceType,
+    setJob,
+    setRepoInfo,
+    setStatus,
+    setResult,
+    reset,
+  } = useAnalysisStore();
 
   // Load job from sessionStorage if set by Scan History page
   useEffect(() => {
@@ -818,6 +834,84 @@ export default function Home() {
 
   // ── Result Tab State ──
   const [activeResultTab, setActiveResultTab] = useState<ResultTab>("overview");
+
+  // ── Global Search State ──
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard shortcut for Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setIsSearchFocused(true);
+      }
+      if (e.key === "Escape") {
+        setIsSearchFocused(false);
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filtered Global Search Results across Files, Routes, Env Vars, and Dependencies
+  const searchResults = useMemo(() => {
+    const q = globalSearchQuery.trim().toLowerCase();
+    if (!q || !result) return null;
+
+    const matchedFiles = (result.files || [])
+      .filter((f) => f.path.toLowerCase().includes(q))
+      .slice(0, 4);
+
+    const matchedRoutes = (result.routes || [])
+      .filter(
+        (r) =>
+          r.path.toLowerCase().includes(q) ||
+          r.method.toLowerCase().includes(q) ||
+          (r.handler && r.handler.toLowerCase().includes(q))
+      )
+      .slice(0, 4);
+
+    const matchedEnvVars = (result.envVars || [])
+      .filter((e) => e.name.toLowerCase().includes(q))
+      .slice(0, 3);
+
+    const matchedDeps = (result.dependencies || [])
+      .filter((d) => d.target.toLowerCase().includes(q))
+      .slice(0, 3);
+
+    const totalCount =
+      matchedFiles.length +
+      matchedRoutes.length +
+      matchedEnvVars.length +
+      matchedDeps.length;
+
+    return {
+      files: matchedFiles,
+      routes: matchedRoutes,
+      envVars: matchedEnvVars,
+      deps: matchedDeps,
+      totalCount,
+    };
+  }, [globalSearchQuery, result]);
 
   // ── Routes State ──
   const [routeSearch, setRouteSearch] = useState("");
@@ -1087,8 +1181,8 @@ export default function Home() {
   // ── Mutations ──
   const urlMutation = useMutation({
     mutationFn: submitGithubUrl,
-    onSuccess: (data) => {
-      setJob(data.jobId, "uploaded");
+    onSuccess: (data, variables) => {
+      setJob(data.jobId, "uploaded", variables, "github");
       setErrorMessage("");
       recordUsage("repositories_analyzed");
       recordUsage("tokens_used", 100);
@@ -1100,7 +1194,7 @@ export default function Home() {
   const fileMutation = useMutation({
     mutationFn: submitZipFile,
     onSuccess: (data) => {
-      setJob(data.jobId, "uploaded");
+      setJob(data.jobId, "uploaded", null, "zip");
       setErrorMessage("");
       recordUsage("repositories_analyzed");
       recordUsage("tokens_used", 100);
@@ -1111,8 +1205,8 @@ export default function Home() {
   });
   const localMutation = useMutation({
     mutationFn: submitLocalPath,
-    onSuccess: (data) => {
-      setJob(data.jobId, "uploaded");
+    onSuccess: (data, variables) => {
+      setJob(data.jobId, "uploaded", variables, "local");
       setErrorMessage("");
       recordUsage("repositories_analyzed");
       recordUsage("tokens_used", 100);
@@ -1629,6 +1723,7 @@ export default function Home() {
                       });
                       return;
                     }
+                    setRepoInfo(url, "github");
                     urlMutation.mutate(url);
                   }}
                   onSubmitZip={(file) => {
@@ -1649,6 +1744,7 @@ export default function Home() {
                       });
                       return;
                     }
+                    setRepoInfo(null, "zip");
                     fileMutation.mutate(file);
                   }}
                   onSubmitLocal={(path) => {
@@ -1669,6 +1765,7 @@ export default function Home() {
                       });
                       return;
                     }
+                    setRepoInfo(path, "local");
                     localMutation.mutate(path);
                   }}
                   isLoading={isPending}
@@ -1830,12 +1927,12 @@ export default function Home() {
         initial={false}
         animate={{ width: sidebarExpanded ? 240 : 72 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="h-screen bg-[rgba(4,52,62,0.92)] backdrop-blur-xl flex flex-col shadow-2xl z-20 relative border-r border-[rgba(155,232,224,0.10)] shrink-0 overflow-hidden"
+        className="h-screen bg-gradient-to-b from-[#043F46] to-[#022F35] backdrop-blur-xl flex flex-col shadow-2xl z-20 relative border-r border-[rgba(80,200,205,0.18)] shrink-0 overflow-hidden"
       >
         {/* Logo - Premium */}
-        <div className="flex h-20 items-center gap-3 border-b border-[rgba(155,232,224,0.10)] px-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#FF3344] shadow-md shrink-0 font-bold text-white">
-            <Code2 className="h-5 w-5 text-white" />
+        <div className="flex h-20 items-center gap-3 border-b border-[rgba(80,200,205,0.14)] px-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#FF3347] shadow-[0_4px_18px_rgba(255,51,71,0.20)] shrink-0 font-bold text-white">
+            <Code2 className="h-5 w-5 text-white stroke-[2.5]" />
           </div>
           <AnimatePresence>
             {sidebarExpanded && (
@@ -1845,8 +1942,8 @@ export default function Home() {
                 exit={{ opacity: 0, x: -10 }}
                 className="min-w-0 overflow-hidden flex items-center gap-2"
               >
-                <span className="font-extrabold text-2xl text-[#F7FAFA] tracking-tight">Helix</span>
-                <span className="rounded-full bg-[rgba(155,232,224,0.12)] px-2.5 py-0.5 text-[11px] font-bold text-[#C5F4EF]">
+                <span className="font-extrabold text-2xl text-[#F4FAFA] tracking-tight">Helix</span>
+                <span className="rounded-full bg-[rgba(32,214,216,0.12)] border border-[rgba(32,214,216,0.25)] px-2.5 py-0.5 text-[11px] font-bold text-[#8DE5E3]">
                   v2.0
                 </span>
               </motion.div>
@@ -1859,7 +1956,7 @@ export default function Home() {
           {/* Section: Results */}
           <div>
             {sidebarExpanded && (
-              <div className="mb-2.5 px-3 text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
+              <div className="mb-2.5 px-3 text-[12px] font-bold uppercase tracking-[2px] text-[#8DE5E3]">
                 RESULTS
               </div>
             )}
@@ -1894,15 +1991,15 @@ export default function Home() {
                     onClick={() => setActiveResultTab(tab.id as ResultTab)}
                     whileHover={{ x: sidebarExpanded ? 3 : 0 }}
                     title={!sidebarExpanded ? tab.label : undefined}
-                    className={`w-full flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-sm transition-all mb-1 ${isActive
-                      ? "bg-[#9BE8E0] text-[#063D48] font-bold shadow-md"
-                      : "text-[#D0E1E3] hover:bg-[rgba(155,232,224,0.08)] hover:text-white"
+                    className={`group w-full flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-sm transition-all duration-200 mb-1 ${isActive
+                      ? "bg-[#9BE3DF] text-[#063F46] font-bold shadow-[0_4px_16px_rgba(32,214,216,0.15)]"
+                      : "text-[#B7D5D8] hover:bg-[rgba(32,214,216,0.08)] hover:text-[#D5F4F2]"
                       } ${!sidebarExpanded ? "justify-center" : ""}`}
                   >
                     <div
-                      className={`rounded-md p-1 ${isActive
-                        ? "text-[#063D48]"
-                        : "text-[#9BE8E0]"
+                      className={`rounded-md p-1 transition-colors duration-200 ${isActive
+                        ? "text-[#063F46]"
+                        : "text-[#8DDDDC] group-hover:text-[#5DE0DE]"
                         }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -1919,8 +2016,8 @@ export default function Home() {
                         </motion.span>
                       )}
                     </AnimatePresence>
-                    {sidebarExpanded && tab.id === "overview" && result && (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    {sidebarExpanded && tab.id === "overview" && (
+                      <CheckCircle2 className={`h-4 w-4 shrink-0 transition-colors ${isActive ? "text-[#13C99B]" : "text-[#13C99B]/60"}`} />
                     )}
                   </motion.button>
                 );
@@ -1929,35 +2026,64 @@ export default function Home() {
           </div>
         </nav>
 
-        {/* Repository Info - Premium */}
-        <div className="border-t border-[rgba(155,232,224,0.10)] p-4">
-          <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0] mb-1.5">
-            REPOSITORY
-          </div>
-          <div className="rounded-[12px] bg-[rgba(7,67,77,0.70)] border border-[rgba(155,232,224,0.15)] px-3.5 py-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <Github className="w-4 h-4 text-[#9BE8E0] shrink-0" />
-              <span className="text-xs font-mono text-[#F7FAFA] truncate">
-                {result?.tree?.name || "helix.git"}
-              </span>
+        {/* Repository Info - Only show when not a ZIP upload and a valid repository is available */}
+        {sourceType !== "zip" && (repoUrl || result?.tree?.name) && (
+          <div className="border-t border-[rgba(80,200,205,0.14)] p-4">
+            <div className="text-[11px] font-bold uppercase tracking-[2px] text-[#8DE5E3] mb-1.5">
+              REPOSITORY
             </div>
-            <ExternalLink className="w-3.5 h-3.5 text-[#9BE8E0] shrink-0" />
+            {repoUrl ? (
+              <a
+                href={repoUrl.startsWith("http") ? repoUrl : `https://${repoUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={repoUrl}
+                className="rounded-[12px] bg-[rgba(22,104,112,0.28)] border border-[rgba(70,200,205,0.25)] px-3.5 py-2.5 flex items-center justify-between hover:bg-[rgba(22,104,112,0.45)] hover:border-[rgba(70,200,205,0.4)] transition-all duration-200 group"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Github className="w-4 h-4 text-[#BFE8E7] shrink-0 group-hover:text-[#5DE0DE] transition-colors" />
+                  <span className="text-xs font-mono text-[#E8F6F6] truncate">
+                    {(() => {
+                      try {
+                        const clean = repoUrl.replace(/\.git$/, "").replace(/\/$/, "");
+                        const parts = clean.split("/");
+                        const name = parts[parts.length - 1];
+                        return name ? `${name}.git` : (result?.tree?.name || "repository");
+                      } catch {
+                        return result?.tree?.name || "repository";
+                      }
+                    })()}
+                  </span>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 text-[#8DDEDD] shrink-0 group-hover:text-white transition-colors" />
+              </a>
+            ) : (
+              <div className="rounded-[12px] bg-[rgba(22,104,112,0.28)] border border-[rgba(70,200,205,0.25)] px-3.5 py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Github className="w-4 h-4 text-[#BFE8E7] shrink-0" />
+                  <span className="text-xs font-mono text-[#E8F6F6] truncate">
+                    {result?.tree?.name || "repository"}
+                  </span>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 text-[#8DDEDD] shrink-0" />
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* User Profile & Sign Out */}
-        <div className="border-t border-[rgba(155,232,224,0.10)] p-4">
+        <div className="border-t border-[rgba(80,200,205,0.14)] p-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#F7FAFA] text-[#063D48] font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
-              {profile?.email ? profile.email[0].toUpperCase() : "S"}
+            <div className="w-9 h-9 rounded-full bg-[#E5F2F2] text-[#164B52] font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+              {profile?.email ? profile.email[0].toUpperCase() : "A"}
             </div>
             {sidebarExpanded && (
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-[#F7FAFA] truncate">
+                <div className="text-xs font-bold text-[#F2FAFA] truncate">
                   Shriniwas Srijan Bajpai
                 </div>
-                <div className="text-[11px] text-[#8EA9AE] truncate">
-                  {profile?.email || "srijanbajpai1447@gmail.com"}
+                <div className="text-[11px] text-[#86B8BC] truncate">
+                  {profile?.email || "admin@projectanalyser.com"}
                 </div>
               </div>
             )}
@@ -1965,7 +2091,7 @@ export default function Home() {
 
           <button
             onClick={() => signOut()}
-            className="w-full mt-3 flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-xs text-[#C3D5D8] hover:text-[#FF3344] hover:bg-white/5 transition"
+            className="w-full mt-3 flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-xs text-[#A8D8DA] hover:text-[#FF6875] hover:bg-white/5 transition-colors duration-200"
           >
             <LogOut className="h-3.5 w-3.5" />
             {sidebarExpanded && <span>Sign Out</span>}
@@ -1975,7 +2101,7 @@ export default function Home() {
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="flex h-11 items-center justify-center border-t border-[rgba(155,232,224,0.10)] text-[#9BE8E0] transition-colors hover:text-white"
+          className="flex h-11 items-center justify-center border-t border-[rgba(80,200,205,0.14)] text-[#8DE5E3] transition-colors duration-200 hover:text-white"
         >
           <motion.div
             animate={{ rotate: sidebarExpanded ? 180 : 0 }}
@@ -2012,12 +2138,12 @@ export default function Home() {
             className={
               activeResultTab === "arch" || activeResultTab === "routes"
                 ? "flex-1 min-h-0 h-full p-2.5 sm:p-3 relative z-10 w-full min-w-0 flex flex-col overflow-hidden"
-                : "min-h-full py-7 px-8 sm:px-10 pb-16 relative z-10 w-full"
+                : "py-6 px-8 sm:px-10 pb-6 relative z-10 w-full h-auto min-h-0"
             }
           >
             {/* ─── OVERVIEW TAB ─── */}
             {activeResultTab === "overview" && (
-              <div className="w-full max-w-[1450px] mx-auto space-y-4 sm:space-y-5 text-left">
+              <div className="w-full max-w-[1450px] mx-auto space-y-4 sm:space-y-5 text-left h-auto min-h-0">
                 
                 {/* ── Top Dashboard Header ── */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
@@ -2040,17 +2166,212 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                      {/* Search Bar with Shortcut */}
-                      <div className="relative w-full sm:w-[360px] md:w-[400px]">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9BE8E0]" />
-                        <input
-                          type="text"
-                          placeholder="Search files, routes, dependencies..."
-                          className="w-full h-12 pl-10 pr-12 rounded-[14px] bg-[rgba(8,76,88,0.80)] border border-[rgba(155,232,224,0.15)] text-sm text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#16C7A1]"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-[rgba(6,47,56,0.8)] border border-[rgba(155,232,224,0.2)] text-[11px] font-mono text-[#9BE8E0]">
-                          ⌘ K
-                        </span>
+                      {/* Search Bar with Shortcut & Live Autocomplete Dropdown */}
+                      <div ref={searchContainerRef} className="relative w-full sm:w-[360px] md:w-[420px] z-50">
+                        <div className="relative">
+                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9BE8E0]" />
+                          <input
+                            ref={searchInputRef}
+                            type="text"
+                            value={globalSearchQuery}
+                            onChange={(e) => {
+                              setGlobalSearchQuery(e.target.value);
+                              setIsSearchFocused(true);
+                            }}
+                            onFocus={() => setIsSearchFocused(true)}
+                            placeholder="Search files, routes, dependencies..."
+                            className="w-full h-12 pl-10 pr-14 rounded-[14px] bg-[rgba(8,76,88,0.80)] border border-[rgba(155,232,224,0.15)] text-sm text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#16C7A1] focus:ring-1 focus:ring-[#16C7A1]/40 transition-all"
+                          />
+                          {globalSearchQuery ? (
+                            <button
+                              onClick={() => {
+                                setGlobalSearchQuery("");
+                                searchInputRef.current?.focus();
+                              }}
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8EA9AE] hover:text-white text-xs px-1 py-0.5 rounded transition-colors"
+                              title="Clear search"
+                            >
+                              ✕
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                searchInputRef.current?.focus();
+                                setIsSearchFocused(true);
+                              }}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-[rgba(6,47,56,0.8)] border border-[rgba(155,232,224,0.2)] text-[11px] font-mono text-[#9BE8E0] hover:border-[#16C7A1] transition-colors"
+                            >
+                              ⌘ K
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Search Dropdown Results */}
+                        <AnimatePresence>
+                          {isSearchFocused && globalSearchQuery.trim() && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute left-0 right-0 top-full mt-2 bg-[#04343C]/95 border border-[rgba(155,232,224,0.20)] backdrop-blur-xl rounded-2xl shadow-2xl p-2.5 max-h-[420px] overflow-y-auto space-y-3 z-50 text-left"
+                            >
+                              {searchResults && searchResults.totalCount > 0 ? (
+                                <>
+                                  {/* Routes Results */}
+                                  {searchResults.routes.length > 0 && (
+                                    <div>
+                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
+                                        <Network className="w-3 h-3 text-[#16C7A1]" /> Routes & Endpoints
+                                      </div>
+                                      <div className="space-y-1 mt-1">
+                                        {searchResults.routes.map((r, idx) => (
+                                          <button
+                                            key={`route-${idx}`}
+                                            onClick={() => {
+                                              setActiveResultTab("routes");
+                                              setIsSearchFocused(false);
+                                              setGlobalSearchQuery("");
+                                            }}
+                                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <span
+                                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${
+                                                  r.method === "GET"
+                                                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                                    : r.method === "POST"
+                                                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                                    : r.method === "DELETE"
+                                                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                                    : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                                }`}
+                                              >
+                                                {r.method}
+                                              </span>
+                                              <span className="text-xs font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                                {r.path}
+                                              </span>
+                                            </div>
+                                            <span className="text-[10px] text-[#8EA9AE] shrink-0">
+                                              Open in Routes →
+                                            </span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Files Results */}
+                                  {searchResults.files.length > 0 && (
+                                    <div>
+                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
+                                        <Layers className="w-3 h-3 text-[#16C7A1]" /> Files & Components
+                                      </div>
+                                      <div className="space-y-1 mt-1">
+                                        {searchResults.files.map((f, idx) => (
+                                          <button
+                                            key={`file-${idx}`}
+                                            onClick={() => {
+                                              setActiveResultTab("arch");
+                                              setIsSearchFocused(false);
+                                              setGlobalSearchQuery("");
+                                            }}
+                                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-700/50 text-[#C5F4EF] font-mono shrink-0">
+                                                FILE
+                                              </span>
+                                              <span className="text-xs font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                                {f.path}
+                                              </span>
+                                            </div>
+                                            <span className="text-[10px] text-[#8EA9AE] shrink-0">
+                                              {f.lineCount ? `${f.lineCount} lines` : "View in Arch →"}
+                                            </span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Environment Variables Results */}
+                                  {searchResults.envVars.length > 0 && (
+                                    <div>
+                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
+                                        <Settings className="w-3 h-3 text-[#16C7A1]" /> Environment Variables
+                                      </div>
+                                      <div className="space-y-1 mt-1">
+                                        {searchResults.envVars.map((e, idx) => (
+                                          <button
+                                            key={`env-${idx}`}
+                                            onClick={() => {
+                                              setActiveResultTab("env");
+                                              setIsSearchFocused(false);
+                                              setGlobalSearchQuery("");
+                                            }}
+                                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono shrink-0">
+                                                ENV
+                                              </span>
+                                              <span className="text-xs font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                                {e.name}
+                                              </span>
+                                            </div>
+                                            <span className="text-[10px] text-[#8EA9AE] shrink-0">
+                                              Open in Env →
+                                            </span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Dependencies Results */}
+                                  {searchResults.deps.length > 0 && (
+                                    <div>
+                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
+                                        <Zap className="w-3 h-3 text-[#16C7A1]" /> Dependencies
+                                      </div>
+                                      <div className="space-y-1 mt-1">
+                                        {searchResults.deps.map((d, idx) => (
+                                          <button
+                                            key={`dep-${idx}`}
+                                            onClick={() => {
+                                              setActiveResultTab("arch");
+                                              setIsSearchFocused(false);
+                                              setGlobalSearchQuery("");
+                                            }}
+                                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono shrink-0">
+                                                DEP
+                                              </span>
+                                              <span className="text-xs font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                                {d.target}
+                                              </span>
+                                            </div>
+                                            <span className="text-[10px] text-[#8EA9AE] shrink-0">
+                                              View in Graph →
+                                            </span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="py-6 text-center text-xs text-[#8EA9AE]">
+                                  No files, routes, or dependencies found matching <span className="text-white font-semibold">"{globalSearchQuery}"</span>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       {/* Upload Repository Button */}
@@ -2084,7 +2405,7 @@ export default function Home() {
                 />
 
                 {/* ── Row 3: Authentication Guard (Full-Width Large Horizontal Emphasis Panel) ── */}
-                <div className="w-full">
+                <div className="w-full h-auto min-h-0">
                   <AuthDetector
                     authType={authData?.authType ?? "Supabase Auth"}
                     evidence={authData?.evidence ?? [
@@ -2096,7 +2417,7 @@ export default function Home() {
                 </div>
 
                 {/* ── Row 4: Evidence Found (1.2fr) & Related Files (0.8fr) Asymmetric Grid ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4 items-stretch w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4 items-start w-full h-auto min-h-0">
                   <EvidenceFound
                     evidence={authData?.evidence ?? [
                       "SUPABASE_URL env var",
@@ -2415,108 +2736,7 @@ export default function Home() {
 
             {/* ─── ENV TAB ─── */}
             {activeResultTab === "env" && (
-              <div className="w-full max-w-[1450px] mx-auto space-y-5 text-left">
-                <div className="mb-4">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
-                    Configuration
-                  </p>
-                  <h2 className="text-3xl font-extrabold text-[#F7FAFA] mt-1">
-                    Environment Variables
-                  </h2>
-                </div>
-                <div className="relative mb-3">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#82AEB5]" />
-                  <input
-                    className="w-full pl-10 pr-4 py-2.5 text-xs font-mono bg-[#093C45]/80 border border-[#176873]/60 rounded-xl text-[#F7FAFA] placeholder-[#82AEB5] focus:outline-none focus:border-[#16C7A1]"
-                    placeholder="Search env vars..."
-                    value={envSearch}
-                    onChange={(e) => setEnvSearch(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {(result.envVars ?? [])
-                    .filter(
-                      (e: EnvironmentVariable) =>
-                        !envSearch ||
-                        e.name.toLowerCase().includes(envSearch.toLowerCase()),
-                    )
-                    .map((envVar: EnvironmentVariable, idx: number) => (
-                      <div
-                        key={idx}
-                        onClick={() =>
-                          setSelectedEnvVar(
-                            selectedEnvVar?.name === envVar.name
-                              ? null
-                              : envVar,
-                          )
-                        }
-                        className={`p-4 rounded-2xl border cursor-pointer transition-all ${selectedEnvVar?.name === envVar.name
-                          ? "bg-[#094752] border-[#16C7A1]"
-                          : "bg-[#063038]/90 border-[#176873]/50 hover:border-[#16C7A1]/40 hover:bg-[#093C45]/80"
-                          }`}
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Settings className="w-3.5 h-3.5 text-[#16C7A1] shrink-0" />
-                          <code className="text-xs font-mono font-bold text-[#F7FAFA] truncate flex-1">
-                            {envVar.name}
-                          </code>
-                          <span className="px-2 py-0.5 rounded-md bg-[#083E48] border border-[#176873] text-[10px] text-[#9BE8E0] font-medium">
-                            {envVar.category || "General"}
-                          </span>
-                          {envVar.criticality === "HIGH" && (
-                            <span className="px-2 py-0.5 rounded-md bg-[#FF3344]/20 border border-[#FF3344]/40 text-[10px] text-[#FF3344] font-bold">
-                              HIGH RISK
-                            </span>
-                          )}
-                        </div>
-                        {selectedEnvVar?.name === envVar.name && (
-                          <div className="space-y-2 mt-3 pt-2.5 border-t border-[#176873]/30">
-                            <p className="text-xs text-[#82AEB5]">
-                              Usages in code:{" "}
-                              <span className="text-white font-bold font-mono">
-                                {envVar.usages}
-                              </span>
-                            </p>
-                            {envVar.usedBy && envVar.usedBy.length > 0 && (
-                              <div className="text-xs text-[#82AEB5]">
-                                <span className="text-[#82AEB5] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                                  Used By:
-                                </span>
-                                <div className="flex flex-wrap gap-1">
-                                  {envVar.usedBy.map((f: string, i: number) => (
-                                    <code
-                                      key={i}
-                                      className="text-[11px] font-mono text-[#9BE8E0] bg-[#083E48] px-1.5 py-0.5 rounded truncate max-w-[140px]"
-                                    >
-                                      {f.split(/[\\/]/).pop()}
-                                    </code>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {envVar.files && envVar.files.length > 0 && (
-                              <div className="text-xs text-[#82AEB5] mt-2">
-                                <span className="text-[#82AEB5] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                                  Declared In Files:
-                                </span>
-                                <div className="flex flex-wrap gap-1">
-                                  {envVar.files.map((f: string, i: number) => (
-                                    <code
-                                      key={i}
-                                      className="text-[11px] font-mono text-[#82AEB5] bg-[#063038] border border-[#176873]/40 px-1.5 py-0.5 rounded truncate max-w-[140px]"
-                                    >
-                                      {f.split(/[\\/]/).pop()}
-                                    </code>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              </div>
+              <EnvironmentVariablesView envVars={result.envVars} />
             )}
 
             {/* ─── AI ARCHITECT TAB ─── */}
@@ -3189,7 +3409,7 @@ export default function Home() {
         </AnimatePresence>
 
         {/* AI Chat Floating Widget */}
-        {result && (
+        {result && activeResultTab !== "env" && (
           <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
             <AnimatePresence>
               {isChatOpen && (
@@ -3197,24 +3417,24 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                  className="w-80 md:w-96 h-[480px] bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4"
+                  className="w-80 md:w-96 h-[480px] bg-[#002D33] border border-[rgba(32,214,216,0.3)] rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4 backdrop-blur-xl"
                 >
                   {/* Header */}
-                  <div className="p-4 bg-white/10 border-b border-white/5 flex items-center justify-between">
+                  <div className="p-4 bg-[rgba(4,58,64,0.8)] border-b border-[rgba(32,214,216,0.2)] flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Bot className="w-4 h-4 text-primary" />
+                      <Bot className="w-4 h-4 text-[#20D6D8]" />
                       <div>
                         <span className="text-xs font-bold text-white block">
                           AI Architect Assistant
                         </span>
-                        <span className="text-[10px] text-zinc-500">
+                        <span className="text-[10px] text-[#9BC9CE]">
                           Q&A on {result.tree?.name || "codebase"}
                         </span>
                       </div>
                     </div>
                     <button
                       onClick={() => setIsChatOpen(false)}
-                      className="p-1 rounded hover:bg-white/5 text-zinc-400 hover:text-white transition cursor-pointer"
+                      className="p-1 rounded hover:bg-white/10 text-[#9BC9CE] hover:text-white transition cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -3224,11 +3444,11 @@ export default function Home() {
                   <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
                     {chatHistory.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-center p-6 my-auto">
-                        <Sparkles className="w-8 h-8 text-zinc-700 mb-2 animate-pulse" />
+                        <Sparkles className="w-8 h-8 text-[#20D6D8]/60 mb-2 animate-pulse" />
                         <p className="text-xs font-bold text-white mb-1">
                           Ask anything about this codebase
                         </p>
-                        <p className="text-[10px] text-zinc-500 max-w-[200px]">
+                        <p className="text-[10px] text-[#9BC9CE] max-w-[200px]">
                           Get code explanations, detect architectural patterns,
                           or scan for vulnerabilities.
                         </p>
@@ -3243,8 +3463,8 @@ export default function Home() {
                           >
                             <div
                               className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${isUser
-                                ? "bg-primary text-neutral-950 font-medium rounded-tr-none"
-                                : "bg-white/10 text-zinc-200 border border-white/5 rounded-tl-none"
+                                ? "bg-[#20D6D8] text-[#002D33] font-semibold rounded-tr-none"
+                                : "bg-[rgba(4,58,64,0.7)] text-[#F5FAFA] border border-[rgba(32,214,216,0.2)] rounded-tl-none"
                                 }`}
                             >
                               <p className="whitespace-pre-wrap">
@@ -3256,27 +3476,16 @@ export default function Home() {
                             {!isUser &&
                               msg.agentLogs &&
                               msg.agentLogs.length > 0 && (
-                                <div className="mt-1 w-full max-w-[85%]">
-                                  <button
-                                    onClick={() =>
-                                      setExpandedAgentLogs((prev) => ({
-                                        ...prev,
-                                        [msg.id]: !prev[msg.id],
-                                      }))
-                                    }
-                                    className="text-[9px] text-primary hover:underline flex items-center gap-1 font-mono cursor-pointer"
-                                  >
-                                    {expandedAgentLogs[msg.id]
-                                      ? "▼ Hide thoughts"
-                                      : "▶ Show thoughts"}
-                                  </button>
-                                  {expandedAgentLogs[msg.id] && (
-                                    <div className="mt-1 p-2 rounded bg-zinc-950 border border-white/5 font-mono text-[9px] text-zinc-500 space-y-0.5 max-h-24 overflow-y-auto">
-                                      {msg.agentLogs.map((log, idx) => (
-                                        <div key={idx}>{log}</div>
-                                      ))}
+                                <div className="mt-1 space-y-1 w-full pl-2">
+                                  {msg.agentLogs.map((log: string, lIdx: number) => (
+                                    <div
+                                      key={lIdx}
+                                      className="text-[10px] text-zinc-500 font-mono flex items-center gap-1.5"
+                                    >
+                                      <Terminal className="w-3 h-3 text-zinc-600" />
+                                      {log}
                                     </div>
-                                  )}
+                                  ))}
                                 </div>
                               )}
                           </div>
@@ -3284,8 +3493,8 @@ export default function Home() {
                       })
                     )}
                     {chatMutation.isPending && (
-                      <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-mono pl-1">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
+                      <div className="flex items-center gap-2 text-[#9BC9CE] text-[10px] font-mono pl-1">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#20D6D8]" />{" "}
                         Thinking...
                       </div>
                     )}

@@ -40,10 +40,10 @@ export default function EvidenceFound({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.22 }}
-      className="w-full rounded-[16px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] p-5 relative overflow-hidden shadow-md text-left flex flex-col justify-between min-h-[220px] sm:min-h-[235px]"
+      className="w-full rounded-[16px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] p-5 relative overflow-hidden shadow-md text-left flex flex-col justify-between h-auto min-h-0"
     >
       <div>
-        {/* ── Top Header: Document Icon + Title + View All Button ── */}
+        {/* ── Top Header: Document Icon + Title ── */}
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-[10px] bg-[#084C58] text-[#9BE8E0] flex items-center justify-center shrink-0 shadow-xs">
@@ -58,13 +58,6 @@ export default function EvidenceFound({
               </p>
             </div>
           </div>
-
-          <button
-            onClick={onViewAll}
-            className="text-xs font-semibold text-[#9BE8E0] hover:text-white flex items-center gap-1 transition shrink-0 cursor-pointer"
-          >
-            View All <ArrowRight size={12} />
-          </button>
         </div>
 
         {/* ── Findings List ── */}

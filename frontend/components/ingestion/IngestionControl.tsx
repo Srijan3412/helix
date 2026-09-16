@@ -63,8 +63,8 @@ export default function IngestionControl({
   isLimitReached = false,
 }: IngestionControlProps) {
   const [activeTab, setActiveTab] = useState<TabId>("github");
-  const [githubUrl, setGithubUrl] = useState("https://github.com/Srijan3412/helix.git");
-  const [localPath, setLocalPath] = useState("c:\\Users\\91798\\Documents\\New folder (3)");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [localPath, setLocalPath] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleSubmit = useCallback(

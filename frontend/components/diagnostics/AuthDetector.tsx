@@ -16,7 +16,7 @@ export default function AuthDetector({ authType, evidence = [] }: AuthDetectorPr
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.18 }}
-      className="w-full rounded-[16px] bg-white border border-[#E5E7EB] p-5 relative overflow-hidden shadow-md text-left flex flex-col justify-between min-h-[145px] sm:min-h-[155px]"
+      className="w-full rounded-[16px] bg-white border border-[#E5E7EB] p-5 relative overflow-hidden shadow-md text-left flex flex-col justify-between h-auto min-h-0"
     >
       {/* Soft light glow in top-right matching reference */}
       <div className="absolute -top-10 -right-10 w-36 h-36 bg-[#FFE4E6]/60 rounded-full blur-2xl pointer-events-none" />

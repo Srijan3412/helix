@@ -175,33 +175,22 @@ export default function OverviewAnalytics({
                   : "bg-white border border-[#E1ECEF] text-[#082D3A]"
               }`}
             >
-              {/* Top Row: Icon Box + Label + Circular Arrow */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] flex items-center justify-center shrink-0 shadow-xs ${
-                      isHero ? "bg-white/20 text-white" : m.iconBg
-                    }`}
-                  >
-                    <m.icon size={18} className="stroke-[2.2]" />
-                  </div>
-                  <span
-                    className={`text-[11px] sm:text-[12px] font-extrabold uppercase tracking-[0.1em] leading-none ${
-                      isHero ? "text-white" : "text-[#0A3440]"
-                    }`}
-                  >
-                    {m.label}
-                  </span>
-                </div>
-
-                {/* Circular Action Arrow */}
+              {/* Top Row: Icon Box + Label */}
+              <div className="flex items-center gap-2.5">
                 <div
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
-                    isHero ? "bg-white/20 text-white hover:bg-white/30" : m.arrowBg
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] flex items-center justify-center shrink-0 shadow-xs ${
+                    isHero ? "bg-white/20 text-white" : m.iconBg
                   }`}
                 >
-                  <ArrowRight size={13} />
+                  <m.icon size={18} className="stroke-[2.2]" />
                 </div>
+                <span
+                  className={`text-[11px] sm:text-[12px] font-extrabold uppercase tracking-[0.1em] leading-none ${
+                    isHero ? "text-white" : "text-[#0A3440]"
+                  }`}
+                >
+                  {m.label}
+                </span>
               </div>
 
               {/* Bottom Row: Number + Trend & Smooth Sparkline */}
@@ -268,14 +257,14 @@ export default function OverviewAnalytics({
       </div>
 
       {/* ── ROW 2: DETECTED TECH STACK (1.35fr / 56%) + PROJECT STRUCTURE (1fr / 44%) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-4 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-4 items-start h-auto min-h-0">
         
         {/* Left Panel: Detected Technology Stack */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col justify-between min-h-[260px] sm:min-h-[270px]"
+          className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col justify-between h-auto min-h-0"
         >
           <div>
             {/* Header */}
@@ -293,10 +282,6 @@ export default function OverviewAnalytics({
                   </p>
                 </div>
               </div>
-
-              <button className="text-xs font-semibold text-[#9BE8E0] hover:text-white flex items-center gap-1 transition shrink-0">
-                View Details <ArrowRight size={12} />
-              </button>
             </div>
 
             {/* 6 Technology Items in 3-col grid */}
@@ -387,7 +372,7 @@ export default function OverviewAnalytics({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.16 }}
-          className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col justify-between min-h-[260px] sm:min-h-[270px]"
+          className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col justify-between h-auto min-h-0"
         >
           <div>
             {/* Header */}
@@ -405,10 +390,6 @@ export default function OverviewAnalytics({
                   </p>
                 </div>
               </div>
-
-              <button className="text-xs font-semibold text-[#9BE8E0] hover:text-white flex items-center gap-1 transition shrink-0">
-                View Tree <ArrowRight size={12} />
-              </button>
             </div>
 
             {/* Structure Progress Bars */}
