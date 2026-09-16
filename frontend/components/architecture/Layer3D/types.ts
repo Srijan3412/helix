@@ -17,4 +17,6 @@ export interface Architecture3DProps {
   selectedLayerId: string;
   onSelectLayer: (layerId: string) => void;
   searchQuery?: string;
+  routes?: any[];
+  dbType?: string;
 }

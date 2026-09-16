@@ -220,11 +220,11 @@ function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
 
   const IconComponent = meta.icon;
 
-  // Dynamic width based on namespace & route count (115px - 140px)
+  // Dynamic width based on namespace & route count (135px - 160px)
   const cardWidth = useMemo(() => {
-    if (routes.length <= 3) return 120;
-    if (routes.length >= 8) return 135;
-    return 125;
+    if (routes.length <= 3) return 135;
+    if (routes.length >= 8) return 155;
+    return 145;
   }, [routes.length]);
 
   return (
@@ -296,7 +296,7 @@ function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
       </div>
 
       {/* ── Subfamily Sections & Endpoint Rows ── */}
-      <div className="p-1.5 space-y-2">
+      <div className="p-1.5 space-y-2 max-h-[380px] overflow-y-auto custom-scrollbar">
         {Object.entries(families).map(([familyName, familyRoutes]) => {
           const isCollapsed = !!collapsedSections[familyName];
 
@@ -501,108 +501,98 @@ function RouteGraphCanvas({
 
   // Parse raw result routes into normalized items
   const allRoutes: RouteItemData[] = useMemo(() => {
-    if (!result?.routes || result.routes.length === 0) {
-      // Demo fallback routes matching full structure
-      return [
-        { id: "r-1", method: "GET", path: "/", controller: "AppController.ts", hasAuth: false, accessesDB: false, middleware: [], subfamily: "Core" },
-        { id: "r-2", method: "GET", path: "/health", controller: "HealthController.ts", hasAuth: false, accessesDB: false, middleware: [], subfamily: "Core" },
-        { id: "r-3", method: "GET", path: "/version", controller: "AppController.ts", hasAuth: false, accessesDB: false, middleware: [], subfamily: "Core" },
-        { id: "r-4", method: "GET", path: "/auth/session", controller: "AuthController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Session" },
-        { id: "r-5", method: "GET", path: "/auth/me", controller: "AuthController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Session" },
-        { id: "r-6", method: "POST", path: "/auth/login", controller: "AuthController.ts", hasAuth: false, accessesDB: true, middleware: ["validateBody"], subfamily: "Authentication" },
-        { id: "r-7", method: "POST", path: "/auth/signup", controller: "AuthController.ts", hasAuth: false, accessesDB: true, middleware: ["validateBody"], subfamily: "Authentication" },
-        { id: "r-8", method: "POST", path: "/auth/logout", controller: "AuthController.ts", hasAuth: true, accessesDB: false, middleware: ["requireAuth"], subfamily: "Authentication" },
-        { id: "r-9", method: "PATCH", path: "/auth/profile", controller: "AuthController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "User" },
-        { id: "r-10", method: "DELETE", path: "/auth/account", controller: "AuthController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "User" },
-        { id: "r-11", method: "GET", path: "/auth/providers", controller: "AuthController.ts", hasAuth: false, accessesDB: false, middleware: [], subfamily: "User" },
-        { id: "r-12", method: "GET", path: "/users", controller: "UserController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Users" },
-        { id: "r-13", method: "GET", path: "/users/:id", controller: "UserController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Users" },
-        { id: "r-14", method: "POST", path: "/users", controller: "UserController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Users" },
-        { id: "r-15", method: "PUT", path: "/users/:id", controller: "UserController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Users" },
-        { id: "r-16", method: "DELETE", path: "/users/:id", controller: "UserController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Users" },
-        { id: "r-17", method: "GET", path: "/users/:id/roles", controller: "UserController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Roles" },
-        { id: "r-18", method: "GET", path: "/projects", controller: "ProjectController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Projects" },
-        { id: "r-19", method: "GET", path: "/projects/:id", controller: "ProjectController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Projects" },
-        { id: "r-20", method: "POST", path: "/projects", controller: "ProjectController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Projects" },
-        { id: "r-21", method: "PUT", path: "/projects/:id", controller: "ProjectController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Projects" },
-        { id: "r-22", method: "DELETE", path: "/projects/:id", controller: "ProjectController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Projects" },
-        { id: "r-23", method: "GET", path: "/projects/:id/analysis", controller: "ProjectController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Analysis" },
-        { id: "r-24", method: "GET", path: "/projects/:id/members", controller: "ProjectController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Analysis" },
-        { id: "r-25", method: "GET", path: "/analysis", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Core" },
-        { id: "r-26", method: "GET", path: "/analysis/:id", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Core" },
-        { id: "r-27", method: "POST", path: "/analysis", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Mutations" },
-        { id: "r-28", method: "PUT", path: "/analysis/:id", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Mutations" },
-        { id: "r-29", method: "DELETE", path: "/analysis/:id", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Mutations" },
-        { id: "r-30", method: "GET", path: "/analysis/:id/results", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Results" },
-        { id: "r-31", method: "GET", path: "/projects/export", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Results" },
-        { id: "r-32", method: "GET", path: "/analysis/templates", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Results" },
-        { id: "r-33", method: "POST", path: "/analysis/run", controller: "AnalysisController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Results" },
-        { id: "r-34", method: "GET", path: "/scans", controller: "ScanController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Core" },
-        { id: "r-35", method: "GET", path: "/scans/:id", controller: "ScanController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Core" },
-        { id: "r-36", method: "POST", path: "/scans", controller: "ScanController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Mutations" },
-        { id: "r-37", method: "DELETE", path: "/scans/:id", controller: "ScanController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Mutations" },
-        { id: "r-38", method: "GET", path: "/scans/:id/results", controller: "ScanController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Results" },
-        { id: "r-39", method: "GET", path: "/reports", controller: "ReportController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Reports" },
-        { id: "r-40", method: "GET", path: "/reports/:id", controller: "ReportController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Reports" },
-        { id: "r-41", method: "POST", path: "/reports", controller: "ReportController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Reports" },
-        { id: "r-42", method: "DELETE", path: "/reports/:id", controller: "ReportController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Reports" },
-        { id: "r-43", method: "GET", path: "/admin/stats", controller: "AdminController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Users" },
-        { id: "r-44", method: "GET", path: "/admin/users", controller: "AdminController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Users" },
-        { id: "r-45", method: "POST", path: "/admin/users", controller: "AdminController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Users" },
-        { id: "r-46", method: "PUT", path: "/admin/settings", controller: "AdminController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Settings" },
-        { id: "r-47", method: "GET", path: "/admin/logs", controller: "AdminController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Logs" },
-        { id: "r-48", method: "DELETE", path: "/admin/cache", controller: "AdminController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Logs" },
-        { id: "r-49", method: "GET", path: "/webhooks", controller: "WebhookController.ts", hasAuth: true, accessesDB: true, middleware: ["verifySignature"], subfamily: "Core" },
-        { id: "r-50", method: "POST", path: "/webhooks", controller: "WebhookController.ts", hasAuth: true, accessesDB: true, middleware: ["verifySignature"], subfamily: "Core" },
-        { id: "r-51", method: "DELETE", path: "/webhooks/:id", controller: "WebhookController.ts", hasAuth: true, accessesDB: true, middleware: ["verifySignature"], subfamily: "Management" },
-        { id: "r-52", method: "GET", path: "/webhooks/logs", controller: "WebhookController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAdmin"], subfamily: "Management" },
-        { id: "r-53", method: "GET", path: "/settings", controller: "SettingsController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Core" },
-        { id: "r-54", method: "GET", path: "/settings/:key", controller: "SettingsController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Core" },
-        { id: "r-55", method: "POST", path: "/settings", controller: "SettingsController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Mutations" },
-        { id: "r-56", method: "PUT", path: "/settings/:key", controller: "SettingsController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Mutations" },
-        { id: "r-57", method: "DELETE", path: "/settings/:key", controller: "SettingsController.ts", hasAuth: true, accessesDB: true, middleware: ["requireAuth"], subfamily: "Mutations" },
-      ];
+    if (result?.routes && result.routes.length > 0) {
+      return result.routes.map((r: any, idx: number) => {
+        const controllerBasename = r.file ? r.file.split(/[\\/]/).pop() || r.file : (r.handler ? `${r.handler}.ts` : "AppController.ts");
+        const hasAuth =
+          r.middleware?.some((m: string) => /auth|protect|jwt|passport|login|session|require/i.test(m)) ||
+          r.chain?.some((c: any) => /auth|protect|jwt|passport/i.test(c.name || c)) ||
+          false;
+
+        const accessesDB = (result?.metadata?.databaseInfo?.flows ?? []).some(
+          (f: any) => f.route === r.path && f.method?.toUpperCase() === r.method?.toUpperCase()
+        );
+
+        const subfamily = categorizeEndpointFamily(r.path, r.method);
+
+        return {
+          id: `route:${r.method}:${r.path}-${idx}`,
+          method: (r.method || "GET") as string,
+          path: r.path,
+          controller: controllerBasename,
+          middleware: r.middleware || [],
+          hasAuth,
+          accessesDB,
+          subfamily,
+        };
+      });
     }
 
-    return (result.routes || []).map((r: any, idx: number) => {
-      const controllerBasename = r.file ? r.file.split(/[\\/]/).pop() || r.file : "AppController.ts";
-      const hasAuth =
-        r.middleware?.some((m: string) => /auth|protect|jwt|passport|login|session|require/i.test(m)) ||
-        r.chain?.some((c: any) => /auth|protect|jwt|passport/i.test(c.name || c)) ||
-        false;
-
-      const accessesDB = (result?.metadata?.databaseInfo?.flows ?? []).some(
-        (f: any) => f.route === r.path && f.method.toUpperCase() === r.method.toUpperCase()
-      );
-
-      const subfamily = categorizeEndpointFamily(r.path, r.method);
-
-      return {
-        id: `route:${r.method}:${r.path}-${idx}`,
-        method: r.method as string,
-        path: r.path,
-        controller: controllerBasename,
-        middleware: r.middleware || [],
-        hasAuth,
-        accessesDB,
-        subfamily,
-      };
+    // If files are scanned, extract route files dynamically
+    const routeFiles = (result?.files || []).filter((f: any) => {
+      const p = (f.path || f).toLowerCase();
+      return p.includes('route') || p.includes('api') || p.includes('endpoint');
     });
+
+    if (routeFiles.length > 0) {
+      return routeFiles.map((rf: any, idx: number) => {
+        const p = rf.path || rf;
+        const name = p.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || "api";
+        return {
+          id: `route:GET:/${name}-${idx}`,
+          method: "GET",
+          path: `/${name.replace(/routes?$/i, "")}`,
+          controller: p.split(/[\\/]/).pop() || `${name}.ts`,
+          middleware: [],
+          hasAuth: false,
+          accessesDB: false,
+          subfamily: "Core",
+        };
+      });
+    }
+
+    return [];
   }, [result]);
 
-  // Group routes by top-level namespace prefix
+  // Group routes by top-level namespace domain
   const namespaceGroups = useMemo(() => {
     const groups: Record<string, RouteItemData[]> = {};
 
     allRoutes.forEach((route) => {
       const segments = route.path.split("/").filter(Boolean);
-      const ns = segments.length > 0 ? `/${segments[0]}` : "/";
+      let ns = "/";
+      if (segments.length === 1) {
+        ns = `/${segments[0]}`;
+      } else if (segments.length > 1) {
+        if (segments[0] === "api" || segments[0] === "v1" || segments[0] === "v2") {
+          ns = `/${segments[1]}`;
+        } else {
+          ns = `/${segments[0]}`;
+        }
+      }
       if (!groups[ns]) groups[ns] = [];
       groups[ns].push(route);
     });
 
     return groups;
   }, [allRoutes]);
+
+  const distinctServicesCount = useMemo(() => {
+    const services = new Set<string>();
+    allRoutes.forEach((r) => {
+      if (r.controller) services.add(r.controller);
+    });
+    return Math.max(1, services.size);
+  }, [allRoutes]);
+
+  const sharedDepsCount = useMemo(() => {
+    const extImports = new Set<string>();
+    (result?.files || []).forEach((f: any) => {
+      (f.externalImports || []).forEach((imp: string) => extImports.add(imp));
+    });
+    const frameworkDeps = Object.keys(result?.metadata?.frameworkMetadata?.dependencies || {}).length;
+    return Math.max(extImports.size, frameworkDeps);
+  }, [result]);
 
   // Build hierarchical layout for React Flow nodes & edges
   const { initialNodes, initialEdges } = useMemo(() => {
@@ -615,7 +605,7 @@ function RouteGraphCanvas({
 
     // 1. API ROOT NODE (Top Center)
     const apiNodeId = "api-root";
-    const groupSpacing = 150;
+    const groupSpacing = 185;
     const totalWidth = groupKeys.length * groupSpacing;
     const apiX = Math.max(100, (totalWidth - 210) / 2);
     const apiY = 25;
@@ -650,51 +640,64 @@ function RouteGraphCanvas({
         position: { x: groupX, y: baselineY },
         data: {
           namespace: ns,
-          meta,
-          routes: groupRoutes,
+          groupTitle: meta.title,
+          icon: meta.icon,
+          color: meta.color,
           families,
-          selectedRouteId: selectedRoute?.id || null,
-          selectedNamespace,
-          activeMethodFilter,
-          searchQuery,
-          onSelectRoute: (r: RouteItemData) => setSelectedRoute(r),
-          onSelectNamespace: (n: string) => setSelectedNamespace((prev) => (prev === n ? null : n)),
+          totalEndpoints: groupRoutes.length,
+          selectedRouteId: selectedRoute?.id,
+          selectedNamespace: selectedNamespace,
+          onSelectRoute: (route: any) => {
+            setSelectedRoute((prev) => (prev?.id === route.id ? null : route));
+            setSelectedNamespace(ns);
+          },
+          onSelectNamespace: (namespace: string) => {
+            setSelectedNamespace((prev) => (prev === namespace ? null : namespace));
+          },
+          onOpenExecutionTrace: onOpenExecutionTrace,
+          activeFilterMethod: activeMethodFilter,
         },
       });
 
-      // Connect API root to each namespace group
+      // Connect API Root -> Namespace Group
       edges.push({
-        id: `edge-api-${groupId}`,
+        id: `edge-root-${ns}`,
         source: apiNodeId,
         target: groupId,
         type: "smoothstep",
         style: {
           stroke: meta.color,
-          strokeWidth: 1.5,
-          opacity: selectedNamespace && selectedNamespace !== ns ? 0.2 : 0.65,
+          strokeWidth: selectedNamespace === ns ? 2.5 : 1.5,
+          opacity: selectedNamespace && selectedNamespace !== ns ? 0.25 : 0.8,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          width: 5,
-          height: 5,
+          width: 6,
+          height: 6,
           color: meta.color,
         },
       });
 
-      // 3. IF SELECTED ROUTE IS INSIDE THIS GROUP -> RENDER DRILL-DOWN CHAIN
+      // 3. IF SELECTED ROUTE IS INSIDE THIS GROUP -> RENDER DRILL-DOWN CHAIN FROM REAL AST DATA
       if (selectedRoute && groupRoutes.some((r) => r.id === selectedRoute.id)) {
-        const controllerNodeId = `chain-ctrl-${selectedRoute.id}`;
-        const serviceNodeId = `chain-srv-${selectedRoute.id}`;
-        const dbNodeId = `chain-db-${selectedRoute.id}`;
+        const rawMatch = (result?.routes || []).find(
+          (r: any) => r.path === selectedRoute.path && r.method?.toUpperCase() === selectedRoute.method?.toUpperCase()
+        );
+
+        const matchingDbFlow = (result?.metadata?.databaseInfo?.flows || []).find(
+          (f: any) => f.route === selectedRoute.path && f.method?.toUpperCase() === selectedRoute.method?.toUpperCase()
+        );
 
         const chainX = groupX - 10;
-        const chainStartY = baselineY + 380;
+        let chainCurrentY = baselineY + 380;
+        let lastChainNodeId = groupId;
 
-        // Controller node
+        // Controller Handler Node
+        const controllerNodeId = `chain-ctrl-${selectedRoute.id}`;
         nodes.push({
           id: controllerNodeId,
           type: "executionChainNode",
-          position: { x: chainX, y: chainStartY },
+          position: { x: chainX, y: chainCurrentY },
           data: {
             type: "controller",
             label: selectedRoute.controller,
@@ -704,73 +707,80 @@ function RouteGraphCanvas({
           },
         });
 
-        // Service node
-        nodes.push({
-          id: serviceNodeId,
-          type: "executionChainNode",
-          position: { x: chainX, y: chainStartY + 70 },
-          data: {
-            type: "service",
-            label: selectedRoute.controller.replace("Controller", "Service"),
-            sublabel: "Business Logic",
-            icon: Zap,
-            color: "#F5B800",
-          },
+        edges.push({
+          id: `edge-chain-ctrl-${selectedRoute.id}`,
+          source: lastChainNodeId,
+          target: controllerNodeId,
+          type: "smoothstep",
+          style: { stroke: "#9B5CFF", strokeWidth: 1.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, width: 5, height: 5, color: "#9B5CFF" },
         });
 
-        // Database entity node
+        lastChainNodeId = controllerNodeId;
+        chainCurrentY += 70;
+
+        // Scanned Service Chains or Middleware
+        const chainItems = rawMatch?.chain || [];
+        if (chainItems.length > 0) {
+          chainItems.slice(0, 2).forEach((cFile: string, cIdx: number) => {
+            const srvName = cFile.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || cFile;
+            const serviceNodeId = `chain-srv-${cIdx}-${selectedRoute.id}`;
+            nodes.push({
+              id: serviceNodeId,
+              type: "executionChainNode",
+              position: { x: chainX, y: chainCurrentY },
+              data: {
+                type: "service",
+                label: srvName,
+                sublabel: "Business Logic",
+                icon: Zap,
+                color: "#F5B800",
+              },
+            });
+
+            edges.push({
+              id: `edge-chain-srv-${cIdx}-${selectedRoute.id}`,
+              source: lastChainNodeId,
+              target: serviceNodeId,
+              type: "smoothstep",
+              style: { stroke: "#F5B800", strokeWidth: 1.5 },
+              markerEnd: { type: MarkerType.ArrowClosed, width: 5, height: 5, color: "#F5B800" },
+            });
+
+            lastChainNodeId = serviceNodeId;
+            chainCurrentY += 70;
+          });
+        }
+
+        // Real Database entity node if matched from DB flows or metadata
+        const dbTableLabel = matchingDbFlow?.entities?.[0] || result?.metadata?.databaseInfo?.type || `${ns.replace("/", "") || "data"}_store`;
+        const dbNodeId = `chain-db-${selectedRoute.id}`;
         nodes.push({
           id: dbNodeId,
           type: "executionChainNode",
-          position: { x: chainX, y: chainStartY + 140 },
+          position: { x: chainX, y: chainCurrentY },
           data: {
             type: "database",
-            label: `${ns.replace("/", "") || "core"}_table`,
-            sublabel: "Database Entity",
+            label: dbTableLabel,
+            sublabel: matchingDbFlow ? "Database Flow Entity" : "Database Persistence",
             icon: Database,
             color: "#FF4D5E",
           },
         });
 
-        // Connect Group -> Controller -> Service -> Database
-        edges.push(
-          {
-            id: `edge-chain-1-${selectedRoute.id}`,
-            source: groupId,
-            target: controllerNodeId,
-            type: "smoothstep",
-            style: { stroke: "#9B5CFF", strokeWidth: 1.5 },
-            markerEnd: { type: MarkerType.ArrowClosed, width: 5, height: 5, color: "#9B5CFF" },
-          },
-          {
-            id: `edge-chain-2-${selectedRoute.id}`,
-            source: controllerNodeId,
-            target: serviceNodeId,
-            type: "smoothstep",
-            style: { stroke: "#F5B800", strokeWidth: 1.5 },
-            markerEnd: { type: MarkerType.ArrowClosed, width: 5, height: 5, color: "#F5B800" },
-          },
-          {
-            id: `edge-chain-3-${selectedRoute.id}`,
-            source: serviceNodeId,
-            target: dbNodeId,
-            type: "smoothstep",
-            style: { stroke: "#FF4D5E", strokeWidth: 1.5 },
-            markerEnd: { type: MarkerType.ArrowClosed, width: 5, height: 5, color: "#FF4D5E" },
-          }
-        );
+        edges.push({
+          id: `edge-chain-db-${selectedRoute.id}`,
+          source: lastChainNodeId,
+          target: dbNodeId,
+          type: "smoothstep",
+          style: { stroke: "#FF4D5E", strokeWidth: 1.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, width: 5, height: 5, color: "#FF4D5E" },
+        });
       }
     });
 
     return { initialNodes: nodes, initialEdges: edges };
-  }, [
-    namespaceGroups,
-    allRoutes.length,
-    selectedRoute,
-    selectedNamespace,
-    activeMethodFilter,
-    searchQuery,
-  ]);
+  }, [namespaceGroups, allRoutes, selectedNamespace, selectedRoute, activeMethodFilter, result]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -962,7 +972,7 @@ function RouteGraphCanvas({
         <div className="flex items-center gap-2">
           <Zap size={14} className="text-[#F5B800]" />
           <div>
-            <span className="font-bold text-[#F7FAFA]">12</span>{" "}
+            <span className="font-bold text-[#F7FAFA]">{distinctServicesCount}</span>{" "}
             <span className="text-[#82AEB5]">Services</span>
           </div>
         </div>
@@ -972,7 +982,7 @@ function RouteGraphCanvas({
         <div className="flex items-center gap-2">
           <Network size={14} className="text-[#00B8D9]" />
           <div>
-            <span className="font-bold text-[#F7FAFA]">28</span>{" "}
+            <span className="font-bold text-[#F7FAFA]">{sharedDepsCount}</span>{" "}
             <span className="text-[#82AEB5]">Shared Dependencies</span>
           </div>
         </div>

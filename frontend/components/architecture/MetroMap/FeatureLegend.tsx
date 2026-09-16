@@ -133,8 +133,8 @@ export function FeatureLegend({
         {processedFeatures.map((feat) => {
           const isVisible = isAllSelected || selectedFeatures.includes(feat.id);
           const isHovered = hoveredFeature === feat.id;
-          const flowCount = feat.flowGroups?.length || 4;
-          const stationCount = feat.files?.length || 14;
+          const flowCount = feat.flowGroups?.length || (feat.routes?.length ? Math.min(feat.routes.length, 3) : 1);
+          const stationCount = feat.totalStations || feat.files?.length || 1;
 
           const safeName = String(feat?.name || '').toLowerCase();
           const persistentColor =

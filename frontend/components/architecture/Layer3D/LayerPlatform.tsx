@@ -13,6 +13,7 @@ interface LayerPlatformProps {
   isSelected: boolean;
   onSelect: () => void;
   fileCount: number;
+  files?: string[];
   searchMatch?: boolean;
 }
 
@@ -92,6 +93,7 @@ export const LayerPlatform: React.FC<LayerPlatformProps> = ({
   isSelected,
   onSelect,
   fileCount,
+  files,
   searchMatch = true,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
@@ -125,8 +127,29 @@ export const LayerPlatform: React.FC<LayerPlatformProps> = ({
     }
   });
 
-  // Layer-specific architectural module layouts
+  // Layer-specific architectural module layouts dynamically derived from files
   const modules = useMemo(() => {
+    if (files && files.length > 0) {
+      const topFiles = files.slice(0, 6);
+      const positions = [
+        { x: -1.6, z: -0.35, w: 0.75, d: 0.55, h: 0.28 },
+        { x: -0.5, z: -0.35, w: 0.75, d: 0.55, h: 0.32 },
+        { x: 0.6, z: -0.35, w: 0.75, d: 0.55, h: 0.26 },
+        { x: 1.6, z: -0.35, w: 0.75, d: 0.55, h: 0.30 },
+        { x: -0.5, z: 0.45, w: 0.65, d: 0.45, h: 0.18 },
+        { x: 0.6, z: 0.45, w: 0.65, d: 0.45, h: 0.18 },
+      ];
+      return topFiles.map((f, i) => {
+        const base = f.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, '') || f;
+        const pos = positions[i % positions.length];
+        return {
+          ...pos,
+          label: base.length > 13 ? base.slice(0, 12) + '…' : base,
+          isCylinder: layer.id === 'repositories',
+        };
+      });
+    }
+
     switch (layer.id) {
       case 'routes':
         return [

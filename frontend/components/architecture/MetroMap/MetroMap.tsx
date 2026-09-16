@@ -76,22 +76,22 @@ function FlowGroupNode({ data }: { data: any }) {
       </div>
 
       <div className="text-[9.5px] font-mono text-[#9FB0B4] flex items-center justify-between mb-1.5">
-        <span>{flowGroup?.stationsCount || 4} stations</span>
-        <span>{flowGroup?.endpointsCount || 8} eps</span>
+        <span>{flowGroup?.stationsCount ?? flowGroup?.stations?.length ?? 1} stations</span>
+        <span>{flowGroup?.endpointsCount ?? flowGroup?.endpoints?.length ?? 0} eps</span>
       </div>
 
       <div className="w-full bg-[#061318] h-1.5 rounded-full overflow-hidden mb-1">
         <div
           className="h-full rounded-full"
           style={{
-            width: `${flowGroup?.health || 96}%`,
-            backgroundColor: (flowGroup?.health || 96) >= 90 ? '#16C7A3' : '#F5A623'
+            width: `${flowGroup?.health ?? 95}%`,
+            backgroundColor: (flowGroup?.health ?? 95) >= 90 ? '#16C7A3' : '#F5A623'
           }}
         />
       </div>
 
       <div className="text-[9px] font-mono text-[#16C7A3] flex items-center justify-between">
-        <span>{flowGroup?.health || 96}% Health</span>
+        <span>{flowGroup?.health ?? 95}% Health</span>
       </div>
     </div>
   );
@@ -715,19 +715,30 @@ function MetroMapInternal({
           </span>
           <div className="grid grid-cols-4 gap-1.5 text-center">
             <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
-              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">6</span>
+              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">
+                {featureClusters.length}
+              </span>
               <span className="text-[9.5px] text-[#718287] font-mono">Feature Lines</span>
             </div>
             <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
-              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">22</span>
+              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">
+                {featureClusters.reduce((sum, f) => sum + (f.flowGroups?.length || 0), 0)}
+              </span>
               <span className="text-[9.5px] text-[#718287] font-mono">Flow Groups</span>
             </div>
             <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
-              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">80</span>
+              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">
+                {result?.files?.length || featureClusters.reduce((sum, f) => sum + (f.totalStations || f.files?.length || 0), 0)}
+              </span>
               <span className="text-[9.5px] text-[#718287] font-mono">Stations</span>
             </div>
             <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
-              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">48</span>
+              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">
+                {result?.dependencies?.length || 
+                 (result?.metadata?.dependencies ? Object.keys(result.metadata.dependencies).length : 0) ||
+                 (result?.files ? result.files.reduce((acc: number, f: any) => acc + (f.imports?.length || 0), 0) : 0) ||
+                 interchanges.length * 3}
+              </span>
               <span className="text-[9.5px] text-[#718287] font-mono">Dependencies</span>
             </div>
           </div>

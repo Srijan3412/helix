@@ -240,8 +240,61 @@ export default function ArchitectureViewer({
       .slice(0, 5);
   }, [result]);
 
-  const fileCount = result?.files?.length || 210;
-  const importCount = result?.imports?.length || 148;
+  const mergedResult = React.useMemo(() => {
+    if (!architectureData) return result;
+    return {
+      ...result,
+      layers: architectureData.layers || result?.layers,
+      architecture_layers: architectureData.layers || result?.architecture_layers,
+      architecture_graph: architectureData.graph || result?.architecture_graph,
+      graph: architectureData.graph || result?.graph,
+    };
+  }, [result, architectureData]);
+
+  const fileCount = (result?.files || []).filter(
+    (f: any) => {
+      const p = String(f.path || f || "");
+      return (
+        !p.startsWith("ROUTE:") &&
+        !p.startsWith("ENV:") &&
+        !p.startsWith("DB:") &&
+        !p.startsWith("ENTITY:")
+      );
+    }
+  ).length || result?.files?.length || 0;
+
+  const importCount = React.useMemo(() => {
+    if (result?.imports && Array.isArray(result.imports)) return result.imports.length;
+    if (result?.dependencies && Array.isArray(result.dependencies)) return result.dependencies.length;
+    let count = 0;
+    (result?.files || []).forEach((f: any) => {
+      count += (f.internalImports?.length || 0) + (f.externalImports?.length || 0);
+    });
+    return count > 0 ? count : (result?.metadata?.totalImports || 0);
+  }, [result]);
+
+  const cyclesCount = result?.staticAnalysis?.cycles?.length || 0;
+
+  const coreModulesCount = React.useMemo(() => {
+    if (result?.features && Array.isArray(result.features) && result.features.length > 0) {
+      return result.features.length;
+    }
+    const moduleNames = new Set<string>();
+    (result?.files || []).forEach((f: any) => {
+      const segs = String(f.path || f || "").split(/[\\/]/).filter(Boolean);
+      if (segs.length > 1) {
+        moduleNames.add(segs[0] === 'src' || segs[0] === 'app' ? (segs[1] || segs[0]) : segs[0]);
+      }
+    });
+    return Math.max(1, moduleNames.size);
+  }, [result]);
+
+  const servicesCount = React.useMemo(() => {
+    const sFiles = (result?.files || []).filter((f: any) =>
+      /service|manager|engine|controller|handler/i.test(f.path || f)
+    );
+    return sFiles.length > 0 ? sFiles.length : (result?.routes?.length || 0);
+  }, [result]);
 
   const renderCanvasContent = () => (
     <AnimatePresence mode="wait">
@@ -255,13 +308,13 @@ export default function ArchitectureViewer({
       >
         {activeMode === "layer" && (
           <LayerView
-            result={result}
+            result={mergedResult}
             searchQuery={searchQuery}
           />
         )}
         {activeMode === "file" && (
           <FileGraph
-            result={result}
+            result={mergedResult}
             externalSearchQuery={searchQuery}
             isFullScreen={isFullScreen}
             fitViewTrigger={fitViewTrigger}
@@ -270,7 +323,7 @@ export default function ArchitectureViewer({
         )}
         {activeMode === "route" && (
           <RouteGraph
-            result={result}
+            result={mergedResult}
             externalSearchQuery={searchQuery}
             isFullScreen={isFullScreen}
             fitViewTrigger={fitViewTrigger}
@@ -283,7 +336,7 @@ export default function ArchitectureViewer({
         )}
         {activeMode === "dependency" && (
           <PackageGraph
-            result={result}
+            result={mergedResult}
             externalSearchQuery={searchQuery}
             isFullScreen={isFullScreen}
             fitViewTrigger={fitViewTrigger}
@@ -292,14 +345,14 @@ export default function ArchitectureViewer({
         )}
         {activeMode === "trace" && (
           <ExecutionTrace
-            result={result}
+            result={mergedResult}
             onSwitchTab={onSwitchTab}
             onSetImpactFile={onSetImpactFile}
           />
         )}
         {activeMode === "metro" && (
           <MetroMap
-            result={result}
+            result={mergedResult}
             onSwitchTab={onSwitchTab}
             onSetImpactFile={onSetImpactFile}
             onSelectTraceRouteId={(routeId: string) => {
@@ -368,16 +421,16 @@ export default function ArchitectureViewer({
             </span>
             <span className="text-[#16C7A3]/30">·</span>
             <span>
-              <strong className="text-[#F7FAFA]">0</strong> Cycles
+              <strong className="text-[#F7FAFA]">{cyclesCount}</strong> Cycles
             </span>
             <span className="text-[#16C7A3]/30">·</span>
             <span className="text-[#16C7A3] font-semibold">100% Parsed</span>
           </div>
 
           <div className="flex items-center gap-3 text-[11px]">
-            <span>10 Core Modules</span>
+            <span>{coreModulesCount} Core Modules</span>
             <span className="text-[#16C7A3]/30">·</span>
-            <span>37 Services</span>
+            <span>{servicesCount} Services</span>
             <span className="text-[#16C7A3]/30">│</span>
             <span className="text-[#F7FAFA] font-bold">Zoom 100%</span>
           </div>
@@ -484,16 +537,16 @@ export default function ArchitectureViewer({
                 </span>
                 <span className="text-[#16C7A3]/30">·</span>
                 <span>
-                  <strong className="text-[#F7FAFA] font-bold">0</strong> Cycles
+                  <strong className="text-[#F7FAFA] font-bold">{cyclesCount}</strong> Cycles
                 </span>
                 <span className="text-[#16C7A3]/30">·</span>
                 <span className="text-[#16C7A3] font-semibold">100% Parsed</span>
               </div>
 
               <div className="flex items-center gap-4 text-xs">
-                <span>10 Core Modules</span>
+                <span>{coreModulesCount} Core Modules</span>
                 <span className="text-[#16C7A3]/30">·</span>
-                <span>37 Services</span>
+                <span>{servicesCount} Services</span>
                 <span className="text-[#16C7A3]/30">│</span>
                 <span className="text-[#F7FAFA] font-bold">Zoom 100%</span>
               </div>

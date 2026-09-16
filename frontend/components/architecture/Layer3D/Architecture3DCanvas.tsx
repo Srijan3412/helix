@@ -160,6 +160,7 @@ function ArchitectureSceneContent({
               isSelected={isSelected}
               onSelect={() => onSelectLayer(layer.id)}
               fileCount={fileList.length}
+              files={fileList}
               searchMatch={searchMatch}
             />
           );
@@ -187,6 +188,8 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
   selectedLayerId,
   onSelectLayer,
   searchQuery = '',
+  routes = [],
+  dbType,
 }) => {
   const controlsRef = useRef<OrbitControlsImpl>(null);
 
@@ -237,7 +240,7 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
       />
 
       {/* Clean Contextual Overlays */}
-      <ContextualOverlays />
+      <ContextualOverlays routes={routes} dbType={dbType} />
 
       {/* Three.js Fiber Canvas Viewport with Precision 3/4 Isometric Perspective */}
       <div className="absolute inset-0 z-10">

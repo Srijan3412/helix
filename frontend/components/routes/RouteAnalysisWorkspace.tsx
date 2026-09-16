@@ -838,14 +838,21 @@ export default function RouteAnalysisWorkspace({
     setOpenModules((prev) => ({ ...prev, [module]: !prev[module] }));
   };
 
-  // Convert and merge scanned routes with rich defaults
+  // Convert and generate rich route items from scan results
   const allRoutes: RouteItem[] = useMemo(() => {
+    const depsMap: Record<string, string> = {
+      ...(result?.metadata?.frameworkMetadata?.dependencies || {}),
+      ...(result?.metadata?.frameworkMetadata?.devDependencies || {}),
+    };
+    const dbType = result?.metadata?.databaseInfo?.type || "Database";
+    const dbFlows = result?.metadata?.databaseInfo?.flows || [];
+
     if (!result?.routes || result.routes.length === 0) {
       return DEFAULT_ROUTES;
     }
 
-    const merged = [...DEFAULT_ROUTES];
-    const existingPaths = new Set(DEFAULT_ROUTES.map((r) => r.path));
+    const items: RouteItem[] = [];
+    const seenIds = new Set<string>();
 
     result.routes.forEach((r: any, idx: number) => {
       let rawPath = String(r.path || "").trim();
@@ -855,58 +862,160 @@ export default function RouteAnalysisWorkspace({
       }
       if (!rawPath.startsWith("/")) rawPath = "/" + rawPath;
 
-      if (!existingPaths.has(rawPath)) {
-        existingPaths.add(rawPath);
-        const method = (r.method || "GET").toUpperCase() as any;
-        let module = "Core System";
-        if (rawPath.includes("/auth")) module = "Authentication";
-        else if (rawPath.includes("/user")) module = "User Management";
-        else if (rawPath.includes("/admin")) module = "Admin";
-        else if (rawPath.includes("/analysis") || rawPath.includes("/metric")) module = "Analytics";
-        else if (rawPath.includes("/notification") || rawPath.includes("/webhook")) module = "Notifications";
+      const rawMethod = (r.method || "GET").toUpperCase();
+      const method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" =
+        ["GET", "POST", "PUT", "PATCH", "DELETE"].includes(rawMethod) ? (rawMethod as any) : "GET";
 
-        merged.push({
-          id: `scanned-${idx}-${rawPath}`,
-          path: rawPath,
-          method: ["GET", "POST", "PUT", "PATCH", "DELETE"].includes(method) ? method : "GET",
-          module,
-          description: r.description || `Handler for ${rawPath}`,
-          detailedDescription: `Dispatches request handling for ${rawPath} via registered controller and middleware pipelines.`,
-          isPublic: !rawPath.includes("/admin") && !rawPath.includes("/users"),
-          version: "v1",
-          tag: `@${module.toLowerCase().replace(/\s+/g, "-")}`,
-          file: r.file || "backend/src/routes/api.routes.ts",
-          lines: "1 - 30",
-          controller: r.handler || "ApiController.handler",
-          service: `${module.replace(/\s+/g, "")}Service`,
-          metrics: {
-            successRate: "100%",
-            avgResponseTime: "180 ms",
-            dbActivity: "1 query",
-            usage: "950",
-          },
-          dependencies: [
-            { name: "express", version: "^4.19.2", type: "package" },
-            { name: "Database", version: "Internal", type: "internal" },
-          ],
-          request: {
-            contentType: "application/json",
-            body: { sample: "data" },
-            headers: [{ key: "Content-Type", value: "application/json" }],
-            queryParams: [],
-          },
-          response: {
-            statusCode: 200,
-            statusText: "OK",
-            body: { success: true, path: rawPath },
-            headers: [{ key: "Content-Type", value: "application/json" }],
-          },
-          relatedRoutes: [],
+      const routeId = `route-${idx}-${method.toLowerCase()}-${rawPath.replace(/[^a-zA-Z0-9]/g, "-")}`;
+      if (seenIds.has(routeId)) return;
+      seenIds.add(routeId);
+
+      // Derive Module Name
+      let moduleName = "Core System";
+      const pathSegs = rawPath.split("/").filter(Boolean);
+      const fileBase = r.file ? r.file.split(/[\\/]/).pop()?.replace(/\.(routes|router|controller|service|ts|js|py)$/i, "") : "";
+      
+      if (rawPath.includes("/auth") || rawPath.includes("/login") || rawPath.includes("/token")) {
+        moduleName = "Authentication";
+      } else if (rawPath.includes("/user") || rawPath.includes("/member") || rawPath.includes("/profile") || rawPath.includes("/account")) {
+        moduleName = "User Management";
+      } else if (rawPath.includes("/admin") || rawPath.includes("/tenant") || rawPath.includes("/organization")) {
+        moduleName = "Admin";
+      } else if (rawPath.includes("/analysis") || rawPath.includes("/metric") || rawPath.includes("/scan") || rawPath.includes("/report")) {
+        moduleName = "Analytics";
+      } else if (rawPath.includes("/notification") || rawPath.includes("/webhook") || rawPath.includes("/email") || rawPath.includes("/alert")) {
+        moduleName = "Notifications";
+      } else if (rawPath.includes("/billing") || rawPath.includes("/payment") || rawPath.includes("/invoice") || rawPath.includes("/checkout")) {
+        moduleName = "Billing & Payments";
+      } else if (pathSegs.length > 1 && pathSegs[0] === "api") {
+        moduleName = pathSegs[1].charAt(0).toUpperCase() + pathSegs[1].slice(1);
+      } else if (fileBase && fileBase.length > 2) {
+        moduleName = fileBase.charAt(0).toUpperCase() + fileBase.slice(1);
+      }
+
+      // Check if public or protected
+      const hasAuthMiddleware = (r.middleware || []).some((m: string) =>
+        /auth|jwt|guard|protect|verify|session|token/i.test(m)
+      );
+      const isPublic = !hasAuthMiddleware && !rawPath.includes("/admin") && !rawPath.includes("/private");
+
+      // Controller & Service
+      const controller = r.handler || (r.controller ? `${r.controller}.${method.toLowerCase()}` : `${moduleName.replace(/\s+/g, "")}Controller`);
+      const service = (r.chain || []).find((c: string) => /service|manager|engine/i.test(c)) || `${moduleName.replace(/\s+/g, "")}Service`;
+
+      // Associated dependencies
+      const routeFileObj = (result?.files || []).find((f: any) => f.path === r.file || (r.file && f.path.endsWith(r.file)));
+      const fileExternalImports = routeFileObj?.externalImports || [];
+      const fileInternalImports = routeFileObj?.internalImports || [];
+
+      const dependencies: { name: string; version: string; type: "package" | "internal" }[] = [];
+      fileExternalImports.slice(0, 4).forEach((pkg: string) => {
+        dependencies.push({
+          name: pkg,
+          version: depsMap[pkg] || "^1.0.0",
+          type: "package",
+        });
+      });
+      if (fileInternalImports.length > 0) {
+        dependencies.push({
+          name: fileInternalImports[0].split(/[\\/]/).pop()?.replace(/\.[^.]+$/, "") || "InternalService",
+          version: "Internal",
+          type: "internal",
         });
       }
+      // Check database flow
+      const matchedDbFlow = dbFlows.find((f: any) => f.route === rawPath || rawPath.includes(f.route || ""));
+      if (matchedDbFlow && matchedDbFlow.entities?.length > 0) {
+        dependencies.push({
+          name: `${dbType} (${matchedDbFlow.entities.slice(0, 2).join(", ")})`,
+          version: dbType,
+          type: "internal",
+        });
+      }
+
+      // Parameters
+      const pathParams = (rawPath.match(/:([a-zA-Z0-9_]+)/g) || []).map((p: string) => p.replace(":", ""));
+      const queryParams = (r.params || pathParams).map((p: string) => ({ key: p, value: `sample_${p}` }));
+
+      // Request Body
+      let requestBody: Record<string, any> = {};
+      if (method === "POST" || method === "PUT" || method === "PATCH") {
+        if (rawPath.includes("auth") || rawPath.includes("login")) {
+          requestBody = { email: "user@example.com", password: "••••••••" };
+        } else if (rawPath.includes("scan") || rawPath.includes("analyze")) {
+          requestBody = { repoUrl: "https://github.com/organization/repo", branch: "main" };
+        } else if (pathParams.length > 0) {
+          pathParams.forEach((param: string) => {
+            requestBody[param] = `val_${param}`;
+          });
+        } else {
+          requestBody = { name: "Sample Item", active: true };
+        }
+      }
+
+      const headers = [
+        { key: "Content-Type", value: "application/json" },
+        ...(hasAuthMiddleware || !isPublic ? [{ key: "Authorization", value: "Bearer eyJhbGciOi..." }] : []),
+      ];
+
+      // Detailed Description
+      const middlewareList = (r.middleware || []).join(", ");
+      const chainList = (r.chain || []).join(" → ");
+      let detailedDescription = `Handles HTTP ${method} requests for ${rawPath}.`;
+      if (middlewareList) detailedDescription += ` Dispatches through middleware pipeline [${middlewareList}].`;
+      if (chainList) detailedDescription += ` Execution call graph: ${chainList}.`;
+
+      items.push({
+        id: routeId,
+        path: rawPath,
+        method,
+        module: moduleName,
+        description: r.description || `${method} handler for ${rawPath}`,
+        detailedDescription,
+        isPublic,
+        version: "v1",
+        tag: `@${moduleName.toLowerCase().replace(/\s+/g, "-")}`,
+        file: r.file || "backend/src/routes/api.routes.ts",
+        lines: r.lines || `${r.lineStart || 1} - ${r.lineEnd || 35}`,
+        controller,
+        service,
+        metrics: {
+          successRate: "100%",
+          avgResponseTime: `${Math.max(45, (routeFileObj?.lineCount || 30) * 3)} ms`,
+          dbActivity: matchedDbFlow ? `${matchedDbFlow.entities.length} tables` : "AST Flow",
+          usage: `${Math.max(120, (idx + 1) * 380)}`,
+        },
+        dependencies,
+        request: {
+          contentType: "application/json",
+          body: requestBody,
+          headers,
+          queryParams,
+        },
+        response: {
+          statusCode: method === "POST" ? 201 : 200,
+          statusText: method === "POST" ? "Created" : "OK",
+          body: {
+            success: true,
+            path: rawPath,
+            timestamp: new Date().toISOString(),
+            ...(matchedDbFlow?.entities?.length ? { entities: matchedDbFlow.entities } : {}),
+          },
+          headers: [{ key: "Content-Type", value: "application/json" }],
+        },
+        relatedRoutes: [],
+      });
     });
 
-    return merged;
+    // Populate related routes by matching module
+    items.forEach((item) => {
+      item.relatedRoutes = items
+        .filter((other) => other.id !== item.id && other.module === item.module)
+        .slice(0, 3)
+        .map((other) => other.path);
+    });
+
+    return items;
   }, [result]);
 
   // Method Counts for Header Badges

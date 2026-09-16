@@ -160,7 +160,6 @@ export default function LayerView({
 
     // ✅ Convert backend array format to frontend Record format
     if (layersData && Array.isArray(layersData)) {
-      console.log('✅ [LAYERED VIEW] Using layersData (array format)');
       const converted: Record<string, string[]> = {
         routes: [],
         controllers: [],
@@ -171,7 +170,8 @@ export default function LayerView({
         config: [],
         tests: [],
         utils: [],
-        database: []
+        database: [],
+        external: []
       };
 
       layersData.forEach((layer: any) => {
@@ -180,6 +180,15 @@ export default function LayerView({
           converted[layerName] = layer.files || [];
         }
       });
+
+      // Inject scanned route files if backend layer array has empty routes
+      if (converted.routes.length === 0 && result?.routes && result.routes.length > 0) {
+        const routeFiles = new Set<string>();
+        result.routes.forEach((r: any) => {
+          if (r.file) routeFiles.add(r.file);
+        });
+        converted.routes = Array.from(routeFiles);
+      }
 
       return converted;
     }
@@ -195,7 +204,8 @@ export default function LayerView({
         config: [],
         tests: [],
         utils: [],
-        database: []
+        database: [],
+        external: []
       };
 
       (preGeneratedGraph?.nodes ?? []).forEach((node: any) => {
@@ -204,8 +214,10 @@ export default function LayerView({
           controller: 'controllers',
           service: 'services',
           repository: 'repositories',
-          model: 'models',
-          database: 'database',
+          model: 'repositories',
+          database: 'repositories',
+          middleware: 'middleware',
+          external: 'external',
           file: 'services'
         };
         const nodeType = String(node?.type || '').toLowerCase();
@@ -214,6 +226,14 @@ export default function LayerView({
           graphLayers[layerKey].push(node.id);
         }
       });
+
+      if (graphLayers.routes.length === 0 && result?.routes && result.routes.length > 0) {
+        const routeFiles = new Set<string>();
+        result.routes.forEach((r: any) => {
+          if (r.file) routeFiles.add(r.file);
+        });
+        graphLayers.routes = Array.from(routeFiles);
+      }
 
       return graphLayers;
     }
@@ -230,53 +250,79 @@ export default function LayerView({
       config: [],
       tests: [],
       utils: [],
-      database: []
+      database: [],
+      external: []
     };
 
     const rules = [
-      { key: "routes", regex: /(^|\/)(routes?|router|endpoints?|api)(\/|$)/i },
+      { key: "routes", regex: /(^|\/)(routes?|router|endpoints?|api|pages\/api|app\/api)(\/|$)/i },
       { key: "controllers", regex: /(^|\/)(controllers?|handlers?|resolvers?)(\/|$)/i },
-      { key: "services", regex: /(^|\/)(services?|usecases?|use-cases|domain|business)(\/|$)/i },
-      { key: "repositories", regex: /(^|\/)(repositor(y|ies)|dao|daos)(\/|$)/i },
-      { key: "models", regex: /(^|\/)(models?|entities|schemas?|types)(\/|$)/i },
-      { key: "middleware", regex: /(^|\/)(middleware)(\/|$)/i },
+      { key: "services", regex: /(^|\/)(services?|usecases?|use-cases|domain|business|managers?|engine)(\/|$)/i },
+      { key: "repositories", regex: /(^|\/)(repositor(y|ies)|dao|daos|models?|entities|schemas?|types)(\/|$)/i },
+      { key: "middleware", regex: /(^|\/)(middleware|auth|guards?|interceptors?|loggers?|pipes?)(\/|$)/i },
+      { key: "external", regex: /(^|\/)(external|clients?|integrations?|sdks?|http|webhooks?|apis?|thirdparty)(\/|$)/i },
       { key: "config", regex: /(^|\/)(config|configuration)(\/|$)/i },
       { key: "tests", regex: /(^|\/)(tests?|__tests__)(\/|$)|\.(test|spec)\.[tj]sx?$/i },
       { key: "utils", regex: /(^|\/)(utils?|utility|helpers?)(\/|$)/i },
     ];
 
     for (const f of files) {
-      const pathLower = String(f?.path || f || "").toLowerCase();
+      const pathStr = String(f?.path || f || "");
+      const pathLower = pathStr.toLowerCase();
       if (!pathLower || pathLower.startsWith("route:") || pathLower.startsWith("env:") || pathLower.startsWith("db:") || pathLower.startsWith("entity:")) {
         continue;
       }
       let matched = false;
       for (const r of rules) {
-        if (r.regex.test(f?.path || f || "")) {
-          classified[r.key].push(f?.path || f);
+        if (r.regex.test(pathStr)) {
+          classified[r.key].push(pathStr);
           matched = true;
           break;
         }
       }
-      if (!matched && (/(^|\/)(prisma|drizzle|migrations?|supabase\/migrations|db\/migrations|sql)(\/|$)/i.test(f?.path || f || "") || /\bprisma\b|schema\.prisma|\bconnection\b|\bdb\b/i.test(f?.path || f || ""))) {
-        classified.database.push(f?.path || f);
+      if (!matched && (/(^|\/)(prisma|drizzle|migrations?|supabase\/migrations|db\/migrations|sql)(\/|$)/i.test(pathStr) || /\bprisma\b|schema\.prisma|\bconnection\b|\bdb\b/i.test(pathStr))) {
+        classified.repositories.push(pathStr);
+      } else if (!matched && f?.externalImports && f.externalImports.length > 0 && classified.external.length < 15) {
+        classified.external.push(pathStr);
       }
     }
 
+    // Ensure routes from result.routes are guaranteed in classified.routes
+    if (result?.routes && result.routes.length > 0) {
+      result.routes.forEach((r: any) => {
+        if (r.file && !classified.routes.includes(r.file)) {
+          classified.routes.push(r.file);
+        }
+      });
+    }
+
     if (dbInfo?.type) {
-      classified.database.push(`DB: ${dbInfo.type}`);
+      classified.repositories.push(`DB: ${dbInfo.type}`);
     }
 
     return classified;
   }, [preGeneratedGraph, layersData, result]);
 
   const totalFiles = useMemo(() => {
-    return Object.values(layers).reduce((acc, curr) => acc + (curr?.length || 0), 0) || 350;
-  }, [layers]);
+    return Object.values(layers).reduce((acc, curr) => acc + (curr?.length || 0), 0) || (result?.files?.length || 0);
+  }, [layers, result]);
 
   const totalLoc = useMemo(() => {
-    return totalFiles > 0 ? totalFiles * 120 : 1200;
-  }, [totalFiles]);
+    if (result?.metadata?.totalLines && result.metadata.totalLines > 0) {
+      return result.metadata.totalLines;
+    }
+    const sumLoc = (result?.files || []).reduce((acc: number, f: any) => acc + (f?.lineCount || 0), 0);
+    return sumLoc > 0 ? sumLoc : (totalFiles > 0 ? totalFiles * 65 : 0);
+  }, [result, totalFiles]);
+
+  const externalApisCount = useMemo(() => {
+    const depsCount = Object.keys(result?.metadata?.frameworkMetadata?.dependencies || {}).length;
+    const extImports = new Set<string>();
+    (result?.files || []).forEach((f: any) => {
+      (f.externalImports || []).forEach((imp: string) => extImports.add(imp));
+    });
+    return Math.max(depsCount, extImports.size);
+  }, [result]);
 
   const selectedLayerMeta = useMemo(() => {
     return LAYERS_CONFIG.find((l) => l.id === selectedLayerId) || LAYERS_CONFIG[0];
@@ -286,14 +332,41 @@ export default function LayerView({
     return layers[selectedLayerId] || [];
   }, [layers, selectedLayerId]);
 
+  // Map real file metrics for the top files in the selected layer
   const topFilesList = useMemo(() => {
-    const files = selectedLayerFiles.length > 0 ? selectedLayerFiles : ["index.ts", "auth.ts", "users.ts", "projects.ts", "scan.ts"];
-    return files.slice(0, 5).map((f: string, i: number) => ({
-      name: (f ? String(f).split(/[\\/]/).pop() : "") || f || "",
-      loc: `${Math.max(0.8, 2.4 - i * 0.4).toFixed(1)}K`,
-      score: (4.8 - i * 0.2).toFixed(1)
-    }));
-  }, [selectedLayerFiles]);
+    const fileObjects = (result?.files || []).filter((f: any) => {
+      const p = f.path || f;
+      return selectedLayerFiles.some((sf: string) => sf === p || sf.endsWith(p) || p.endsWith(sf));
+    });
+
+    if (fileObjects.length > 0) {
+      return fileObjects
+        .map((f: any) => {
+          const loc = f.lineCount || 45;
+          const complexity = result?.staticAnalysis?.complexity?.find((c: any) => c.file.includes(f.path))?.score || Math.max(1, Math.round(loc / 35));
+          const score = Math.max(1.0, Math.min(5.0, 5.0 - complexity * 0.15)).toFixed(1);
+          return {
+            name: f.path.split(/[\\/]/).pop() || f.path,
+            path: f.path,
+            loc: loc > 1000 ? `${(loc / 1000).toFixed(1)}K` : `${loc}`,
+            score,
+          };
+        })
+        .slice(0, 8);
+    }
+
+    return selectedLayerFiles.slice(0, 8).map((filePath: string, i: number) => {
+      const name = filePath.split(/[\\/]/).pop() || filePath;
+      return {
+        name,
+        path: filePath,
+        loc: "45",
+        score: (4.5 - (i % 5) * 0.1).toFixed(1),
+      };
+    });
+  }, [selectedLayerFiles, result]);
+
+  // Search & Focus matching logic
 
   // Search & Focus matching logic
   const searchHits = useMemo(() => {
@@ -753,7 +826,7 @@ export default function LayerView({
           <span className="text-[11px] font-medium text-[#9FB0B3]">Lines of Code</span>
         </div>
         <div className="bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-3 flex flex-col justify-center">
-          <span className="text-xl font-bold text-[#60A5FA]">48</span>
+          <span className="text-xl font-bold text-[#60A5FA]">{externalApisCount}</span>
           <span className="text-[11px] font-medium text-[#9FB0B3]">External APIs</span>
         </div>
         <div className="col-span-2 sm:col-span-4 lg:col-span-1 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-3 flex items-center justify-between gap-2">
@@ -839,11 +912,28 @@ export default function LayerView({
             selectedLayerId={selectedLayerId}
             onSelectLayer={handleSelectLayer}
             searchQuery={searchQuery}
+            routes={result?.routes || []}
+            dbType={result?.metadata?.databaseInfo?.type}
           />
         </div>
 
         {/* RIGHT COLUMN: Layer Inspector (320px / 3 cols) */}
-        {selectedLayerMeta && isInspectorOpen && (
+        {selectedLayerMeta && isInspectorOpen && (() => {
+          const matchingRoutes = (result?.routes || []).filter((r: any) => {
+            const p = r.file || r.path || '';
+            return selectedLayerFiles.some((f: string) => f.includes(p) || p.includes(f));
+          });
+          const layerEndpointsCount = matchingRoutes.length > 0 ? matchingRoutes.length : (selectedLayerId === 'routes' ? (result?.routes?.length || 0) : 0);
+          
+          const layerDepsCount = selectedLayerFiles.reduce((acc: number, f: string) => {
+            const fileObj = (result?.files || []).find((rf: any) => rf.path === f);
+            return acc + ((fileObj?.internalImports?.length || 0) + (fileObj?.externalImports?.length || 0));
+          }, 0);
+
+          const layerMetricsData = layersData?.find?.((l: any) => String(l?.name || '').toLowerCase() === selectedLayerId.toLowerCase());
+          const layerHealthVal = layerMetricsData?.health || (selectedLayerFiles.length > 0 ? Math.max(70, Math.min(98, 100 - selectedLayerFiles.length)) : 90);
+
+          return (
           <div className="lg:col-span-3 bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-4 flex flex-col gap-3 max-h-[580px] overflow-y-auto custom-scrollbar">
             {/* Inspector Header */}
             <div className="flex items-center justify-between pb-2 border-b border-[rgba(120,200,210,0.1)]">
@@ -894,11 +984,11 @@ export default function LayerView({
                     <span className="text-[9px] text-[#9FB0B3]">Files</span>
                   </div>
                   <div className="bg-[#071113] p-2 rounded-lg border border-[rgba(120,200,210,0.08)] flex flex-col items-center">
-                    <span className="text-base font-bold text-[#60A5FA]">24</span>
+                    <span className="text-base font-bold text-[#60A5FA]">{layerEndpointsCount}</span>
                     <span className="text-[9px] text-[#9FB0B3]">Endpoints</span>
                   </div>
                   <div className="bg-[#071113] p-2 rounded-lg border border-[rgba(120,200,210,0.08)] flex flex-col items-center">
-                    <span className="text-base font-bold text-[#16C7A3]">12</span>
+                    <span className="text-base font-bold text-[#16C7A3]">{layerDepsCount}</span>
                     <span className="text-[9px] text-[#9FB0B3]">Deps</span>
                   </div>
                 </div>
@@ -907,10 +997,15 @@ export default function LayerView({
                 <div className="flex items-center justify-between p-3 rounded-lg bg-[#071113] border border-[rgba(120,200,210,0.08)]">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-[#F4F7F7]">Layer Health</span>
-                    <span className="text-[10px] text-[#16C7A3]">Optimal & Secure</span>
+                    <span className="text-[10px] text-[#16C7A3]">
+                      {layerHealthVal >= 80 ? 'Optimal & Secure' : layerHealthVal >= 60 ? 'Moderate Complexity' : 'Needs Optimization'}
+                    </span>
                   </div>
-                  <div className="w-12 h-12 rounded-full border-4 border-[#16C7A3] flex items-center justify-center font-mono font-bold text-xs text-[#F4F7F7]">
-                    85%
+                  <div 
+                    className="w-12 h-12 rounded-full border-4 flex items-center justify-center font-mono font-bold text-xs text-[#F4F7F7]"
+                    style={{ borderColor: layerHealthVal >= 80 ? '#16C7A3' : layerHealthVal >= 60 ? '#F5A623' : '#FF4D5E' }}
+                  >
+                    {layerHealthVal}%
                   </div>
                 </div>
 
@@ -918,22 +1013,22 @@ export default function LayerView({
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#9FB0B3]">Top Files</span>
-                    <span className="text-[9px] text-[#2F80ED] font-semibold cursor-pointer">View All →</span>
+                    <span className="text-[9px] text-[#2F80ED] font-semibold">({selectedLayerFiles.length} Total)</span>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    {topFilesList.slice(0, 5).map((file, idx) => (
+                    {topFilesList.slice(0, 5).map((file: any, idx: number) => (
                       <div
-                        key={file.name}
+                        key={file.path || file.name}
                         className="flex items-center justify-between p-2 rounded bg-[#071113] text-[10px] border border-[rgba(120,200,210,0.06)]"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="font-mono text-[#9FB0B3] w-3">0{idx + 1}</span>
                           <FileCode className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />
-                          <span className="font-mono text-[#F4F7F7] truncate">{file.name}</span>
+                          <span className="font-mono text-[#F4F7F7] truncate" title={file.path || file.name}>{file.name}</span>
                         </div>
                         <div className="flex items-center gap-2 font-mono text-[#9FB0B3]">
-                          <span>{file.loc}</span>
+                          <span>{file.loc} lines</span>
                           <div className="flex items-center text-amber-400">
                             <Star className="w-3 h-3 fill-amber-400" />
                             <span className="ml-0.5">{file.score}</span>
@@ -950,40 +1045,67 @@ export default function LayerView({
               <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto custom-scrollbar">
                 {selectedLayerFiles.map((file: string) => (
                   <div key={file} className="p-2 rounded bg-[#071113] border border-[rgba(120,200,210,0.08)] flex items-center justify-between text-xs">
-                    <span className="font-mono text-[#F4F7F7] truncate">{file.split(/[\\/]/).pop()}</span>
+                    <span className="font-mono text-[#F4F7F7] truncate" title={file}>{file.split(/[\\/]/).pop() || file}</span>
                     <span className="text-[9px] text-[#9FB0B3]">Active</span>
                   </div>
                 ))}
               </div>
             )}
 
-            {inspectorTab === "dependencies" && (
+            {inspectorTab === "dependencies" && (() => {
+              // Calculate outbound layer dependencies
+              const outboundLayers = new Set<string>();
+              selectedLayerFiles.forEach((file: string) => {
+                const fObj = (result?.files || []).find((rf: any) => rf.path === file);
+                (fObj?.internalImports || []).forEach((imp: string) => {
+                  LAYERS_CONFIG.forEach((lc) => {
+                    if (layers[lc.id]?.some((lf: string) => lf === imp || lf.includes(imp) || imp.includes(lf))) {
+                      if (lc.id !== selectedLayerId) outboundLayers.add(lc.name);
+                    }
+                  });
+                });
+              });
+
+              return (
               <div className="flex flex-col gap-2 text-xs text-[#9FB0B3]">
                 <div className="p-2 rounded bg-[#071113] border border-[rgba(120,200,210,0.08)]">
-                  <span className="font-bold text-[#F4F7F7] block">Depends on:</span>
-                  <span className="text-[10px]">Services, Middleware</span>
+                  <span className="font-bold text-[#F4F7F7] block">Depends on Layers:</span>
+                  <span className="text-[10px] text-[#16C7A3]">
+                    {outboundLayers.size > 0 ? Array.from(outboundLayers).join(', ') : 'Self-contained / Base'}
+                  </span>
                 </div>
                 <div className="p-2 rounded bg-[#071113] border border-[rgba(120,200,210,0.08)]">
-                  <span className="font-bold text-[#F4F7F7] block">Used by:</span>
-                  <span className="text-[10px]">HTTP Router & Entry API</span>
+                  <span className="font-bold text-[#F4F7F7] block">Module Scope:</span>
+                  <span className="text-[10px]">{selectedLayerFiles.length} modular components</span>
                 </div>
               </div>
-            )}
+              );
+            })()}
 
-            {inspectorTab === "metrics" && (
+            {inspectorTab === "metrics" && (() => {
+              const complexities = selectedLayerFiles.map((f: string) => {
+                return result?.staticAnalysis?.complexity?.find((c: any) => c.file.includes(f))?.score || 2;
+              });
+              const avgComplexity = complexities.length > 0 
+                ? (complexities.reduce((a: number, b: number) => a + b, 0) / complexities.length).toFixed(1)
+                : '1.0';
+
+              return (
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 rounded bg-[#071113] border border-[rgba(120,200,210,0.08)]">
-                  <span className="text-[9px] text-[#9FB0B3] block">Complexity</span>
-                  <span className="font-bold text-[#F4F7F7]">Low (3.2)</span>
+                  <span className="text-[9px] text-[#9FB0B3] block">Avg Complexity</span>
+                  <span className="font-bold text-[#F4F7F7]">{Number(avgComplexity) < 5 ? 'Low' : Number(avgComplexity) < 15 ? 'Moderate' : 'High'} ({avgComplexity})</span>
                 </div>
                 <div className="p-2.5 rounded bg-[#071113] border border-[rgba(120,200,210,0.08)]">
                   <span className="text-[9px] text-[#9FB0B3] block">Coupling</span>
-                  <span className="font-bold text-[#16C7A3]">Loose</span>
+                  <span className="font-bold text-[#16C7A3]">{selectedLayerFiles.length > 20 ? 'Standard' : 'Decoupled'}</span>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* ── 4. BOTTOM ANALYTICS ROW (3 Equal Columns ~1/3 each) ── */}
@@ -1000,12 +1122,12 @@ export default function LayerView({
           <div className="w-full h-3.5 bg-[#071113] rounded-full overflow-hidden flex my-2 border border-[rgba(120,200,210,0.1)]">
             {LAYERS_CONFIG.map((layer) => {
               const fileCount = (layers[layer.id] || []).length;
-              const pct = totalFiles > 0 ? Math.max(5, Math.round((fileCount / totalFiles) * 100)) : 16;
+              const pct = totalFiles > 0 ? Math.max(fileCount > 0 ? 4 : 0, Math.round((fileCount / totalFiles) * 100)) : 16;
               return (
                 <div
                   key={layer.id}
                   style={{ width: `${pct}%`, backgroundColor: layer.color }}
-                  title={`${layer.name}: ${pct}%`}
+                  title={`${layer.name}: ${pct}% (${fileCount} files)`}
                   className="h-full transition-all"
                 />
               );
@@ -1016,7 +1138,7 @@ export default function LayerView({
           <div className="grid grid-cols-3 gap-1.5 text-[9px] text-[#9FB0B3] mt-2">
             {LAYERS_CONFIG.map((layer) => {
               const fileCount = (layers[layer.id] || []).length;
-              const pct = totalFiles > 0 ? Math.round((fileCount / totalFiles) * 100) : 16;
+              const pct = totalFiles > 0 ? Math.round((fileCount / totalFiles) * 100) : 0;
               return (
                 <div key={layer.id} className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: layer.color }} />
@@ -1027,7 +1149,7 @@ export default function LayerView({
           </div>
         </div>
 
-        {/* Inter-Layer Dependencies (Sankey Flow Diagram) */}
+        {/* Inter-Layer Dependencies */}
         <div className="bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-4 flex flex-col justify-between">
           <span className="text-xs font-bold text-[#F4F7F7] mb-2">Inter-Layer Dependencies</span>
           <div className="relative w-full h-24 flex items-center justify-between px-2">
@@ -1040,21 +1162,21 @@ export default function LayerView({
 
             {/* Left nodes */}
             <div className="flex flex-col gap-1.5 z-10">
-              <span className="px-2 py-1 rounded bg-[#2F80ED]/20 border border-[#2F80ED] text-[9px] font-bold text-[#F4F7F7]">Routes</span>
-              <span className="px-2 py-1 rounded bg-[#8B5CF6]/20 border border-[#8B5CF6] text-[9px] font-bold text-[#F4F7F7]">Controllers</span>
-              <span className="px-2 py-1 rounded bg-[#16C7A3]/20 border border-[#16C7A3] text-[9px] font-bold text-[#F4F7F7]">Middleware</span>
+              <span className="px-2 py-1 rounded bg-[#2F80ED]/20 border border-[#2F80ED] text-[9px] font-bold text-[#F4F7F7]">Routes ({(layers['routes'] || []).length})</span>
+              <span className="px-2 py-1 rounded bg-[#8B5CF6]/20 border border-[#8B5CF6] text-[9px] font-bold text-[#F4F7F7]">Controllers ({(layers['controllers'] || []).length})</span>
+              <span className="px-2 py-1 rounded bg-[#16C7A3]/20 border border-[#16C7A3] text-[9px] font-bold text-[#F4F7F7]">Middleware ({(layers['middleware'] || []).length})</span>
             </div>
 
             {/* Right nodes */}
             <div className="flex flex-col gap-1.5 z-10">
-              <span className="px-2 py-1 rounded bg-[#F5A623]/20 border border-[#F5A623] text-[9px] font-bold text-[#F4F7F7]">Services</span>
-              <span className="px-2 py-1 rounded bg-[#F43F7A]/20 border border-[#F43F7A] text-[9px] font-bold text-[#F4F7F7]">Repositories</span>
-              <span className="px-2 py-1 rounded bg-[#60A5FA]/20 border border-[#60A5FA] text-[9px] font-bold text-[#F4F7F7]">External APIs</span>
+              <span className="px-2 py-1 rounded bg-[#F5A623]/20 border border-[#F5A623] text-[9px] font-bold text-[#F4F7F7]">Services ({(layers['services'] || []).length})</span>
+              <span className="px-2 py-1 rounded bg-[#F43F7A]/20 border border-[#F43F7A] text-[9px] font-bold text-[#F4F7F7]">Repositories ({(layers['repositories'] || []).length})</span>
+              <span className="px-2 py-1 rounded bg-[#60A5FA]/20 border border-[#60A5FA] text-[9px] font-bold text-[#F4F7F7]">External ({externalApisCount})</span>
             </div>
           </div>
         </div>
 
-        {/* Layer Insights */}
+        {/* Dynamic Layer Insights */}
         <div className="bg-[#0C171B] border border-[rgba(120,200,210,0.12)] rounded-xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
@@ -1067,22 +1189,49 @@ export default function LayerView({
           </div>
 
           <div className="flex flex-col gap-2 text-[10px] text-[#9FB0B3]">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-              <span>Routes layer has highest number of endpoints (24).</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <Info className="w-3.5 h-3.5 text-[#60A5FA] shrink-0 mt-0.5" />
-              <span>3 files in Controllers depend directly on External Services.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-              <span>Consider adding request validation to 2 new routes.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-              <span>No circular layer dependencies detected.</span>
-            </div>
+            {(() => {
+              const routesCount = result?.routes?.length || (layers['routes'] || []).length;
+              const cyclesCount = result?.staticAnalysis?.cycles?.length || 0;
+              const godCount = result?.staticAnalysis?.godServices?.length || 0;
+              const dbType = result?.metadata?.databaseInfo?.type;
+
+              return (
+                <>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                    <span>{routesCount > 0 ? `Detected ${routesCount} API endpoint handlers across routes layer.` : 'Base service structure detected.'}</span>
+                  </div>
+                  {dbType && (
+                    <div className="flex items-start gap-2">
+                      <Info className="w-3.5 h-3.5 text-[#60A5FA] shrink-0 mt-0.5" />
+                      <span>Data access layer coupled to {dbType} database engine.</span>
+                    </div>
+                  )}
+                  {cyclesCount > 0 ? (
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <span>{cyclesCount} circular file dependency detected in static graph.</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>No circular layer dependencies detected.</span>
+                    </div>
+                  )}
+                  {godCount > 0 ? (
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <span>{godCount} high-complexity service(s) identified for refactoring.</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>Architecture shows healthy separation of concerns.</span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 

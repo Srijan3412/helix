@@ -402,12 +402,17 @@ function FileGraphInternal({
         const name = f.path.split(/[\\/]/).pop() || f.path;
         const { category, level } = inferCategoryAndLevel(name);
 
+        const compEntry = result?.staticAnalysis?.complexity?.find(
+          (c: any) => c.file === f.path || f.path.endsWith(c.file) || (c.file && f.path.includes(c.file))
+        );
+        const realComplexity = compEntry?.score ?? (f.complexity || Math.max(1, Math.round((f.lineCount || 50) / 35)));
+
         return {
           id: f.path,
           name,
           path: f.path,
           loc: f.lineCount || 45,
-          complexity: Math.max(1, Math.round((f.lineCount || 50) / 35)),
+          complexity: realComplexity,
           imports: f.internalImports || f.dependencies || [],
           importedBy: f.referencedBy || [],
           category,

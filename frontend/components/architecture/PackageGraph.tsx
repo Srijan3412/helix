@@ -203,22 +203,63 @@ function PackageGraphInternal({
   const packageNodes: RawPackageItem[] = useMemo(() => {
     const deps = result?.metadata?.frameworkMetadata?.dependencies || {};
     const devDeps = result?.metadata?.frameworkMetadata?.devDependencies || {};
+    const seenNames = new Set<string>();
 
-    const prodList: RawPackageItem[] = Object.entries(deps).map(([name, ver]) => ({
-      id: name,
-      name,
-      version: String(ver),
-      type: "dependency" as const,
-      usedBy: [] as string[],
-    }));
+    const prodList: RawPackageItem[] = Object.entries(deps).map(([name, ver]) => {
+      seenNames.add(name);
+      return {
+        id: name,
+        name,
+        version: String(ver),
+        type: "dependency" as const,
+        usedBy: [] as string[],
+      };
+    });
 
-    const devList: RawPackageItem[] = Object.entries(devDeps).map(([name, ver]) => ({
-      id: name,
-      name,
-      version: String(ver),
-      type: "devDependency" as const,
-      usedBy: [] as string[],
-    }));
+    const devList: RawPackageItem[] = Object.entries(devDeps).map(([name, ver]) => {
+      seenNames.add(name);
+      return {
+        id: name,
+        name,
+        version: String(ver),
+        type: "devDependency" as const,
+        usedBy: [] as string[],
+      };
+    });
+
+    // Extract any additional packages in result.dependencies array
+    if (Array.isArray(result?.dependencies)) {
+      result.dependencies.forEach((d: any) => {
+        const pkgName = typeof d === "string" ? d : d?.name;
+        if (pkgName && !seenNames.has(pkgName) && !pkgName.startsWith(".")) {
+          seenNames.add(pkgName);
+          prodList.push({
+            id: pkgName,
+            name: pkgName,
+            version: typeof d === "object" && d?.version ? String(d.version) : "^1.0.0",
+            type: typeof d === "object" && d?.type === "devDependency" ? "devDependency" : "dependency",
+            usedBy: [],
+          });
+        }
+      });
+    }
+
+    // Extract packages from files' external imports so every real package is represented
+    (result?.files || []).forEach((f: any) => {
+      (f.externalImports || []).forEach((imp: string) => {
+        const cleanPkg = imp.startsWith("@") ? imp.split("/").slice(0, 2).join("/") : imp.split("/")[0];
+        if (cleanPkg && !seenNames.has(cleanPkg) && !cleanPkg.startsWith(".")) {
+          seenNames.add(cleanPkg);
+          prodList.push({
+            id: cleanPkg,
+            name: cleanPkg,
+            version: "^1.0.0",
+            type: "dependency",
+            usedBy: [],
+          });
+        }
+      });
+    });
 
     return [...prodList, ...devList];
   }, [result]);
@@ -235,7 +276,13 @@ function PackageGraphInternal({
           !f.path.startsWith("ENTITY:")
       )
       .map((f: any) => {
-        const imports: string[] = f.externalImports || [];
+        const rawImports: string[] = f.externalImports || [];
+        const imports = rawImports
+          .map((imp: string) =>
+            imp.startsWith("@") ? imp.split("/").slice(0, 2).join("/") : imp.split("/")[0]
+          )
+          .filter(Boolean);
+
         return {
           id: f.path,
           name: f.path.split(/[\\/]/).pop() || f.path,
@@ -259,11 +306,11 @@ function PackageGraphInternal({
     const edges: Edge[] = [];
     const seenNodeIds = new Set<string>();
 
-    // Top Row: Files (placed horizontally at y = 200)
+    // Top Row: Files that import the filtered packages
     const topImporters = fileNodes
-      .filter((f: RawFileItem) => f.imports.length > 0)
+      .filter((f: RawFileItem) => f.imports.some((imp) => filteredPackages.some((p) => p.id === imp)))
       .sort((a: RawFileItem, b: RawFileItem) => b.imports.length - a.imports.length)
-      .slice(0, 10);
+      .slice(0, 35);
 
     const colSpacing = 165; // 120px node + 45px gap
     const fileRowY = 200;

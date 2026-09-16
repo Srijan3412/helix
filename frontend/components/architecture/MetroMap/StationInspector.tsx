@@ -96,11 +96,23 @@ export function StationInspector({
       setTimeout(() => setCopied(false), 1500);
     };
 
-    const keyDependencies = [
-      { name: 'PostgreSQL', type: 'Database', color: '#2F80ED' },
-      { name: 'Redis', type: 'Cache', color: '#F43F8C' },
-      { name: 'Email Service', type: 'External', color: '#16C7A3' }
-    ];
+    const st = station as any;
+    const keyDependencies = (st.dependencies && Array.isArray(st.dependencies) && st.dependencies.length > 0)
+      ? st.dependencies.map((d: any) => ({
+          name: typeof d === 'string' ? d : (d?.name || 'Dependency'),
+          type: typeof d === 'string' ? 'Package' : (d?.type || 'Internal'),
+          color: '#16C7A3'
+        }))
+      : ((st.imports && Array.isArray(st.imports) && st.imports.length > 0)
+        ? st.imports.slice(0, 4).map((imp: string) => ({
+            name: imp.split(/[\\/]/).pop() || imp,
+            type: imp.startsWith('.') ? 'Internal' : 'Package',
+            color: imp.startsWith('.') ? '#3B82F6' : '#16C7A3'
+          }))
+        : [
+            { name: st.database || 'Database Entity', type: 'Persistence', color: '#2F80ED' },
+            { name: 'Application Core', type: 'Internal', color: '#16C7A3' }
+          ]);
 
     const content = (
       <div className="w-full h-full bg-[#0B171B] border border-[#64BEC7]/15 rounded-2xl flex flex-col text-left overflow-hidden">
@@ -226,7 +238,7 @@ export function StationInspector({
               <div>
                 <span className="text-[10px] font-mono text-[#718287] uppercase tracking-wider block mb-2">Dependencies</span>
                 <div className="flex flex-wrap gap-2">
-                  {keyDependencies.map((dep, i) => (
+                  {keyDependencies.map((dep: any, i: number) => (
                     <span
                       key={i}
                       className="px-2.5 py-1 rounded-lg bg-[#0E1B20] border border-[#64BEC7]/15 font-mono text-[11px] text-[#F4F7F7] flex items-center gap-1.5"
