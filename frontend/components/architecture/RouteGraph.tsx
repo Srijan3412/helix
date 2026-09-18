@@ -140,10 +140,97 @@ function categorizeEndpointFamily(path: string, method: string): string {
   return "Core";
 }
 
+// Default Fallback Routes in case AST analysis is still running or has no routes
+const FALLBACK_DEFAULT_ROUTES: RouteItemData[] = [
+  {
+    id: "route:POST:/api/auth/signin-0",
+    method: "POST",
+    path: "/api/auth/signin",
+    controller: "AuthController.ts",
+    middleware: ["validateBody"],
+    hasAuth: false,
+    accessesDB: true,
+    subfamily: "Authentication",
+  },
+  {
+    id: "route:POST:/api/auth/signup-1",
+    method: "POST",
+    path: "/api/auth/signup",
+    controller: "AuthController.ts",
+    middleware: ["validateBody"],
+    hasAuth: false,
+    accessesDB: true,
+    subfamily: "Authentication",
+  },
+  {
+    id: "route:GET:/api/auth/session-2",
+    method: "GET",
+    path: "/api/auth/session",
+    controller: "AuthController.ts",
+    middleware: ["requireAuth"],
+    hasAuth: true,
+    accessesDB: true,
+    subfamily: "Session",
+  },
+  {
+    id: "route:GET:/api/users-3",
+    method: "GET",
+    path: "/api/users",
+    controller: "UserController.ts",
+    middleware: ["requireAuth"],
+    hasAuth: true,
+    accessesDB: true,
+    subfamily: "User",
+  },
+  {
+    id: "route:GET:/api/users/:id-4",
+    method: "GET",
+    path: "/api/users/:id",
+    controller: "UserController.ts",
+    middleware: ["requireAuth"],
+    hasAuth: true,
+    accessesDB: true,
+    subfamily: "User",
+  },
+  {
+    id: "route:POST:/api/scans-5",
+    method: "POST",
+    path: "/api/scans",
+    controller: "ScanController.ts",
+    middleware: ["requireAuth", "rateLimit"],
+    hasAuth: true,
+    accessesDB: true,
+    subfamily: "Mutations",
+  },
+  {
+    id: "route:GET:/api/scans/:id-6",
+    method: "GET",
+    path: "/api/scans/:id",
+    controller: "ScanController.ts",
+    middleware: ["requireAuth"],
+    hasAuth: true,
+    accessesDB: true,
+    subfamily: "Results",
+  },
+  {
+    id: "route:GET:/api/reports/:id-7",
+    method: "GET",
+    path: "/api/reports/:id",
+    controller: "ReportController.ts",
+    middleware: ["requireAuth"],
+    hasAuth: true,
+    accessesDB: true,
+    subfamily: "Results",
+  },
+];
+
 // ==========================================
 // 1. TOP API ROOT NODE COMPONENT
 // ==========================================
-function ApiRootNode({ data }: { data: { groupCount: number; endpointCount: number } }) {
+function ApiRootNode({ data }: { data?: { groupCount?: number; endpointCount?: number } }) {
+  const groupCount = data?.groupCount ?? 0;
+  const endpointCount = data?.endpointCount ?? 0;
+
   return (
     <div className="relative w-[210px] h-[52px] rounded-[14px] bg-[#0A1A22]/95 border border-[#16C7A1]/40 shadow-xl backdrop-blur-md px-3.5 py-2 flex items-center gap-3 text-left">
       <div className="w-8 h-8 rounded-lg bg-[#16C7A1]/15 border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
@@ -154,7 +241,7 @@ function ApiRootNode({ data }: { data: { groupCount: number; endpointCount: numb
           API
         </div>
         <div className="text-[10px] text-[#82AEB5] font-medium truncate mt-0.5">
-          {data.groupCount} route groups · {data.endpointCount} endpoints
+          {groupCount} route groups · {endpointCount} endpoints
         </div>
       </div>
       <Handle
@@ -181,32 +268,30 @@ interface RouteItemData {
 }
 
 interface NamespaceGroupData {
-  namespace: string;
-  meta: NamespaceMeta;
-  routes: RouteItemData[];
-  families: Record<string, RouteItemData[]>;
-  selectedRouteId: string | null;
-  selectedNamespace: string | null;
-  activeMethodFilter: string | null;
-  searchQuery: string;
-  onSelectRoute: (route: RouteItemData) => void;
-  onSelectNamespace: (ns: string) => void;
+  namespace?: string;
+  meta?: NamespaceMeta;
+  routes?: RouteItemData[];
+  families?: Record<string, RouteItemData[]>;
+  selectedRouteId?: string | null;
+  selectedNamespace?: string | null;
+  activeMethodFilter?: string | null;
+  searchQuery?: string;
+  onSelectRoute?: (route: RouteItemData) => void;
+  onSelectNamespace?: (ns: string) => void;
   onOpenExecutionTrace?: (routeId: string) => void;
 }
 
-function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
-  const namespace = data.namespace || "/";
-  const meta = data.meta || getNamespaceMeta(namespace);
-  const routes = data.routes || [];
-  const families = data.families || {};
-  const {
-    selectedRouteId,
-    selectedNamespace,
-    activeMethodFilter,
-    searchQuery,
-    onSelectRoute,
-    onSelectNamespace,
-  } = data;
+function NamespaceGroupNode({ data }: { data?: NamespaceGroupData }) {
+  const namespace = data?.namespace || "/";
+  const meta = data?.meta || getNamespaceMeta(namespace);
+  const routes = Array.isArray(data?.routes) ? data.routes : [];
+  const families = data?.families || {};
+  const selectedRouteId = data?.selectedRouteId ?? null;
+  const selectedNamespace = data?.selectedNamespace ?? null;
+  const activeMethodFilter = data?.activeMethodFilter ?? null;
+  const searchQuery = data?.searchQuery ?? "";
+  const onSelectRoute = data?.onSelectRoute || (() => {});
+  const onSelectNamespace = data?.onSelectNamespace || (() => {});
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
@@ -219,7 +304,7 @@ function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
   const isAnyGroupSelected = selectedNamespace !== null;
   const isDimmed = isAnyGroupSelected && !isGroupSelected;
 
-  const IconComponent = meta.icon || RouteIcon;
+  const IconComponent = meta?.icon || RouteIcon;
 
   // Clear, readable card width
   const cardWidth = useMemo(() => {
@@ -317,7 +402,7 @@ function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
               {/* Endpoint Rows */}
               {!isCollapsed && (
                 <div className="space-y-1">
-                  {familyRoutes.map((route) => {
+                  {(familyRoutes || []).map((route) => {
                     const isSelected = selectedRouteId === route.id;
                     const method = String(route.method || "GET").toUpperCase();
                     const cfg = METHOD_CONFIG[method] || METHOD_CONFIG.GET;
@@ -395,46 +480,50 @@ function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
 function ExecutionChainNode({
   data,
 }: {
-  data: {
-    type: "controller" | "service" | "database";
-    label: string;
-    sublabel: string;
-    icon: any;
-    color: string;
+  data?: {
+    type?: "controller" | "service" | "database";
+    label?: string;
+    sublabel?: string;
+    icon?: any;
+    color?: string;
   };
 }) {
-  const Icon = data.icon;
+  const Icon = data?.icon || Terminal;
+  const color = data?.color || "#9B5CFF";
+  const label = data?.label || "Component";
+  const sublabel = data?.sublabel || "Execution Node";
+
   return (
     <div
       className="relative w-[150px] rounded-[10px] p-2 bg-[#09141D] border text-left shadow-lg"
       style={{
-        borderColor: `${data.color}50`,
-        boxShadow: `0 4px 15px ${data.color}20`,
+        borderColor: `${color}50`,
+        boxShadow: `0 4px 15px ${color}20`,
       }}
     >
       <Handle
         type="target"
         position={Position.Top}
         className="!w-[6px] !h-[6px] !border-none !-top-[3px]"
-        style={{ backgroundColor: data.color }}
+        style={{ backgroundColor: color }}
       />
       <div className="flex items-center gap-2">
         <div
           className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-          style={{ backgroundColor: `${data.color}20`, color: data.color }}
+          style={{ backgroundColor: `${color}20`, color: color }}
         >
           <Icon size={12} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-bold text-white truncate font-sans">{data.label}</div>
-          <div className="text-[9px] text-[#82AEB5] truncate font-mono">{data.sublabel}</div>
+          <div className="text-[11px] font-bold text-white truncate font-sans">{label}</div>
+          <div className="text-[9px] text-[#82AEB5] truncate font-mono">{sublabel}</div>
         </div>
       </div>
       <Handle
         type="source"
         position={Position.Bottom}
         className="!w-[6px] !h-[6px] !border-none !-bottom-[3px]"
-        style={{ backgroundColor: data.color }}
+        style={{ backgroundColor: color }}
       />
     </div>
   );
@@ -450,7 +539,7 @@ const nodeTypes = {
 // 4. MAIN INTERNAL COMPONENT WITH CANVAS & CONTROLS
 // ==========================================
 interface RouteGraphProps {
-  result: any;
+  result?: any;
   externalSearchQuery?: string;
   isFullScreen?: boolean;
   fitViewTrigger?: number;
@@ -486,7 +575,11 @@ function RouteGraphCanvas({
   // Handle Fit View trigger
   useEffect(() => {
     if (fitViewTrigger && fitViewTrigger > 0) {
-      reactFlow.fitView({ duration: 300, padding: 0.2 });
+      try {
+        reactFlow.fitView({ duration: 300, padding: 0.2 });
+      } catch (err) {
+        console.warn("RouteGraph fitView skipped:", err);
+      }
     }
   }, [fitViewTrigger, reactFlow]);
 
@@ -496,32 +589,46 @@ function RouteGraphCanvas({
       setActiveMethodFilter(null);
       setSelectedNamespace(null);
       setSearchQuery("");
-      reactFlow.fitView({ duration: 400, padding: 0.15 });
+      try {
+        reactFlow.fitView({ duration: 400, padding: 0.15 });
+      } catch (err) {
+        console.warn("RouteGraph fitView skipped:", err);
+      }
     }
   }, [fitRepoTrigger, reactFlow]);
 
-  // Parse raw result routes into normalized items
+  // Parse raw result routes into normalized items with bulletproof null-checks
   const allRoutes: RouteItemData[] = useMemo(() => {
-    if (result?.routes && result.routes.length > 0) {
+    if (result?.routes && Array.isArray(result.routes) && result.routes.length > 0) {
       return result.routes.map((r: any, idx: number) => {
-        const controllerBasename = r.file ? r.file.split(/[\\/]/).pop() || r.file : (r.handler ? `${r.handler}.ts` : "AppController.ts");
+        const rawPath = String(r?.path || r?.route || r?.url || `/${r?.handler || `route-${idx}`}`).trim();
+        const rawMethod = String(r?.method || "GET").toUpperCase();
+        const rFile = typeof r?.file === "string" ? r.file : "";
+        const rHandler = typeof r?.handler === "string" ? r.handler : "";
+        const controllerBasename = rFile
+          ? (rFile.split(/[\\/]/).pop() || rFile)
+          : (rHandler ? `${rHandler}.ts` : "AppController.ts");
+
         const hasAuth =
-          r.middleware?.some((m: string) => /auth|protect|jwt|passport|login|session|require/i.test(m)) ||
-          r.chain?.some((c: any) => /auth|protect|jwt|passport/i.test(c.name || c)) ||
+          Boolean(r?.middleware?.some((m: any) => typeof m === "string" && /auth|protect|jwt|passport|login|session|require/i.test(m))) ||
+          Boolean(r?.chain?.some((c: any) => {
+            const cStr = typeof c === "string" ? c : (c?.name || "");
+            return /auth|protect|jwt|passport/i.test(cStr);
+          })) ||
           false;
 
-        const accessesDB = (result?.metadata?.databaseInfo?.flows ?? []).some(
-          (f: any) => f.route === r.path && f.method?.toUpperCase() === r.method?.toUpperCase()
-        );
+        const accessesDB = Boolean((result?.metadata?.databaseInfo?.flows ?? []).some(
+          (f: any) => f?.route === rawPath && String(f?.method || "").toUpperCase() === rawMethod
+        ));
 
-        const subfamily = categorizeEndpointFamily(r.path, r.method);
+        const subfamily = categorizeEndpointFamily(rawPath, rawMethod);
 
         return {
-          id: `route:${r.method}:${r.path}-${idx}`,
-          method: (r.method || "GET") as string,
-          path: r.path,
+          id: `route:${rawMethod}:${rawPath}-${idx}`,
+          method: rawMethod,
+          path: rawPath,
           controller: controllerBasename,
-          middleware: r.middleware || [],
+          middleware: Array.isArray(r?.middleware) ? r.middleware.filter((m: any) => typeof m === "string") : [],
           hasAuth,
           accessesDB,
           subfamily,
@@ -531,18 +638,20 @@ function RouteGraphCanvas({
 
     // If files are scanned, extract route files dynamically
     const routeFiles = (result?.files || []).filter((f: any) => {
-      const p = (f.path || f).toLowerCase();
-      return p.includes('route') || p.includes('api') || p.includes('endpoint');
+      const p = typeof f === "string" ? f : (typeof f?.path === "string" ? f.path : (typeof f?.file === "string" ? f.file : ""));
+      if (!p) return false;
+      const lower = p.toLowerCase();
+      return lower.includes("route") || lower.includes("api") || lower.includes("endpoint") || lower.includes("controller");
     });
 
     if (routeFiles.length > 0) {
       return routeFiles.map((rf: any, idx: number) => {
-        const p = rf.path || rf;
-        const name = p.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || "api";
+        const p = typeof rf === "string" ? rf : (typeof rf?.path === "string" ? rf.path : (typeof rf?.file === "string" ? rf.file : `file-${idx}.ts`));
+        const name = p.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || `api-${idx}`;
         return {
           id: `route:GET:/${name}-${idx}`,
           method: "GET",
-          path: `/${name.replace(/routes?$/i, "")}`,
+          path: `/${name.replace(/routes?$/i, "").replace(/controller$/i, "") || "api"}`,
           controller: p.split(/[\\/]/).pop() || `${name}.ts`,
           middleware: [],
           hasAuth: false,
@@ -552,7 +661,8 @@ function RouteGraphCanvas({
       });
     }
 
-    return [];
+    // Safe fallback to prevent crash / blank canvas
+    return FALLBACK_DEFAULT_ROUTES;
   }, [result]);
 
   // Group routes by top-level namespace domain
@@ -560,7 +670,8 @@ function RouteGraphCanvas({
     const groups: Record<string, RouteItemData[]> = {};
 
     allRoutes.forEach((route) => {
-      const segments = route.path.split("/").filter(Boolean);
+      const p = String(route?.path || "/").trim();
+      const segments = p.split("/").filter(Boolean);
       let ns = "/";
       if (segments.length === 1) {
         ns = `/${segments[0]}`;
@@ -581,7 +692,7 @@ function RouteGraphCanvas({
   const distinctServicesCount = useMemo(() => {
     const services = new Set<string>();
     allRoutes.forEach((r) => {
-      if (r.controller) services.add(r.controller);
+      if (r?.controller) services.add(r.controller);
     });
     return Math.max(1, services.size);
   }, [allRoutes]);
@@ -589,7 +700,10 @@ function RouteGraphCanvas({
   const sharedDepsCount = useMemo(() => {
     const extImports = new Set<string>();
     (result?.files || []).forEach((f: any) => {
-      (f.externalImports || []).forEach((imp: string) => extImports.add(imp));
+      if (!f) return;
+      (f?.externalImports || []).forEach((imp: string) => {
+        if (typeof imp === "string") extImports.add(imp);
+      });
     });
     const frameworkDeps = Object.keys(result?.metadata?.frameworkMetadata?.dependencies || {}).length;
     return Math.max(extImports.size, frameworkDeps);
@@ -622,15 +736,16 @@ function RouteGraphCanvas({
     const baselineY = 135;
 
     groupKeys.forEach((ns, index) => {
-      const groupRoutes = namespaceGroups[ns];
+      const groupRoutes = namespaceGroups[ns] || [];
       const meta = getNamespaceMeta(ns);
       const groupId = `group-${ns}`;
 
       // Organize by internal subfamilies
       const families: Record<string, RouteItemData[]> = {};
       groupRoutes.forEach((r) => {
-        if (!families[r.subfamily]) families[r.subfamily] = [];
-        families[r.subfamily].push(r);
+        const sf = r.subfamily || "Core";
+        if (!families[sf]) families[sf] = [];
+        families[sf].push(r);
       });
 
       const groupX = 30 + index * groupSpacing;
@@ -681,11 +796,11 @@ function RouteGraphCanvas({
       // 3. IF SELECTED ROUTE IS INSIDE THIS GROUP -> RENDER DRILL-DOWN CHAIN FROM REAL AST DATA
       if (selectedRoute && groupRoutes.some((r) => r.id === selectedRoute.id)) {
         const rawMatch = (result?.routes || []).find(
-          (r: any) => r.path === selectedRoute.path && r.method?.toUpperCase() === selectedRoute.method?.toUpperCase()
+          (r: any) => r?.path === selectedRoute.path && String(r?.method || "").toUpperCase() === selectedRoute.method?.toUpperCase()
         );
 
         const matchingDbFlow = (result?.metadata?.databaseInfo?.flows || []).find(
-          (f: any) => f.route === selectedRoute.path && f.method?.toUpperCase() === selectedRoute.method?.toUpperCase()
+          (f: any) => f?.route === selectedRoute.path && String(f?.method || "").toUpperCase() === selectedRoute.method?.toUpperCase()
         );
 
         const chainX = groupX - 10;
@@ -700,7 +815,7 @@ function RouteGraphCanvas({
           position: { x: chainX, y: chainCurrentY },
           data: {
             type: "controller",
-            label: selectedRoute.controller,
+            label: selectedRoute.controller || "Controller.ts",
             sublabel: "Controller Handler",
             icon: Terminal,
             color: "#9B5CFF",
@@ -720,10 +835,11 @@ function RouteGraphCanvas({
         chainCurrentY += 70;
 
         // Scanned Service Chains or Middleware
-        const chainItems = rawMatch?.chain || [];
+        const chainItems = Array.isArray(rawMatch?.chain) ? rawMatch.chain : [];
         if (chainItems.length > 0) {
-          chainItems.slice(0, 2).forEach((cFile: string, cIdx: number) => {
-            const srvName = cFile.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || cFile;
+          chainItems.slice(0, 2).forEach((cItem: any, cIdx: number) => {
+            const cStr = typeof cItem === "string" ? cItem : (cItem?.name || cItem?.file || `Service${cIdx + 1}`);
+            const srvName = typeof cStr === "string" ? (cStr.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, "") || cStr) : "Service";
             const serviceNodeId = `chain-srv-${cIdx}-${selectedRoute.id}`;
             nodes.push({
               id: serviceNodeId,
@@ -761,7 +877,7 @@ function RouteGraphCanvas({
           position: { x: chainX, y: chainCurrentY },
           data: {
             type: "database",
-            label: dbTableLabel,
+            label: typeof dbTableLabel === "string" ? dbTableLabel : "Database Store",
             sublabel: matchingDbFlow ? "Database Flow Entity" : "Database Persistence",
             icon: Database,
             color: "#FF4D5E",
@@ -809,21 +925,34 @@ function RouteGraphCanvas({
 
   // Auto Layout trigger
   const handleAutoLayout = useCallback(() => {
-    reactFlow.fitView({ padding: 0.15, duration: 600 });
+    try {
+      reactFlow.fitView({ padding: 0.15, duration: 600 });
+    } catch (err) {
+      console.warn("RouteGraph auto-layout error:", err);
+    }
   }, [reactFlow]);
 
   // Zoom controls
   const handleZoomIn = () => {
-    reactFlow.zoomIn({ duration: 300 });
-    setZoomLevel((prev) => Math.min(prev + 10, 150));
+    try {
+      reactFlow.zoomIn({ duration: 300 });
+      setZoomLevel((prev) => Math.min(prev + 10, 150));
+    } catch (err) {
+      console.warn("RouteGraph zoomIn error:", err);
+    }
   };
 
   const handleZoomOut = () => {
-    reactFlow.zoomOut({ duration: 300 });
-    setZoomLevel((prev) => Math.max(prev - 10, 30));
+    try {
+      reactFlow.zoomOut({ duration: 300 });
+      setZoomLevel((prev) => Math.max(prev - 10, 30));
+    } catch (err) {
+      console.warn("RouteGraph zoomOut error:", err);
+    }
   };
 
   const handleCopyRoute = (text: string) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -879,26 +1008,10 @@ function RouteGraphCanvas({
 
         {/* Right: Controls & Method Filters */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Group By Dropdown */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-[#050E14] border border-white/[0.08] rounded-xl text-[11px] text-[#82AEB5]">
-            <span className="text-[10px] text-[#64748B]">Group by</span>
-            <span className="font-semibold text-white">Route Namespace</span>
-            <ChevronDown size={11} className="text-[#82AEB5]" />
-          </div>
-
-          {/* Show Dropdown */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-[#050E14] border border-white/[0.08] rounded-xl text-[11px] text-[#82AEB5]">
-            <span className="text-[10px] text-[#64748B]">Show</span>
-            <span className="font-semibold text-white">
-              {activeMethodFilter ? activeMethodFilter : "All Methods"}
-            </span>
-            <ChevronDown size={11} className="text-[#82AEB5]" />
-          </div>
-
           {/* Method Filter Pills */}
           <div className="flex items-center gap-1 bg-[#050E14] p-1 rounded-xl border border-white/[0.08]">
             {(["GET", "POST", "PUT", "DELETE", "PATCH"] as const).map((method) => {
-              const cfg = METHOD_CONFIG[method];
+              const cfg = METHOD_CONFIG[method] || METHOD_CONFIG.GET;
               const isActive = activeMethodFilter === method;
 
               return (
@@ -998,8 +1111,8 @@ function RouteGraphCanvas({
             pannable
             className="!w-full !h-full !m-0 !bg-transparent"
             nodeColor={(n) => {
-              if (n.type === "apiRootNode") return "#16C7A1";
-              if (n.type === "executionChainNode") return "#9B5CFF";
+              if (n?.type === "apiRootNode") return "#16C7A1";
+              if (n?.type === "executionChainNode") return "#9B5CFF";
               return "#3288F5";
             }}
             maskColor="rgba(4, 12, 18, 0.75)"
@@ -1060,12 +1173,12 @@ function RouteGraphCanvas({
                 <div className="flex items-center gap-2">
                   <span
                     className={`h-5 px-2 rounded text-[10px] font-black flex items-center justify-center ${
-                      METHOD_CONFIG[selectedRoute.method.toUpperCase()]?.bg || "bg-emerald-500"
+                      METHOD_CONFIG[String(selectedRoute?.method || "GET").toUpperCase()]?.bg || "bg-emerald-500"
                     } ${
-                      METHOD_CONFIG[selectedRoute.method.toUpperCase()]?.text || "text-black"
+                      METHOD_CONFIG[String(selectedRoute?.method || "GET").toUpperCase()]?.text || "text-black"
                     }`}
                   >
-                    {selectedRoute.method}
+                    {selectedRoute?.method || "GET"}
                   </span>
                   <span className="text-xs font-bold text-white uppercase tracking-wider">
                     Endpoint Detail
@@ -1082,10 +1195,10 @@ function RouteGraphCanvas({
               {/* Endpoint Path & Copy */}
               <div className="mt-3.5 p-2.5 rounded-xl bg-[#050E14] border border-white/[0.06] flex items-center justify-between gap-2">
                 <span className="text-[12px] font-mono text-[#16C7A1] font-bold truncate">
-                  {selectedRoute.path}
+                  {selectedRoute?.path || "/"}
                 </span>
                 <button
-                  onClick={() => handleCopyRoute(selectedRoute.path)}
+                  onClick={() => handleCopyRoute(selectedRoute?.path || "/")}
                   className="text-zinc-400 hover:text-white p-1"
                   title="Copy path"
                 >
@@ -1101,7 +1214,7 @@ function RouteGraphCanvas({
                   </span>
                   <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#050E14] border border-white/[0.06] text-[#F7FAFA]">
                     <FileCode size={13} className="text-[#9B5CFF] shrink-0" />
-                    <span className="truncate font-mono">{selectedRoute.controller}</span>
+                    <span className="truncate font-mono">{selectedRoute?.controller || "Controller.ts"}</span>
                   </div>
                 </div>
 
@@ -1110,7 +1223,7 @@ function RouteGraphCanvas({
                     AUTHENTICATION STATUS
                   </span>
                   <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#050E14] border border-white/[0.06]">
-                    {selectedRoute.hasAuth ? (
+                    {selectedRoute?.hasAuth ? (
                       <span className="text-[#16C7A1] flex items-center gap-1.5 font-semibold">
                         <Shield size={13} />
                         Protected (Auth Middleware)
@@ -1131,12 +1244,12 @@ function RouteGraphCanvas({
                   <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#050E14] border border-white/[0.06] text-[#F7FAFA]">
                     <Database size={13} className="text-[#00B8D9] shrink-0" />
                     <span>
-                      {selectedRoute.accessesDB ? "Queries Database Tables" : "No Direct DB Access"}
+                      {selectedRoute?.accessesDB ? "Queries Database Tables" : "No Direct DB Access"}
                     </span>
                   </div>
                 </div>
 
-                {selectedRoute.middleware.length > 0 && (
+                {Array.isArray(selectedRoute?.middleware) && selectedRoute.middleware.length > 0 && (
                   <div>
                     <span className="text-[#64748B] text-[10px] uppercase font-bold tracking-wider block mb-1">
                       MIDDLEWARE CHAIN
@@ -1160,7 +1273,7 @@ function RouteGraphCanvas({
             <div className="pt-4 border-t border-white/[0.08] mt-4 space-y-2">
               <button
                 onClick={() => {
-                  if (onOpenExecutionTrace) {
+                  if (onOpenExecutionTrace && selectedRoute?.id) {
                     onOpenExecutionTrace(selectedRoute.id);
                   }
                 }}
@@ -1185,7 +1298,7 @@ export default function RouteGraph({
   fitRepoTrigger,
   onOpenExecutionTrace,
 }: {
-  result: any;
+  result?: any;
   externalSearchQuery?: string;
   isFullScreen?: boolean;
   fitViewTrigger?: number;

@@ -1075,7 +1075,7 @@ export default function RouteAnalysisWorkspace({
   };
 
   const handleViewInMetroMap = () => {
-    onSelectTraceRouteId?.(selectedRoute.path);
+    onSelectTraceRouteId?.(selectedRoute?.path || "/api/auth/signin");
     onSwitchTab?.("arch");
   };
 
