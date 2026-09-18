@@ -2,10 +2,10 @@
 
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, Html } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { LayerItemData } from './types';
-import { Layers, Zap, Database, Terminal, Shield, Cloud, ChevronRight, FileText } from 'lucide-react';
+import { Layers, Zap, Database, Terminal, Shield, Cloud } from 'lucide-react';
 
 interface Architecture3DModelProps {
   layers: Record<string, string[]>;
@@ -196,77 +196,6 @@ function InteractiveLayerNode({
           />
         </mesh>
       )}
-
-      {/* Floating 3D HUD Badge on the Right */}
-      <Html
-        position={[4.6, 0.15, -0.4]}
-        distanceFactor={18}
-        transform
-        sprite
-        occlude={false}
-        className="pointer-events-auto select-none"
-      >
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect();
-          }}
-          className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg backdrop-blur-md border transition-all duration-200 shadow-xl cursor-pointer ${
-            isSelected
-              ? 'bg-[#06242E]/95 border-[#00D2FF] text-[#F7FAFA] ring-2 ring-[#00D2FF]/40 scale-105'
-              : hovered
-              ? 'bg-[#061F28]/90 border-[rgba(155,232,224,0.4)] text-[#F7FAFA]'
-              : 'bg-[#06151B]/80 border-[rgba(155,232,224,0.18)] text-[#9FB0B3] hover:text-[#F7FAFA]'
-          }`}
-          style={{
-            boxShadow: isSelected
-              ? `0 0 16px ${config.glowColor}40`
-              : '0 4px 12px rgba(0,0,0,0.5)',
-          }}
-        >
-          {/* Layer Number & Icon */}
-          <div
-            className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-mono font-bold"
-            style={{
-              backgroundColor: `${config.color}25`,
-              color: config.glowColor,
-              border: `1px solid ${config.color}50`,
-            }}
-          >
-            {config.num}
-          </div>
-
-          <div className="flex flex-col text-left">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold tracking-wide text-white">
-                {config.name}
-              </span>
-              <span
-                className="text-[8px] font-mono px-1 rounded uppercase tracking-wider"
-                style={{
-                  backgroundColor: `${config.color}20`,
-                  color: config.glowColor,
-                }}
-              >
-                {config.tag}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-[9px] font-mono text-[#8EA9AE]">
-              <span className="flex items-center gap-1">
-                <FileText size={9} />
-                <span className="text-zinc-300 font-semibold">{fileCount} files</span>
-              </span>
-            </div>
-          </div>
-
-          <ChevronRight
-            size={13}
-            className={`transition-transform ${
-              isSelected ? 'text-[#00D2FF] translate-x-0.5' : 'text-[#8EA9AE]'
-            }`}
-          />
-        </button>
-      </Html>
     </group>
   );
 }

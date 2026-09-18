@@ -7,18 +7,12 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { LayerItemData, Architecture3DProps } from './types';
 import { Architecture3DModel } from './Architecture3DModel';
-import { ContextualOverlays } from './ContextualOverlays';
 import {
   RotateCcw,
   ZoomIn,
   ZoomOut,
   Sparkles,
-  Layers,
-  Eye,
   Maximize2,
-  ChevronUp,
-  ChevronDown,
-  Compass,
 } from 'lucide-react';
 
 export const LAYERS_3D_CONFIG: LayerItemData[] = [
@@ -155,7 +149,7 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
     if (!camera) return;
 
     if (mode === 'hero') {
-      camera.position.set(13.5, 10.5, 16.5);
+      camera.position.set(14.0, 10.5, 17.5);
       camera.zoom = 1;
       camera.lookAt(0, 0, 0);
       controlsRef.current.target.set(0, 0, 0);
@@ -222,9 +216,6 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
         }}
       />
 
-      {/* Contextual Overlays */}
-      <ContextualOverlays routes={routes} dbType={dbType} />
-
       {/* Three.js Canvas Viewport with Precision 3D Model Render */}
       <div className="absolute inset-0 z-10">
         <Canvas
@@ -238,14 +229,14 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
             toneMappingExposure: 1.15,
           }}
         >
-          <PerspectiveCamera makeDefault position={[13.5, 10.5, 16.5]} fov={34} />
+          <PerspectiveCamera makeDefault position={[14.0, 10.5, 17.5]} fov={36} />
           <OrbitControls
             ref={controlsRef}
             target={[0, 0, 0]}
             enablePan={true}
             enableZoom={true}
-            minDistance={8.0}
-            maxDistance={32.0}
+            minDistance={7.0}
+            maxDistance={35.0}
             maxPolarAngle={Math.PI / 2.05}
             minPolarAngle={Math.PI / 5.5}
             dampingFactor={0.06}
