@@ -1996,13 +1996,13 @@ export default function Home() {
                     whileHover={{ x: sidebarExpanded ? 3 : 0 }}
                     title={!sidebarExpanded ? tab.label : undefined}
                     className={`group w-full flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-sm transition-all duration-200 mb-1 ${isActive
-                      ? "bg-[#9BE3DF] text-[#063F46] font-bold shadow-[0_4px_16px_rgba(32,214,216,0.15)]"
-                      : "text-[#B7D5D8] hover:bg-[rgba(32,214,216,0.08)] hover:text-[#D5F4F2]"
+                      ? "bg-[#F2384B] text-white font-bold shadow-[0_4px_16px_rgba(242,56,75,0.25)]"
+                      : "text-[#B7D5D8] hover:bg-white/[0.04] hover:text-white"
                       } ${!sidebarExpanded ? "justify-center" : ""}`}
                   >
                     <div
                       className={`rounded-md p-1 transition-colors duration-200 ${isActive
-                        ? "text-[#063F46]"
+                        ? "text-white"
                         : "text-[#8DDDDC] group-hover:text-[#5DE0DE]"
                         }`}
                     >
