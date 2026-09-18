@@ -92,6 +92,18 @@ const LAYER_NODE_MAP: Record<
   },
 };
 
+const isOversizedOrDistractingProp = (name: string) => {
+  const n = (name || '').toLowerCase();
+  return (
+    n.startsWith('cloud_gateway') ||
+    n.startsWith('cloud_plinth') ||
+    n.startsWith('shieldicon') ||
+    n.startsWith('panel_') ||
+    n.includes('energybeam') ||
+    n.includes('requestnode_energybeam')
+  );
+};
+
 // Sub-component for individual layer node
 function InteractiveLayerNode({
   layerId,
@@ -114,9 +126,14 @@ function InteractiveLayerNode({
   const [hovered, setHovered] = useState(false);
   const clonedObject = useMemo(() => originalNode.clone(true), [originalNode]);
 
-  // Apply enhanced studio PBR materials and shadow properties
+  // Apply enhanced studio PBR materials, shadow properties, and filter out oversized props
   useEffect(() => {
     clonedObject.traverse((child) => {
+      if (isOversizedOrDistractingProp(child.name)) {
+        child.visible = false;
+        return;
+      }
+
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         mesh.castShadow = true;
