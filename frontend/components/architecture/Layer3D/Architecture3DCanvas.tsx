@@ -1,17 +1,25 @@
 'use client';
 
-import React, { useMemo, useRef, Suspense } from 'react';
+import React, { useRef, Suspense, useState, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Html } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { LayerItemData, Architecture3DProps } from './types';
-import { LayerPlatform } from './LayerPlatform';
-import { DatabaseNode } from './DatabaseNode';
-import { ExternalApiNode } from './ExternalApiNode';
-import { CircuitLines } from './CircuitLines';
+import { Architecture3DModel } from './Architecture3DModel';
 import { ContextualOverlays } from './ContextualOverlays';
-import { RotateCcw, ZoomIn, ZoomOut, Sparkles } from 'lucide-react';
+import {
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
+  Sparkles,
+  Layers,
+  Eye,
+  Maximize2,
+  ChevronUp,
+  ChevronDown,
+  Compass,
+} from 'lucide-react';
 
 export const LAYERS_3D_CONFIG: LayerItemData[] = [
   {
@@ -94,91 +102,34 @@ export const LAYERS_3D_CONFIG: LayerItemData[] = [
   },
 ];
 
-// Inner 3D scene content
-function ArchitectureSceneContent({
-  layers,
-  selectedLayerId,
-  onSelectLayer,
-  searchQuery = '',
-}: Architecture3DProps) {
-  // Compute vertical spacing: 6 platforms spaced by 0.85 units (total span from 2.0 down to -2.25)
-  const layerPositions = useMemo(() => {
-    return LAYERS_3D_CONFIG.map((layer, index) => {
-      const y = 2.0 - index * 0.85;
-      return {
-        ...layer,
-        yPos: y,
-      };
-    });
-  }, []);
-
-  const selectedLayer = layerPositions.find((l) => l.id === selectedLayerId);
-
+// Precision Studio Lighting Environment for Cyberpunk Architectural Render
+function StudioLighting() {
   return (
     <>
-      {/* Precision architectural lighting with soft shadows */}
-      <ambientLight intensity={0.8} color="#0E1F2E" />
+      {/* Deep Ambient Fill for Soft Shading in Cavities */}
+      <ambientLight intensity={1.1} color="#0B1926" />
+
+      {/* Master Key Light (Crisp White Highlights with Soft Shadows) */}
       <directionalLight
-        position={[9, 14, 9]}
-        intensity={2.2}
+        position={[12, 14, 15]}
+        intensity={3.0}
         color="#FFFFFF"
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
       />
-      <directionalLight position={[-7, 8, -4]} intensity={1.1} color="#00D2FF" />
-      <directionalLight position={[2, 4, 8]} intensity={0.8} color="#38BDF8" />
-      <directionalLight position={[-4, -6, 5]} intensity={0.4} color="#F59E0B" />
 
-      {/* Dynamic spot/point light focused on selected layer */}
-      {selectedLayer && (
-        <pointLight
-          position={[0, selectedLayer.yPos + 0.6, 2.2]}
-          intensity={1.8}
-          color={selectedLayer.color}
-          distance={5.5}
-        />
-      )}
+      {/* Master Fill Light (Vibrant Cyan Fill for Metallic Plates) */}
+      <directionalLight position={[-10, 8, 10]} intensity={1.8} color="#67E8F9" />
 
-      {/* 3D Architecture Stack */}
-      <group position={[0, 0, 0]}>
-        {layerPositions.map((layer, idx) => {
-          const fileList = layers[layer.id] || [];
-          const isSelected = selectedLayerId === layer.id;
-          const searchMatch = searchQuery
-            ? layer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              layer.shortDesc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              fileList.some((f) => String(f).toLowerCase().includes(searchQuery.toLowerCase()))
-            : true;
+      {/* Master Rim Light (Top-Back High Angle for Razor Edge Glints) */}
+      <directionalLight position={[0, 10, -12]} intensity={2.6} color="#E0F2FE" />
 
-          return (
-            <LayerPlatform
-              key={layer.id}
-              layer={layer}
-              index={idx}
-              yPos={layer.yPos}
-              isSelected={isSelected}
-              onSelect={() => onSelectLayer(layer.id)}
-              fileCount={fileList.length}
-              files={fileList}
-              searchMatch={searchMatch}
-            />
-          );
-        })}
-      </group>
+      {/* Bottom Uplight / Wash (Deep Blue / Cyan Uplight on Plinths & Mirror Floor) */}
+      <directionalLight position={[0, -8, 6]} intensity={1.4} color="#0284C7" />
 
-      {/* Contextual 3D Nodes */}
-      <DatabaseNode
-        position={[-3.8, -0.55, 0.3]}
-        onSelectRepositoryLayer={() => onSelectLayer('repositories')}
-      />
-      <ExternalApiNode
-        position={[3.8, -1.40, 0.3]}
-        onSelectExternalLayer={() => onSelectLayer('external')}
-      />
-
-      {/* Clean Orthogonal Circuit Trace Lines */}
-      <CircuitLines />
+      {/* Front Accent Fill Light */}
+      <directionalLight position={[2, 3, 14]} intensity={0.9} color="#38BDF8" />
     </>
   );
 }
@@ -192,26 +143,47 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
   dbType,
 }) => {
   const controlsRef = useRef<OrbitControlsImpl>(null);
+  const [activeViewMode, setActiveViewMode] = useState<
+    'hero' | 'front' | 'top' | 'bottom'
+  >('hero');
 
-  const handleResetView = () => {
-    if (controlsRef.current) {
-      const camera = controlsRef.current.object as THREE.PerspectiveCamera;
-      if (camera) {
-        camera.position.set(6.8, 5.2, 7.8);
-        camera.zoom = 1;
-        camera.lookAt(0, -0.15, 0);
-        camera.updateProjectionMatrix();
-      }
-      controlsRef.current.target.set(0, -0.15, 0);
-      controlsRef.current.update();
+  // Camera presets
+  const setCameraView = useCallback((mode: 'hero' | 'front' | 'top' | 'bottom') => {
+    setActiveViewMode(mode);
+    if (!controlsRef.current) return;
+    const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+    if (!camera) return;
+
+    if (mode === 'hero') {
+      camera.position.set(13.5, 10.5, 16.5);
+      camera.zoom = 1;
+      camera.lookAt(0, 0, 0);
+      controlsRef.current.target.set(0, 0, 0);
+    } else if (mode === 'front') {
+      camera.position.set(0, 0.5, 23.0);
+      camera.zoom = 1;
+      camera.lookAt(0, 0, 0);
+      controlsRef.current.target.set(0, 0, 0);
+    } else if (mode === 'top') {
+      camera.position.set(8.5, 8.5, 9.5);
+      camera.zoom = 1.15;
+      camera.lookAt(0, 2.5, 0);
+      controlsRef.current.target.set(0, 2.5, 0);
+    } else if (mode === 'bottom') {
+      camera.position.set(8.5, -1.5, 9.5);
+      camera.zoom = 1.15;
+      camera.lookAt(0, -2.5, 0);
+      controlsRef.current.target.set(0, -2.5, 0);
     }
-  };
+    camera.updateProjectionMatrix();
+    controlsRef.current.update();
+  }, []);
 
   const handleZoomIn = () => {
     if (controlsRef.current) {
       const camera = controlsRef.current.object as THREE.PerspectiveCamera;
       if (camera) {
-        camera.zoom = Math.min(camera.zoom * 1.2, 2.5);
+        camera.zoom = Math.min(camera.zoom * 1.25, 2.8);
         camera.updateProjectionMatrix();
       }
     }
@@ -221,28 +193,39 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
     if (controlsRef.current) {
       const camera = controlsRef.current.object as THREE.PerspectiveCamera;
       if (camera) {
-        camera.zoom = Math.max(camera.zoom / 1.2, 0.6);
+        camera.zoom = Math.max(camera.zoom / 1.25, 0.55);
         camera.updateProjectionMatrix();
       }
     }
   };
 
+  const handleResetView = () => {
+    setCameraView('hero');
+  };
+
   return (
-    <div className="relative w-full h-full min-h-[580px] bg-[#061015] rounded-xl overflow-hidden select-none flex flex-col justify-between border border-[rgba(120,200,210,0.14)]">
-      {/* Background Subtle Technical Grid (Quiet opacity) */}
+    <div className="relative w-full h-full min-h-[580px] bg-[#040B10] rounded-xl overflow-hidden select-none flex flex-col justify-between border border-[rgba(120,200,210,0.14)] shadow-2xl">
+      {/* Background Studio Dark Radial Vignette & Grid */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-10"
+        className="absolute inset-0 pointer-events-none opacity-20 z-0"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 40%, rgba(0, 210, 255, 0.08) 0%, rgba(4, 11, 16, 0.95) 75%)',
+        }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none opacity-10 z-0"
         style={{
           backgroundImage:
             'linear-gradient(rgba(0, 210, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 210, 255, 0.08) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
+          backgroundSize: '32px 32px',
         }}
       />
 
-      {/* Clean Contextual Overlays */}
+      {/* Contextual Overlays */}
       <ContextualOverlays routes={routes} dbType={dbType} />
 
-      {/* Three.js Fiber Canvas Viewport with Precision 3/4 Isometric Perspective */}
+      {/* Three.js Canvas Viewport with Precision 3D Model Render */}
       <div className="absolute inset-0 z-10">
         <Canvas
           shadows
@@ -251,45 +234,108 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
             antialias: true,
             alpha: true,
             powerPreference: 'high-performance',
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.15,
           }}
         >
-          <PerspectiveCamera makeDefault position={[6.8, 5.2, 7.8]} fov={36} />
+          <PerspectiveCamera makeDefault position={[13.5, 10.5, 16.5]} fov={34} />
           <OrbitControls
             ref={controlsRef}
-            target={[0, -0.15, 0]}
+            target={[0, 0, 0]}
             enablePan={true}
             enableZoom={true}
-            minDistance={6.5}
-            maxDistance={18}
-            maxPolarAngle={Math.PI / 2.15}
-            minPolarAngle={Math.PI / 4.5}
+            minDistance={8.0}
+            maxDistance={32.0}
+            maxPolarAngle={Math.PI / 2.05}
+            minPolarAngle={Math.PI / 5.5}
             dampingFactor={0.06}
           />
-          <Suspense fallback={null}>
-            <ArchitectureSceneContent
+          <StudioLighting />
+          <Suspense
+            fallback={
+              <Html center>
+                <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-[#061F28]/90 border border-[#00D2FF]/30 backdrop-blur-md text-zinc-300 font-mono text-xs">
+                  <div className="w-5 h-5 border-2 border-[#00D2FF] border-t-transparent rounded-full animate-spin" />
+                  <span>Loading Master 3D Architecture Stack...</span>
+                </div>
+              </Html>
+            }
+          >
+            <Architecture3DModel
               layers={layers}
               selectedLayerId={selectedLayerId}
               onSelectLayer={onSelectLayer}
               searchQuery={searchQuery}
+              routes={routes}
+              dbType={dbType}
             />
           </Suspense>
         </Canvas>
       </div>
 
       {/* Floating Controls HUD at Bottom */}
-      <div className="relative z-30 mt-auto flex items-center justify-between p-3 border-t border-[rgba(120,200,210,0.1)] bg-[#071115]/85 backdrop-blur-md text-[10px] text-[#9FB0B3]">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 font-mono text-[#60A5FA]">
-            <Sparkles size={11} className="text-[#00D2FF]" />
-            <span>3D Physical Architectural Stack</span>
+      <div className="relative z-30 mt-auto flex flex-wrap items-center justify-between gap-2 p-3 border-t border-[rgba(120,200,210,0.12)] bg-[#050E13]/85 backdrop-blur-md text-[10px] text-[#9FB0B3]">
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex items-center gap-1.5 font-mono text-[#00D2FF] font-semibold">
+            <Sparkles size={12} className="text-[#00D2FF] animate-pulse" />
+            <span>Master 3D Architecture Stack</span>
           </span>
-          <span className="text-[#9FB0B3]/40">|</span>
-          <span className="hidden sm:inline-block font-mono text-[9px] text-[#9FB0B3]/60">
-            Isometric View • Drag to Orbit • Click platform to Inspect
+          <span className="text-[#9FB0B3]/30">|</span>
+          <span className="hidden md:inline-block font-mono text-[9px] text-[#9FB0B3]/70">
+            PBR Studio Lighting • Interactive 6-Layer Hierarchy • Click slab to Inspect
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Preset Camera Views */}
+          <div className="flex items-center bg-[#09171D] rounded-lg p-0.5 border border-[rgba(120,200,210,0.15)] mr-1">
+            <button
+              onClick={() => setCameraView('hero')}
+              className={`px-2 py-1 rounded text-[9px] font-mono transition ${
+                activeViewMode === 'hero'
+                  ? 'bg-[#00D2FF]/20 text-[#00D2FF] font-bold'
+                  : 'text-[#9FB0B3] hover:text-[#F4F7F7]'
+              }`}
+              title="3/4 Isometric Hero View"
+            >
+              Hero Iso
+            </button>
+            <button
+              onClick={() => setCameraView('front')}
+              className={`px-2 py-1 rounded text-[9px] font-mono transition ${
+                activeViewMode === 'front'
+                  ? 'bg-[#00D2FF]/20 text-[#00D2FF] font-bold'
+                  : 'text-[#9FB0B3] hover:text-[#F4F7F7]'
+              }`}
+              title="Front Orthogonal View"
+            >
+              Front
+            </button>
+            <button
+              onClick={() => setCameraView('top')}
+              className={`px-2 py-1 rounded text-[9px] font-mono transition ${
+                activeViewMode === 'top'
+                  ? 'bg-[#00D2FF]/20 text-[#00D2FF] font-bold'
+                  : 'text-[#9FB0B3] hover:text-[#F4F7F7]'
+              }`}
+              title="Top Stack Closeup (Routes & Logic)"
+            >
+              Top Close
+            </button>
+            <button
+              onClick={() => setCameraView('bottom')}
+              className={`px-2 py-1 rounded text-[9px] font-mono transition ${
+                activeViewMode === 'bottom'
+                  ? 'bg-[#00D2FF]/20 text-[#00D2FF] font-bold'
+                  : 'text-[#9FB0B3] hover:text-[#F4F7F7]'
+              }`}
+              title="Bottom Stack Closeup (Database & Cloud)"
+            >
+              Bottom Close
+            </button>
+          </div>
+
+          {/* Zoom and Reset Controls */}
           <button
             onClick={handleZoomIn}
             className="p-1.5 rounded-lg bg-[#0E1C21] hover:bg-[#14262E] text-[#9FB0B3] hover:text-[#F4F7F7] border border-[rgba(120,200,210,0.15)] transition"
@@ -307,10 +353,10 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
           <button
             onClick={handleResetView}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0E1C21] hover:bg-[#14262E] text-[#9FB0B3] hover:text-[#F4F7F7] border border-[rgba(120,200,210,0.15)] transition font-mono text-[10px]"
-            title="Reset to Default Isometric View"
+            title="Reset to Default View"
           >
             <RotateCcw size={11} />
-            <span>Reset View</span>
+            <span>Reset</span>
           </button>
         </div>
       </div>
