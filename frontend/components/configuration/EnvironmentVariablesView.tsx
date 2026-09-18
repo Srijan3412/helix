@@ -18,6 +18,8 @@ import {
   X,
   ShieldAlert,
   Sliders,
+  Check,
+  Copy,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EnvironmentVariable } from "@shared/types";
@@ -43,6 +45,9 @@ const DEFAULT_DESCRIPTIONS: Record<string, string> = {
   REDIS_URL: "Redis cache & queue instance connection URL",
   JWT_SECRET: "Secret signing key for user session tokens",
   PORT: "Server listener port configuration",
+  SUPABASE_URL: "Supabase project REST/GraphQL endpoint URL",
+  MAILGUN_API_KEY: "Mailgun email delivery API key",
+  CLOUDFLARE_TURNSTILE_SECRET: "Cloudflare Turnstile captcha validation secret",
 };
 
 interface EnvVarCardConfig {
@@ -92,7 +97,7 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
     };
   }
 
-  if (upper === "EMAIL_FROM") {
+  if (upper === "EMAIL_FROM" || upper === "FROM_EMAIL") {
     return {
       icon: Mail,
       category: "General",
@@ -101,7 +106,7 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
     };
   }
 
-  if (upper === "SMTP_USER") {
+  if (upper === "SMTP_USER" || upper === "SUPPORT_EMAIL") {
     return {
       icon: Mail,
       category: "General",
@@ -128,16 +133,16 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
     };
   }
 
-  if (upper === "NEXT_PUBLIC_API_URL") {
+  if (upper === "NEXT_PUBLIC_API_URL" || upper.startsWith("NEXT_PUBLIC_")) {
     return {
       icon: ExternalLink,
       category: "External API",
-      isHighRisk: false,
+      isHighRisk: upper.includes("KEY") || upper.includes("SECRET"),
       description: desc,
     };
   }
 
-  if (upper === "SENDGRID_API_KEY") {
+  if (upper === "SENDGRID_API_KEY" || upper === "SMTP_PASS" || upper === "SUPABASE_ANON_KEY") {
     return {
       icon: Lock,
       category: "Security",
@@ -146,31 +151,13 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
     };
   }
 
-  if (upper === "SMTP_PASS") {
-    return {
-      icon: Lock,
-      category: "Security",
-      isHighRisk: true,
-      description: desc,
-    };
-  }
-
-  if (upper === "SUPABASE_ANON_KEY") {
-    return {
-      icon: Database,
-      category: "Security",
-      isHighRisk: true,
-      description: desc,
-    };
-  }
-
-  // Heuristic fallbacks
   if (
     criticality === "HIGH" ||
     upper.includes("KEY") ||
     upper.includes("SECRET") ||
     upper.includes("PASS") ||
-    category === "Security"
+    upper.includes("TOKEN") ||
+    upper.includes("SALT")
   ) {
     return {
       icon: Lock,
@@ -180,7 +167,16 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
     };
   }
 
-  if (upper.includes("URL") || upper.includes("API") || category === "External API") {
+  if (upper.includes("DB") || upper.includes("DATABASE") || upper.includes("POSTGRES") || upper.includes("SQL")) {
+    return {
+      icon: Database,
+      category: "General",
+      isHighRisk: false,
+      description: desc,
+    };
+  }
+
+  if (upper.includes("MAILGUN") || upper.includes("API") || upper.includes("URL")) {
     return {
       icon: ExternalLink,
       category: "External API",
@@ -191,21 +187,42 @@ function getEnvVarConfig(name: string, category?: string, criticality?: string):
 
   return {
     icon: Settings,
-    category: "General",
-    isHighRisk: false,
+    category: (category as any) || "General",
+    isHighRisk: criticality === "HIGH",
     description: desc,
   };
 }
 
+const DEFAULT_FALLBACK_VARS: EnvironmentVariable[] = [
+  { name: "NODE_ENV", category: "General", criticality: "LOW", usages: 14, usedBy: ["server.ts", "config.ts"], files: [".env"] },
+  { name: "RESEND_API_KEY", category: "Security", criticality: "HIGH", usages: 3, usedBy: ["email.service.ts"], files: [".env"] },
+  { name: "EMAIL_FROM", category: "General", criticality: "LOW", usages: 4, usedBy: ["email.service.ts"], files: [".env"] },
+  { name: "SMTP_HOST", category: "General", criticality: "LOW", usages: 2, usedBy: ["email.service.ts"], files: [".env"] },
+  { name: "NEXT_PUBLIC_API_URL", category: "External API", criticality: "LOW", usages: 8, usedBy: ["client.ts"], files: [".env"] },
+  { name: "SMTP_PASS", category: "Security", criticality: "HIGH", usages: 2, usedBy: ["email.service.ts"], files: [".env"] },
+  { name: "APP_URL", category: "General", criticality: "LOW", usages: 5, usedBy: ["auth.service.ts", "email.service.ts"], files: [".env"] },
+  { name: "APP_NAME", category: "General", criticality: "LOW", usages: 6, usedBy: ["email.service.ts", "app.ts"], files: [".env"] },
+  { name: "SUPABASE_ANON_KEY", category: "Security", criticality: "HIGH", usages: 5, usedBy: ["supabase.ts"], files: [".env"] },
+  { name: "DATABASE_URL", category: "General", criticality: "LOW", usages: 4, usedBy: ["database.ts"], files: [".env"] },
+  { name: "JWT_SECRET", category: "Security", criticality: "HIGH", usages: 6, usedBy: ["auth.service.ts"], files: [".env"] },
+  { name: "SENDGRID_API_KEY", category: "Security", criticality: "HIGH", usages: 2, usedBy: ["email.service.ts"], files: [".env"] },
+  { name: "SMTP_USER", category: "General", criticality: "LOW", usages: 2, usedBy: ["email.service.ts"], files: [".env"] },
+  { name: "EMAIL_DOMAIN", category: "General", criticality: "LOW", usages: 3, usedBy: ["email.service.ts"], files: [".env"] },
+  { name: "SUPABASE_URL", category: "External API", criticality: "LOW", usages: 6, usedBy: ["supabase.ts"], files: [".env"] },
+  { name: "CLOUDFLARE_TURNSTILE_SECRET", category: "Security", criticality: "HIGH", usages: 2, usedBy: ["turnstile.ts"], files: [".env"] },
+  { name: "ADMIN_EMAIL", category: "General", criticality: "LOW", usages: 2, usedBy: ["auth.service.ts"], files: [".env"] },
+  { name: "INTERNAL_BACKEND_URL", category: "External API", criticality: "LOW", usages: 4, usedBy: ["client.ts"], files: [".env"] },
+  { name: "OTP_SALT", category: "Security", criticality: "HIGH", usages: 2, usedBy: ["auth.service.ts"], files: [".env"] },
+  { name: "PORT", category: "General", criticality: "LOW", usages: 3, usedBy: ["server.ts"], files: [".env"] },
+];
+
 export default function EnvironmentVariablesView({ envVars }: EnvironmentVariablesViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedVarNames, setExpandedVarNames] = useState<Record<string, boolean>>({
-    APP_NAME: true, // Default expanded as in specification
-  });
+  const [expandedVarNames, setExpandedVarNames] = useState<Record<string, boolean>>({});
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [customEnvVars, setCustomEnvVars] = useState<EnvironmentVariable[]>([]);
+  const [copiedVarName, setCopiedVarName] = useState<string | null>(null);
 
-  // Form State for Add Variable Modal
   const [newVarName, setNewVarName] = useState("");
   const [newVarCategory, setNewVarCategory] = useState<"General" | "Security" | "External API">("General");
   const [newVarCriticality, setNewVarCriticality] = useState<"LOW" | "HIGH">("LOW");
@@ -218,30 +235,18 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
     }));
   };
 
-  // Merge scan results with custom added variables
-  const allEnvVars: EnvironmentVariable[] = useMemo(() => {
-    const list = [...(envVars || []), ...customEnvVars];
-    if (list.length === 0) {
-      // 12 variables in target screenshot order
-      return [
-        { name: "NODE_ENV", usages: 4, category: "General", usedBy: ["server.ts", "config.ts"], files: ["server.ts"] },
-        { name: "APP_URL", usages: 2, category: "General", usedBy: ["app.ts"], files: ["app.ts"] },
-        { name: "RESEND_API_KEY", usages: 3, category: "Security", criticality: "HIGH", usedBy: ["email.service.ts"], files: ["email.service.ts"] },
-        { name: "APP_NAME", usages: 6, category: "General", usedBy: ["email.service.ts", "email.service.ts"], files: ["email.service.ts", "email.service.ts"] },
-        { name: "EMAIL_FROM", usages: 2, category: "General", usedBy: ["email.service.ts"], files: ["email.service.ts"] },
-        { name: "SMTP_USER", usages: 1, category: "General", usedBy: ["smtp.ts"], files: ["smtp.ts"] },
-        { name: "SMTP_HOST", usages: 1, category: "General", usedBy: ["smtp.ts"], files: ["smtp.ts"] },
-        { name: "EMAIL_DOMAIN", usages: 1, category: "General", usedBy: ["email.service.ts"], files: ["email.service.ts"] },
-        { name: "NEXT_PUBLIC_API_URL", usages: 4, category: "External API", usedBy: ["api.ts", "client.ts"], files: ["api.ts"] },
-        { name: "SENDGRID_API_KEY", usages: 2, category: "Security", criticality: "HIGH", usedBy: ["sendgrid.ts"], files: ["sendgrid.ts"] },
-        { name: "SMTP_PASS", usages: 1, category: "Security", criticality: "HIGH", usedBy: ["smtp.ts"], files: ["smtp.ts"] },
-        { name: "SUPABASE_ANON_KEY", usages: 5, category: "Security", criticality: "HIGH", usedBy: ["supabase.ts"], files: ["supabase.ts"] },
-      ];
-    }
-    return list;
+  const copyToClipboard = (text: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopiedVarName(text);
+    setTimeout(() => setCopiedVarName(null), 1500);
+  };
+
+  const allEnvVars = useMemo(() => {
+    const passed = envVars && envVars.length > 0 ? envVars : DEFAULT_FALLBACK_VARS;
+    return [...customEnvVars, ...passed];
   }, [envVars, customEnvVars]);
 
-  // Filtered variables
   const filteredVars = useMemo(() => {
     if (!searchQuery.trim()) return allEnvVars;
     const q = searchQuery.toLowerCase();
@@ -277,271 +282,219 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
   };
 
   return (
-    <div className="w-full max-w-[1450px] mx-auto text-left relative select-none rounded-[28px] overflow-hidden p-6 sm:p-8 bg-gradient-to-b from-[#003F46] via-[#002D33] to-[#00535A] shadow-2xl border border-[rgba(32,214,216,0.18)]">
-      {/* ── 1. ABSTRACT CURVED / CIRCULAR DECORATIVE CORNER SHAPES ── */}
-      {/* Top-Right Decorative Shapes: Nested Red & Cyan Circular Arcs */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 pointer-events-none overflow-hidden z-0">
-        {/* Outer Pale Cyan Arc */}
-        <div className="absolute top-0 right-0 w-88 h-88 rounded-full border-[22px] border-[#B8F1F0]/15" />
-        {/* Middle Vibrant Cyan Arc */}
-        <div className="absolute top-6 right-6 w-72 h-72 rounded-full border-[18px] border-[#46D9DC]/25" />
-        {/* Inner Solid Red Circle with Dotted Texture */}
-        <div className="absolute top-14 right-14 w-56 h-56 rounded-full bg-gradient-to-br from-[#F34A57] to-[#E52B3A] shadow-[0_10px_35px_rgba(229,43,58,0.4)] overflow-hidden">
-          <div
-            className="w-full h-full opacity-30"
-            style={{
-              backgroundImage: "radial-gradient(circle, #FFFFFF 1.5px, transparent 1.5px)",
-              backgroundSize: "14px 14px",
-            }}
-          />
-        </div>
-      </div>
+    <div className="w-full max-w-[1000px] mx-auto text-left relative select-none space-y-3.5 sm:space-y-4">
+      {/* ── 1. COMPACT PAGE HEADER ── */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-0.5">
+        {/* Left Column: Icon + Eyebrow + Title */}
+        <div className="flex items-center gap-3">
+          {/* Compact Header Icon Block */}
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] bg-[#FF3348] border border-[#FF6675]/30 flex items-center justify-center text-white shadow-md shadow-[#FF3348]/20 shrink-0">
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[2.2]" />
+          </div>
 
-      {/* Bottom-Left Decorative Shapes: Subtle Organic Curves & Dotted Matrix */}
-      <div className="absolute -bottom-28 -left-28 w-80 h-80 pointer-events-none overflow-hidden z-0">
-        <div className="absolute bottom-4 left-4 w-64 h-64 rounded-full bg-[#E52B3A]/20 blur-xl" />
-        <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full border-[14px] border-[#20D6D8]/20" />
-        <div
-          className="absolute bottom-8 left-8 w-40 h-40 opacity-25"
-          style={{
-            backgroundImage: "radial-gradient(circle, #20D6D8 1.5px, transparent 1.5px)",
-            backgroundSize: "12px 12px",
-          }}
-        />
-      </div>
-
-      {/* Main Content Container */}
-      <div className="relative z-10 space-y-7">
-        {/* ── 2. PAGE HEADER WITH ICON BOX ── */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-2">
-          {/* Left Column: 64x64px Red Icon + Eyebrow + Title + Subtitle */}
-          <div className="flex items-start gap-4 sm:gap-5">
-            {/* Header Icon Block */}
-            <div className="w-16 h-16 rounded-[16px] bg-gradient-to-br from-[#F04452] to-[#E52B3A] border border-[#FF6675]/40 flex items-center justify-center text-white shadow-[0_4px_22px_rgba(229,43,58,0.38)] shrink-0 mt-0.5">
-              <Settings className="w-7 h-7 text-white stroke-[2.2]" />
-            </div>
-
-            <div>
-              {/* Eyebrow */}
-              <p className="text-[12px] sm:text-[13px] font-bold uppercase tracking-[2px] text-[#20D6D8]">
-                CONFIGURATION
-              </p>
-              {/* Large Bold Title */}
-              <h1 className="text-3xl sm:text-[40px] font-extrabold text-[#F5FAFA] tracking-tight leading-tight mt-0.5">
+          <div>
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#16C7A1]">
+              CONFIGURATION
+            </p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-bold text-[#F5FAFA] tracking-tight leading-tight">
                 Environment Variables
               </h1>
-              {/* Descriptive Subtitle */}
-              <p className="text-sm sm:text-[15px] text-[#9BC9CE] mt-1 font-normal">
-                Manage application configuration, secrets and environment settings.
-              </p>
+              <span className="text-xs text-[#8EA9AE] font-mono font-medium">
+                · {allEnvVars.length}
+              </span>
             </div>
+            <p className="text-[11.5px] text-[#8FBFC2] mt-0.5 font-normal">
+              Manage application configuration, secrets and environment settings.
+            </p>
           </div>
-
-          {/* Right Column: Glassmorphism Summary Pill */}
-          <div className="bg-[rgba(4,58,64,0.72)] border border-[rgba(32,214,216,0.28)] rounded-2xl px-5 py-3 flex items-center gap-3.5 shadow-sm backdrop-blur-md shrink-0 self-start md:self-auto">
-            <div className="w-9 h-9 rounded-xl bg-[rgba(32,214,216,0.15)] border border-[rgba(32,214,216,0.35)] text-[#20D6D8] flex items-center justify-center shrink-0">
-              <Sliders className="w-4.5 h-4.5" />
-            </div>
-            <div>
-              <span className="text-[11px] text-[#9BC9CE] font-semibold uppercase tracking-wider block leading-tight">
-                Total Variables
-              </span>
-              <span className="text-[15px] font-bold text-[#F5FAFA] font-mono block mt-0.5">
-                {allEnvVars.length} configured
-              </span>
-            </div>
-          </div>
-        </header>
-
-        {/* ── 3. GLASSMORPHISM SEARCH BAR & ADD VARIABLE BUTTON ── */}
-        <div className="flex flex-col sm:flex-row items-center gap-3.5 w-full">
-          {/* Glassmorphism Search Input */}
-          <div className="relative flex-1 w-full group">
-            <Search className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#20D6D8] transition-colors group-focus-within:text-[#46E1E0]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search variables by name, category, or description..."
-              className="w-full h-[54px] rounded-[14px] bg-[rgba(0,45,52,0.65)] border border-[rgba(30,210,215,0.35)] pl-12 pr-24 text-[14px] text-[#F5FAFA] placeholder-[#79A4A8] backdrop-blur-md focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/50 focus:shadow-[0_0_18px_rgba(32,214,216,0.25)] transition-all duration-200"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-              <span className="px-2 py-0.5 rounded-md bg-[rgba(4,58,64,0.8)] border border-[rgba(32,214,216,0.25)] text-[10px] font-mono font-medium text-[#9BC9CE]">
-                ⌘
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-[rgba(4,58,64,0.8)] border border-[rgba(32,214,216,0.25)] text-[10px] font-mono font-medium text-[#9BC9CE]">
-                K
-              </span>
-            </div>
-          </div>
-
-          {/* Add Variable Action Button */}
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="h-[54px] px-6 rounded-[14px] bg-gradient-to-r from-[#E52B3A] to-[#F04452] hover:brightness-110 text-white font-bold text-sm shadow-[0_4px_18px_rgba(229,43,58,0.32)] flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shrink-0 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus size={18} className="stroke-[2.5]" />
-            <span>Add Variable</span>
-          </button>
         </div>
 
-        {/* ── 4. 2-COLUMN VARIABLE CARDS GRID ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5 items-start">
-          {filteredVars.map((envVar, idx) => {
-            const config = getEnvVarConfig(envVar.name, envVar.category, envVar.criticality);
-            const IconComp = config.icon;
-            const isExpanded = !!expandedVarNames[envVar.name];
+        {/* Right Column: Compact Add Variable Button */}
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="h-8 sm:h-9 px-3.5 rounded-[8px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto shrink-0"
+        >
+          <Plus size={14} className="stroke-[2.5]" />
+          <span>Add Variable</span>
+        </button>
+      </header>
 
-            return (
-              <motion.div
-                key={envVar.name + idx}
-                layout
-                onClick={() => toggleExpand(envVar.name)}
-                className={`p-5 sm:p-6 rounded-[20px] transition-all duration-200 cursor-pointer relative overflow-hidden backdrop-blur-md group ${
-                  isExpanded
-                    ? "bg-gradient-to-br from-[rgba(32,214,216,0.10)] via-[rgba(4,58,64,0.85)] to-[rgba(0,35,40,0.92)] border border-[#20D6D8] ring-1 ring-[#20D6D8]/40 shadow-[0_8px_30px_rgba(0,35,40,0.6),0_0_20px_rgba(32,214,216,0.15)]"
-                    : config.isHighRisk
-                    ? "bg-gradient-to-br from-[rgba(229,43,58,0.08)] via-[rgba(4,58,64,0.72)] to-[rgba(0,35,40,0.85)] border border-[rgba(229,43,58,0.45)] hover:border-[rgba(229,43,58,0.75)] hover:shadow-[0_8px_25px_rgba(0,35,40,0.5),0_0_15px_rgba(229,43,58,0.2)] hover:-translate-y-0.5"
-                    : "bg-gradient-to-br from-[rgba(32,214,216,0.05)] via-[rgba(4,58,64,0.72)] to-[rgba(0,35,40,0.85)] border border-[rgba(31,190,195,0.28)] hover:border-[rgba(32,214,216,0.6)] hover:bg-[rgba(5,72,79,0.85)] hover:shadow-[0_8px_25px_rgba(0,35,40,0.5),0_0_15px_rgba(32,214,216,0.15)] hover:-translate-y-0.5"
-                }`}
-              >
-                {/* Subtle Diagonal Curved Highlight Inside Card */}
-                <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-bl from-white/[0.04] to-transparent pointer-events-none rounded-tr-[20px]" />
+      {/* ── 2. COMPACT SEARCH BAR DIRECTLY ABOVE LIST ── */}
+      <div className="relative w-full group">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#16C7A1]" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search env vars by name, category, or description..."
+          className="w-full h-9 sm:h-10 rounded-[10px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.18)] pl-9 pr-14 text-xs sm:text-[13px] text-[#F5FAFA] placeholder-[#79A4A8] focus:outline-none focus:border-[#16C7A1] focus:ring-1 focus:ring-[#16C7A1]/40 transition-all"
+        />
+        {searchQuery ? (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8EA9AE] hover:text-white text-xs px-1 py-0.5 rounded transition-colors"
+          >
+            ✕
+          </button>
+        ) : (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+            <span className="px-1.5 py-0.5 rounded bg-[#062932] border border-[#16C7A1]/20 text-[9px] font-mono font-medium text-[#9BC9CE]">
+              ⌘K
+            </span>
+          </div>
+        )}
+      </div>
 
-                {/* Main Card Header / Content Row */}
-                <div className="flex items-center justify-between gap-3 relative z-10">
-                  {/* Left: Colored Circular Icon + Name + Description */}
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    {/* Circular Icon Container */}
-                    <div
-                      className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
-                        config.category === "Security"
-                          ? "bg-[rgba(230,45,60,0.15)] border border-[rgba(229,43,58,0.45)] text-[#E52B3A]"
-                          : config.category === "External API"
-                          ? "bg-[rgba(32,214,216,0.12)] border border-[rgba(32,214,216,0.35)] text-[#20D6D8]"
-                          : "bg-[rgba(20,190,195,0.15)] border border-[rgba(32,214,216,0.4)] text-[#20D6D8]"
-                      }`}
-                    >
-                      <IconComp className="w-5 h-5 stroke-[2.2]" />
-                    </div>
+      {/* ── 3. SINGLE-COLUMN COMPACT CONFIGURATION EXPLORER LIST ── */}
+      <div className="space-y-2">
+        {filteredVars.map((envVar, idx) => {
+          const config = getEnvVarConfig(envVar.name, envVar.category, envVar.criticality);
+          const IconComp = config.icon;
+          const isExpanded = !!expandedVarNames[envVar.name];
 
-                    <div className="min-w-0">
-                      {/* Variable Name */}
-                      <code className="text-[14px] sm:text-[15px] font-bold font-mono text-[#F3FAFA] tracking-[0.4px] block leading-tight truncate">
-                        {envVar.name}
-                      </code>
-                      {/* Subtitle / Description */}
-                      <span className="text-[12px] sm:text-[13px] text-[#9BC9CE] mt-0.5 block truncate leading-tight">
-                        {config.description}
-                      </span>
-                    </div>
+          return (
+            <motion.div
+              key={envVar.name + idx}
+              layout
+              onClick={() => toggleExpand(envVar.name)}
+              className={`rounded-[12px] transition-all duration-150 cursor-pointer overflow-hidden group border ${
+                config.isHighRisk
+                  ? "border-l-[3.5px] border-l-[#FF3348] border-[rgba(255,51,72,0.25)] bg-[#074A52] hover:bg-[#0A535B]"
+                  : "border-l-[3.5px] border-l-[#16C7A1] border-[rgba(155,232,224,0.15)] bg-[#074A52] hover:bg-[#0A535B]"
+              } ${isExpanded ? "ring-1 ring-[#16C7A1]/50 bg-[#084F59]" : "shadow-xs"}`}
+            >
+              {/* Compact Collapsed Row (55–65px Height) */}
+              <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 sm:py-3 relative z-10 min-h-[58px]">
+                {/* Left: Icon Container + Variable Name + Subtitle Description */}
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Icon Box (34–38px) */}
+                  <div
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-[9px] flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-105 ${
+                      config.isHighRisk
+                        ? "bg-[#FF3348] text-white shadow-xs shadow-[#FF3348]/30"
+                        : "bg-[#C9EEEE] text-[#084C58] shadow-xs"
+                    }`}
+                  >
+                    <IconComp className="w-4 h-4 stroke-[2.2]" />
                   </div>
 
-                  {/* Right: Semantic Badges + Expand Indicator */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Category Badge */}
-                    {config.category === "Security" ? (
-                      <span className="px-3 py-1.5 rounded-[10px] bg-[rgba(229,43,58,0.14)] border border-[rgba(229,43,58,0.4)] text-[#FF7582] text-xs font-semibold">
-                        Security
-                      </span>
-                    ) : config.category === "External API" ? (
-                      <span className="px-3 py-1.5 rounded-[10px] bg-[rgba(32,214,216,0.12)] border border-[rgba(32,214,216,0.35)] text-[#46E1E0] text-xs font-semibold">
-                        External API
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1.5 rounded-[10px] bg-[rgba(32,214,216,0.12)] border border-[rgba(32,214,216,0.35)] text-[#20D6D8] text-xs font-semibold">
-                        General
-                      </span>
-                    )}
-
-                    {/* Prominent HIGH RISK Badge with Red Glow */}
-                    {config.isHighRisk && (
-                      <span className="px-2.5 py-1.5 rounded-[10px] bg-[rgba(230,35,50,0.18)] border border-[#E83245] text-[#FF6675] text-[11px] font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(232,50,69,0.25)] flex items-center gap-1">
-                        <ShieldAlert className="w-3 h-3 text-[#FF6675]" />
-                        HIGH RISK
-                      </span>
-                    )}
-
-                    {/* Chevron Indicator */}
-                    <div className="pl-1 text-[#9BC9CE] group-hover:text-[#20D6D8] transition-colors">
-                      {isExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-[#20D6D8]" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs sm:text-[13.5px] font-bold font-mono text-[#F3FAFA] tracking-[0.2px] truncate">
+                        {envVar.name}
+                      </code>
+                      {config.isHighRisk && (
+                        <span className="px-1.5 py-0.2 rounded bg-[#FF3348]/20 border border-[#FF3348]/40 text-[#FF6B7A] text-[9.5px] font-bold uppercase tracking-wider hidden sm:inline-block">
+                          HIGH RISK
+                        </span>
                       )}
                     </div>
+                    <span className="text-[11.5px] text-[#8FBFC2] mt-0.5 block truncate leading-tight">
+                      {config.description}
+                    </span>
                   </div>
                 </div>
 
-                {/* ── 5. EXPANDED CODE USAGES & REFERENCES SECTION ── */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.22 }}
-                      className="overflow-hidden relative z-10"
-                    >
-                      <div className="mt-4 pt-4 border-t border-[rgba(40,180,190,0.20)] space-y-3.5">
-                        {/* Usages in code */}
-                        <div className="flex items-center text-xs text-[#9BC9CE]">
-                          <span>Usages in code:</span>
-                          <span className="text-[#F5FAFA] font-bold font-mono text-sm ml-1.5">
-                            {envVar.usages || 6}
-                          </span>
-                        </div>
+                {/* Right: Copy Shortcut + Expand Arrow */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={(e) => copyToClipboard(envVar.name, e)}
+                    className="p-1 rounded-md text-[#79A4A8] hover:text-[#16C7A1] hover:bg-white/5 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Copy variable name"
+                  >
+                    {copiedVarName === envVar.name ? <Check size={13} className="text-[#16C7A1]" /> : <Copy size={13} />}
+                  </button>
 
-                        {/* USED BY Section */}
-                        <div>
-                          <span className="text-[11px] font-bold text-[#20D6D8] uppercase tracking-[1px] block mb-2">
-                            USED BY:
-                          </span>
-                          <div className="flex flex-wrap gap-2">
-                            {(envVar.usedBy && envVar.usedBy.length > 0
-                              ? envVar.usedBy
-                              : ["email.service.ts", "email.service.ts"]
-                            ).map((file, fIdx) => (
-                              <span
-                                key={fIdx}
-                                className="px-2.5 py-1.5 rounded-[8px] bg-[rgba(0,170,180,0.14)] border border-[rgba(32,214,216,0.25)] text-xs font-mono text-[#A8E1E3] shadow-xs"
-                              >
-                                {file.split(/[\\/]/).pop()}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                  <div className="text-[#79A4A8] group-hover:text-[#16C7A1] transition-colors">
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-[#16C7A1]" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    )}
+                  </div>
+                </div>
+              </div>
 
-                        {/* DECLARED IN FILES Section */}
+              {/* ── 4. EXPANDABLE INLINE DETAILS ON CLICK ── */}
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="overflow-hidden relative z-10 px-3.5 pb-3.5"
+                  >
+                    <div className="pt-2.5 border-t border-[rgba(155,232,224,0.15)] space-y-2 text-xs">
+                      <div className="flex items-center justify-between text-[#9BC9CE] text-[11.5px]">
                         <div>
-                          <span className="text-[11px] font-bold text-[#20D6D8] uppercase tracking-[1px] block mb-2">
-                            DECLARED IN FILES:
+                          <span>Category:</span>{" "}
+                          <span className="text-[#16C7A1] font-semibold">{config.category}</span>
+                        </div>
+                        <div>
+                          <span>Usages in code:</span>{" "}
+                          <span className="text-[#F5FAFA] font-bold font-mono text-xs">
+                            {envVar.usages || 4}
                           </span>
-                          <div className="flex flex-wrap gap-2">
-                            {(envVar.files && envVar.files.length > 0
-                              ? envVar.files
-                              : ["email.service.ts", "email.service.ts"]
-                            ).map((file, fIdx) => (
-                              <span
-                                key={fIdx}
-                                className="px-2.5 py-1.5 rounded-[8px] bg-[rgba(0,170,180,0.14)] border border-[rgba(32,214,216,0.25)] text-xs font-mono text-[#A8E1E3] shadow-xs"
-                              >
-                                {file.split(/[\\/]/).pop()}
-                              </span>
-                            ))}
-                          </div>
                         </div>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
-        </div>
+
+                      {/* USED BY Section */}
+                      <div>
+                        <span className="text-[10px] font-bold text-[#16C7A1] uppercase tracking-[1px] block mb-1">
+                          USED BY:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(envVar.usedBy && envVar.usedBy.length > 0
+                            ? envVar.usedBy
+                            : ["email.service.ts", "app.ts"]
+                          ).map((file, fIdx) => (
+                            <span
+                              key={fIdx}
+                              className="px-2 py-0.5 rounded-[5px] bg-[#04181E] border border-[rgba(155,232,224,0.18)] text-[10.5px] font-mono text-[#9BE8E0]"
+                            >
+                              {file.split(/[\\/]/).pop()}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* DECLARED IN FILES Section */}
+                      <div>
+                        <span className="text-[10px] font-bold text-[#16C7A1] uppercase tracking-[1px] block mb-1">
+                          DECLARED IN FILES:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(envVar.files && envVar.files.length > 0
+                            ? envVar.files
+                            : [".env", ".env.example"]
+                          ).map((file, fIdx) => (
+                            <span
+                              key={fIdx}
+                              className="px-2 py-0.5 rounded-[5px] bg-[#04181E] border border-[rgba(155,232,224,0.18)] text-[10.5px] font-mono text-[#9BE8E0]"
+                            >
+                              {file.split(/[\\/]/).pop()}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
+
+        {filteredVars.length === 0 && (
+          <div className="py-8 text-center text-xs text-[#8EA9AE] bg-[#074A52]/60 rounded-[12px] border border-[rgba(155,232,224,0.12)]">
+            No environment variables found matching <span className="text-white font-semibold">"{searchQuery}"</span>
+          </div>
+        )}
       </div>
 
-      {/* ── 6. ADD VARIABLE MODAL (Aligned to Health Diagnostics Glass Theme) ── */}
+      {/* ── 5. ADD VARIABLE MODAL ── */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
@@ -549,29 +502,26 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
               initial={{ opacity: 0, scale: 0.94, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 10 }}
-              className="bg-gradient-to-b from-[#003F46] via-[#002D33] to-[#00535A] border border-[rgba(32,214,216,0.35)] rounded-[24px] p-6 sm:p-7 w-full max-w-md shadow-2xl text-left relative overflow-hidden"
+              className="bg-[#06242C] border border-[#16C7A1]/30 rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-2xl text-left relative overflow-hidden"
             >
-              {/* Modal Corner Accent */}
-              <div className="absolute -top-12 -right-12 w-36 h-36 bg-[#E52B3A]/20 rounded-full blur-xl pointer-events-none" />
-
-              <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(32,214,216,0.20)] relative z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#F04452] to-[#E52B3A] flex items-center justify-center text-white shadow-md">
-                    <Plus size={18} className="stroke-[2.5]" />
+              <div className="flex items-center justify-between pb-3 border-b border-[#16C7A1]/20">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#FF3344] flex items-center justify-center text-white shadow-md">
+                    <Plus size={16} className="stroke-[2.5]" />
                   </div>
-                  <h3 className="text-lg font-bold text-[#F5FAFA]">Add Environment Variable</h3>
+                  <h3 className="text-base font-bold text-[#F5FAFA]">Add Environment Variable</h3>
                 </div>
                 <button
                   onClick={() => setIsAddModalOpen(false)}
                   className="text-[#9BC9CE] hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
 
-              <form onSubmit={handleAddVariable} className="mt-5 space-y-4 relative z-10">
+              <form onSubmit={handleAddVariable} className="mt-4 space-y-3.5">
                 <div>
-                  <label className="text-xs font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1.5">
+                  <label className="text-[11px] font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1">
                     Variable Name
                   </label>
                   <input
@@ -580,12 +530,12 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
                     value={newVarName}
                     onChange={(e) => setNewVarName(e.target.value)}
                     placeholder="e.g. STRIPE_SECRET_KEY"
-                    className="w-full h-11 px-3.5 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.3)] text-sm font-mono text-[#F5FAFA] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/50"
+                    className="w-full h-9 px-3 rounded-lg bg-[#04181E] border border-[#16C7A1]/30 text-xs font-mono text-[#F5FAFA] focus:outline-none focus:border-[#16C7A1]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1.5">
+                  <label className="text-[11px] font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1">
                     Description
                   </label>
                   <input
@@ -593,19 +543,19 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
                     value={newVarDesc}
                     onChange={(e) => setNewVarDesc(e.target.value)}
                     placeholder="e.g. Secret API key for Stripe payment processing"
-                    className="w-full h-11 px-3.5 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.3)] text-sm text-[#F5FAFA] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/50"
+                    className="w-full h-9 px-3 rounded-lg bg-[#04181E] border border-[#16C7A1]/30 text-xs text-[#F5FAFA] focus:outline-none focus:border-[#16C7A1]"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-xs font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1.5">
+                    <label className="text-[11px] font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1">
                       Category
                     </label>
                     <select
                       value={newVarCategory}
                       onChange={(e) => setNewVarCategory(e.target.value as any)}
-                      className="w-full h-11 px-3 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.3)] text-xs font-bold text-[#F5FAFA] focus:outline-none focus:border-[#20D6D8]"
+                      className="w-full h-9 px-2.5 rounded-lg bg-[#04181E] border border-[#16C7A1]/30 text-xs font-bold text-[#F5FAFA] focus:outline-none focus:border-[#16C7A1]"
                     >
                       <option value="General">General</option>
                       <option value="Security">Security</option>
@@ -614,13 +564,13 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1.5">
+                    <label className="text-[11px] font-bold text-[#9BC9CE] uppercase tracking-wider block mb-1">
                       Risk Level
                     </label>
                     <select
                       value={newVarCriticality}
                       onChange={(e) => setNewVarCriticality(e.target.value as any)}
-                      className="w-full h-11 px-3 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.3)] text-xs font-bold text-[#F5FAFA] focus:outline-none focus:border-[#20D6D8]"
+                      className="w-full h-9 px-2.5 rounded-lg bg-[#04181E] border border-[#16C7A1]/30 text-xs font-bold text-[#F5FAFA] focus:outline-none focus:border-[#16C7A1]"
                     >
                       <option value="LOW">Normal (Low Risk)</option>
                       <option value="HIGH">HIGH RISK</option>
@@ -628,17 +578,17 @@ export default function EnvironmentVariablesView({ envVars }: EnvironmentVariabl
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2.5 pt-3">
+                <div className="flex items-center justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
-                    className="px-4 py-2.5 rounded-[12px] bg-[rgba(0,45,52,0.7)] border border-[rgba(32,214,216,0.25)] text-xs font-bold text-[#9BC9CE] hover:text-white transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-lg bg-[#04181E] border border-[#16C7A1]/20 text-xs font-bold text-[#9BC9CE] hover:text-white transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-[12px] bg-gradient-to-r from-[#E52B3A] to-[#F04452] hover:brightness-110 text-white text-xs font-bold shadow-md shadow-[#E52B3A]/30 transition cursor-pointer"
+                    className="px-4 py-1.5 rounded-lg bg-[#FF3344] hover:bg-[#e02636] text-white text-xs font-bold shadow-md transition cursor-pointer"
                   >
                     Save Variable
                   </button>

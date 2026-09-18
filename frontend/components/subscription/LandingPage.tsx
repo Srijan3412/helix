@@ -180,7 +180,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
               CODE BETTER, FASTER
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.05] mb-4">
+            <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.08] mb-3.5">
               <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -196,7 +196,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                 transition={{ duration: 0.45, delay: 0.1, ease: "easeOut" }}
                 className="inline-block"
               >
-                Codebase In
+                Codebase
               </motion.span>
               <br />
               <motion.span
@@ -209,15 +209,15 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
               </motion.span>
             </h1>
 
-            <p className="text-[#9BC9CE] text-[15px] sm:text-[16px] leading-relaxed max-w-[460px] mb-7">
+            <p className="text-[#9BC9CE] text-[14px] sm:text-[15px] leading-relaxed max-w-[440px] mb-6">
               Understand what any codebase does, from architecture and dependencies to routes, database schemas, and code health diagnostics in seconds.
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-wrap items-center gap-4 mb-3">
+            <div className="flex flex-wrap items-center gap-3.5 mb-2.5">
               <button
                 onClick={onGetStarted}
-                className="group h-[52px] px-8 rounded-[12px] bg-[#FF3344] hover:bg-[#e02636] text-white text-[15px] font-bold shadow-lg shadow-red-500/20 flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
+                className="group h-[46px] px-6 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white text-[14px] sm:text-[15px] font-bold shadow-md shadow-red-500/20 flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
               >
                 <span>Start Free Trial</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
@@ -225,7 +225,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
 
               <a
                 href="#features"
-                className="h-[52px] px-7 rounded-[12px] bg-transparent hover:bg-[rgba(155,232,224,0.08)] text-[#F7FAFA] border border-[rgba(155,232,224,0.25)] hover:border-[rgba(155,232,224,0.45)] text-[15px] font-semibold flex items-center transition-all duration-200 hover:-translate-y-0.5"
+                className="h-[46px] px-5 rounded-[10px] bg-transparent hover:bg-[rgba(155,232,224,0.08)] text-[#F7FAFA] border border-[rgba(155,232,224,0.25)] hover:border-[rgba(155,232,224,0.45)] text-[14px] font-semibold flex items-center transition-all duration-200 hover:-translate-y-0.5"
               >
                 Explore Features
               </a>
@@ -397,27 +397,27 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
       </section>
 
       {/* ── 4. EIGHT ENGINES GRID (FEATURES SECTION & INTEGRATED CAPABILITY STRIP) ── */}
-      <section id="features" className="pt-10 pb-8 sm:pt-12 sm:pb-10 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
+      <section id="features" className="pt-8 pb-6 sm:pt-10 sm:pb-8 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-10 sm:mb-12"
+          className="text-center mb-8 sm:mb-10"
         >
-          <div className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8] mb-2.5">
+          <div className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#20D6D8] mb-2">
             PLATFORM CAPABILITIES
           </div>
-          <h2 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
+          <h2 className="text-2xl sm:text-[32px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2">
             Eight Engines, <span className="text-[#FF3344]">One Powerful Platform</span>
           </h2>
-          <p className="text-[#9BC9CE] text-[15px] sm:text-[16px] max-w-[600px] mx-auto leading-relaxed">
+          <p className="text-[#9BC9CE] text-[14px] sm:text-[15px] max-w-[560px] mx-auto leading-relaxed">
             Comprehensive analysis, clear explanations, and real-time collaboration.
           </p>
         </motion.div>
 
         {/* 8 Feature Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {features.map((f, i) => (
             <motion.div
               key={i}
@@ -425,16 +425,16 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.35, delay: i * 0.05 }}
-              className="p-6 rounded-[20px] bg-[rgba(8,55,65,0.72)] border border-[rgba(32,214,216,0.20)] hover:border-[rgba(32,214,216,0.5)] hover:bg-[rgba(12,70,80,0.88)] transition-all duration-200 hover:-translate-y-1 group flex flex-col justify-between shadow-md backdrop-blur-md"
+              className="p-5 rounded-[16px] bg-[rgba(8,55,65,0.72)] border border-[rgba(32,214,216,0.20)] hover:border-[rgba(32,214,216,0.5)] hover:bg-[rgba(12,70,80,0.88)] transition-all duration-200 hover:-translate-y-1 group flex flex-col justify-between shadow-md backdrop-blur-md"
             >
               <div>
-                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-105 ${f.badgeBg}`}>
-                  <f.icon className="w-5 h-5" />
+                <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center mb-3.5 transition-transform duration-200 group-hover:scale-105 ${f.badgeBg}`}>
+                  <f.icon className="w-4.5 h-4.5" />
                 </div>
-                <h3 className="text-[17px] sm:text-[18px] font-bold text-[#F7FAFA] mb-2 group-hover:text-[#20D6D8] transition-colors">
+                <h3 className="text-[15px] sm:text-[16px] font-bold text-[#F7FAFA] mb-1.5 group-hover:text-[#20D6D8] transition-colors">
                   {f.title}
                 </h3>
-                <p className="text-[13px] sm:text-[14px] text-[#9BC9CE] leading-relaxed">
+                <p className="text-[12.5px] sm:text-[13px] text-[#9BC9CE] leading-relaxed">
                   {f.desc}
                 </p>
               </div>
@@ -442,13 +442,13 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           ))}
         </div>
 
-        {/* Integrated Capability Strip (Connected to Features, eliminating isolated gaps) */}
+        {/* Integrated Capability Strip */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45, delay: 0.2 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 sm:mt-10"
+          className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mt-6 sm:mt-8"
         >
           {[
             { label: 'AST Analysis', value: '8+ Languages', icon: Terminal },
@@ -458,11 +458,11 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           ].map((s, i) => (
             <div
               key={i}
-              className="p-4 sm:p-5 rounded-[18px] bg-[rgba(8,55,65,0.72)] border border-[rgba(32,214,216,0.20)] text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(32,214,216,0.4)]"
+              className="p-3.5 sm:p-4 rounded-[14px] bg-[rgba(8,55,65,0.72)] border border-[rgba(32,214,216,0.20)] text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-[rgba(32,214,216,0.4)]"
             >
-              <s.icon className="w-5 h-5 text-[#20D6D8] mx-auto mb-2" />
-              <div className="text-xl font-bold font-mono text-[#F7FAFA]">{s.value}</div>
-              <div className="text-[11px] font-bold text-[#9BC9CE] mt-0.5 uppercase tracking-[1px]">{s.label}</div>
+              <s.icon className="w-4.5 h-4.5 text-[#20D6D8] mx-auto mb-1.5" />
+              <div className="text-lg font-bold font-mono text-[#F7FAFA]">{s.value}</div>
+              <div className="text-[10px] font-bold text-[#9BC9CE] mt-0.5 uppercase tracking-[0.8px]">{s.label}</div>
             </div>
           ))}
         </motion.div>
@@ -474,7 +474,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
       </div>
 
       {/* ── 6. FAQ SECTION (EXACT REFERENCE SPECIFICATION) ── */}
-      <section id="faq" className="pt-10 pb-14 sm:pt-12 sm:pb-18 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
+      <section id="faq" className="pt-8 pb-10 sm:pt-10 sm:pb-14 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
         
         {/* Section Header */}
         <motion.div
@@ -482,21 +482,21 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-10 sm:mb-12"
+          className="text-center mb-8 sm:mb-10"
         >
-          <div className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8] mb-2.5">
+          <div className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#20D6D8] mb-2">
             FREQUENTLY ASKED
           </div>
-          <h2 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
+          <h2 className="text-2xl sm:text-[32px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2">
             Common <span className="text-[#FF3344]">Questions</span>
           </h2>
-          <p className="text-[#9BC9CE] text-[15px] sm:text-[16px] max-w-[640px] mx-auto leading-relaxed">
+          <p className="text-[#9BC9CE] text-[14px] sm:text-[15px] max-w-[580px] mx-auto leading-relaxed">
             Everything you need to know about Archaeologist, in one place.
           </p>
         </motion.div>
 
         {/* 2-Column FAQ Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
           {faqs.map((faq, i) => {
             const isOpen = openFaqs.includes(i);
 
@@ -507,7 +507,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.35, delay: i * 0.08 }}
-                className={`rounded-[20px] bg-[rgba(8,70,80,0.65)] border transition-all duration-200 p-6 sm:p-7 ${
+                className={`rounded-[16px] bg-[rgba(8,70,80,0.65)] border transition-all duration-200 p-4.5 sm:p-5.5 ${
                   isOpen
                     ? 'border-[#20D6D8] shadow-[0_0_0_1px_rgba(32,214,216,0.25)] bg-[rgba(8,70,80,0.85)]'
                     : 'border-[rgba(32,214,216,0.20)] hover:border-[rgba(32,214,216,0.40)]'
@@ -517,22 +517,22 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                   onClick={() => toggleFaq(i)}
                   className="w-full flex items-center justify-between cursor-pointer select-none"
                 >
-                  <div className="flex items-center gap-4 pr-3">
-                    {/* 56x56 Icon Block */}
-                    <div className={`w-14 h-14 rounded-[14px] flex items-center justify-center shrink-0 ${faq.iconBg}`}>
-                      <faq.icon className="w-6 h-6 stroke-[2.2]" />
+                  <div className="flex items-center gap-3.5 pr-2">
+                    {/* Icon Block */}
+                    <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 ${faq.iconBg}`}>
+                      <faq.icon className="w-5 h-5 stroke-[2.2]" />
                     </div>
                     {/* Question Text */}
-                    <h3 className="text-[17px] sm:text-[18px] font-bold text-[#F7FAFA] leading-snug">
+                    <h3 className="text-[15px] sm:text-[16px] font-bold text-[#F7FAFA] leading-snug">
                       {faq.q}
                     </h3>
                   </div>
 
-                  {/* 44x44 Circular Expand Button */}
-                  <div className={`w-11 h-11 rounded-full bg-[rgba(32,214,216,0.12)] flex items-center justify-center text-[#20D6D8] shrink-0 transition-transform duration-200 ${
+                  {/* Circular Expand Button */}
+                  <div className={`w-8 h-8 rounded-full bg-[rgba(32,214,216,0.12)] flex items-center justify-center text-[#20D6D8] shrink-0 transition-transform duration-200 ${
                     isOpen ? 'rotate-180 bg-[rgba(32,214,216,0.25)] text-[#46E1E0]' : ''
                   }`}>
-                    <ChevronDown className="w-5 h-5" />
+                    <ChevronDown className="w-4 h-4" />
                   </div>
                 </div>
 
@@ -544,7 +544,7 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="overflow-hidden mt-4 pt-4 border-t border-[rgba(32,214,216,0.15)] text-[#9BC9CE] text-[14px] sm:text-[15px] leading-relaxed max-w-[520px]"
+                      className="overflow-hidden mt-3 pt-3 border-t border-[rgba(32,214,216,0.15)] text-[#9BC9CE] text-[13px] sm:text-[14px] leading-relaxed max-w-[500px]"
                     >
                       {faq.a}
                     </motion.div>
@@ -557,13 +557,13 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
       </section>
 
       {/* ── 7. LARGE CTA BANNER (EXACT REFERENCE SPECIFICATION) ── */}
-      <section className="pt-6 pb-12 sm:pt-8 sm:pb-16 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
+      <section className="pt-4 pb-10 sm:pt-6 sm:pb-12 px-6 sm:px-8 max-w-[1280px] mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="group min-h-[200px] rounded-[24px] bg-[rgba(8,76,88,0.85)] border border-[rgba(32,214,216,0.22)] p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden backdrop-blur-md"
+          className="group min-h-[160px] rounded-[18px] bg-[rgba(8,76,88,0.85)] border border-[rgba(32,214,216,0.22)] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden backdrop-blur-md"
         >
           
           {/* Left Decorative Subtle Arc Background */}
@@ -573,34 +573,34 @@ export default function LandingPage({ onGetStarted, onSelectPlan }: LandingPageP
           <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-[#20D6D8]/15 pointer-events-none" />
 
           {/* Left Content */}
-          <div className="flex items-center gap-5 text-left z-10">
+          <div className="flex items-center gap-4 text-left z-10">
             {/* Rocket Icon in Glowing Coral Circle */}
-            <div className="w-14 h-14 rounded-2xl bg-[#063D48] border border-[rgba(255,51,68,0.35)] flex items-center justify-center text-[#FF3344] shrink-0 shadow-lg transition-transform duration-200 group-hover:scale-105">
-              <Rocket className="w-7 h-7" />
+            <div className="w-11 h-11 rounded-xl bg-[#063D48] border border-[rgba(255,51,68,0.35)] flex items-center justify-center text-[#FF3344] shrink-0 shadow-md transition-transform duration-200 group-hover:scale-105">
+              <Rocket className="w-5 h-5" />
             </div>
 
             <div>
-              <h2 className="text-2xl sm:text-[32px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#F7FAFA] tracking-tight leading-tight">
                 Ready to understand <span className="text-[#FF3344]">In Minutes?</span>
               </h2>
-              <p className="text-[#9BC9CE] text-sm sm:text-[15px] mt-1.5">
+              <p className="text-[#9BC9CE] text-[13px] sm:text-[14px] mt-1">
                 Start your 14-day free trial to craft your precision.
               </p>
             </div>
           </div>
 
           {/* Right CTA Button & Curved Annotation */}
-          <div className="flex flex-col items-center md:items-end gap-2.5 shrink-0 z-10 w-full md:w-auto">
+          <div className="flex flex-col items-center md:items-end gap-1.5 shrink-0 z-10 w-full md:w-auto">
             <button
               onClick={onGetStarted}
-              className="group/btn w-full md:w-auto h-[52px] px-8 rounded-[12px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-[15px] sm:text-[16px] shadow-xl shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2"
+              className="group/btn w-full md:w-auto h-[46px] px-6 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-[14px] sm:text-[15px] shadow-lg shadow-red-500/25 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Get Started Free</span>
               <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/btn:translate-x-1" />
             </button>
             
             {/* Hand-drawn style sub-annotation */}
-            <div className="flex items-center gap-1.5 text-xs text-[#20D6D8] italic">
+            <div className="flex items-center gap-1.5 text-[11px] text-[#20D6D8] italic">
               <span>No credit card required!</span>
             </div>
           </div>

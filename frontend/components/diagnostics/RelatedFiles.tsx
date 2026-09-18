@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { FileCode, ArrowRight, ChevronRight, File } from "lucide-react";
+import { FileCode, ChevronRight, File } from "lucide-react";
 
 interface RelatedFilesProps {
   files?: Array<{ path: string; lineCount?: number }>;
@@ -40,20 +40,20 @@ export default function RelatedFiles({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.24 }}
-      className="w-full rounded-[16px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] p-5 relative overflow-hidden shadow-md text-left flex flex-col justify-between h-auto min-h-0"
+      transition={{ delay: 0.2 }}
+      className="w-full rounded-[14px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] p-4 sm:p-4.5 relative overflow-hidden shadow-sm text-left flex flex-col justify-between h-auto min-h-0"
     >
       <div>
         {/* ── Top Header: Document Icon + Title ── */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] bg-[#084C58] text-[#9BE8E0] flex items-center justify-center shrink-0 shadow-xs">
-              <FileCode size={18} />
+        <div className="flex items-center justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-[8px] bg-[#084C58] text-[#9BE8E0] flex items-center justify-center shrink-0 shadow-xs">
+              <FileCode size={15} />
             </div>
             <div>
-              <h3 className="text-sm sm:text-[15px] font-bold text-[#F7FAFA] leading-snug uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-[#F7FAFA] leading-snug uppercase tracking-wider">
                 Related Files
               </h3>
               <p className="text-[11px] text-[#C3D5D8] leading-tight">
@@ -64,21 +64,21 @@ export default function RelatedFiles({
         </div>
 
         {/* ── Files List ── */}
-        <div className="space-y-2 mt-2">
+        <div className="space-y-1.5 mt-1.5">
           {displayFiles.map((file, idx) => (
             <div
               key={idx}
               onClick={() => onSelectFile?.(file)}
-              className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-[8px] bg-[rgba(6,47,56,0.60)] border border-[rgba(155,232,224,0.08)] hover:border-[rgba(155,232,224,0.25)] hover:bg-[rgba(8,76,88,0.75)] transition-all cursor-pointer group"
+              className="flex items-center justify-between gap-2.5 py-1 px-2.5 rounded-[8px] bg-[rgba(6,47,56,0.60)] border border-[rgba(155,232,224,0.08)] hover:border-[rgba(155,232,224,0.25)] hover:bg-[rgba(8,76,88,0.75)] transition-all cursor-pointer group"
             >
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <File size={14} className="text-[#9BE8E0] shrink-0" />
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <File size={13} className="text-[#9BE8E0] shrink-0" />
                 <span className="text-xs font-mono text-[#E1F1F3] truncate group-hover:text-white">
                   {file}
                 </span>
               </div>
 
-              <ChevronRight size={14} className="text-[#8EA9AE] group-hover:text-[#9BE8E0] group-hover:translate-x-0.5 transition-all shrink-0" />
+              <ChevronRight size={13} className="text-[#8EA9AE] group-hover:text-[#9BE8E0] group-hover:translate-x-0.5 transition-all shrink-0" />
             </div>
           ))}
         </div>

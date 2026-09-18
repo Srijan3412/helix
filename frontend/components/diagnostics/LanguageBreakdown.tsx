@@ -204,8 +204,8 @@ export default function LanguageBreakdown({
           ["CSS", 1],
         ];
 
-  // SVG Donut Chart Calculation
-  const radius = 62;
+  // SVG Donut Chart Calculation (Compact Sizing)
+  const radius = 50;
   const circumference = 2 * Math.PI * radius;
   let accumulatedPercent = 0;
 
@@ -240,22 +240,22 @@ export default function LanguageBreakdown({
     <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-4 items-start text-left w-full h-auto min-h-0">
       {/* ─── LEFT: LANGUAGE BREAKDOWN ─── */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col h-auto min-h-0"
+        transition={{ duration: 0.25 }}
+        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(155,232,224,0.18)] shadow-sm flex flex-col h-auto min-h-0"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#094752] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
-              <Code2 size={18} />
+        <div className="flex items-start justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-[8px] bg-[#094752] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
+              <Code2 size={15} />
             </div>
             <div>
-              <h3 className="text-[13px] font-bold tracking-[0.08em] uppercase text-[#F2F7F7]">
+              <h3 className="text-xs font-bold tracking-[0.08em] uppercase text-[#F2F7F7]">
                 Language Breakdown
               </h3>
-              <p className="text-[12px] text-[#82AEB5] mt-0.5">
+              <p className="text-[11px] text-[#82AEB5] mt-0.5">
                 Distribution of code across your repository
               </p>
             </div>
@@ -263,33 +263,33 @@ export default function LanguageBreakdown({
         </div>
 
         {/* Content: Donut + Language list */}
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center my-3">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center my-2">
           {/* Donut Chart */}
-          <div className="sm:col-span-5 flex justify-center items-center relative py-2">
-            <div className="relative w-44 h-44 flex items-center justify-center">
+          <div className="sm:col-span-5 flex justify-center items-center relative py-1">
+            <div className="relative w-36 h-36 flex items-center justify-center">
               <svg
-                viewBox="0 0 160 160"
+                viewBox="0 0 130 130"
                 className="w-full h-full -rotate-90 transform"
               >
                 {/* Background Ring */}
                 <circle
-                  cx="80"
-                  cy="80"
+                  cx="65"
+                  cy="65"
                   r={radius}
                   fill="transparent"
                   stroke="#083E48"
-                  strokeWidth="24"
+                  strokeWidth="18"
                 />
                 {/* Segments */}
-                {donutSegments.map((segment, index) => (
+                {donutSegments.map((segment) => (
                   <circle
                     key={segment.lang}
-                    cx="80"
-                    cy="80"
+                    cx="65"
+                    cy="65"
                     r={radius}
                     fill="transparent"
                     stroke={segment.color}
-                    strokeWidth="24"
+                    strokeWidth="18"
                     strokeDasharray={segment.strokeDasharray}
                     strokeDashoffset={segment.strokeDashoffset}
                     className="transition-all duration-500 ease-out"
@@ -299,13 +299,13 @@ export default function LanguageBreakdown({
 
               {/* Inner Donut Center Text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                <span className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight leading-tight">
+                <span className="text-lg sm:text-xl font-black text-white font-mono tracking-tight leading-tight">
                   {totalLines.toLocaleString()}
                 </span>
-                <span className="text-[11px] text-[#82AEB5] font-medium mt-0.5 leading-none">
+                <span className="text-[10px] text-[#82AEB5] font-medium mt-0.5 leading-none">
                   Total Lines
                 </span>
-                <span className="text-[11px] text-[#82AEB5] font-medium leading-none">
+                <span className="text-[10px] text-[#82AEB5] font-medium leading-none">
                   of Code
                 </span>
               </div>
@@ -313,7 +313,7 @@ export default function LanguageBreakdown({
           </div>
 
           {/* Language Rows List */}
-          <div className="sm:col-span-7 space-y-2.5">
+          <div className="sm:col-span-7 space-y-1.5">
             {displayLanguages.map(([lang, lines], index) => {
               const rawPercentage = (lines / totalLines) * 100;
               const formattedPercentage =
@@ -330,21 +330,21 @@ export default function LanguageBreakdown({
 
               return (
                 <div key={lang} className="group">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between text-[11.5px]">
+                    <div className="flex items-center gap-1.5">
                       <div
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: config.color }}
                       />
                       <span className="font-semibold text-[#F2F7F7]">{lang}</span>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <span className="text-[#82AEB5] font-mono text-[11px]">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[#82AEB5] font-mono text-[10.5px]">
                         {lines.toLocaleString()} lines
                       </span>
                       <span
-                        className="font-bold font-mono text-right w-10"
+                        className="font-bold font-mono text-right w-9 text-[11px]"
                         style={{ color: config.color }}
                       >
                         {formattedPercentage}
@@ -353,7 +353,7 @@ export default function LanguageBreakdown({
                   </div>
 
                   {/* Micro Progress Bar */}
-                  <div className="h-1 w-full bg-[#083E48] rounded-full overflow-hidden mt-1">
+                  <div className="h-1 w-full bg-[#083E48] rounded-full overflow-hidden mt-0.5">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(rawPercentage, 1)}%` }}
@@ -369,26 +369,26 @@ export default function LanguageBreakdown({
         </div>
 
         {/* Footer Metric Card */}
-        <div className="mt-3 p-3.5 rounded-xl bg-[#093C45]/80 border border-[#176873]/50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#0E4F5A] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
-              <Database size={17} />
+        <div className="mt-2 p-2.5 px-3 rounded-[10px] bg-[#093C45]/80 border border-[#176873]/50 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-[6px] bg-[#0E4F5A] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
+              <Database size={14} />
             </div>
             <div>
-              <div className="text-xs font-semibold text-[#F2F7F7]">
+              <div className="text-[11.5px] font-semibold text-[#F2F7F7]">
                 Total Lines of Code
               </div>
-              <div className="text-[11px] text-[#82AEB5]">
+              <div className="text-[10px] text-[#82AEB5]">
                 Across {displayLanguages.length} languages
               </div>
             </div>
           </div>
 
           <div className="text-right">
-            <div className="text-lg font-bold text-white font-mono leading-tight">
+            <div className="text-sm font-bold text-white font-mono leading-tight">
               {totalLines.toLocaleString()}
             </div>
-            <div className="text-[10px] text-[#16C7A1] font-semibold flex items-center justify-end gap-0.5">
+            <div className="text-[9.5px] text-[#16C7A1] font-semibold flex items-center justify-end gap-0.5">
               <span>↑ +0%</span>
             </div>
           </div>
@@ -397,22 +397,22 @@ export default function LanguageBreakdown({
 
       {/* ─── RIGHT: CORE ENTRYPOINTS ─── */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.06 }}
-        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[16px] p-5 border border-[rgba(155,232,224,0.18)] shadow-md flex flex-col h-auto min-h-0"
+        transition={{ duration: 0.25, delay: 0.04 }}
+        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(155,232,224,0.18)] shadow-sm flex flex-col h-auto min-h-0"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#094752] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
-              <FileText size={18} />
+        <div className="flex items-start justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-[8px] bg-[#094752] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
+              <FileText size={15} />
             </div>
             <div>
-              <h3 className="text-[13px] font-bold tracking-[0.08em] uppercase text-[#F2F7F7]">
+              <h3 className="text-xs font-bold tracking-[0.08em] uppercase text-[#F2F7F7]">
                 Core Entrypoints
               </h3>
-              <p className="text-[12px] text-[#82AEB5] mt-0.5">
+              <p className="text-[11px] text-[#82AEB5] mt-0.5">
                 Most important files in your codebase
               </p>
             </div>
@@ -421,9 +421,9 @@ export default function LanguageBreakdown({
 
         {/* Scrollable / Stacked Entrypoints List */}
         <div
-          className={`space-y-2.5 ${
+          className={`space-y-1.5 ${
             isExpanded
-              ? "max-h-[480px] overflow-y-auto pr-1 custom-scrollbar"
+              ? "max-h-[380px] overflow-y-auto pr-1 custom-scrollbar"
               : ""
           }`}
         >
@@ -442,37 +442,37 @@ export default function LanguageBreakdown({
             return (
               <motion.div
                 key={entryPath + index}
-                initial={{ opacity: 0, x: -8 }}
+                initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25, delay: index * 0.03 }}
-                className="flex items-center justify-between p-2.5 px-3.5 rounded-xl bg-[#093C45]/80 hover:bg-[#0E4954]/90 border border-[#176873]/50 transition-colors group"
+                transition={{ duration: 0.2, delay: index * 0.02 }}
+                className="flex items-center justify-between p-2 px-3 rounded-[10px] bg-[#093C45]/80 hover:bg-[#0E4954]/90 border border-[#176873]/50 transition-colors group"
               >
                 {/* Left: Extension Badge + Path & Subtitle */}
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
-                    className={`w-8 h-8 rounded-lg ${badge.bg} border border-[#176873]/60 flex items-center justify-center ${badge.text} text-[11px] font-bold shrink-0 font-mono`}
+                    className={`w-6 h-6 rounded-[6px] ${badge.bg} border border-[#176873]/60 flex items-center justify-center ${badge.text} text-[10px] font-bold shrink-0 font-mono`}
                   >
                     {badge.label}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-medium text-[#F2F7F7] truncate font-mono">
+                    <div className="text-[11.5px] font-medium text-[#F2F7F7] truncate font-mono">
                       {entryPath}
                     </div>
-                    <div className="text-[11px] text-[#82AEB5] truncate mt-0.5">
+                    <div className="text-[10.5px] text-[#82AEB5] truncate">
                       {description}
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Confidence Bar + Score */}
-                <div className="flex items-center gap-3 shrink-0 ml-3">
-                  <div className="w-16 sm:w-20 h-1.5 bg-[#083E48] rounded-full overflow-hidden">
+                <div className="flex items-center gap-2.5 shrink-0 ml-2.5">
+                  <div className="w-14 sm:w-16 h-1.5 bg-[#083E48] rounded-full overflow-hidden">
                     <div
                       className="h-full bg-[#16C7A1] rounded-full transition-all duration-500"
                       style={{ width: `${score}%` }}
                     />
                   </div>
-                  <span className="text-xs font-bold font-mono text-[#F2F7F7] w-9 text-right">
+                  <span className="text-[11px] font-bold font-mono text-[#F2F7F7] w-8 text-right">
                     {score}%
                   </span>
                 </div>
@@ -485,19 +485,19 @@ export default function LanguageBreakdown({
         {entryPoints.length > 5 && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-3 p-2.5 px-3.5 rounded-xl bg-[#093C45]/60 hover:bg-[#0E4954]/80 border border-[#176873]/40 transition-colors flex items-center justify-between w-full text-left"
+            className="mt-2 p-2 px-3 rounded-[10px] bg-[#093C45]/60 hover:bg-[#0E4954]/80 border border-[#176873]/40 transition-colors flex items-center justify-between w-full text-left"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-[#0E4F5A] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0 font-bold">
-                {isExpanded ? <ChevronUp size={15} /> : <Plus size={15} />}
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-[6px] bg-[#0E4F5A] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0 font-bold">
+                {isExpanded ? <ChevronUp size={13} /> : <Plus size={13} />}
               </div>
               <div>
-                <div className="text-xs font-semibold text-[#F2F7F7]">
+                <div className="text-[11.5px] font-semibold text-[#F2F7F7]">
                   {isExpanded
                     ? "Show fewer entrypoints"
                     : `+${entryPoints.length - 5} more entrypoints`}
                 </div>
-                <div className="text-[11px] text-[#82AEB5]">
+                <div className="text-[10px] text-[#82AEB5]">
                   Showing {isExpanded ? entryPoints.length : 5} of{" "}
                   {entryPoints.length} entrypoints
                 </div>
@@ -505,7 +505,7 @@ export default function LanguageBreakdown({
             </div>
 
             <ChevronRight
-              size={16}
+              size={14}
               className={`text-[#82AEB5] transform transition-transform duration-200 ${
                 isExpanded ? "rotate-90" : ""
               }`}

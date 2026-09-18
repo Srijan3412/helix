@@ -191,14 +191,15 @@ interface NamespaceGroupData {
   searchQuery: string;
   onSelectRoute: (route: RouteItemData) => void;
   onSelectNamespace: (ns: string) => void;
+  onOpenExecutionTrace?: (routeId: string) => void;
 }
 
 function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
+  const namespace = data.namespace || "/";
+  const meta = data.meta || getNamespaceMeta(namespace);
+  const routes = data.routes || [];
+  const families = data.families || {};
   const {
-    namespace,
-    meta,
-    routes,
-    families,
     selectedRouteId,
     selectedNamespace,
     activeMethodFilter,
@@ -218,13 +219,13 @@ function NamespaceGroupNode({ data }: { data: NamespaceGroupData }) {
   const isAnyGroupSelected = selectedNamespace !== null;
   const isDimmed = isAnyGroupSelected && !isGroupSelected;
 
-  const IconComponent = meta.icon;
+  const IconComponent = meta.icon || RouteIcon;
 
-  // Dynamic width based on namespace & route count (135px - 160px)
+  // Clear, readable card width
   const cardWidth = useMemo(() => {
-    if (routes.length <= 3) return 135;
-    if (routes.length >= 8) return 155;
-    return 145;
+    if (routes.length <= 3) return 210;
+    if (routes.length >= 8) return 240;
+    return 225;
   }, [routes.length]);
 
   return (
@@ -605,7 +606,7 @@ function RouteGraphCanvas({
 
     // 1. API ROOT NODE (Top Center)
     const apiNodeId = "api-root";
-    const groupSpacing = 185;
+    const groupSpacing = 260;
     const totalWidth = groupKeys.length * groupSpacing;
     const apiX = Math.max(100, (totalWidth - 210) / 2);
     const apiY = 25;
@@ -640,14 +641,14 @@ function RouteGraphCanvas({
         position: { x: groupX, y: baselineY },
         data: {
           namespace: ns,
-          groupTitle: meta.title,
-          icon: meta.icon,
-          color: meta.color,
+          meta: meta,
+          routes: groupRoutes,
           families,
-          totalEndpoints: groupRoutes.length,
-          selectedRouteId: selectedRoute?.id,
+          selectedRouteId: selectedRoute?.id || null,
           selectedNamespace: selectedNamespace,
-          onSelectRoute: (route: any) => {
+          activeMethodFilter: activeMethodFilter,
+          searchQuery: searchQuery,
+          onSelectRoute: (route: RouteItemData) => {
             setSelectedRoute((prev) => (prev?.id === route.id ? null : route));
             setSelectedNamespace(ns);
           },
@@ -655,7 +656,6 @@ function RouteGraphCanvas({
             setSelectedNamespace((prev) => (prev === namespace ? null : namespace));
           },
           onOpenExecutionTrace: onOpenExecutionTrace,
-          activeFilterMethod: activeMethodFilter,
         },
       });
 
@@ -780,7 +780,7 @@ function RouteGraphCanvas({
     });
 
     return { initialNodes: nodes, initialEdges: edges };
-  }, [namespaceGroups, allRoutes, selectedNamespace, selectedRoute, activeMethodFilter, result]);
+  }, [namespaceGroups, allRoutes, selectedNamespace, selectedRoute, activeMethodFilter, searchQuery, result]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -791,13 +791,13 @@ function RouteGraphCanvas({
 
   useEffect(() => {
     const key = initialNodes
-      .map((n) => `${n.id}:${n.position.x}:${n.position.y}:${selectedRoute?.id}:${selectedNamespace}`)
+      .map((n) => `${n.id}:${n.position.x}:${n.position.y}:${selectedRoute?.id}:${selectedNamespace}:${activeMethodFilter}:${searchQuery}`)
       .join("|");
     if (key !== lastNodesKey.current) {
       lastNodesKey.current = key;
       setNodes(initialNodes);
     }
-  }, [initialNodes, selectedRoute, selectedNamespace, setNodes]);
+  }, [initialNodes, selectedRoute, selectedNamespace, activeMethodFilter, searchQuery, setNodes]);
 
   useEffect(() => {
     const key = initialEdges.map((e) => `${e.id}:${e.source}:${e.target}`).join("|");

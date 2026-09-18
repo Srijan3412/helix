@@ -2125,9 +2125,9 @@ export default function Home() {
         } bg-[#063D48] relative text-[#F7FAFA] w-full max-w-full`}
       >
         
-        {/* Top-Right Decorative Solid Red Corner Circle (Safely clipped) */}
+        {/* Subtle Background Glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-          <div className="w-72 h-72 rounded-full bg-[#FF3344] absolute -top-28 -right-28 opacity-80 shadow-2xl" />
+          <div className="w-96 h-96 rounded-full bg-[#16C7A1]/5 blur-3xl absolute -top-36 -right-36" />
         </div>
 
         <TrialBanner onUpgrade={() => setShowUpgrade(true)} />
@@ -2142,38 +2142,38 @@ export default function Home() {
             className={
               activeResultTab === "arch" || activeResultTab === "routes"
                 ? "flex-1 min-h-0 h-full p-2.5 sm:p-3 relative z-10 w-full min-w-0 flex flex-col overflow-hidden"
-                : "py-6 px-8 sm:px-10 pb-6 relative z-10 w-full h-auto min-h-0"
+                : "py-5 px-6 sm:px-8 pb-6 relative z-10 w-full h-auto min-h-0"
             }
           >
             {/* ─── OVERVIEW TAB ─── */}
             {activeResultTab === "overview" && (
-              <div className="w-full max-w-[1450px] mx-auto space-y-4 sm:space-y-5 text-left h-auto min-h-0">
+              <div className="w-full max-w-[1200px] mx-auto space-y-4 text-left h-auto min-h-0">
                 
                 {/* ── Top Dashboard Header ── */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-1">
                   <div>
-                    <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#9BE8E0]">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
                       Active Analysis
                     </p>
-                    <h1 className="text-3xl sm:text-[44px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-1">
+                    <h1 className="text-2xl sm:text-[34px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-0.5">
                       Repository <span className="text-[#FF3344]">Intelligence</span>
                     </h1>
-                    <p className="text-sm sm:text-base text-[#C3D5D8] mt-1">
+                    <p className="text-xs sm:text-[13px] text-[#C3D5D8] mt-0.5">
                       Comprehensive analysis and metadata diagnostics for your codebase.
                     </p>
                   </div>
 
                   {/* Top-Right Action Controls */}
-                  <div className="flex flex-col items-start lg:items-end gap-2.5">
-                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9BE8E0]/70">
+                  <div className="flex flex-col items-start lg:items-end gap-2">
+                    <div className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]/70">
                       ANALYZE • UNDERSTAND • BUILD FASTER
                     </div>
 
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-2.5 w-full sm:w-auto">
                       {/* Search Bar with Shortcut & Live Autocomplete Dropdown */}
-                      <div ref={searchContainerRef} className="relative w-full sm:w-[360px] md:w-[420px] z-50">
+                      <div ref={searchContainerRef} className="relative w-full sm:w-[320px] md:w-[360px] z-50">
                         <div className="relative">
-                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9BE8E0]" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9BE8E0]" />
                           <input
                             ref={searchInputRef}
                             type="text"
@@ -2184,7 +2184,7 @@ export default function Home() {
                             }}
                             onFocus={() => setIsSearchFocused(true)}
                             placeholder="Search files, routes, dependencies..."
-                            className="w-full h-12 pl-10 pr-14 rounded-[14px] bg-[rgba(8,76,88,0.80)] border border-[rgba(155,232,224,0.15)] text-sm text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#16C7A1] focus:ring-1 focus:ring-[#16C7A1]/40 transition-all"
+                            className="w-full h-10 pl-9 pr-12 rounded-[10px] bg-[rgba(8,76,88,0.80)] border border-[rgba(155,232,224,0.15)] text-xs sm:text-sm text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#16C7A1] focus:ring-1 focus:ring-[#16C7A1]/40 transition-all"
                           />
                           {globalSearchQuery ? (
                             <button
@@ -2192,7 +2192,7 @@ export default function Home() {
                                 setGlobalSearchQuery("");
                                 searchInputRef.current?.focus();
                               }}
-                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8EA9AE] hover:text-white text-xs px-1 py-0.5 rounded transition-colors"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8EA9AE] hover:text-white text-xs px-1 py-0.5 rounded transition-colors"
                               title="Clear search"
                             >
                               ✕
@@ -2203,7 +2203,7 @@ export default function Home() {
                                 searchInputRef.current?.focus();
                                 setIsSearchFocused(true);
                               }}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-[rgba(6,47,56,0.8)] border border-[rgba(155,232,224,0.2)] text-[11px] font-mono text-[#9BE8E0] hover:border-[#16C7A1] transition-colors"
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-[rgba(6,47,56,0.8)] border border-[rgba(155,232,224,0.2)] text-[10px] font-mono text-[#9BE8E0] hover:border-[#16C7A1] transition-colors"
                             >
                               ⌘ K
                             </button>
@@ -2218,14 +2218,14 @@ export default function Home() {
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, y: -6, scale: 0.98 }}
                               transition={{ duration: 0.15 }}
-                              className="absolute left-0 right-0 top-full mt-2 bg-[#04343C]/95 border border-[rgba(155,232,224,0.20)] backdrop-blur-xl rounded-2xl shadow-2xl p-2.5 max-h-[420px] overflow-y-auto space-y-3 z-50 text-left"
+                              className="absolute left-0 right-0 top-full mt-2 bg-[#04343C]/95 border border-[rgba(155,232,224,0.20)] backdrop-blur-xl rounded-xl shadow-2xl p-2 max-h-[380px] overflow-y-auto space-y-2.5 z-50 text-left"
                             >
                               {searchResults && searchResults.totalCount > 0 ? (
                                 <>
                                   {/* Routes Results */}
                                   {searchResults.routes.length > 0 && (
                                     <div>
-                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
+                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
                                         <Network className="w-3 h-3 text-[#16C7A1]" /> Routes & Endpoints
                                       </div>
                                       <div className="space-y-1 mt-1">
@@ -2237,11 +2237,11 @@ export default function Home() {
                                               setIsSearchFocused(false);
                                               setGlobalSearchQuery("");
                                             }}
-                                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
                                               <span
-                                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${
+                                                className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${
                                                   r.method === "GET"
                                                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                                                     : r.method === "POST"
@@ -2253,11 +2253,11 @@ export default function Home() {
                                               >
                                                 {r.method}
                                               </span>
-                                              <span className="text-xs font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
                                                 {r.path}
                                               </span>
                                             </div>
-                                            <span className="text-[10px] text-[#8EA9AE] shrink-0">
+                                            <span className="text-[9.5px] text-[#8EA9AE] shrink-0">
                                               Open in Routes →
                                             </span>
                                           </button>
@@ -2269,7 +2269,7 @@ export default function Home() {
                                   {/* Files Results */}
                                   {searchResults.files.length > 0 && (
                                     <div>
-                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
+                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
                                         <Layers className="w-3 h-3 text-[#16C7A1]" /> Files & Components
                                       </div>
                                       <div className="space-y-1 mt-1">
@@ -2281,17 +2281,17 @@ export default function Home() {
                                               setIsSearchFocused(false);
                                               setGlobalSearchQuery("");
                                             }}
-                                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
-                                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-700/50 text-[#C5F4EF] font-mono shrink-0">
+                                              <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-zinc-700/50 text-[#C5F4EF] font-mono shrink-0">
                                                 FILE
                                               </span>
-                                              <span className="text-xs font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
                                                 {f.path}
                                               </span>
                                             </div>
-                                            <span className="text-[10px] text-[#8EA9AE] shrink-0">
+                                            <span className="text-[9.5px] text-[#8EA9AE] shrink-0">
                                               {f.lineCount ? `${f.lineCount} lines` : "View in Arch →"}
                                             </span>
                                           </button>
@@ -2303,7 +2303,7 @@ export default function Home() {
                                   {/* Environment Variables Results */}
                                   {searchResults.envVars.length > 0 && (
                                     <div>
-                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
+                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
                                         <Settings className="w-3 h-3 text-[#16C7A1]" /> Environment Variables
                                       </div>
                                       <div className="space-y-1 mt-1">
@@ -2315,17 +2315,17 @@ export default function Home() {
                                               setIsSearchFocused(false);
                                               setGlobalSearchQuery("");
                                             }}
-                                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
-                                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono shrink-0">
+                                              <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono shrink-0">
                                                 ENV
                                               </span>
-                                              <span className="text-xs font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
                                                 {e.name}
                                               </span>
                                             </div>
-                                            <span className="text-[10px] text-[#8EA9AE] shrink-0">
+                                            <span className="text-[9.5px] text-[#8EA9AE] shrink-0">
                                               Open in Env →
                                             </span>
                                           </button>
@@ -2337,7 +2337,7 @@ export default function Home() {
                                   {/* Dependencies Results */}
                                   {searchResults.deps.length > 0 && (
                                     <div>
-                                      <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
+                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
                                         <Zap className="w-3 h-3 text-[#16C7A1]" /> Dependencies
                                       </div>
                                       <div className="space-y-1 mt-1">
@@ -2349,17 +2349,17 @@ export default function Home() {
                                               setIsSearchFocused(false);
                                               setGlobalSearchQuery("");
                                             }}
-                                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
-                                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono shrink-0">
+                                              <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono shrink-0">
                                                 DEP
                                               </span>
-                                              <span className="text-xs font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
                                                 {d.target}
                                               </span>
                                             </div>
-                                            <span className="text-[10px] text-[#8EA9AE] shrink-0">
+                                            <span className="text-[9.5px] text-[#8EA9AE] shrink-0">
                                               View in Graph →
                                             </span>
                                           </button>
@@ -2369,7 +2369,7 @@ export default function Home() {
                                   )}
                                 </>
                               ) : (
-                                <div className="py-6 text-center text-xs text-[#8EA9AE]">
+                                <div className="py-4 text-center text-xs text-[#8EA9AE]">
                                   No files, routes, or dependencies found matching <span className="text-white font-semibold">"{globalSearchQuery}"</span>
                                 </div>
                               )}
@@ -2381,9 +2381,9 @@ export default function Home() {
                       {/* Upload Repository Button */}
                       <button
                         onClick={() => reset()}
-                        className="h-12 px-6 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-sm shadow-md flex items-center gap-2 shrink-0 transition-all"
+                        className="h-10 px-4 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-xs sm:text-sm shadow-sm flex items-center gap-2 shrink-0 transition-all"
                       >
-                        <Upload size={16} />
+                        <Upload size={14} />
                         <span className="hidden sm:inline">Upload Repository</span>
                       </button>
                     </div>
@@ -2747,82 +2747,59 @@ export default function Home() {
             {activeResultTab === "ai-architect" && (
               <div className="w-full max-w-[1450px] mx-auto space-y-4 text-left">
                 {/* ── Header ── */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+                {/* ── Header ── */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
                   <div>
-                    <p className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8] flex items-center gap-1.5">
+                    <p className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#20D6D8] flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-[#20D6D8]" />
                       AI ANALYSIS
                     </p>
-                    <h1 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-1">
+                    <h1 className="text-xl sm:text-2xl font-bold text-[#F7FAFA] tracking-tight leading-tight mt-0.5">
                       AI Architect
                     </h1>
-                    <p className="text-sm sm:text-base text-[#9BC9CE] mt-1">
+                    <p className="text-xs text-[#9BC9CE] mt-0.5">
                       Intelligent codebase analysis & insights
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={copySummary}
-                      className="h-10 px-4 rounded-[10px] bg-[rgba(8,76,88,0.50)] hover:bg-[rgba(8,76,88,0.85)] border border-[rgba(155,232,224,0.20)] text-xs font-bold text-[#F7FAFA] flex items-center gap-1.5 transition-all shadow-xs"
+                      className="h-8 px-3 rounded-lg bg-[rgba(8,76,88,0.50)] hover:bg-[rgba(8,76,88,0.85)] border border-[rgba(155,232,224,0.20)] text-xs font-semibold text-[#F7FAFA] flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                     >
-                      <FileText size={14} className="text-[#9BE8E0]" />
+                      <FileText size={13} className="text-[#9BE8E0]" />
                       <span>Copy</span>
                     </button>
                     <button
                       onClick={exportAsMarkdown}
-                      className="h-10 px-4 rounded-[10px] bg-[#16C7A1]/20 hover:bg-[#16C7A1]/30 border border-[#16C7A1]/40 text-xs font-bold text-[#16C7A1] flex items-center gap-1.5 transition-all shadow-xs"
+                      className="h-8 px-3 rounded-lg bg-[#16C7A1]/20 hover:bg-[#16C7A1]/30 border border-[#16C7A1]/40 text-xs font-bold text-[#16C7A1] flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                     >
-                      <Download size={14} />
+                      <Download size={13} />
                       <span>Export</span>
                     </button>
                     <button
                       onClick={regenerateSummary}
-                      className="h-10 px-4 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-xs font-bold text-white flex items-center gap-1.5 transition-all shadow-xs"
+                      className="h-8 px-3 rounded-lg bg-[#FF3344] hover:bg-[#e02636] text-xs font-bold text-white flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                     >
-                      <RefreshCw size={14} />
+                      <RefreshCw size={13} />
                       <span>Regenerate</span>
                     </button>
                   </div>
                 </div>
 
-                {/* ── 1. Architecture Summary (Spacious Hero Panel with 3D Isometric Accent & AI Powered Badge) ── */}
-                <div className="rounded-[24px] bg-[rgba(6,51,61,0.85)] backdrop-blur-xl border border-[rgba(155,232,224,0.18)] p-7 sm:p-8 relative overflow-hidden shadow-xl">
-                  {/* Subtle 3D Isometric Decorative Graphic (Right side) */}
-                  <div className="absolute right-0 top-0 bottom-0 w-64 pointer-events-none overflow-hidden opacity-30 select-none flex items-center justify-end pr-4">
-                    <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      {/* Top Cube */}
-                      <g transform="translate(100, 20)">
-                        <polygon points="30,0 60,15 30,30 0,15" fill="#38BDF8" fillOpacity="0.7" />
-                        <polygon points="0,15 30,30 30,60 0,45" fill="#0284C7" fillOpacity="0.6" />
-                        <polygon points="30,30 60,15 60,45 30,60" fill="#0369A1" fillOpacity="0.8" />
-                      </g>
-                      {/* Left Cube */}
-                      <g transform="translate(60, 50)">
-                        <polygon points="30,0 60,15 30,30 0,15" fill="#16C7A1" fillOpacity="0.7" />
-                        <polygon points="0,15 30,30 30,60 0,45" fill="#0D9488" fillOpacity="0.6" />
-                        <polygon points="30,30 60,15 60,45 30,60" fill="#0F766E" fillOpacity="0.8" />
-                      </g>
-                      {/* Right Cube */}
-                      <g transform="translate(120, 60)">
-                        <polygon points="30,0 60,15 30,30 0,15" fill="#38BDF8" fillOpacity="0.6" />
-                        <polygon points="0,15 30,30 30,60 0,45" fill="#0284C7" fillOpacity="0.5" />
-                        <polygon points="30,30 60,15 60,45 30,60" fill="#0369A1" fillOpacity="0.7" />
-                      </g>
-                    </svg>
-                  </div>
-
+                {/* ── 1. Architecture Summary (Hero Panel with AI Powered Badge) ── */}
+                <div className="rounded-2xl bg-[rgba(6,51,61,0.85)] backdrop-blur-xl border border-[rgba(155,232,224,0.18)] p-4 sm:p-5 relative overflow-hidden shadow-lg">
                   {/* Header Row */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-                    <div className="flex items-center gap-5">
-                      <div className="w-16 h-16 rounded-[18px] bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/25">
-                        <Sparkles className="w-8 h-8 text-white" />
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
+                        <Sparkles className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h2 className="text-2xl sm:text-[32px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight">
+                        <h2 className="text-base sm:text-lg font-bold text-[#F7FAFA] tracking-tight leading-tight">
                           Architecture Summary
                         </h2>
-                        <p className="text-sm sm:text-base text-[#82AEB5] mt-1 font-medium">
+                        <p className="text-xs text-[#82AEB5] mt-0.5 font-normal">
                           Generated by AI analysis engine
                         </p>
                       </div>
@@ -2830,184 +2807,184 @@ export default function Home() {
 
                     {/* AI Powered Badge */}
                     <div className="flex items-center">
-                      <div className="px-5 py-2 rounded-full bg-[rgba(79,70,229,0.22)] border border-[rgba(129,140,248,0.40)] text-[#C7D2FE] text-xs sm:text-[13px] font-semibold flex items-center gap-2 shadow-sm">
-                        <Sparkles size={14} className="text-[#A5B4FC]" />
+                      <div className="px-3 py-1 rounded-full bg-[rgba(79,70,229,0.22)] border border-[rgba(129,140,248,0.40)] text-[#C7D2FE] text-[11px] font-semibold flex items-center gap-1.5 shadow-sm">
+                        <Sparkles size={12} className="text-[#A5B4FC]" />
                         <span>AI Powered</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Inner Project Purpose Card */}
-                  <div className="mt-6 rounded-[16px] bg-[rgba(4,40,48,0.92)] border border-[rgba(155,232,224,0.14)] border-l-[6px] border-l-[#16C7A1] p-6 sm:p-7 shadow-inner relative z-10">
-                    <h4 className="text-xs sm:text-[13px] font-bold uppercase tracking-[0.16em] text-[#16C7A1] mb-3">
+                  <div className="mt-3.5 rounded-xl bg-[rgba(4,40,48,0.92)] border border-[rgba(155,232,224,0.14)] border-l-[4px] border-l-[#16C7A1] p-3.5 sm:p-4 shadow-inner relative z-10">
+                    <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#16C7A1] mb-1.5">
                       PROJECT PURPOSE
                     </h4>
-                    <p className="text-[14px] sm:text-[15px] leading-[1.65] text-[#D0E1E3] font-normal">
+                    <p className="text-xs sm:text-[13px] leading-relaxed text-[#D0E1E3] font-normal">
                       {result.aiSummary?.purpose ? (
                         result.aiSummary.purpose
                       ) : (
                         <>
-                          This Fastify-based API, implemented in TypeScript, provides 88 routes for managing <span className="px-2 py-0.5 rounded-md bg-[#05404A] border border-[#16C7A1]/30 text-[#16C7A1] font-mono text-xs font-semibold mx-1">FEATURE_DEFS</span> entities. It secures access using JWT authentication and integrates email capabilities through services like Resend/SMTP. The execution flow indicates interaction with <span className="px-2 py-0.5 rounded-md bg-[#05404A] border border-[#16C7A1]/30 text-[#16C7A1] font-mono text-xs font-semibold mx-1">ts-morph</span>, suggesting advanced processing related to TypeScript Abstract Syntax Trees (ASTs), potentially for configuration or dynamic feature management.
+                          This Fastify-based API, implemented in TypeScript, provides 88 routes for managing <span className="px-1.5 py-0.2 rounded bg-[#05404A] border border-[#16C7A1]/30 text-[#16C7A1] font-mono text-[11px] font-semibold mx-0.5">FEATURE_DEFS</span> entities. It secures access using JWT authentication and integrates email capabilities through services like Resend/SMTP. The execution flow indicates interaction with <span className="px-1.5 py-0.2 rounded bg-[#05404A] border border-[#16C7A1]/30 text-[#16C7A1] font-mono text-[11px] font-semibold mx-0.5">ts-morph</span>, suggesting advanced processing related to TypeScript Abstract Syntax Trees (ASTs), potentially for configuration or dynamic feature management.
                         </>
                       )}
                     </p>
                   </div>
                 </div>
 
-                {/* ── 2. Technical Stack (Spacious 3-Column Large Cards Grid) ── */}
-                <div className="rounded-[24px] bg-[rgba(6,51,61,0.85)] backdrop-blur-xl border border-[rgba(155,232,224,0.18)] p-7 sm:p-8 shadow-xl">
+                {/* ── 2. Technical Stack ── */}
+                <div className="rounded-2xl bg-[rgba(6,51,61,0.85)] backdrop-blur-xl border border-[rgba(155,232,224,0.18)] p-4 sm:p-5 shadow-lg">
                   {/* Header Row */}
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-[12px] bg-[#054854] border border-[rgba(155,232,224,0.20)] text-[#16C7A1] flex items-center justify-center shrink-0">
-                        <Layers size={20} />
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#054854] border border-[rgba(155,232,224,0.20)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                        <Layers size={16} />
                       </div>
                       <div>
-                        <h3 className="text-lg sm:text-[20px] font-extrabold text-[#F7FAFA]">
+                        <h3 className="text-sm sm:text-base font-bold text-[#F7FAFA]">
                           Technical Stack
                         </h3>
-                        <p className="text-xs sm:text-sm text-[#82AEB5]">
+                        <p className="text-[11px] text-[#82AEB5]">
                           Key technologies used in this project
                         </p>
                       </div>
                     </div>
 
                     {/* Components Pill */}
-                    <div className="px-4 py-1.5 rounded-full bg-[rgba(8,69,80,0.85)] border border-[rgba(155,232,224,0.20)] text-[#9BE8E0] text-xs font-semibold flex items-center gap-2 shrink-0">
-                      <Layers size={14} className="text-[#16C7A1]" />
+                    <div className="px-3 py-1 rounded-full bg-[rgba(8,69,80,0.85)] border border-[rgba(155,232,224,0.20)] text-[#9BE8E0] text-[11px] font-semibold flex items-center gap-1.5 shrink-0">
+                      <Layers size={12} className="text-[#16C7A1]" />
                       <span>Components</span>
                     </div>
                   </div>
 
-                  {/* 3-Column Grid of ~100px High Technology Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* 3-Column Grid of Compact Technology Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                     {/* Fastify */}
-                    <div className="h-[100px] sm:h-[104px] rounded-[16px] bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[6px] border-l-[#3B82F6] p-4 flex items-center justify-between gap-4 transition-all duration-200 group shadow-sm">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-14 h-14 rounded-[14px] bg-[#18181B] border border-white/10 text-white flex items-center justify-center shrink-0 shadow-md">
-                          <Zap size={22} className="text-white" />
+                    <div className="h-[56px] sm:h-[60px] rounded-xl bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[4px] border-l-[#3B82F6] px-3 py-2 flex items-center justify-between gap-2.5 transition-all duration-150 group shadow-sm">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#18181B] border border-white/10 text-white flex items-center justify-center shrink-0 shadow-sm">
+                          <Zap size={15} className="text-white" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
+                          <div className="text-[13px] sm:text-[13.5px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors leading-tight">
                             {result.aiSummary?.stack?.framework || "Fastify"}
                           </div>
-                          <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
+                          <div className="text-[10px] sm:text-[11px] text-[#82AEB5] font-medium mt-0.5 leading-none">
                             Framework
                           </div>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-1 transition-all shrink-0" />
+                      <ChevronRight size={14} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </div>
 
                     {/* TypeScript */}
-                    <div className="h-[100px] sm:h-[104px] rounded-[16px] bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[6px] border-l-[#0284C7] p-4 flex items-center justify-between gap-4 transition-all duration-200 group shadow-sm">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-14 h-14 rounded-[14px] bg-[#007ACC] text-white flex items-center justify-center shrink-0 shadow-md font-bold font-mono text-base tracking-tight">
+                    <div className="h-[56px] sm:h-[60px] rounded-xl bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[4px] border-l-[#0284C7] px-3 py-2 flex items-center justify-between gap-2.5 transition-all duration-150 group shadow-sm">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#007ACC] text-white flex items-center justify-center shrink-0 shadow-sm font-bold font-mono text-xs tracking-tight">
                           TS
                         </div>
                         <div className="min-w-0">
-                          <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
+                          <div className="text-[13px] sm:text-[13.5px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors leading-tight">
                             {result.aiSummary?.stack?.language || "TypeScript"}
                           </div>
-                          <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
+                          <div className="text-[10px] sm:text-[11px] text-[#82AEB5] font-medium mt-0.5 leading-none">
                             Language
                           </div>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-1 transition-all shrink-0" />
+                      <ChevronRight size={14} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </div>
 
                     {/* Node.js */}
-                    <div className="h-[100px] sm:h-[104px] rounded-[16px] bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[6px] border-l-[#22C55E] p-4 flex items-center justify-between gap-4 transition-all duration-200 group shadow-sm">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-14 h-14 rounded-[14px] bg-[#43853D] text-white flex items-center justify-center shrink-0 shadow-md font-bold font-mono text-base lowercase">
+                    <div className="h-[56px] sm:h-[60px] rounded-xl bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[4px] border-l-[#22C55E] px-3 py-2 flex items-center justify-between gap-2.5 transition-all duration-150 group shadow-sm">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#43853D] text-white flex items-center justify-center shrink-0 shadow-sm font-bold font-mono text-xs lowercase">
                           node
                         </div>
                         <div className="min-w-0">
-                          <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
+                          <div className="text-[13px] sm:text-[13.5px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors leading-tight">
                             {result.aiSummary?.stack?.runtime || "Node.js"}
                           </div>
-                          <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
+                          <div className="text-[10px] sm:text-[11px] text-[#82AEB5] font-medium mt-0.5 leading-none">
                             Runtime
                           </div>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-1 transition-all shrink-0" />
+                      <ChevronRight size={14} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </div>
 
                     {/* Drizzle */}
-                    <div className="h-[100px] sm:h-[104px] rounded-[16px] bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[6px] border-l-[#EF4444] p-4 flex items-center justify-between gap-4 transition-all duration-200 group shadow-sm">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-14 h-14 rounded-[14px] bg-[#EF4444] text-white flex items-center justify-center shrink-0 shadow-md font-bold text-xl">
+                    <div className="h-[56px] sm:h-[60px] rounded-xl bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[4px] border-l-[#EF4444] px-3 py-2 flex items-center justify-between gap-2.5 transition-all duration-150 group shadow-sm">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#EF4444] text-white flex items-center justify-center shrink-0 shadow-sm font-bold text-sm">
                           ▲
                         </div>
                         <div className="min-w-0">
-                          <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
+                          <div className="text-[13px] sm:text-[13.5px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors leading-tight">
                             {result.aiSummary?.stack?.orm || "Drizzle"}
                           </div>
-                          <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
+                          <div className="text-[10px] sm:text-[11px] text-[#82AEB5] font-medium mt-0.5 leading-none">
                             ORM
                           </div>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-1 transition-all shrink-0" />
+                      <ChevronRight size={14} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </div>
 
                     {/* JWT */}
-                    <div className="h-[100px] sm:h-[104px] rounded-[16px] bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[6px] border-l-[#16C7A1] p-4 flex items-center justify-between gap-4 transition-all duration-200 group shadow-sm">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-14 h-14 rounded-[14px] bg-[#0D9488] text-white flex items-center justify-center shrink-0 shadow-md">
-                          <Shield size={22} className="text-[#9BE8E0]" />
+                    <div className="h-[56px] sm:h-[60px] rounded-xl bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[4px] border-l-[#16C7A1] px-3 py-2 flex items-center justify-between gap-2.5 transition-all duration-150 group shadow-sm">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#0D9488] text-white flex items-center justify-center shrink-0 shadow-sm">
+                          <Shield size={16} className="text-[#9BE8E0]" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
+                          <div className="text-[13px] sm:text-[13.5px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors leading-tight">
                             {(result.aiSummary?.stack as any)?.auth || (result.aiSummary?.stack as any)?.authentication || "JWT"}
                           </div>
-                          <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
+                          <div className="text-[10px] sm:text-[11px] text-[#82AEB5] font-medium mt-0.5 leading-none">
                             Authentication
                           </div>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-1 transition-all shrink-0" />
+                      <ChevronRight size={14} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </div>
 
                     {/* npm */}
-                    <div className="h-[100px] sm:h-[104px] rounded-[16px] bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[6px] border-l-[#DC2626] p-4 flex items-center justify-between gap-4 transition-all duration-200 group shadow-sm">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-14 h-14 rounded-[14px] bg-[#CB3837] text-white flex items-center justify-center shrink-0 shadow-md font-bold font-mono text-base lowercase">
+                    <div className="h-[56px] sm:h-[60px] rounded-xl bg-[rgba(4,45,54,0.92)] hover:bg-[rgba(6,56,66,0.95)] border border-[rgba(155,232,224,0.14)] hover:border-[rgba(155,232,224,0.30)] border-l-[4px] border-l-[#DC2626] px-3 py-2 flex items-center justify-between gap-2.5 transition-all duration-150 group shadow-sm">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#CB3837] text-white flex items-center justify-center shrink-0 shadow-sm font-bold font-mono text-xs lowercase">
                           npm
                         </div>
                         <div className="min-w-0">
-                          <div className="text-base sm:text-[17px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors">
+                          <div className="text-[13px] sm:text-[13.5px] font-bold text-[#F7FAFA] truncate group-hover:text-white transition-colors leading-tight">
                             {result.aiSummary?.stack?.packageManager || "npm"}
                           </div>
-                          <div className="text-xs sm:text-[13px] text-[#82AEB5] font-medium mt-0.5">
+                          <div className="text-[10px] sm:text-[11px] text-[#82AEB5] font-medium mt-0.5 leading-none">
                             Package Manager
                           </div>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-1 transition-all shrink-0" />
+                      <ChevronRight size={14} className="text-[#82AEB5] group-hover:text-[#9BE8E0] group-hover:translate-x-0.5 transition-all shrink-0" />
                     </div>
                   </div>
                 </div>
 
-                {/* ── 3. AI Analysis (Modular Cards with Colored Left Accents) ── */}
-                <div className="pt-1">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-[#16C7A1]" />
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#9BE8E0]">
+                {/* ── 3. AI Analysis ── */}
+                <div className="pt-0.5">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#16C7A1]" />
+                    <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#9BE8E0]">
                       AI Analysis
                     </span>
                   </div>
 
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {/* Card 1: Technical Stack Details */}
-                    <div className="rounded-[12px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#16C7A1] p-4 sm:p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Cpu className="w-4 h-4 text-[#16C7A1]" />
-                        <h4 className="text-sm font-bold text-[#F7FAFA]">Technical Stack</h4>
+                    <div className="rounded-xl bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#16C7A1] p-3.5 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <Cpu className="w-3.5 h-3.5 text-[#16C7A1]" />
+                        <h4 className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Technical Stack</h4>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8 text-xs sm:text-[13px]">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-6 text-xs">
                         <div className="flex items-center justify-between py-0.5 border-b border-[rgba(155,232,224,0.06)]">
                           <span className="text-[#8EA9AE]">Framework:</span>
                           <span className="font-semibold text-[#F7FAFA] font-mono">{result.aiSummary?.stack?.framework || "Fastify"}</span>
@@ -3040,18 +3017,18 @@ export default function Home() {
                     </div>
 
                     {/* Card 2: Request Lifecycle */}
-                    <div className="rounded-[12px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#A855F7] p-4 sm:p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Workflow className="w-4 h-4 text-[#C084FC]" />
-                        <h4 className="text-sm font-bold text-[#F7FAFA]">Request Lifecycle</h4>
+                    <div className="rounded-xl bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#A855F7] p-3.5 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Workflow className="w-3.5 h-3.5 text-[#C084FC]" />
+                        <h4 className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Request Lifecycle</h4>
                       </div>
-                      <p className="text-xs text-[#C3D5D8] mb-3">
+                      <p className="text-[11.5px] text-[#C3D5D8] mb-2">
                         A typical request flows through the following layers:
                       </p>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         {["Client Request", "Fastify", "ts-morph", "PostgreSQL"].map((step, sIdx, arr) => (
                           <React.Fragment key={sIdx}>
-                            <span className={`px-3 py-1.5 rounded-[8px] text-xs font-mono font-bold ${
+                            <span className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold ${
                               sIdx === 0 ? "bg-[#16C7A1]/20 text-[#16C7A1] border border-[#16C7A1]/40" :
                               sIdx === 1 ? "bg-[#38BDF8]/20 text-[#38BDF8] border border-[#38BDF8]/40" :
                               sIdx === 2 ? "bg-[#A855F7]/20 text-[#C084FC] border border-[#A855F7]/40" :
@@ -3060,7 +3037,7 @@ export default function Home() {
                               {step}
                             </span>
                             {sIdx < arr.length - 1 && (
-                              <ArrowRight size={13} className="text-[#8EA9AE] shrink-0" />
+                              <ArrowRight size={11} className="text-[#8EA9AE] shrink-0" />
                             )}
                           </React.Fragment>
                         ))}
@@ -3068,34 +3045,34 @@ export default function Home() {
                     </div>
 
                     {/* Card 3: Authentication */}
-                    <div className="rounded-[12px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#F5B800] p-4 sm:p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Lock className="w-4 h-4 text-[#F5B800]" />
-                        <h4 className="text-sm font-bold text-[#F7FAFA]">Authentication</h4>
+                    <div className="rounded-xl bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#F5B800] p-3.5 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Lock className="w-3.5 h-3.5 text-[#F5B800]" />
+                        <h4 className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Authentication</h4>
                       </div>
-                      <p className="text-xs sm:text-[13px] leading-relaxed text-[#C3D5D8]">
+                      <p className="text-xs leading-relaxed text-[#C3D5D8]">
                         Authentication is handled via JWT (JSON Web Tokens). Upon successful authentication, a JWT is issued to the client for subsequent authorized requests. The <span className="text-[#16C7A1] font-mono px-1 rounded bg-[#063D48]">useAuth.ts</span> module is a key component in managing this authentication flow.
                       </p>
                     </div>
 
                     {/* Card 4: Database Layer */}
-                    <div className="rounded-[12px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#FF3344] p-4 sm:p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Database className="w-4 h-4 text-[#FF4D5E]" />
-                        <h4 className="text-sm font-bold text-[#F7FAFA]">Database Layer</h4>
+                    <div className="rounded-xl bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#FF3344] p-3.5 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Database className="w-3.5 h-3.5 text-[#FF4D5E]" />
+                        <h4 className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Database Layer</h4>
                       </div>
-                      <p className="text-xs sm:text-[13px] leading-relaxed text-[#C3D5D8]">
+                      <p className="text-xs leading-relaxed text-[#C3D5D8]">
                         The application utilizes PostgreSQL as its primary data store. Database interactions are managed through the Drizzle ORM. The key entity identified in the system is <span className="text-[#16C7A1] font-mono px-1 rounded bg-[#063D48]">FEATURE_DEFS</span>.
                       </p>
                     </div>
 
                     {/* Card 5: Key Modules */}
-                    <div className="rounded-[12px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#38BDF8] p-4 sm:p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Layers className="w-4 h-4 text-[#38BDF8]" />
-                        <h4 className="text-sm font-bold text-[#F7FAFA]">Key Modules</h4>
+                    <div className="rounded-xl bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#38BDF8] p-3.5 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Layers className="w-3.5 h-3.5 text-[#38BDF8]" />
+                        <h4 className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Key Modules</h4>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-[13px]">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
                         {[
                           { file: "types.ts", desc: "Defines shared data structures and interfaces." },
                           { file: "client.ts", desc: "Client-side utilities for external services/APIs." },
@@ -3106,13 +3083,13 @@ export default function Home() {
                           { file: "layerDetector.ts", desc: "Identifies interactions across layers." },
                           { file: "ENV:NODE_ENV", desc: "Environment-specific configurations." }
                         ].map((item, mIdx) => (
-                          <div key={mIdx} className="flex items-start gap-2 py-0.5">
+                          <div key={mIdx} className="flex items-start gap-1.5 py-0.5">
                             <span className="text-[#38BDF8] shrink-0">•</span>
                             <div>
-                              <span className="text-[#16C7A1] font-mono font-semibold px-1 rounded bg-[#063D48]">
+                              <span className="text-[#16C7A1] font-mono font-semibold px-1 rounded bg-[#063D48] text-[11px]">
                                 {item.file}
                               </span>{" "}
-                              <span className="text-[#C3D5D8]">— {item.desc}</span>
+                              <span className="text-[#C3D5D8] text-[11.5px]">— {item.desc}</span>
                             </div>
                           </div>
                         ))}
@@ -3120,12 +3097,12 @@ export default function Home() {
                     </div>
 
                     {/* Card 6: Quick Start */}
-                    <div className="rounded-[12px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#10B981] p-4 sm:p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Play className="w-4 h-4 text-[#34D399]" />
-                        <h4 className="text-sm font-bold text-[#F7FAFA]">Quick Start</h4>
+                    <div className="rounded-xl bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] border-l-[3px] border-l-[#10B981] p-3.5 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Play className="w-3.5 h-3.5 text-[#34D399]" />
+                        <h4 className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Quick Start</h4>
                       </div>
-                      <div className="space-y-2 text-xs sm:text-[13px]">
+                      <div className="space-y-1.5 text-xs">
                         {[
                           "Clone the repository.",
                           "Install dependencies using `npm install`.",
@@ -3133,14 +3110,14 @@ export default function Home() {
                           "Start the application via its entry point `app.ts`.",
                           "Review the 88 defined routes and the `FEATURE_DEFS` entity to understand core functionalities."
                         ].map((step, qsIdx) => (
-                          <div key={qsIdx} className="flex items-start gap-2.5">
-                            <div className="w-5 h-5 rounded-full bg-[#16C7A1]/20 text-[#16C7A1] text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          <div key={qsIdx} className="flex items-start gap-2">
+                            <div className="w-4 h-4 rounded-full bg-[#16C7A1]/20 text-[#16C7A1] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                               {qsIdx + 1}
                             </div>
-                            <div className="text-[#C3D5D8] leading-relaxed">
+                            <div className="text-[#C3D5D8] leading-relaxed text-[11.5px]">
                               {step.split(/(`[^`]+`)/).map((chunk, cIdx) =>
                                 chunk.startsWith("`") && chunk.endsWith("`") ? (
-                                  <span key={cIdx} className="text-[#16C7A1] font-mono font-semibold px-1 rounded bg-[#063D48]">
+                                  <span key={cIdx} className="text-[#16C7A1] font-mono font-semibold px-1 rounded bg-[#063D48] text-[11px]">
                                     {chunk.slice(1, -1)}
                                   </span>
                                 ) : (
@@ -3155,19 +3132,19 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ── 4. Refactoring Recommendations (Sleek, Balanced Analytical Panel) ── */}
-                <div className="rounded-[20px] bg-[rgba(7,67,77,0.78)] backdrop-blur-xl border border-[rgba(155,232,224,0.16)] p-5 sm:p-6 relative overflow-hidden shadow-xl">
+                {/* ── 4. Refactoring Recommendations ── */}
+                <div className="rounded-2xl bg-[rgba(7,67,77,0.78)] backdrop-blur-xl border border-[rgba(155,232,224,0.16)] p-4 sm:p-5 relative overflow-hidden shadow-lg">
                   {/* Header Row */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10 pb-2 border-b border-[rgba(155,232,224,0.08)]">
-                    <div className="flex items-center gap-3.5 sm:gap-4">
-                      <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-[12px] sm:rounded-[14px] bg-[rgba(245,184,0,0.15)] border border-[rgba(245,184,0,0.30)] text-[#F5B800] flex items-center justify-center shrink-0 shadow-md">
-                        <Lightbulb className="w-6 h-6 sm:w-7 sm:h-7 text-[#F5B800]" />
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 relative z-10 pb-2 border-b border-[rgba(155,232,224,0.08)]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[rgba(245,184,0,0.15)] border border-[rgba(245,184,0,0.30)] text-[#F5B800] flex items-center justify-center shrink-0 shadow-sm">
+                        <Lightbulb className="w-4.5 h-4.5 text-[#F5B800]" />
                       </div>
                       <div>
-                        <h2 className="text-lg sm:text-[22px] font-bold text-[#F5B800] tracking-tight leading-tight">
+                        <h2 className="text-sm sm:text-base font-bold text-[#F5B800] tracking-tight leading-tight">
                           Refactoring Recommendations
                         </h2>
-                        <p className="text-xs sm:text-[14px] text-[#C3D5D8] mt-0.5 font-normal">
+                        <p className="text-[11px] text-[#C3D5D8] mt-0.5 font-normal">
                           Suggestions to improve code quality and maintainability.
                         </p>
                       </div>
@@ -3175,14 +3152,14 @@ export default function Home() {
 
                     {/* 5 Items Badge */}
                     <div className="flex items-center">
-                      <div className="px-4 py-1.5 sm:px-5 sm:py-2 rounded-full bg-[rgba(245,184,0,0.15)] border border-[rgba(245,184,0,0.35)] text-[#F5B800] text-xs sm:text-sm font-bold shrink-0 shadow-xs">
+                      <div className="px-3 py-1 rounded-full bg-[rgba(245,184,0,0.15)] border border-[rgba(245,184,0,0.35)] text-[#F5B800] text-[11px] font-bold shrink-0 shadow-xs">
                         5 Items
                       </div>
                     </div>
                   </div>
 
                   {/* Recommendation Rows */}
-                  <div className="space-y-2.5 mt-4 sm:mt-5 relative z-10">
+                  <div className="space-y-2 mt-3 relative z-10">
                     {[
                       {
                         icon: Trash2,
@@ -3222,19 +3199,19 @@ export default function Home() {
                     ].map((rec, rIdx) => (
                       <div
                         key={rIdx}
-                        className={`min-h-[64px] sm:min-h-[68px] rounded-[12px] sm:rounded-[14px] bg-[rgba(6,61,72,0.65)] hover:bg-[rgba(8,76,88,0.85)] border border-[rgba(155,232,224,0.10)] hover:border-[rgba(155,232,224,0.28)] border-l-[4px] sm:border-l-[5px] ${rec.borderAccent} px-3.5 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between gap-3 sm:gap-4 transition-all duration-200 group relative overflow-hidden shadow-sm cursor-pointer`}
+                        className={`min-h-[44px] sm:min-h-[48px] rounded-xl bg-[rgba(6,61,72,0.65)] hover:bg-[rgba(8,76,88,0.85)] border border-[rgba(155,232,224,0.10)] hover:border-[rgba(155,232,224,0.28)] border-l-[3px] sm:border-l-[4px] ${rec.borderAccent} px-3 py-2 flex items-center justify-between gap-3 transition-all duration-150 group relative overflow-hidden shadow-sm cursor-pointer`}
                       >
-                        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                          <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[10px] sm:rounded-[12px] ${rec.iconBg} ${rec.iconColor} flex items-center justify-center shrink-0 shadow-sm`}>
-                            <rec.icon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${rec.iconBg} ${rec.iconColor} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <rec.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </div>
-                          <span className="text-xs sm:text-[15px] font-semibold text-[#F7FAFA] leading-snug truncate group-hover:text-white transition-colors">
+                          <span className="text-xs sm:text-[13px] font-semibold text-[#F7FAFA] leading-snug truncate group-hover:text-white transition-colors">
                             {rec.text}
                           </span>
                         </div>
 
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] bg-[rgba(155,232,224,0.07)] group-hover:bg-[rgba(155,232,224,0.18)] flex items-center justify-center text-[#8EA9AE] group-hover:text-[#9BE8E0] transition-all shrink-0">
-                          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-0.5 transition-transform" />
+                        <div className="w-6 h-6 rounded-md bg-[rgba(155,232,224,0.07)] group-hover:bg-[rgba(155,232,224,0.18)] flex items-center justify-center text-[#8EA9AE] group-hover:text-[#9BE8E0] transition-all shrink-0">
+                          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                         </div>
                       </div>
                     ))}

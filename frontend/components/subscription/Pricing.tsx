@@ -52,28 +52,28 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-12"
+          className="text-center mb-8 sm:mb-10"
         >
           {/* Eyebrow Pill */}
-          <div className="inline-flex items-center gap-2 h-7 px-3.5 rounded-full bg-[rgba(32,214,216,0.10)] border border-[rgba(32,214,216,0.25)] mb-3.5 shadow-sm">
-            <span className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8]">
+          <div className="inline-flex items-center gap-1.5 h-6 px-3 rounded-full bg-[rgba(32,214,216,0.10)] border border-[rgba(32,214,216,0.25)] mb-2.5 shadow-sm">
+            <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#20D6D8]">
               TRANSPARENT PRICING
             </span>
           </div>
 
           {/* Main Heading */}
-          <h2 className="text-3xl sm:text-[38px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
+          <h2 className="text-2xl sm:text-[32px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2">
             Choose Your Plan
           </h2>
 
           {/* Subtitle */}
-          <p className="text-[#9BC9CE] text-[15px] sm:text-[16px] leading-relaxed max-w-[700px] mx-auto">
+          <p className="text-[#9BC9CE] text-[14px] sm:text-[15px] leading-relaxed max-w-[600px] mx-auto">
             Start for free with 2 repository scans. Upgrade as your team grows.
           </p>
         </motion.div>
 
         {/* ── 3 Pricing Cards Grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
           {plans.map((planKey, idx) => {
             const plan = PLAN_CONFIG[planKey];
             const isPro = planKey === 'professional';
@@ -88,9 +88,9 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className={`relative rounded-[20px] p-8 sm:p-9 min-h-[520px] flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
+                className={`relative rounded-[18px] p-6 sm:p-7 min-h-[460px] flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
                   isPro
-                    ? 'bg-[#DDF6F1] text-[#073942] border-2 border-[#20D6D8] shadow-[0_12px_40px_rgba(32,214,216,0.18)] scale-[1.02] z-20'
+                    ? 'bg-[#DDF6F1] text-[#073942] border-2 border-[#20D6D8] shadow-[0_12px_36px_rgba(32,214,216,0.18)] scale-[1.02] z-20'
                     : 'bg-[#104957] text-[#D5E8EB] border border-[rgba(32,214,216,0.22)] hover:border-[rgba(32,214,216,0.45)] shadow-lg'
                 }`}
               >
@@ -99,32 +99,32 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                   <motion.div
                     animate={{ y: [-1, 1, -1] }}
                     transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                    className="absolute -top-[16px] left-1/2 -translate-x-1/2 h-8 px-5 rounded-full bg-[#20D6D8] text-[#073942] text-[12px] font-bold uppercase tracking-[1.5px] shadow-md flex items-center justify-center pointer-events-none"
+                    className="absolute -top-[14px] left-1/2 -translate-x-1/2 h-7 px-4 rounded-full bg-[#20D6D8] text-[#073942] text-[11px] font-bold uppercase tracking-[1.2px] shadow-md flex items-center justify-center pointer-events-none"
                   >
                     RECOMMENDED
                   </motion.div>
                 )}
 
                 <div>
-                  {/* Icon Block (64x64px, 16px radius) */}
-                  <div className="mb-6">
-                    <div className={`w-16 h-16 rounded-[16px] flex items-center justify-center mb-4 ${
+                  {/* Icon Block */}
+                  <div className="mb-4">
+                    <div className={`w-12 h-12 rounded-[12px] flex items-center justify-center mb-3 ${
                       isPro
                         ? 'bg-[#c2eee5] text-[#073942]'
                         : 'bg-[#185d6e] text-[#20D6D8]'
                     }`}>
-                      {isTrial && <Layers className="w-8 h-8" />}
-                      {isPro && <Zap className="w-8 h-8 fill-[#073942]" />}
-                      {isEnterprise && <Building2 className="w-8 h-8" />}
+                      {isTrial && <Layers className="w-6 h-6" />}
+                      {isPro && <Zap className="w-6 h-6 fill-[#073942]" />}
+                      {isEnterprise && <Building2 className="w-6 h-6" />}
                     </div>
 
                     {/* Plan Title & Subtitle */}
-                    <h3 className={`text-[22px] sm:text-[24px] font-bold tracking-tight mb-1 ${
+                    <h3 className={`text-[19px] sm:text-[21px] font-bold tracking-tight mb-0.5 ${
                       isPro ? 'text-[#073942]' : 'text-white'
                     }`}>
                       {plan.name}
                     </h3>
-                    <p className={`text-[14px] ${
+                    <p className={`text-[12.5px] sm:text-[13px] ${
                       isPro ? 'text-[#234B53]' : 'text-[#9BC9CE]'
                     }`}>
                       {isTrial
@@ -136,41 +136,41 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                   </div>
 
                   {/* Price Block */}
-                  <div className="mb-6 pb-2 border-b border-black/5 dark:border-white/10">
+                  <div className="mb-5 pb-2 border-b border-black/5 dark:border-white/10">
                     {plan.price === null ? (
-                      <div className="text-[38px] font-extrabold text-white">Custom</div>
+                      <div className="text-[30px] sm:text-[32px] font-extrabold text-white">Custom</div>
                     ) : plan.price === 0 ? (
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-[44px] font-extrabold text-white">Free</span>
-                        <span className="text-[15px] text-[#A9C2C7] font-medium">/ 14 days</span>
+                        <span className="text-[34px] sm:text-[36px] font-extrabold text-white">Free</span>
+                        <span className="text-[13px] text-[#A9C2C7] font-medium">/ 14 days</span>
                       </div>
                     ) : (
                       <div>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-[50px] font-extrabold text-[#073942] tracking-tight leading-none">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-[38px] sm:text-[42px] font-extrabold text-[#073942] tracking-tight leading-none">
                             ${plan.price}
                           </span>
-                          <span className="text-[16px] text-[#3b666e] font-medium">
+                          <span className="text-[14px] text-[#3b666e] font-medium">
                             / {plan.period}
                           </span>
                         </div>
-                        <div className="text-[12px] text-[#2c5861] mt-1 font-medium">
+                        <div className="text-[11px] text-[#2c5861] mt-0.5 font-medium">
                           Billed annually or $32/month
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Features List (14-15px, 20-22px checkmarks) */}
-                  <div className="space-y-3 mb-8 text-[14px] sm:text-[15px]">
+                  {/* Features List */}
+                  <div className="space-y-2.5 mb-6 text-[13px] sm:text-[13.5px]">
                     {plan.features.map((feature, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                      <div key={i} className="flex items-start gap-2.5">
+                        <div className={`w-4.5 h-4.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                           isPro
                             ? 'bg-[#79DDD3] text-[#073942]'
                             : 'bg-[#1b6272] text-[#79E1D7]'
                         }`}>
-                          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <Check className="w-3 h-3 stroke-[2.5]" />
                         </div>
                         <span className={`leading-snug ${
                           isPro ? 'text-[#073942] font-medium' : 'text-[#D5E8EB]'
@@ -182,19 +182,19 @@ export default function Pricing({ onSelectPlan, currentPlan }: PricingProps) {
                   </div>
                 </div>
 
-                {/* ── Action Buttons (Equal Height 54px, Bottom Aligned with mt-auto) ── */}
-                <div className="mt-auto pt-4">
+                {/* ── Action Buttons (Equal Height 46px, Bottom Aligned with mt-auto) ── */}
+                <div className="mt-auto pt-3">
                   <button
                     onClick={() => onSelectPlan(planKey)}
                     disabled={isCurrent}
-                    className={`group w-full h-[54px] rounded-[12px] font-bold text-[15px] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${
+                    className={`group w-full h-[46px] rounded-[10px] font-bold text-[14px] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm cursor-pointer ${
                       isCurrent
                         ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
                         : isPro
-                        ? 'bg-[#F52B36] text-white hover:bg-[#d0232d] shadow-lg shadow-red-500/25 active:scale-[0.98]'
+                        ? 'bg-[#F52B36] text-white hover:bg-[#d0232d] shadow-md shadow-red-500/25 active:scale-[0.98]'
                         : isEnterprise
                         ? 'bg-transparent text-[#F52B36] border-2 border-[#F52B36] hover:bg-[#F52B36] hover:text-white active:scale-[0.98]'
-                        : 'bg-[#F52B36] text-white hover:bg-[#d0232d] shadow-md active:scale-[0.98]'
+                        : 'bg-[#F52B36] text-white hover:bg-[#d0232d] shadow-sm active:scale-[0.98]'
                     }`}
                   >
                     <span>

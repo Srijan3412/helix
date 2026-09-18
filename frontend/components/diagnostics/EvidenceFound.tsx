@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { FileText, ArrowRight, ChevronRight, CheckCircle2 } from "lucide-react";
+import { FileText, CheckCircle2 } from "lucide-react";
 
 interface EvidenceFoundProps {
   evidence?: string[];
@@ -37,20 +37,20 @@ export default function EvidenceFound({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.22 }}
-      className="w-full rounded-[16px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] p-5 relative overflow-hidden shadow-md text-left flex flex-col justify-between h-auto min-h-0"
+      transition={{ delay: 0.18 }}
+      className="w-full rounded-[14px] bg-[rgba(8,70,80,0.75)] backdrop-blur-md border border-[rgba(155,232,224,0.18)] p-4 sm:p-4.5 relative overflow-hidden shadow-sm text-left flex flex-col justify-between h-auto min-h-0"
     >
       <div>
         {/* ── Top Header: Document Icon + Title ── */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] bg-[#084C58] text-[#9BE8E0] flex items-center justify-center shrink-0 shadow-xs">
-              <FileText size={18} />
+        <div className="flex items-center justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-[8px] bg-[#084C58] text-[#9BE8E0] flex items-center justify-center shrink-0 shadow-xs">
+              <FileText size={15} />
             </div>
             <div>
-              <h3 className="text-sm sm:text-[15px] font-bold text-[#F7FAFA] leading-snug">
+              <h3 className="text-sm font-bold text-[#F7FAFA] leading-snug">
                 Evidence Found
               </h3>
               <p className="text-[11px] text-[#C3D5D8] leading-tight">
@@ -61,22 +61,22 @@ export default function EvidenceFound({
         </div>
 
         {/* ── Findings List ── */}
-        <div className="space-y-2 mt-2">
+        <div className="space-y-1.5 mt-1.5">
           {findings.map((item, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between gap-3 py-1 px-2.5 rounded-[8px] bg-[rgba(6,47,56,0.60)] border border-[rgba(155,232,224,0.08)] hover:border-[rgba(155,232,224,0.20)] transition-all"
+              className="flex items-center justify-between gap-2.5 py-1 px-2.5 rounded-[8px] bg-[rgba(6,47,56,0.60)] border border-[rgba(155,232,224,0.08)] hover:border-[rgba(155,232,224,0.20)] transition-all"
             >
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="w-4 h-4 rounded-full bg-[#0E5462] flex items-center justify-center shrink-0 text-[#9BE8E0]">
-                  <CheckCircle2 size={12} />
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="w-3.5 h-3.5 rounded-full bg-[#0E5462] flex items-center justify-center shrink-0 text-[#9BE8E0]">
+                  <CheckCircle2 size={11} />
                 </div>
                 <span className="text-xs font-medium text-[#E1F1F3] truncate">
                   {item.text}
                 </span>
               </div>
 
-              <span className="px-2 py-0.5 rounded-[6px] bg-[rgba(4,38,46,0.85)] border border-[rgba(155,232,224,0.15)] text-[10.5px] font-mono text-[#9BE8E0] shrink-0">
+              <span className="px-1.5 py-0.5 rounded-[5px] bg-[rgba(4,38,46,0.85)] border border-[rgba(155,232,224,0.15)] text-[10px] font-mono text-[#9BE8E0] shrink-0">
                 {item.tag}
               </span>
             </div>

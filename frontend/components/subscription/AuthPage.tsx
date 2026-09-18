@@ -190,19 +190,20 @@ export default function AuthPage({
       </div>
 
       {/* ── Main Centered Content ─────────────────────────────────────── */}
-      <div className="relative z-10 w-full max-w-[560px] sm:max-w-[580px] flex flex-col items-center">
+      {/* ── Main Centered Content ─────────────────────────────────────── */}
+      <div className="relative z-10 w-full max-w-[440px] sm:max-w-[460px] flex flex-col items-center">
         
         {/* Brand Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#20D6D8]/35 bg-[rgba(6,61,72,0.50)] backdrop-blur-md mb-6 shadow-xs">
-          <Terminal className="w-3.5 h-3.5 text-[#20D6D8]" />
-          <span className="text-[12px] font-bold uppercase tracking-[2px] text-[#20D6D8]">
+        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-[#20D6D8]/35 bg-[rgba(6,61,72,0.50)] backdrop-blur-md mb-4 shadow-xs">
+          <Terminal className="w-3 h-3 text-[#20D6D8]" />
+          <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#20D6D8]">
             REPOSITORY INTELLIGENCE
           </span>
         </div>
 
         {/* Heading & Subtitle */}
-        <div className="text-center mb-7 sm:mb-8">
-          <h1 className="text-3xl sm:text-[40px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-2.5">
+        <div className="text-center mb-5 sm:mb-6">
+          <h1 className="text-2xl sm:text-[28px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mb-1.5">
             {mode === 'signin' ? (
               <>Welcome <span className="text-[#20D6D8]">back</span></>
             ) : mode === 'signup' ? (
@@ -211,7 +212,7 @@ export default function AuthPage({
               <>Verify your <span className="text-[#20D6D8]">email</span></>
             )}
           </h1>
-          <p className="text-[15px] sm:text-[16px] text-[#9BC9CE] max-w-md mx-auto leading-relaxed">
+          <p className="text-[13px] sm:text-[14px] text-[#9BC9CE] max-w-sm mx-auto leading-relaxed">
             {mode === 'signin'
               ? 'Sign in to access your dashboard'
               : mode === 'signup'
@@ -221,17 +222,17 @@ export default function AuthPage({
         </div>
 
         {/* ── Form Card ──────────────────────────────────────────────── */}
-        <div className="w-full bg-[rgba(6,61,72,0.42)] border border-[rgba(32,214,216,0.35)] rounded-[20px] p-7 sm:p-10 backdrop-blur-xl shadow-2xl relative text-left">
+        <div className="w-full bg-[rgba(6,61,72,0.42)] border border-[rgba(32,214,216,0.30)] rounded-[18px] p-6 sm:p-8 backdrop-blur-xl shadow-2xl relative text-left">
           
           {successMessage && (
-            <div className="mb-5 flex items-center gap-2.5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm">
+            <div className="mb-4 flex items-center gap-2.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
               <span>{successMessage}</span>
             </div>
           )}
 
           {error && (
-            <div className="mb-5 flex items-center gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs sm:text-sm">
+            <div className="mb-4 flex items-center gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0 text-[#FF3344]" />
               <span>{error}</span>
             </div>
@@ -253,21 +254,21 @@ export default function AuthPage({
             />
           ) : (
             <>
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 
                 {/* Email Field */}
                 <div>
-                  <label className="text-[12px] font-bold uppercase tracking-[1px] text-[#9BC9CE] mb-2 block">
+                  <label className="text-[11px] font-bold uppercase tracking-[0.8px] text-[#9BC9CE] mb-1.5 block">
                     Email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9BC9CE]" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9BC9CE]" />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-[54px] pl-12 pr-4 bg-[rgba(8,76,88,0.45)] border border-[rgba(32,214,216,0.25)] rounded-[12px] text-[15px] text-[#F7FAFA] placeholder:text-[#79A4A8] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/30 transition"
+                      className="w-full h-[46px] pl-10 pr-4 bg-[rgba(8,76,88,0.45)] border border-[rgba(32,214,216,0.25)] rounded-[10px] text-[14px] text-[#F7FAFA] placeholder:text-[#79A4A8] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/30 transition"
                       placeholder="you@example.com"
                     />
                   </div>
@@ -275,27 +276,27 @@ export default function AuthPage({
 
                 {/* Password Field */}
                 <div>
-                  <label className="text-[12px] font-bold uppercase tracking-[1px] text-[#9BC9CE] mb-2 block">
+                  <label className="text-[11px] font-bold uppercase tracking-[0.8px] text-[#9BC9CE] mb-1.5 block">
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9BC9CE]" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9BC9CE]" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
                       minLength={6}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-[54px] pl-12 pr-12 bg-[rgba(8,76,88,0.45)] border border-[rgba(32,214,216,0.25)] rounded-[12px] text-[15px] text-[#F7FAFA] placeholder:text-[#79A4A8] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/30 transition"
+                      className="w-full h-[46px] pl-10 pr-10 bg-[rgba(8,76,88,0.45)] border border-[rgba(32,214,216,0.25)] rounded-[10px] text-[14px] text-[#F7FAFA] placeholder:text-[#79A4A8] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/30 transition"
                       placeholder="Min. 6 characters"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9BC9CE] hover:text-[#20D6D8] transition p-1 cursor-pointer"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9BC9CE] hover:text-[#20D6D8] transition p-1 cursor-pointer"
                       title={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -304,26 +305,26 @@ export default function AuthPage({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-[54px] rounded-[12px] bg-[#FF3344] hover:bg-[#e02636] active:translate-y-[1px] text-white font-bold text-[15px] sm:text-[16px] shadow-lg shadow-[#FF3344]/25 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                  className="w-full h-[46px] rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] active:translate-y-[1px] text-white font-bold text-[14px] sm:text-[15px] shadow-md shadow-[#FF3344]/25 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
                 >
                   {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
                       <span>{mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
               </form>
 
               {/* Divider */}
-              <div className="relative my-6">
+              <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[rgba(155,232,224,0.20)]" />
+                  <div className="w-full border-t border-[rgba(155,232,224,0.18)]" />
                 </div>
-                <div className="relative flex justify-center text-[11px] sm:text-[12px] uppercase">
-                  <span className="bg-[#074754] px-3.5 py-0.5 rounded text-[#9BE8E0]/80 font-mono tracking-[0.08em]">
+                <div className="relative flex justify-center text-[11px] uppercase">
+                  <span className="bg-[#074754] px-3 py-0.5 rounded text-[#9BE8E0]/80 font-mono tracking-[0.06em]">
                     Or continue with
                   </span>
                 </div>
@@ -334,12 +335,12 @@ export default function AuthPage({
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={loading || googleLoading}
-                className="w-full h-[54px] rounded-[12px] bg-[rgba(8,76,88,0.42)] hover:bg-[rgba(8,76,88,0.65)] border border-[rgba(155,232,224,0.20)] text-[#F7FAFA] text-[15px] sm:text-[16px] font-medium transition flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+                className="w-full h-[46px] rounded-[10px] bg-[rgba(8,76,88,0.42)] hover:bg-[rgba(8,76,88,0.65)] border border-[rgba(155,232,224,0.20)] text-[#F7FAFA] text-[14px] font-medium transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
               >
                 {googleLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-[#9BE8E0]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#9BE8E0]" />
                 ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -362,7 +363,7 @@ export default function AuthPage({
               </button>
 
               {/* Mode Switch & Forgot Password Links */}
-              <div className="mt-6 text-center space-y-3">
+              <div className="mt-5 text-center space-y-2">
                 <div>
                   <button
                     type="button"
@@ -371,7 +372,7 @@ export default function AuthPage({
                       setError(null);
                       setSuccessMessage(null);
                     }}
-                    className="text-[14px] sm:text-[15px] text-[#C3D5D8] hover:text-white transition cursor-pointer"
+                    className="text-[13px] sm:text-[14px] text-[#C3D5D8] hover:text-white transition cursor-pointer"
                   >
                     {mode === 'signin' ? (
                       <>
@@ -391,7 +392,7 @@ export default function AuthPage({
                   <button
                     type="button"
                     onClick={() => setShowForgotPassword(true)}
-                    className="text-[13px] sm:text-[14px] text-[#8EA9AE] hover:text-[#16C7A1] transition cursor-pointer"
+                    className="text-[12px] sm:text-[13px] text-[#8EA9AE] hover:text-[#16C7A1] transition cursor-pointer"
                   >
                     Forgot password?
                   </button>
@@ -402,17 +403,17 @@ export default function AuthPage({
         </div>
 
         {/* ── Bottom Capability Row ──────────────────────────────────── */}
-        <div className="mt-7 sm:mt-8 flex items-center justify-center gap-6 sm:gap-8 text-[14px] text-[#C3D5D8] relative z-10">
-          <span className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#16C7A1]" /> 3 repos free
+        <div className="mt-5 sm:mt-6 flex items-center justify-center gap-5 sm:gap-6 text-[12px] sm:text-[13px] text-[#C3D5D8] relative z-10">
+          <span className="flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-[#16C7A1]" /> 3 repos free
           </span>
           <span className="text-[rgba(155,232,224,0.25)]">|</span>
-          <span className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-[#16C7A1]" /> 20 AI chats
+          <span className="flex items-center gap-1.5">
+            <MessageSquare className="w-3.5 h-3.5 text-[#16C7A1]" /> 20 AI chats
           </span>
           <span className="text-[rgba(155,232,224,0.25)]">|</span>
-          <span className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-[#16C7A1]" /> 14 days
+          <span className="flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-[#16C7A1]" /> 14 days
           </span>
         </div>
       </div>
