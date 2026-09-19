@@ -249,10 +249,10 @@ export default function OverviewAnalytics({
                   <Layers size={15} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[#F4EDE5] leading-snug">
+                  <h3 className="text-sm sm:text-base font-bold text-[#F4EDE5] leading-snug">
                     Detected Technology Stack
                   </h3>
-                  <p className="text-[11px] text-[#8EDBD5] leading-tight">
+                  <p className="text-[11px] sm:text-xs text-[#8EDBD5] mt-0.5 leading-tight">
                     Automatically identified technologies and tools in your repository.
                   </p>
                 </div>
@@ -357,10 +357,10 @@ export default function OverviewAnalytics({
                   <FolderTree size={15} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[#F4EDE5] leading-snug">
+                  <h3 className="text-sm sm:text-base font-bold text-[#F4EDE5] leading-snug">
                     Project Structure
                   </h3>
-                  <p className="text-[11px] text-[#8EDBD5] leading-tight">
+                  <p className="text-[11px] sm:text-xs text-[#8EDBD5] mt-0.5 leading-tight">
                     High-level directory analysis.
                   </p>
                 </div>

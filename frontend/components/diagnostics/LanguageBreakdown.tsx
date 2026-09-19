@@ -490,7 +490,7 @@ export default function LanguageBreakdown({
                 Core Entrypoints
               </h2>
               {/* Point 2: Subtitle (15-16px #91B7BA) */}
-              <p className="text-xs sm:text-[14px] text-[#91B7BA] mt-0.5 leading-snug">
+              <p className="text-xs sm:text-[14px] text-[#8EB5B8] mt-0.5 leading-snug">
                 Most important files in your codebase.
               </p>
             </div>
@@ -550,7 +550,7 @@ export default function LanguageBreakdown({
                       {entryPath}
                     </div>
                     {/* Description */}
-                    <div className="text-[11px] sm:text-[12px] text-[#91B7BA] truncate mt-0.5 leading-tight">
+                    <div className="text-[11px] sm:text-[11.5px] text-[#8EB5B8] truncate mt-0.5 leading-tight">
                       {description}
                     </div>
 
