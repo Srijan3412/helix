@@ -14,29 +14,28 @@ export default function RelatedFiles({
   onSelectFile,
 }: RelatedFilesProps) {
   // Key configuration and core files
-  const displayFiles = React.useMemo(() => {
-    if (files && files.length > 0) {
-      const priority = files.filter((f) => {
-        const p = f.path.toLowerCase();
-        return (
-          p.includes("workflow") ||
-          p.includes("docker") ||
-          p.includes("config") ||
-          p.includes("package.json") ||
-          p.includes(".env") ||
-          p.includes(".gitignore") ||
-          p.endsWith(".ts") ||
-          p.endsWith(".tsx") ||
-          p.endsWith(".js")
-        );
-      });
-      if (priority.length > 0) {
-        return priority.slice(0, 3).map((f) => f.path);
-      }
-      return files.slice(0, 3).map((f) => f.path);
+  let displayFiles: string[] = [".github/workflows/ci.yml", ".gitignore", "package.json"];
+  if (files && files.length > 0) {
+    const priority = files.filter((f) => {
+      const p = f.path.toLowerCase();
+      return (
+        p.includes("workflow") ||
+        p.includes("docker") ||
+        p.includes("config") ||
+        p.includes("package.json") ||
+        p.includes(".env") ||
+        p.includes(".gitignore") ||
+        p.endsWith(".ts") ||
+        p.endsWith(".tsx") ||
+        p.endsWith(".js")
+      );
+    });
+    if (priority.length > 0) {
+      displayFiles = priority.slice(0, 3).map((f) => f.path);
+    } else {
+      displayFiles = files.slice(0, 3).map((f) => f.path);
     }
-    return [".github/workflows/ci.yml", ".gitignore", "package.json"];
-  }, [files]);
+  }
 
   return (
     <motion.div

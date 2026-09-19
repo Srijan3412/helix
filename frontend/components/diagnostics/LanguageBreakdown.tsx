@@ -207,32 +207,37 @@ export default function LanguageBreakdown({
   // SVG Donut Chart Calculation (Compact Sizing)
   const radius = 50;
   const circumference = 2 * Math.PI * radius;
-  let accumulatedPercent = 0;
 
-  const donutSegments = displayLanguages.map(([lang, lines], idx) => {
-    const rawPercent = (lines / totalLines) * 100;
-    const percent = Math.max(rawPercent, 1.2); // minimum slice for visual distinction
-    const strokeDasharray = `${(percent / 100) * circumference} ${circumference}`;
-    const strokeDashoffset = -((accumulatedPercent / 100) * circumference);
-    accumulatedPercent += percent;
+  const donutSegments = useMemo(() => {
+    const percentages = displayLanguages.map(([_, lines]) =>
+      Math.max((lines / totalLines) * 100, 1.2)
+    );
 
-    const config =
-      languageConfig[lang] || {
-        color: fallbackColors[idx % fallbackColors.length],
-        bg: "bg-teal-500/20",
-        text: "text-teal-400",
-        label: lang.slice(0, 2).toUpperCase(),
+    return displayLanguages.map(([lang, lines], idx) => {
+      const rawPercent = (lines / totalLines) * 100;
+      const percent = percentages[idx];
+      const priorSum = percentages.slice(0, idx).reduce((sum, p) => sum + p, 0);
+      const strokeDasharray = `${(percent / 100) * circumference} ${circumference}`;
+      const strokeDashoffset = -((priorSum / 100) * circumference);
+
+      const config =
+        languageConfig[lang] || {
+          color: fallbackColors[idx % fallbackColors.length],
+          bg: "bg-teal-500/20",
+          text: "text-teal-400",
+          label: lang.slice(0, 2).toUpperCase(),
+        };
+
+      return {
+        lang,
+        lines,
+        rawPercent,
+        strokeDasharray,
+        strokeDashoffset,
+        color: config.color,
       };
-
-    return {
-      lang,
-      lines,
-      rawPercent,
-      strokeDasharray,
-      strokeDashoffset,
-      color: config.color,
-    };
-  });
+    });
+  }, [displayLanguages, totalLines, circumference]);
 
   const visibleEntrypoints = isExpanded ? entryPoints : entryPoints.slice(0, 5);
 
