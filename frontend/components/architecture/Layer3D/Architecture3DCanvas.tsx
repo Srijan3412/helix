@@ -268,12 +268,8 @@ export const Architecture3DCanvas: React.FC<Architecture3DProps> = ({
       <div className="relative z-30 mt-auto flex flex-wrap items-center justify-between gap-2 p-3 border-t border-[rgba(120,200,210,0.12)] bg-[#050E13]/85 backdrop-blur-md text-[10px] text-[#9FB0B3]">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center gap-1.5 font-mono text-[#00D2FF] font-semibold">
-            <Sparkles size={12} className="text-[#00D2FF] animate-pulse" />
-            <span>Master 3D Architecture Stack</span>
-          </span>
-          <span className="text-[#9FB0B3]/30">|</span>
-          <span className="hidden md:inline-block font-mono text-[9px] text-[#9FB0B3]/70">
-            PBR Studio Lighting • Interactive 6-Layer Hierarchy • Click slab to Inspect
+            <Sparkles size={12} className="text-[#00D2FF]" />
+            <span>3D Layer Architecture</span>
           </span>
         </div>
 
