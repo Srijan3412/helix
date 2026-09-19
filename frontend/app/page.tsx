@@ -3885,163 +3885,77 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                  className="w-[360px] sm:w-[440px] md:w-[480px] h-[580px] sm:h-[620px] bg-[#032328] border border-[#176873]/60 rounded-2xl shadow-2xl shadow-black/70 flex flex-col overflow-hidden mb-4 backdrop-blur-2xl text-left select-none font-sans"
+                  className="w-[340px] sm:w-[400px] h-[520px] sm:h-[560px] bg-[#032328] border border-[#176873]/60 rounded-2xl shadow-2xl shadow-black/80 flex flex-col overflow-hidden mb-4 backdrop-blur-2xl text-left font-sans"
                 >
-                  {/* 1. Header matching Image 2 */}
-                  <div className="p-4 sm:p-5 bg-[#032328] border-b border-[#176873]/30 flex items-center justify-between">
+                  {/* Clean Chatbot Header */}
+                  <div className="px-4 py-3.5 bg-[#041E22] border-b border-[#176873]/40 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#F52F45] to-[#E02438] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#F52F45]/30">
-                        <Bot className="w-6 h-6 text-white" />
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#20D6D8] to-[#12B5B7] text-[#032328] flex items-center justify-center shrink-0 shadow-md shadow-[#20D6D8]/20">
+                        <Bot className="w-5 h-5 text-[#032328]" />
                       </div>
                       <div>
-                        <span className="text-sm sm:text-base font-extrabold text-white block leading-tight">
-                          AI Architect Assistant
-                        </span>
-                        <span className="text-xs text-[#20D6D8] block mt-0.5 font-mono">
-                          Q&A on {result.tree?.name || "helix.git"}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white leading-tight">
+                            AI Code Assistant
+                          </span>
+                          <span className="w-2 h-2 rounded-full bg-[#20D6D8] animate-pulse" />
+                        </div>
+                        <span className="text-[11px] text-[#82AEB5] block font-mono truncate max-w-[180px]">
+                          {result.tree?.name || "helix.git"}
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setIsChatOpen(false)}
-                      className="w-8 h-8 rounded-lg bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-[#9BC9CE] hover:text-white flex items-center justify-center transition cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {chatHistory.length > 0 && (
+                        <button
+                          onClick={() => setChatHistory([])}
+                          title="Clear conversation"
+                          className="p-1.5 rounded-lg text-[#82AEB5] hover:text-[#F52F45] hover:bg-[#063038] transition cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setIsChatOpen(false)}
+                        className="p-1.5 rounded-lg text-[#82AEB5] hover:text-white hover:bg-[#063038] transition cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* 2. Navigation Tabs (Ask | Explain Code | Find Issues) */}
-                  <div className="flex items-center px-5 pt-3 border-b border-[#176873]/30 bg-[#032328]/60 gap-6">
-                    <button
-                      onClick={() => setActiveChatTab("ask")}
-                      className={`flex items-center gap-2 pb-2.5 text-xs font-bold transition-all relative cursor-pointer ${
-                        activeChatTab === "ask"
-                          ? "text-white"
-                          : "text-[#82AEB5] hover:text-white"
-                      }`}
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 text-[#F52F45]" />
-                      <span>Ask</span>
-                      {activeChatTab === "ask" && (
-                        <motion.div
-                          layoutId="chatTabIndicator"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F52F45] rounded-full"
-                        />
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActiveChatTab("explain");
-                        setChatMessage("Explain the architecture and main workflows of this project");
-                      }}
-                      className={`flex items-center gap-2 pb-2.5 text-xs font-bold transition-all relative cursor-pointer ${
-                        activeChatTab === "explain"
-                          ? "text-white"
-                          : "text-[#82AEB5] hover:text-white"
-                      }`}
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>Explain Code</span>
-                      {activeChatTab === "explain" && (
-                        <motion.div
-                          layoutId="chatTabIndicator"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F52F45] rounded-full"
-                        />
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActiveChatTab("issues");
-                        setChatMessage("Find potential architecture risks, circular dependencies, or security bottlenecks in this repository");
-                      }}
-                      className={`flex items-center gap-2 pb-2.5 text-xs font-bold transition-all relative cursor-pointer ${
-                        activeChatTab === "issues"
-                          ? "text-white"
-                          : "text-[#82AEB5] hover:text-white"
-                      }`}
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Find Issues</span>
-                      {activeChatTab === "issues" && (
-                        <motion.div
-                          layoutId="chatTabIndicator"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F52F45] rounded-full"
-                        />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* 3. Message List or Empty State */}
-                  <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 flex flex-col justify-between">
+                  {/* Messages / Welcome Container */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-between">
                     {chatHistory.length === 0 ? (
-                      <div className="h-full flex flex-col items-center justify-center text-center my-auto w-full">
-                        {/* Vector Graphic Illustration */}
-                        <div className="relative w-40 h-28 mx-auto flex items-center justify-center mb-2">
-                          <div className="absolute inset-0 bg-[#20D6D8]/10 rounded-full blur-xl" />
-                          <svg viewBox="0 0 160 120" className="w-full h-full drop-shadow-md relative z-10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <ellipse cx="80" cy="108" rx="55" ry="8" fill="#021C21" opacity="0.6" />
-                            <rect x="54" y="44" width="76" height="50" rx="14" fill="#0C4C56" stroke="#176873" strokeWidth="1.5" />
-                            <path d="M72 94 L82 104 L84 94 Z" fill="#0C4C56" />
-                            <line x1="68" y1="60" x2="114" y2="60" stroke="#20D6D8" strokeWidth="3" strokeLinecap="round" />
-                            <line x1="68" y1="72" x2="102" y2="72" stroke="#20D6D8" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
-                            
-                            <rect x="28" y="16" width="84" height="50" rx="14" fill="#FFEAE8" />
-                            <path d="M42 66 L34 76 L48 66 Z" fill="#FFEAE8" />
-                            <text x="38" y="47" fill="#F52F45" fontSize="16" fontWeight="bold" fontFamily="monospace">&lt;/&gt;</text>
-                            <line x1="72" y1="36" x2="98" y2="36" stroke="#F5A3AA" strokeWidth="3" strokeLinecap="round" />
-                            <line x1="72" y1="48" x2="92" y2="48" stroke="#F5A3AA" strokeWidth="3" strokeLinecap="round" />
-                            
-                            <path d="M125 18 L127 24 L133 26 L127 28 L125 34 L123 28 L117 26 L123 24 Z" fill="#20D6D8" />
-                            <path d="M138 32 L139 35 L142 36 L139 37 L138 40 L137 37 L134 36 L137 35 Z" fill="#20D6D8" opacity="0.7" />
-                            <path d="M142 46 L148 48" stroke="#20D6D8" strokeWidth="2" strokeLinecap="round" />
-                          </svg>
+                      <div className="h-full flex flex-col items-center justify-center text-center my-auto py-2">
+                        <div className="w-12 h-12 rounded-2xl bg-[#063038] border border-[#176873]/40 flex items-center justify-center mb-3 text-[#20D6D8] shadow-sm">
+                          <Bot className="w-6 h-6" />
                         </div>
-
-                        <h4 className="text-base sm:text-lg font-extrabold text-white text-center">
-                          Ask anything about this codebase
+                        <h4 className="text-sm font-bold text-white mb-1">
+                          How can I help you?
                         </h4>
-                        <p className="text-xs text-[#9BC9CE] text-center max-w-[290px] mx-auto mt-1 leading-relaxed">
-                          Get code explanations, detect architectural patterns, or scan for vulnerabilities.
+                        <p className="text-xs text-[#82AEB5] mb-5 max-w-[260px] leading-relaxed">
+                          Ask any question about this codebase, architecture, or potential issues.
                         </p>
 
-                        {/* 4 Quick Action Buttons (2x2 Grid) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-5 w-full">
-                          <button
-                            onClick={() => {
-                              const prompt = selectedImpactFile ? `Explain ${selectedImpactFile} and its role in the codebase` : "Explain the core services and their responsibilities";
-                              setChatMessage(prompt);
-                            }}
-                            className="px-3.5 py-2.5 rounded-xl bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-xs font-medium text-white flex items-center gap-2.5 transition-all text-left group hover:border-[#20D6D8]/40 cursor-pointer"
-                          >
-                            <Code2 className="w-4 h-4 text-[#F52F45] shrink-0" />
-                            <span className="truncate">Explain this file</span>
-                          </button>
-
-                          <button
-                            onClick={() => setChatMessage("Can you provide an architectural overview of this project and show major component connections?")}
-                            className="px-3.5 py-2.5 rounded-xl bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-xs font-medium text-white flex items-center gap-2.5 transition-all text-left group hover:border-[#20D6D8]/40 cursor-pointer"
-                          >
-                            <Network className="w-4 h-4 text-[#20D6D8] shrink-0" />
-                            <span className="truncate">Show architecture</span>
-                          </button>
-
-                          <button
-                            onClick={() => setChatMessage("Scan this codebase for potential architecture issues, bottlenecks, or circular dependencies.")}
-                            className="px-3.5 py-2.5 rounded-xl bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-xs font-medium text-white flex items-center gap-2.5 transition-all text-left group hover:border-[#20D6D8]/40 cursor-pointer"
-                          >
-                            <Search className="w-4 h-4 text-[#F52F45] shrink-0" />
-                            <span className="truncate">Find potential issues</span>
-                          </button>
-
-                          <button
-                            onClick={() => setChatMessage("Summarize the key data models, database schemas, and endpoints in this module.")}
-                            className="px-3.5 py-2.5 rounded-xl bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-xs font-medium text-white flex items-center gap-2.5 transition-all text-left group hover:border-[#20D6D8]/40 cursor-pointer"
-                          >
-                            <FileText className="w-4 h-4 text-[#20D6D8] shrink-0" />
-                            <span className="truncate">Summarize this module</span>
-                          </button>
+                        {/* Quick Prompts */}
+                        <div className="flex flex-col gap-2 w-full">
+                          {[
+                            "Explain the core architecture",
+                            "Find potential bugs or bottlenecks",
+                            "Summarize key API routes & models",
+                          ].map((prompt, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setChatMessage(prompt);
+                              }}
+                              className="text-left text-xs text-[#9BC9CE] hover:text-white bg-[#063038]/80 hover:bg-[#0A3F4A] border border-[#176873]/40 hover:border-[#20D6D8]/50 rounded-xl px-3.5 py-2.5 transition flex items-center justify-between group cursor-pointer"
+                            >
+                              <span>{prompt}</span>
+                              <ArrowRight className="w-3.5 h-3.5 text-[#82AEB5] group-hover:text-[#20D6D8] group-hover:translate-x-0.5 transition-all shrink-0" />
+                            </button>
+                          ))}
                         </div>
                       </div>
                     ) : (
@@ -4056,91 +3970,63 @@ export default function Home() {
                               <div
                                 className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
                                   isUser
-                                    ? "bg-[#20D6D8] text-[#002D33] font-semibold rounded-tr-none"
-                                    : "bg-[#063038] text-[#F5FAFA] border border-[#176873]/50 rounded-tl-none"
+                                    ? "bg-[#20D6D8] text-[#002D33] font-medium rounded-tr-none"
+                                    : "bg-[#063038] text-[#F5FAFA] border border-[#176873]/40 rounded-tl-none"
                                 }`}
                               >
-                                <p className="whitespace-pre-wrap">
-                                  {msg.content}
-                                </p>
+                                <p className="whitespace-pre-wrap">{msg.content}</p>
                               </div>
 
                               {/* Agent logs */}
-                              {!isUser &&
-                                msg.agentLogs &&
-                                msg.agentLogs.length > 0 && (
-                                  <div className="mt-1 space-y-1 w-full pl-2">
-                                    {msg.agentLogs.map((log: string, lIdx: number) => (
-                                      <div
-                                        key={lIdx}
-                                        className="text-[10px] text-[#82AEB5] font-mono flex items-center gap-1.5"
-                                      >
-                                        <Terminal className="w-3 h-3 text-[#20D6D8]" />
-                                        {log}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                              {!isUser && msg.agentLogs && msg.agentLogs.length > 0 && (
+                                <div className="mt-1.5 space-y-1 w-full pl-2">
+                                  {msg.agentLogs.map((log: string, lIdx: number) => (
+                                    <div
+                                      key={lIdx}
+                                      className="text-[10px] text-[#82AEB5] font-mono flex items-center gap-1.5"
+                                    >
+                                      <Terminal className="w-3 h-3 text-[#20D6D8]" />
+                                      {log}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
                         {chatMutation.isPending && (
-                          <div className="flex items-center gap-2 text-[#9BC9CE] text-[10px] font-mono pl-1">
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#20D6D8]" />{" "}
-                            Thinking...
+                          <div className="flex items-center gap-2 text-[#9BC9CE] text-xs font-mono pl-1">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#20D6D8]" />
+                            <span>Thinking...</span>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
 
-                  {/* 4. Input Container & Shortcuts Footer matching Image 2 */}
-                  <div className="p-3.5 bg-[#032328] border-t border-[#176873]/30 space-y-2">
-                    <div className="flex items-center gap-2.5 px-3.5 py-2 bg-[#062930] border border-[#176873]/60 rounded-xl focus-within:border-[#20D6D8] transition-all">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (selectedImpactFile) {
-                            setChatMessage((prev) => `${prev ? prev + " " : ""}@${selectedImpactFile} `);
-                          }
-                        }}
-                        title="Attach context"
-                        className="text-[#82AEB5] hover:text-[#20D6D8] transition cursor-pointer"
-                      >
-                        <Paperclip className="w-4 h-4" />
-                      </button>
+                  {/* Clean Chatbot Input */}
+                  <div className="p-3 bg-[#041E22] border-t border-[#176873]/30">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSendChatMessage();
+                      }}
+                      className="flex items-center gap-2 bg-[#062930] border border-[#176873]/50 focus-within:border-[#20D6D8]/60 rounded-xl px-3 py-1.5 transition"
+                    >
                       <input
                         value={chatMessage}
                         onChange={(e) => setChatMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && (e.ctrlKey || e.metaKey || !e.shiftKey)) {
-                            e.preventDefault();
-                            handleSendChatMessage();
-                          }
-                        }}
-                        placeholder="Ask a question..."
+                        placeholder="Type a message..."
                         className="flex-1 bg-transparent text-xs text-white placeholder-[#82AEB5] focus:outline-none"
                       />
                       <button
-                        onClick={handleSendChatMessage}
+                        type="submit"
                         disabled={chatMutation.isPending || !chatMessage.trim()}
-                        className="w-7 h-7 rounded-full bg-[#F52F45] hover:bg-[#FF4055] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#F52F45]/30 disabled:opacity-40 transition-all cursor-pointer"
+                        className="w-7 h-7 rounded-lg bg-[#20D6D8] hover:bg-[#25EBEE] disabled:opacity-30 text-[#032328] flex items-center justify-center shrink-0 transition cursor-pointer shadow-sm shadow-[#20D6D8]/20"
                       >
-                        <Send className="w-3 h-3 text-white fill-white" />
+                        <Send className="w-3.5 h-3.5 text-[#032328]" />
                       </button>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] px-1 text-[#82AEB5]">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <Lightbulb className="w-3.5 h-3.5 text-[#82AEB5] shrink-0" />
-                        <span className="truncate">
-                          Try &ldquo;Explain the analysis queue flow&rdquo;
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-[#6E989E] font-mono shrink-0 pl-2">
-                        Ctrl + ↵ to send
-                      </span>
-                    </div>
+                    </form>
                   </div>
                 </motion.div>
               )}

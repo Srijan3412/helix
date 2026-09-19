@@ -11,6 +11,7 @@ import {
   Code2,
   Boxes,
   Zap,
+  ArrowRight,
 } from "lucide-react";
 
 interface OverviewAnalyticsProps {
@@ -34,7 +35,7 @@ export default function OverviewAnalytics({
   frameworkMetadata,
   files = []
 }: OverviewAnalyticsProps) {
-  // 4 KPI Cards Data with vibrant dark teal styling & exact previous color scheme
+  // 4 KPI Cards Data with exact UI theme colors restored (Solid Red card 1, Crisp White cards 2-4)
   const metrics = [
     {
       label: "FILES ANALYZED",
@@ -42,18 +43,21 @@ export default function OverviewAnalytics({
       trendPercent: "12%",
       trendDirection: "up",
       trendLabel: "vs last scan",
-      accentBorder: "border-[rgba(32,214,216,0.18)]",
-      accentBg: "bg-[#FF3348]/20 text-[#FF4D5E]",
-      accentGlow: "from-[#FF3348]/10 to-transparent",
-      trendColor: "text-[#20D6D8]",
-      curveColor: "#FF4D5E",
-      curveFill: "url(#redCurveGrad)",
+      cardClass: "bg-[#F52F45] text-white shadow-lg shadow-red-500/25 border border-red-400/40",
+      iconClass: "bg-white/20 text-white",
+      titleClass: "text-white/90",
+      numberClass: "text-white",
+      arrowClass: "bg-white/20 text-white hover:bg-white/30",
+      trendHighlightClass: "text-white font-bold",
+      trendLabelClass: "text-white/80",
+      curveColor: "#ffffff",
+      curveFill: "url(#whiteCurveGrad)",
       icon: Files,
       curvePoints: "M 0 26 Q 22 24, 40 14 T 75 7 T 100 3",
       fillPoints: "M 0 26 Q 22 24, 40 14 T 75 7 T 100 3 L 100 30 L 0 30 Z",
-      gradId: "redCurveGrad",
-      gradFrom: "rgba(255, 77, 94, 0.20)",
-      gradTo: "rgba(255, 77, 94, 0.0)"
+      gradId: "whiteCurveGrad",
+      gradFrom: "rgba(255, 255, 255, 0.25)",
+      gradTo: "rgba(255, 255, 255, 0.0)"
     },
     {
       label: "API ROUTES",
@@ -61,18 +65,21 @@ export default function OverviewAnalytics({
       trendPercent: "8%",
       trendDirection: "up",
       trendLabel: "vs last scan",
-      accentBorder: "border-[rgba(32,214,216,0.18)]",
-      accentBg: "bg-[#20D6D8]/20 text-[#20D6D8]",
-      accentGlow: "from-[#20D6D8]/10 to-transparent",
-      trendColor: "text-[#20D6D8]",
-      curveColor: "#20D6D8",
+      cardClass: "bg-white text-slate-900 border border-slate-200/80 shadow-md hover:border-teal-400/40",
+      iconClass: "bg-[#C5F4EF] text-[#063D48]",
+      titleClass: "text-slate-800",
+      numberClass: "text-slate-900",
+      arrowClass: "bg-[#EBF7F6] text-[#084C58] hover:bg-[#d8f0ed]",
+      trendHighlightClass: "text-teal-600 font-bold",
+      trendLabelClass: "text-slate-500",
+      curveColor: "#16C7A1",
       curveFill: "url(#tealCurveGrad)",
       icon: Route,
       curvePoints: "M 0 28 Q 25 26, 45 16 T 80 9 T 100 4",
       fillPoints: "M 0 28 Q 25 26, 45 16 T 80 9 T 100 4 L 100 30 L 0 30 Z",
       gradId: "tealCurveGrad",
-      gradFrom: "rgba(32, 214, 216, 0.20)",
-      gradTo: "rgba(32, 214, 216, 0.0)"
+      gradFrom: "rgba(22, 199, 161, 0.25)",
+      gradTo: "rgba(22, 199, 161, 0.0)"
     },
     {
       label: "DEPENDENCIES",
@@ -80,18 +87,21 @@ export default function OverviewAnalytics({
       trendPercent: "17%",
       trendDirection: "down",
       trendLabel: "vs last scan",
-      accentBorder: "border-[rgba(32,214,216,0.18)]",
-      accentBg: "bg-[#FF3348]/20 text-[#FF4D5E]",
-      accentGlow: "from-[#FF3348]/10 to-transparent",
-      trendColor: "text-[#FF4D5E]",
-      curveColor: "#FF4D5E",
+      cardClass: "bg-white text-slate-900 border border-slate-200/80 shadow-md hover:border-red-400/40",
+      iconClass: "bg-[#F52F45] text-white",
+      titleClass: "text-slate-800",
+      numberClass: "text-slate-900",
+      arrowClass: "bg-[#EBF7F6] text-[#084C58] hover:bg-[#d8f0ed]",
+      trendHighlightClass: "text-red-500 font-bold",
+      trendLabelClass: "text-slate-500",
+      curveColor: "#F52F45",
       curveFill: "url(#redCurveGrad2)",
       icon: Package,
       curvePoints: "M 0 25 Q 25 23, 50 13 T 85 8 T 100 4",
       fillPoints: "M 0 25 Q 25 23, 50 13 T 85 8 T 100 4 L 100 30 L 0 30 Z",
       gradId: "redCurveGrad2",
-      gradFrom: "rgba(255, 77, 94, 0.20)",
-      gradTo: "rgba(255, 77, 94, 0.0)"
+      gradFrom: "rgba(245, 47, 69, 0.25)",
+      gradTo: "rgba(245, 47, 69, 0.0)"
     },
     {
       label: "ENVIRONMENT VARS",
@@ -99,18 +109,21 @@ export default function OverviewAnalytics({
       trendPercent: "4%",
       trendDirection: "up",
       trendLabel: "vs last scan",
-      accentBorder: "border-[rgba(32,214,216,0.18)]",
-      accentBg: "bg-[#20D6D8]/20 text-[#20D6D8]",
-      accentGlow: "from-[#20D6D8]/10 to-transparent",
-      trendColor: "text-[#20D6D8]",
-      curveColor: "#20D6D8",
+      cardClass: "bg-white text-slate-900 border border-slate-200/80 shadow-md hover:border-teal-400/40",
+      iconClass: "bg-[#C5F4EF] text-[#063D48]",
+      titleClass: "text-slate-800",
+      numberClass: "text-slate-900",
+      arrowClass: "bg-[#EBF7F6] text-[#084C58] hover:bg-[#d8f0ed]",
+      trendHighlightClass: "text-teal-600 font-bold",
+      trendLabelClass: "text-slate-500",
+      curveColor: "#16C7A1",
       curveFill: "url(#tealCurveGrad2)",
       icon: Key,
       curvePoints: "M 0 26 Q 25 24, 48 14 T 80 8 T 100 3",
       fillPoints: "M 0 26 Q 25 24, 48 14 T 80 8 T 100 3 L 100 30 L 0 30 Z",
       gradId: "tealCurveGrad2",
-      gradFrom: "rgba(32, 214, 216, 0.20)",
-      gradTo: "rgba(32, 214, 216, 0.0)"
+      gradFrom: "rgba(22, 199, 161, 0.25)",
+      gradTo: "rgba(22, 199, 161, 0.0)"
     }
   ];
 
@@ -150,7 +163,7 @@ export default function OverviewAnalytics({
   return (
     <div className="space-y-4 text-left w-full">
       
-      {/* ── ROW 1: 4 COMPACT KPI CARDS (110–120px height, 4-col grid, rounded 12-14px) ── */}
+      {/* ── ROW 1: 4 KEY METRIC CARDS (Exact Restored UI Theme) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {metrics.map((m, idx) => (
           <motion.div
@@ -158,32 +171,36 @@ export default function OverviewAnalytics({
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.03 }}
-            className={`rounded-[14px] p-3.5 sm:p-4 relative overflow-hidden flex flex-col justify-between h-[115px] sm:h-[120px] bg-[rgba(7,60,69,0.85)] border ${m.accentBorder} shadow-sm hover:border-[rgba(32,214,216,0.35)] transition-all duration-200 hover:-translate-y-0.5`}
+            className={`rounded-[16px] p-4 sm:p-4.5 relative overflow-hidden flex flex-col justify-between h-[125px] sm:h-[130px] transition-all duration-200 hover:-translate-y-0.5 ${m.cardClass}`}
           >
-            {/* Subtle gradient glow in top corner */}
-            <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl ${m.accentGlow} pointer-events-none`} />
-
-            {/* Top Row: Icon Box + Label */}
-            <div className="flex items-center gap-2.5 relative z-10">
-              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] flex items-center justify-center shrink-0 ${m.accentBg}`}>
-                <m.icon size={15} className="stroke-[2.2]" />
+            {/* Top Row: Icon Container + Label + Arrow Button */}
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 shadow-xs ${m.iconClass}`}>
+                  <m.icon size={16} className="stroke-[2.2]" />
+                </div>
+                <span className={`text-[11px] sm:text-[11.5px] font-extrabold uppercase tracking-[0.08em] leading-none ${m.titleClass}`}>
+                  {m.label}
+                </span>
               </div>
-              <span className="text-[11px] sm:text-[11.5px] font-bold uppercase tracking-[0.08em] text-[#C3D5D8] leading-none">
-                {m.label}
-              </span>
+
+              {/* Circular Action Arrow Button */}
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors cursor-pointer ${m.arrowClass}`}>
+                <ArrowRight size={13} />
+              </div>
             </div>
 
-            {/* Bottom Row: Number + Trend & Smooth Sparkline */}
+            {/* Bottom Row: Large Number + Trend & Smooth Area Sparkline */}
             <div className="flex items-end justify-between mt-1 relative z-10">
               <div>
-                <div className="text-2xl sm:text-[30px] font-black tracking-tight leading-none text-[#F7FAFA]">
+                <div className={`text-2xl sm:text-[32px] font-black tracking-tight leading-none ${m.numberClass}`}>
                   {m.value.toLocaleString()}
                 </div>
                 <div className="text-[10.5px] font-semibold mt-1 flex items-center gap-1.5">
-                  <span className={`font-bold flex items-center gap-0.5 ${m.trendColor}`}>
+                  <span className={m.trendHighlightClass}>
                     {m.trendDirection === "up" ? "↑" : "↓"} {m.trendPercent}
                   </span>
-                  <span className="text-[#8EA9AE]">
+                  <span className={m.trendLabelClass}>
                     {m.trendLabel}
                   </span>
                 </div>
@@ -203,7 +220,7 @@ export default function OverviewAnalytics({
                     d={m.curvePoints}
                     fill="none"
                     stroke={m.curveColor}
-                    strokeWidth="2"
+                    strokeWidth="2.2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
