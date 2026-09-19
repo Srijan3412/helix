@@ -69,9 +69,9 @@ export function FileDropzone({
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-2xl py-8 px-6 text-center transition-all duration-300 relative overflow-hidden flex flex-col items-center justify-center ${
+        className={`border-2 border-dashed rounded-[12px] py-5 px-4 text-center transition-all duration-300 relative overflow-hidden flex flex-col items-center justify-center ${
           dragActive
-            ? "border-primary bg-primary/10 shadow-lg shadow-primary/10 scale-[1.01]"
+            ? "border-primary bg-primary/10 shadow-md shadow-primary/10 scale-[1.01]"
             : selectedFile
             ? "border-emerald-500/60 bg-emerald-500/5"
             : "border-zinc-700/80 bg-zinc-900/40 hover:border-zinc-500 hover:bg-zinc-900/60"
@@ -87,20 +87,20 @@ export function FileDropzone({
         />
 
         {selectedFile ? (
-          <div className="w-full flex items-center justify-between p-3 rounded-xl bg-zinc-800/80 border border-zinc-700/70 shadow-md">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                <FileArchive className="text-emerald-400" size={20} />
+          <div className="w-full flex items-center justify-between p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/70 shadow-sm">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                <FileArchive className="text-emerald-400" size={16} />
               </div>
               <div className="text-left min-w-0">
-                <p className="text-xs font-bold text-white truncate max-w-xs md:max-w-md">
+                <p className="text-[11px] sm:text-xs font-bold text-white truncate max-w-xs md:max-w-md">
                   {selectedFile.name}
                 </p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 font-semibold">
-                    <CheckCircle2 size={11} /> Ready
+                  <span className="text-[9.5px] font-mono text-emerald-400 flex items-center gap-1 font-semibold">
+                    <CheckCircle2 size={10} /> Ready
                   </span>
-                  <span className="text-[10px] text-zinc-400 font-mono">
+                  <span className="text-[9.5px] text-zinc-400 font-mono">
                     • {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </span>
                 </div>
@@ -114,25 +114,25 @@ export function FileDropzone({
                   e.stopPropagation();
                   onClearFile();
                 }}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-700/60 transition"
+                className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-700/60 transition"
                 title="Remove file"
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             )}
           </div>
         ) : (
           <label htmlFor="zip-file-upload" className="w-full cursor-pointer flex flex-col items-center">
-            <div className="w-14 h-14 rounded-2xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center mb-3 shadow-inner transition duration-300">
-              <UploadCloud className="w-7 h-7 text-primary transition duration-300" />
+            <div className="w-9 h-9 rounded-lg bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center mb-2 shadow-inner transition duration-300">
+              <UploadCloud className="w-4.5 h-4.5 text-primary transition duration-300" />
             </div>
-            <p className="text-sm text-zinc-200 font-bold mb-1">
+            <p className="text-xs text-zinc-200 font-bold mb-0.5">
               Drag and drop your repository ZIP here
             </p>
-            <p className="text-xs text-zinc-400">
+            <p className="text-[11px] text-zinc-400">
               or <span className="text-primary font-semibold hover:underline">browse from your computer</span>
             </p>
-            <span className="text-[10px] text-zinc-500 mt-2 font-mono">
+            <span className="text-[9.5px] text-zinc-500 mt-1.5 font-mono">
               Maximum archive size: {(maxSizeBytes / 1024 / 1024).toFixed(0)}MB (.zip)
             </span>
           </label>
@@ -140,7 +140,7 @@ export function FileDropzone({
       </div>
 
       {dropError && (
-        <p className="text-xs text-red-400 mt-2 font-medium flex items-center gap-1">
+        <p className="text-[11px] text-red-400 mt-1.5 font-medium flex items-center gap-1">
           ⚠️ {dropError}
         </p>
       )}

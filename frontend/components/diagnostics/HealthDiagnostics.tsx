@@ -57,48 +57,18 @@ export default function HealthDiagnostics({
   const [sortBy, setSortBy] = useState<"methods-desc" | "methods-asc" | "loc-desc" | "file-asc">("methods-desc");
   const [deadCodeSearch, setDeadCodeSearch] = useState("");
 
-  // Realistic fallback items
-  const defaultGodServices: GodServiceItem[] = [
-    { file: "packages/shared/src/analysis.ts", methods: 0, loc: 320 },
-    { file: "frontend/lib/api/client.ts", methods: 65, loc: 1200 },
-    { file: "frontend/lib/subscription/subscription.ts", methods: 12, loc: 480 },
-    { file: "frontend/components/architecture/MetroMap/types.ts", methods: 12, loc: 390 },
-    { file: "backend/src/jobs/analysis.worker.ts", methods: 23, loc: 860 },
-    { file: "backend/src/modules/static-analysis/static-analysis.service.ts", methods: 12, loc: 540 },
-    { file: "frontend/components/architecture/MetroMap/LayerHeader.tsx", methods: 18, loc: 420 },
-    { file: "frontend/lib/markdown-parser.ts", methods: 16, loc: 310 },
-    { file: "backend/src/modules/ai/agents.ts", methods: 17, loc: 670 },
-    { file: "backend/src/modules/contact/contact.service.ts", methods: 22, loc: 590 },
-    { file: "frontend/components/architecture/MetroMap/useMetroData.ts", methods: 44, loc: 410 },
-    { file: "backend/src/modules/analysis/scan-history.service.ts", methods: 22, loc: 980 },
-    { file: "frontend/components/architecture/MetroMap/useMetroLayout.ts", methods: 13, loc: 450 },
-    { file: "frontend/lib/subscription/SubscriptionContext.tsx", methods: 48, loc: 530 },
-    { file: "backend/src/modules/auth/otp.service.ts", methods: 13, loc: 290 },
-    { file: "frontend/components/architecture/MetroMap/useJourneyAnimation.ts", methods: 19, loc: 360 },
-    { file: "frontend/components/subscription/SubscriptionProvider.tsx", methods: 13, loc: 280 },
-    { file: "backend/data/disposable-domains.ts", methods: 0, loc: 150 },
-    { file: "backend/src/data/disposable-domains.ts", methods: 0, loc: 150 },
-    { file: "backend/src/modules/ai-architect/context-builder.ts", methods: 12, loc: 440 },
-  ];
+  // Extract god services dynamically if not provided by backend static report
+  const rawGodServices = useMemo(() => {
+    if (godServices && godServices.length > 0) return godServices;
+    return [];
+  }, [godServices]);
 
-  const defaultDeadCode: string[] = [
-    "backend/src/worker.ts",
-    "backend/data/disposable-domains.ts",
-    "backend/src/data/disposable-domains.ts",
-    "backend/src/jobs/analysis.queue.ts",
-    "backend/src/jobs/analysis.worker.ts",
-    "backend/src/jobs/cleanup.worker.ts",
-    "backend/src/modules/ai-architect/ai-architect.service.ts",
-    "backend/src/modules/ai-architect/prompt-builder.ts",
-    "backend/src/modules/ai-architect/types.ts",
-    "backend/src/modules/analysis/scan-history.service.ts",
-  ];
-
-  const rawGodServices = godServices.length > 0 ? godServices : defaultGodServices;
-  const rawDeadCode =
-    deadCode.length > 0
-      ? deadCode.map((d) => (typeof d === "string" ? d : d.file))
-      : defaultDeadCode;
+  const rawDeadCode = useMemo(() => {
+    if (deadCode && deadCode.length > 0) {
+      return deadCode.map((d) => (typeof d === "string" ? d : d.file));
+    }
+    return [];
+  }, [deadCode]);
 
   // Filter & Sort God Services
   const processedGodServices = useMemo(() => {
@@ -201,7 +171,7 @@ export default function HealthDiagnostics({
                 Last scanned
               </span>
               <span className="text-xs font-bold text-white font-mono block mt-0.5">
-                Sep 16, 2026 02:14 AM
+                {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </span>
             </div>
           </div>

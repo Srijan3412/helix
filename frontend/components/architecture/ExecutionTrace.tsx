@@ -1048,64 +1048,6 @@ export default function ExecutionTrace({
             </div>
           </div>
 
-          {/* ── 5-Column Metrics Strip (72-82px Height) ────────────────── */}
-          <div className="grid grid-cols-5 divide-x divide-[rgba(100,190,205,0.12)] bg-[#071219] border border-[rgba(100,190,205,0.14)] rounded-xl my-2.5 p-2.5 text-center shrink-0 min-h-[72px]">
-            <div className="flex flex-col items-center justify-center px-1">
-              <div className="flex items-center gap-1 text-[9.5px] uppercase font-bold text-[#8FA4A8] tracking-wider mb-0.5">
-                <CheckCircle2 size={11} className="text-[#16C7A3]" />
-                <span>Success</span>
-              </div>
-              <div className="text-base font-bold text-[#16C7A3] font-mono leading-none">
-                {activeTrace.successRate}
-              </div>
-              <span className="text-[9px] text-[#728589] mt-0.5">Request completed</span>
-            </div>
-
-            <div className="flex flex-col items-center justify-center px-1">
-              <div className="flex items-center gap-1 text-[9.5px] uppercase font-bold text-[#8FA4A8] tracking-wider mb-0.5">
-                <Clock size={11} className="text-[#2F80ED]" />
-                <span>Duration</span>
-              </div>
-              <div className="text-base font-bold text-[#F2F7F7] font-mono leading-none">
-                {activeTrace.durationMs} ms
-              </div>
-              <span className="text-[9px] text-[#16C7A3] mt-0.5">{activeTrace.durationCompare}</span>
-            </div>
-
-            <div className="flex flex-col items-center justify-center px-1">
-              <div className="flex items-center gap-1 text-[9.5px] uppercase font-bold text-[#8FA4A8] tracking-wider mb-0.5">
-                <Database size={11} className="text-[#8B5CF6]" />
-                <span>DB Queries</span>
-              </div>
-              <div className="text-base font-bold text-[#F2F7F7] font-mono leading-none">
-                {activeTrace.dbQueries}
-              </div>
-              <span className="text-[9px] text-[#728589] mt-0.5">{activeTrace.dbNote}</span>
-            </div>
-
-            <div className="flex flex-col items-center justify-center px-1">
-              <div className="flex items-center gap-1 text-[9.5px] uppercase font-bold text-[#8FA4A8] tracking-wider mb-0.5">
-                <Shield size={11} className="text-[#F5B52E]" />
-                <span>Auth Flow</span>
-              </div>
-              <div className="text-base font-bold text-[#F2F7F7] font-mono leading-none">
-                {activeTrace.authFlow}
-              </div>
-              <span className="text-[9px] text-[#728589] mt-0.5">{activeTrace.authNote}</span>
-            </div>
-
-            <div className="flex flex-col items-center justify-center px-1">
-              <div className="flex items-center gap-1 text-[9.5px] uppercase font-bold text-[#8FA4A8] tracking-wider mb-0.5">
-                <Activity size={11} className="text-[#FF4D5E]" />
-                <span>Complexity</span>
-              </div>
-              <div className="text-base font-bold text-[#F2F7F7] font-mono leading-none">
-                Σ {activeTrace.complexityScore}
-              </div>
-              <span className="text-[9px] text-[#728589] mt-0.5">{activeTrace.complexityNote}</span>
-            </div>
-          </div>
-
           {/* ── Main Trace Steps Area (Flex Scrollable) ─────────────────── */}
           <div className="flex-1 overflow-y-auto pr-1 min-h-0">
             {viewMode === "timeline" ? (
@@ -1217,47 +1159,6 @@ export default function ExecutionTrace({
                 </ReactFlow>
               </div>
             )}
-          </div>
-
-          {/* ── Fixed Bottom Execution Timeline (85-100px Height) ────────── */}
-          <div className="mt-2 pt-2.5 border-t border-[rgba(100,190,205,0.12)] shrink-0 min-h-[85px]">
-            <div className="flex items-center justify-between text-xs font-mono text-[#8FA4A8] mb-1.5">
-              <span className="font-bold text-[#F2F7F7]">Execution Timeline</span>
-              <span>Total: {activeTrace.durationMs} ms</span>
-            </div>
-
-            {/* Proportional Multi-Segment Timeline Bar */}
-            <div className="w-full h-2.5 rounded-full bg-[#071219] overflow-hidden flex p-0.5 border border-[rgba(100,190,205,0.18)]">
-              {activeTrace.steps.map((step, idx) => {
-                const totalMs = activeTrace.durationMs || 100;
-                const widthPct = Math.max(4, Math.round((step.durationMs / totalMs) * 100));
-                return (
-                  <div
-                    key={step.id || idx}
-                    className="h-full transition-all"
-                    style={{
-                      width: `${widthPct}%`,
-                      backgroundColor: step.color,
-                      borderTopLeftRadius: idx === 0 ? "9999px" : 0,
-                      borderBottomLeftRadius: idx === 0 ? "9999px" : 0,
-                      borderTopRightRadius: idx === activeTrace.steps.length - 1 ? "9999px" : 0,
-                      borderBottomRightRadius: idx === activeTrace.steps.length - 1 ? "9999px" : 0,
-                    }}
-                    title={`${step.title || step.name}: ${step.durationMs}ms`}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Timeline Legend */}
-            <div className="flex flex-wrap items-center gap-3 text-[10.5px] font-mono text-[#8FA4A8] mt-1.5">
-              {activeTrace.steps.map((step, idx) => (
-                <span key={step.id || idx} className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: step.color }} />
-                  <span>{step.title || step.name} ({step.durationMs}ms)</span>
-                </span>
-              ))}
-            </div>
           </div>
         </main>
 

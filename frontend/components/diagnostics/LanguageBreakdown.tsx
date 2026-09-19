@@ -243,12 +243,12 @@ export default function LanguageBreakdown({
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(155,232,224,0.18)] shadow-sm flex flex-col h-auto min-h-0"
+        className="bg-[rgba(7,60,69,0.85)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(32,214,216,0.18)] shadow-sm flex flex-col h-auto min-h-0"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-[8px] bg-[#094752] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
+            <div className="w-7 h-7 rounded-[8px] bg-[#094752] border border-[#20D6D8]/30 flex items-center justify-center text-[#20D6D8] shrink-0">
               <Code2 size={15} />
             </div>
             <div>
@@ -277,7 +277,7 @@ export default function LanguageBreakdown({
                   cy="65"
                   r={radius}
                   fill="transparent"
-                  stroke="#083E48"
+                  stroke="#052A31"
                   strokeWidth="18"
                 />
                 {/* Segments */}
@@ -353,7 +353,7 @@ export default function LanguageBreakdown({
                   </div>
 
                   {/* Micro Progress Bar */}
-                  <div className="h-1 w-full bg-[#083E48] rounded-full overflow-hidden mt-0.5">
+                  <div className="h-1 w-full bg-[#052A31] rounded-full overflow-hidden mt-0.5">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(rawPercentage, 1)}%` }}
@@ -369,9 +369,9 @@ export default function LanguageBreakdown({
         </div>
 
         {/* Footer Metric Card */}
-        <div className="mt-2 p-2.5 px-3 rounded-[10px] bg-[#093C45]/80 border border-[#176873]/50 flex items-center justify-between">
+        <div className="mt-2 p-2.5 px-3 rounded-[10px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.12)] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-[6px] bg-[#0E4F5A] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
+            <div className="w-7 h-7 rounded-[6px] bg-[#094752] border border-[#20D6D8]/30 flex items-center justify-center text-[#20D6D8] shrink-0">
               <Database size={14} />
             </div>
             <div>
@@ -388,7 +388,7 @@ export default function LanguageBreakdown({
             <div className="text-sm font-bold text-white font-mono leading-tight">
               {totalLines.toLocaleString()}
             </div>
-            <div className="text-[9.5px] text-[#16C7A1] font-semibold flex items-center justify-end gap-0.5">
+            <div className="text-[9.5px] text-[#20D6D8] font-semibold flex items-center justify-end gap-0.5">
               <span>↑ +0%</span>
             </div>
           </div>
@@ -400,12 +400,12 @@ export default function LanguageBreakdown({
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.04 }}
-        className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(155,232,224,0.18)] shadow-sm flex flex-col h-auto min-h-0"
+        className="bg-[rgba(7,60,69,0.85)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(32,214,216,0.18)] shadow-sm flex flex-col h-auto min-h-0"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-[8px] bg-[#094752] border border-[#16C7A1]/30 flex items-center justify-center text-[#16C7A1] shrink-0">
+            <div className="w-7 h-7 rounded-[8px] bg-[#094752] border border-[#20D6D8]/30 flex items-center justify-center text-[#20D6D8] shrink-0">
               <FileText size={15} />
             </div>
             <div>

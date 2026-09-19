@@ -41,20 +41,20 @@ export default function ScanUsageDisplay({
   };
 
   return (
-    <div className="w-full max-w-[1000px] sm:max-w-[1040px] mx-auto rounded-[20px] sm:rounded-[24px] bg-[rgba(5,48,58,0.82)] backdrop-blur-xl border border-[rgba(155,232,224,0.18)] p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col justify-between text-left">
+    <div className="w-full max-w-[760px] mx-auto rounded-[14px] bg-[rgba(5,48,58,0.82)] backdrop-blur-xl border border-[rgba(155,232,224,0.18)] p-3 sm:p-3.5 shadow-md relative overflow-hidden flex flex-col justify-between text-left">
       
       {/* ── Top Header Row ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         {/* Left: Coral Icon + Title + Subtitle */}
-        <div className="flex items-center gap-4 sm:gap-4.5">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[14px] sm:rounded-[16px] bg-[#FF3344] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#FF3344]/25">
-            <BarChart3 className="w-7 h-7 sm:w-8 sm:h-8 text-white stroke-[2.2]" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-[#FF3344] text-white flex items-center justify-center shrink-0 shadow-sm shadow-[#FF3344]/20">
+            <BarChart3 className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white stroke-[2.2]" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-[20px] font-extrabold text-[#F7FAFA] uppercase tracking-wider leading-tight">
+            <h2 className="text-xs sm:text-[13px] font-bold text-[#F7FAFA] uppercase tracking-wider leading-tight">
               Repository Scans
             </h2>
-            <p className="text-sm sm:text-[15px] text-[#C3D5D8] font-normal mt-1">
+            <p className="text-[10.5px] sm:text-[11px] text-[#C3D5D8] font-normal mt-0.5">
               Analyze and understand any repository
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function ScanUsageDisplay({
         {/* Right: Scan Counter Pill Badge */}
         <div className="flex items-center self-start sm:self-center">
           <div
-            className={`px-4 py-2 sm:px-5 sm:py-2 rounded-full border text-xs sm:text-[14px] font-semibold tracking-wide flex items-center gap-2 shrink-0 ${
+            className={`px-2.5 py-0.5 sm:px-3 sm:py-0.5 rounded-full border text-[10px] sm:text-[10.5px] font-semibold tracking-wide flex items-center gap-1.5 shrink-0 ${
               isAtLimit
                 ? "border-[rgba(255,51,68,0.35)] bg-[rgba(255,51,68,0.08)] text-[#FF4D5E]"
                 : "border-[rgba(22,199,161,0.35)] bg-[rgba(22,199,161,0.08)] text-[#16C7A1]"
@@ -71,7 +71,7 @@ export default function ScanUsageDisplay({
           >
             {isUnlimited ? (
               <>
-                <span className="text-base leading-none">∞</span>
+                <span className="text-xs leading-none font-bold">∞</span>
                 <span>{scansUsed} / Unlimited used</span>
               </>
             ) : (
@@ -84,7 +84,7 @@ export default function ScanUsageDisplay({
       </div>
 
       {/* ── Status Progress Bar ───────────────────────────────────── */}
-      <div className="w-full h-2 sm:h-2.5 rounded-full overflow-hidden bg-[rgba(4,38,46,0.85)] border border-[rgba(155,232,224,0.12)] my-5 sm:my-6">
+      <div className="w-full h-1.5 rounded-full overflow-hidden bg-[rgba(4,38,46,0.85)] border border-[rgba(155,232,224,0.12)] my-2.5 sm:my-3">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
@@ -102,21 +102,21 @@ export default function ScanUsageDisplay({
       </div>
 
       {/* ── Access Details & CTA Action ───────────────────────────── */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         {/* Capability Row 1: Unlimited / Standard Scanner Access */}
-        <div className="flex items-center gap-3.5 sm:gap-4">
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-[12px] bg-[rgba(22,199,161,0.12)] border border-[rgba(22,199,161,0.25)] text-[#16C7A1] flex items-center justify-center shrink-0">
-            <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[#16C7A1]" />
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-[7px] bg-[rgba(22,199,161,0.12)] border border-[rgba(22,199,161,0.25)] text-[#16C7A1] flex items-center justify-center shrink-0">
+            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#16C7A1]" />
           </div>
           <div>
-            <div className="text-sm sm:text-[16px] font-bold text-[#F7FAFA] leading-tight">
+            <div className="text-[11.5px] sm:text-xs font-bold text-[#F7FAFA] leading-tight">
               {isUnlimited
                 ? "Unlimited Scanner Access"
                 : plan === "professional" || plan === "enterprise"
                 ? "Professional Scanner Access"
                 : "Limited Scanner Access"}
             </div>
-            <div className="text-xs sm:text-[14px] text-[#C3D5D8] font-normal mt-0.5">
+            <div className="text-[10px] sm:text-[10.5px] text-[#C3D5D8] font-normal mt-0.5">
               {isUnlimited
                 ? "Full repository analysis with no limits"
                 : "Standard repository analysis for your account tier"}
@@ -125,24 +125,24 @@ export default function ScanUsageDisplay({
         </div>
 
         {/* Capability Row 2: Remaining Scans + Action CTA */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-          <div className="flex items-center gap-3.5 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-0.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <div
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[12px] flex items-center justify-center shrink-0 ${
+              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-[7px] flex items-center justify-center shrink-0 ${
                 isAtLimit
                   ? "bg-[rgba(255,51,68,0.12)] border border-[rgba(255,51,68,0.25)] text-[#FF4D5E]"
                   : "bg-[rgba(22,199,161,0.12)] border border-[rgba(22,199,161,0.25)] text-[#16C7A1]"
               }`}
             >
               {isAtLimit ? (
-                <AlertCircle className="w-5 h-5 text-[#FF4D5E]" />
+                <AlertCircle className="w-3.5 h-3.5 text-[#FF4D5E]" />
               ) : (
-                <CheckCircle2 className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-[#16C7A1]" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#16C7A1]" />
               )}
             </div>
             <div>
               <div
-                className={`text-sm sm:text-[16px] font-bold leading-tight ${
+                className={`text-[11.5px] sm:text-xs font-bold leading-tight ${
                   isAtLimit ? "text-[#FF4D5E]" : "text-[#F7FAFA]"
                 }`}
               >
@@ -152,7 +152,7 @@ export default function ScanUsageDisplay({
                   ? "Scan limit reached"
                   : `${remaining} scan${remaining !== 1 ? "s" : ""} remaining`}
               </div>
-              <div className="text-xs sm:text-[14px] text-[#C3D5D8] font-normal mt-0.5">
+              <div className="text-[10px] sm:text-[10.5px] text-[#C3D5D8] font-normal mt-0.5">
                 {isUnlimited
                   ? "Analyze as many repositories as you need"
                   : isAtLimit
@@ -167,7 +167,7 @@ export default function ScanUsageDisplay({
             {isAtLimit ? (
               <button
                 onClick={() => (window.location.href = "/contact-sales")}
-                className="h-12 sm:h-14 px-6 sm:px-8 rounded-[12px] bg-amber-500/15 border border-amber-500/35 hover:bg-amber-500/25 text-amber-300 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+                className="h-7.5 sm:h-8 px-3.5 rounded-[8px] bg-amber-500/15 border border-amber-500/35 hover:bg-amber-500/25 text-amber-300 font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
               >
                 📧 Contact Us for More Access
               </button>
@@ -175,10 +175,10 @@ export default function ScanUsageDisplay({
               <button
                 onClick={handleStartScanClick}
                 disabled={isLoading}
-                className="h-12 sm:h-14 px-7 sm:px-9 rounded-[12px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-sm sm:text-base shadow-lg shadow-[#FF3344]/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group active:translate-y-[1px]"
+                className="h-7.5 sm:h-8 px-3.5 sm:px-4 rounded-[8px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-[11px] sm:text-xs shadow-sm shadow-[#FF3344]/25 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group active:translate-y-[1px]"
               >
                 <span>{isLoading ? "Starting..." : "Start Scan"}</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </button>
             )}
           </div>

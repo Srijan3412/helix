@@ -34,7 +34,7 @@ export default function OverviewAnalytics({
   frameworkMetadata,
   files = []
 }: OverviewAnalyticsProps) {
-  // 4 KPI Cards Data with subtle dark teal styling & accent indicators
+  // 4 KPI Cards Data with vibrant dark teal styling & exact previous color scheme
   const metrics = [
     {
       label: "FILES ANALYZED",
@@ -42,18 +42,18 @@ export default function OverviewAnalytics({
       trendPercent: "12%",
       trendDirection: "up",
       trendLabel: "vs last scan",
-      accentBorder: "border-[#FF3344]/35",
-      accentBg: "bg-[#FF3344]/15 text-[#FF6B7A]",
-      accentGlow: "from-[#FF3344]/10 to-transparent",
-      trendColor: "text-[#16C7A1]",
-      curveColor: "#FF3344",
+      accentBorder: "border-[rgba(32,214,216,0.18)]",
+      accentBg: "bg-[#FF3348]/20 text-[#FF4D5E]",
+      accentGlow: "from-[#FF3348]/10 to-transparent",
+      trendColor: "text-[#20D6D8]",
+      curveColor: "#FF4D5E",
       curveFill: "url(#redCurveGrad)",
       icon: Files,
       curvePoints: "M 0 26 Q 22 24, 40 14 T 75 7 T 100 3",
       fillPoints: "M 0 26 Q 22 24, 40 14 T 75 7 T 100 3 L 100 30 L 0 30 Z",
       gradId: "redCurveGrad",
-      gradFrom: "rgba(255, 51, 68, 0.25)",
-      gradTo: "rgba(255, 51, 68, 0.0)"
+      gradFrom: "rgba(255, 77, 94, 0.20)",
+      gradTo: "rgba(255, 77, 94, 0.0)"
     },
     {
       label: "API ROUTES",
@@ -61,18 +61,18 @@ export default function OverviewAnalytics({
       trendPercent: "8%",
       trendDirection: "up",
       trendLabel: "vs last scan",
-      accentBorder: "border-[#16C7A1]/35",
-      accentBg: "bg-[#16C7A1]/15 text-[#16C7A1]",
-      accentGlow: "from-[#16C7A1]/10 to-transparent",
-      trendColor: "text-[#16C7A1]",
-      curveColor: "#16C7A1",
+      accentBorder: "border-[rgba(32,214,216,0.18)]",
+      accentBg: "bg-[#20D6D8]/20 text-[#20D6D8]",
+      accentGlow: "from-[#20D6D8]/10 to-transparent",
+      trendColor: "text-[#20D6D8]",
+      curveColor: "#20D6D8",
       curveFill: "url(#tealCurveGrad)",
       icon: Route,
       curvePoints: "M 0 28 Q 25 26, 45 16 T 80 9 T 100 4",
       fillPoints: "M 0 28 Q 25 26, 45 16 T 80 9 T 100 4 L 100 30 L 0 30 Z",
       gradId: "tealCurveGrad",
-      gradFrom: "rgba(22, 199, 161, 0.25)",
-      gradTo: "rgba(22, 199, 161, 0.0)"
+      gradFrom: "rgba(32, 214, 216, 0.20)",
+      gradTo: "rgba(32, 214, 216, 0.0)"
     },
     {
       label: "DEPENDENCIES",
@@ -80,18 +80,18 @@ export default function OverviewAnalytics({
       trendPercent: "17%",
       trendDirection: "down",
       trendLabel: "vs last scan",
-      accentBorder: "border-[#FF5064]/35",
-      accentBg: "bg-[#FF5064]/15 text-[#FF6B7A]",
-      accentGlow: "from-[#FF5064]/10 to-transparent",
-      trendColor: "text-[#FF5064]",
-      curveColor: "#FF5064",
+      accentBorder: "border-[rgba(32,214,216,0.18)]",
+      accentBg: "bg-[#FF3348]/20 text-[#FF4D5E]",
+      accentGlow: "from-[#FF3348]/10 to-transparent",
+      trendColor: "text-[#FF4D5E]",
+      curveColor: "#FF4D5E",
       curveFill: "url(#redCurveGrad2)",
       icon: Package,
       curvePoints: "M 0 25 Q 25 23, 50 13 T 85 8 T 100 4",
       fillPoints: "M 0 25 Q 25 23, 50 13 T 85 8 T 100 4 L 100 30 L 0 30 Z",
       gradId: "redCurveGrad2",
-      gradFrom: "rgba(255, 80, 100, 0.25)",
-      gradTo: "rgba(255, 80, 100, 0.0)"
+      gradFrom: "rgba(255, 77, 94, 0.20)",
+      gradTo: "rgba(255, 77, 94, 0.0)"
     },
     {
       label: "ENVIRONMENT VARS",
@@ -99,18 +99,18 @@ export default function OverviewAnalytics({
       trendPercent: "4%",
       trendDirection: "up",
       trendLabel: "vs last scan",
-      accentBorder: "border-[#16C7A1]/35",
-      accentBg: "bg-[#16C7A1]/15 text-[#16C7A1]",
-      accentGlow: "from-[#16C7A1]/10 to-transparent",
-      trendColor: "text-[#16C7A1]",
-      curveColor: "#16C7A1",
+      accentBorder: "border-[rgba(32,214,216,0.18)]",
+      accentBg: "bg-[#20D6D8]/20 text-[#20D6D8]",
+      accentGlow: "from-[#20D6D8]/10 to-transparent",
+      trendColor: "text-[#20D6D8]",
+      curveColor: "#20D6D8",
       curveFill: "url(#tealCurveGrad2)",
       icon: Key,
       curvePoints: "M 0 26 Q 25 24, 48 14 T 80 8 T 100 3",
       fillPoints: "M 0 26 Q 25 24, 48 14 T 80 8 T 100 3 L 100 30 L 0 30 Z",
       gradId: "tealCurveGrad2",
-      gradFrom: "rgba(22, 199, 161, 0.25)",
-      gradTo: "rgba(22, 199, 161, 0.0)"
+      gradFrom: "rgba(32, 214, 216, 0.20)",
+      gradTo: "rgba(32, 214, 216, 0.0)"
     }
   ];
 
@@ -134,16 +134,16 @@ export default function OverviewAnalytics({
           .map(([dir, count], idx) => ({
             name: dir,
             percentage: Math.round((count / total) * 100),
-            color: idx === 0 ? "#FF3344" : idx === 1 ? "#16C7A1" : idx === 2 ? "#C5F4EF" : "#9BE8E0"
+            color: idx === 0 ? "#FF3348" : idx === 1 ? "#20D6D8" : idx === 2 ? "#8DE2D8" : "#20D6D8"
           }));
       }
     }
     return [
-      { name: "src/", percentage: 45, color: "#FF3344" },
-      { name: "tests/", percentage: 20, color: "#16C7A1" },
-      { name: "docs/", percentage: 14, color: "#C5F4EF" },
-      { name: "config/", percentage: 12, color: "#9BE8E0" },
-      { name: "scripts/", percentage: 9, color: "#9BE8E0" }
+      { name: "fronte...", percentage: 38, color: "#FF3348" },
+      { name: "backen...", percentage: 31, color: "#20D6D8" },
+      { name: "ROUTE:...", percentage: 20, color: "#8DE2D8" },
+      { name: "ROUTE:...", percentage: 4, color: "#20D6D8" },
+      { name: "ROUTE:...", percentage: 4, color: "#20D6D8" }
     ];
   }, [files]);
 
@@ -158,7 +158,7 @@ export default function OverviewAnalytics({
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.03 }}
-            className={`rounded-[14px] p-3.5 sm:p-4 relative overflow-hidden flex flex-col justify-between h-[115px] sm:h-[120px] bg-[rgba(8,70,80,0.85)] border ${m.accentBorder} shadow-sm hover:border-[rgba(155,232,224,0.35)] transition-all duration-200 hover:-translate-y-0.5`}
+            className={`rounded-[14px] p-3.5 sm:p-4 relative overflow-hidden flex flex-col justify-between h-[115px] sm:h-[120px] bg-[rgba(7,60,69,0.85)] border ${m.accentBorder} shadow-sm hover:border-[rgba(32,214,216,0.35)] transition-all duration-200 hover:-translate-y-0.5`}
           >
             {/* Subtle gradient glow in top corner */}
             <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl ${m.accentGlow} pointer-events-none`} />
@@ -222,13 +222,13 @@ export default function OverviewAnalytics({
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(155,232,224,0.18)] shadow-sm flex flex-col justify-between h-auto min-h-0"
+          className="bg-[rgba(7,60,69,0.85)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(32,214,216,0.18)] shadow-sm flex flex-col justify-between h-auto min-h-0"
         >
           <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-[8px] bg-[#084C58] text-[#9BE8E0] flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-[8px] bg-[#094752] text-[#20D6D8] flex items-center justify-center shrink-0">
                   <Layers size={15} />
                 </div>
                 <div>
@@ -245,7 +245,7 @@ export default function OverviewAnalytics({
             {/* 6 Technology Items in 3-col grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {/* Language Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.10)] flex items-center gap-2">
+              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
                 <div className="w-7 h-7 rounded-[6px] bg-[#007acc] text-white font-black text-[11px] flex items-center justify-center shrink-0 shadow-xs">
                   TS
                 </div>
@@ -258,7 +258,7 @@ export default function OverviewAnalytics({
               </div>
 
               {/* Runtime Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.10)] flex items-center gap-2">
+              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
                 <div className="w-7 h-7 rounded-[6px] bg-[#539e43] text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
                   node
                 </div>
@@ -271,7 +271,7 @@ export default function OverviewAnalytics({
               </div>
 
               {/* Package Manager Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.10)] flex items-center gap-2">
+              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
                 <div className="w-7 h-7 rounded-[6px] bg-[#cb3837] text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
                   npm
                 </div>
@@ -284,7 +284,7 @@ export default function OverviewAnalytics({
               </div>
 
               {/* Framework Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.10)] flex items-center gap-2">
+              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
                 <div className="w-7 h-7 rounded-[6px] bg-neutral-900 border border-white/20 text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
                   <Code2 size={13} />
                 </div>
@@ -297,7 +297,7 @@ export default function OverviewAnalytics({
               </div>
 
               {/* Database Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.10)] flex items-center gap-2">
+              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
                 <div className="w-7 h-7 rounded-[6px] bg-[#3ecf8e] text-slate-950 font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
                   <Zap size={13} className="fill-slate-950" />
                 </div>
@@ -310,7 +310,7 @@ export default function OverviewAnalytics({
               </div>
 
               {/* DevOps Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(6,47,56,0.85)] border border-[rgba(155,232,224,0.10)] flex items-center gap-2">
+              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
                 <div className="w-7 h-7 rounded-[6px] bg-[#0db7ed] text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
                   <Boxes size={13} />
                 </div>
@@ -330,13 +330,13 @@ export default function OverviewAnalytics({
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.14 }}
-          className="bg-[rgba(8,70,80,0.75)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(155,232,224,0.18)] shadow-sm flex flex-col justify-between h-auto min-h-0"
+          className="bg-[rgba(7,60,69,0.85)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(32,214,216,0.18)] shadow-sm flex flex-col justify-between h-auto min-h-0"
         >
           <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-[8px] bg-[#084C58] text-[#9BE8E0] flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-[8px] bg-[#094752] text-[#20D6D8] flex items-center justify-center shrink-0">
                   <FolderTree size={15} />
                 </div>
                 <div>
@@ -355,12 +355,12 @@ export default function OverviewAnalytics({
               {directoryBreakdown.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2.5">
                   <div className="flex items-center gap-1.5 w-16 text-[11px] font-mono text-[#C3D5D8]">
-                    <Folder size={11} className="text-[#9BE8E0] shrink-0" />
+                    <Folder size={11} className="text-[#20D6D8] shrink-0" />
                     <span className="truncate">{item.name}</span>
                   </div>
 
                   {/* Horizontal Bar */}
-                  <div className="flex-1 h-2 rounded-full bg-[rgba(6,47,56,0.85)] overflow-hidden">
+                  <div className="flex-1 h-2 rounded-full bg-[rgba(5,42,49,0.85)] overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{

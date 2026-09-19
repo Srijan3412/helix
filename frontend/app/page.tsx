@@ -101,6 +101,7 @@ import {
   ChevronRight,
   Lightbulb,
   MoreVertical,
+  Paperclip,
 } from "lucide-react";
 
 // ─── Dynamic Imports (Code Splitting) ───────────────────────────────────────
@@ -1014,6 +1015,7 @@ export default function Home() {
 
   // ── Chat State ──
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeChatTab, setActiveChatTab] = useState<"ask" | "explain" | "issues">("ask");
   const [chatMessage, setChatMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [expandedAgentLogs, setExpandedAgentLogs] = useState<
@@ -1023,6 +1025,112 @@ export default function Home() {
   // ── Computed ──
   const healthData = computeHealthScore(result);
   const authData = detectAuth(result);
+
+  // Auto-select first meaningful file for impact analysis if none is selected
+  useEffect(() => {
+    if (!selectedImpactFile && result?.files && result.files.length > 0) {
+      const meaningfulFile = result.files.find(
+        (f: any) =>
+          !f.path.startsWith("ROUTE:") &&
+          !f.path.startsWith("ENV:") &&
+          !f.path.startsWith("DB:") &&
+          !f.path.startsWith("ENTITY:") &&
+          (f.path.includes("service") || f.path.includes("controller") || f.path.includes("index") || f.path.endsWith(".ts") || f.path.endsWith(".tsx"))
+      );
+      if (meaningfulFile) {
+        setSelectedImpactFile(meaningfulFile.path);
+      } else {
+        const firstFile = result.files.find(
+          (f: any) =>
+            !f.path.startsWith("ROUTE:") &&
+            !f.path.startsWith("ENV:") &&
+            !f.path.startsWith("DB:") &&
+            !f.path.startsWith("ENTITY:")
+        );
+        if (firstFile) setSelectedImpactFile(firstFile.path);
+      }
+    }
+  }, [result, selectedImpactFile]);
+
+  // Auto-select previous job for comparison if none selected
+  useEffect(() => {
+    if (!compareJobId && jobsListData?.jobs && jobsListData.jobs.length > 0) {
+      const otherJob = jobsListData.jobs.find((j: any) => j.jobId !== currentJobId);
+      if (otherJob) {
+        setCompareJobId(otherJob.jobId);
+      }
+    }
+  }, [jobsListData, currentJobId, compareJobId]);
+
+  // Dynamic client-side impact computation as instant fallback
+  const computedImpact = useMemo(() => {
+    if (!selectedImpactFile || !result) return null;
+    const norm = (p: string) => p.replace(/\\/g, "/").toLowerCase();
+    const targetNorm = norm(selectedImpactFile);
+    const targetBase = selectedImpactFile.split(/[/\\]/).pop()?.toLowerCase() || "";
+
+    const deps = result.dependencies || [];
+    const directDeps = new Set<string>();
+    const outgoingDeps = new Set<string>();
+
+    deps.forEach((d: any) => {
+      const sNorm = norm(d.source);
+      const tNorm = norm(d.target);
+      const sBase = d.source.split(/[/\\]/).pop()?.toLowerCase() || "";
+      const tBase = d.target.split(/[/\\]/).pop()?.toLowerCase() || "";
+
+      if (tNorm === targetNorm || tNorm.endsWith("/" + targetNorm) || (tBase && tBase === targetBase)) {
+        if (!d.source.startsWith("ROUTE:") && !d.source.startsWith("ENV:") && !d.source.startsWith("DB:") && !d.source.startsWith("ENTITY:")) {
+          directDeps.add(d.source);
+        }
+      }
+      if (sNorm === targetNorm || sNorm.endsWith("/" + targetNorm) || (sBase && sBase === targetBase)) {
+        if (!d.target.startsWith("ROUTE:") && !d.target.startsWith("ENV:") && !d.target.startsWith("DB:") && !d.target.startsWith("ENTITY:")) {
+          outgoingDeps.add(d.target);
+        }
+      }
+    });
+
+    const directList = Array.from(directDeps);
+    const outgoingList = Array.from(outgoingDeps);
+
+    // Transitive BFS
+    const transitiveSet = new Set<string>();
+    const queue = [...directList];
+    const visited = new Set<string>([selectedImpactFile, ...directList]);
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const currNorm = norm(current);
+      const currBase = current.split(/[/\\]/).pop()?.toLowerCase() || "";
+
+      deps.forEach((d: any) => {
+        const tNorm = norm(d.target);
+        const tBase = d.target.split(/[/\\]/).pop()?.toLowerCase() || "";
+        if (tNorm === currNorm || tNorm.endsWith("/" + currNorm) || (tBase && tBase === currBase)) {
+          if (!visited.has(d.source) && !d.source.startsWith("ROUTE:") && !d.source.startsWith("ENV:") && !d.source.startsWith("DB:") && !d.source.startsWith("ENTITY:")) {
+            visited.add(d.source);
+            transitiveSet.add(d.source);
+            queue.push(d.source);
+          }
+        }
+      });
+    }
+
+    const transitiveList = Array.from(transitiveSet);
+    const realFiles = (result.files || []).filter((f: any) => !f.path.startsWith("ROUTE:") && !f.path.startsWith("ENV:") && !f.path.startsWith("DB:") && !f.path.startsWith("ENTITY:"));
+    const totalFilesCount = realFiles.length || 1;
+    const totalAffected = directList.length + transitiveList.length;
+    const computedScore = Math.min(100, Math.round((totalAffected / totalFilesCount) * 100));
+
+    return {
+      directDependents: impactData?.impact?.directDependents?.length ? impactData.impact.directDependents : directList,
+      transitiveDependents: impactData?.impact?.transitiveDependents?.length ? impactData.impact.transitiveDependents : transitiveList,
+      outgoingDependencies: outgoingList,
+      impactScore: impactData?.impact?.impactScore ?? (computedScore > 0 ? computedScore : (directList.length > 0 ? Math.min(100, directList.length * 15) : 0)),
+      criticalPaths: impactData?.impact?.criticalPaths || [],
+    };
+  }, [selectedImpactFile, result, impactData]);
 
   // ── Export Functions for AI Architect ──
   const exportAsMarkdown = () => {
@@ -1662,28 +1770,28 @@ export default function Home() {
   // ─── Not yet started ───
   if (!currentJobId) {
     return (
-      <main className="flex-1 flex flex-col items-center justify-start max-w-6xl w-full mx-auto px-4 py-16 relative">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute top-10 right-10 w-[200px] h-[200px] bg-emerald-500/5 rounded-full blur-[60px] pointer-events-none" />
-        <div className="text-center mb-10 z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#16C7A1]/35 bg-[rgba(6,61,72,0.50)] backdrop-blur-md mb-6 shadow-xs">
-            <Terminal className="w-3.5 h-3.5 text-[#16C7A1]" />
-            <span className="text-[12px] sm:text-[13px] font-semibold uppercase tracking-[0.05em] text-[#9BE8E0]">
+      <main className="flex-1 flex flex-col items-center justify-start max-w-3xl w-full mx-auto px-3.5 sm:px-4 py-4 sm:py-5 relative">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-primary/5 rounded-full blur-[90px] pointer-events-none" />
+        <div className="absolute top-4 right-4 w-[140px] h-[140px] bg-emerald-500/5 rounded-full blur-[45px] pointer-events-none" />
+        <div className="text-center mb-4 z-10">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[#16C7A1]/35 bg-[rgba(6,61,72,0.50)] backdrop-blur-md mb-2 shadow-xs">
+            <Terminal className="w-2.5 h-2.5 text-[#16C7A1]" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9BE8E0]">
               Repository Intelligence Platform
             </span>
           </div>
-          <h1 className="text-4xl sm:text-[56px] font-extrabold text-[#F7FAFA] tracking-tight leading-[1.05] mb-4">
+          <h1 className="text-xl sm:text-2xl lg:text-[26px] font-bold text-[#F7FAFA] tracking-tight leading-tight mb-1.5">
             Understand Any Codebase <br />
             In <span className="text-[#FF3344]">Minutes</span>, Not <span className="text-[#16C7A1]">Days</span>
           </h1>
-          <p className="text-sm sm:text-base text-[#C3D5D8] max-w-2xl mx-auto font-normal leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-[#C3D5D8] max-w-lg mx-auto font-normal leading-normal">
             AST Engine → Graph Engine → Route Engine → Database Engine → Auth Engine → Architecture Engine → AI
           </p>
-          <p className="text-xs sm:text-sm text-[#8EA9AE] mt-1.5 font-light">
+          <p className="text-[10px] text-[#8EA9AE] mt-0.5 font-light">
             From code to clarity. Instantly.
           </p>
         </div>
-        <div className="w-full max-w-[1000px] sm:max-w-[1040px] z-10 mb-12 space-y-5">
+        <div className="w-full max-w-[760px] z-10 mb-4 space-y-2.5">
           {(() => {
             const isUserAdmin = isAdmin || session?.user?.email === 'admin@projectanalyser.com' || profile?.role === 'org_admin' || profile?.role === 'admin';
             const scansUsed = userProfile?.scans_used ?? (usage?.repositories_analyzed ?? 0);
@@ -1773,71 +1881,71 @@ export default function Home() {
                 />
 
                 {/* ── Supporting Information 3-Column Footer Grid ── */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-left">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-0.5 text-left">
                   {isUserAdmin ? (
                     <>
-                      <div className="flex items-center gap-3 p-3 sm:p-3.5 rounded-xl bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
-                        <div className="w-9 h-9 rounded-lg bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
-                          <Layers className="w-4.5 h-4.5" />
+                      <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-[10px] bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
+                        <div className="w-7 h-7 rounded-[7px] bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                          <Layers className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <div className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Unlimited repository scans</div>
-                          <div className="text-[11px] text-[#C3D5D8] mt-0.5">Full codebase indexing & AST</div>
+                          <div className="text-[11.5px] font-bold text-[#F7FAFA]">Unlimited repository scans</div>
+                          <div className="text-[10px] text-[#C3D5D8] mt-0.5">Full codebase indexing & AST</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 sm:p-3.5 rounded-xl bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
-                        <div className="w-9 h-9 rounded-lg bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
-                          <Sparkles className="w-4.5 h-4.5" />
+                      <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-[10px] bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
+                        <div className="w-7 h-7 rounded-[7px] bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                          <Sparkles className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <div className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Full AI analysis access</div>
-                          <div className="text-[11px] text-[#C3D5D8] mt-0.5">Deep architecture intelligence</div>
+                          <div className="text-[11.5px] font-bold text-[#F7FAFA]">Full AI analysis access</div>
+                          <div className="text-[10px] text-[#C3D5D8] mt-0.5">Deep architecture intelligence</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 sm:p-3.5 rounded-xl bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
-                        <div className="w-9 h-9 rounded-lg bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
-                          <Shield className="w-4.5 h-4.5" />
+                      <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-[10px] bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
+                        <div className="w-7 h-7 rounded-[7px] bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                          <Shield className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <div className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Administrative access</div>
-                          <div className="text-[11px] text-[#C3D5D8] mt-0.5">Full platform control & visibility</div>
+                          <div className="text-[11.5px] font-bold text-[#F7FAFA]">Administrative access</div>
+                          <div className="text-[10px] text-[#C3D5D8] mt-0.5">Full platform control & visibility</div>
                         </div>
                       </div>
                     </>
                   ) : profile?.plan === 'professional' || profile?.plan === 'enterprise' ? (
                     <>
-                      <div className="flex items-center gap-3 p-3 sm:p-3.5 rounded-xl bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
-                        <div className="w-9 h-9 rounded-lg bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
-                          <Layers className="w-4.5 h-4.5" />
+                      <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-[10px] bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
+                        <div className="w-7 h-7 rounded-[7px] bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                          <Layers className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <div className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Unlimited repository scans</div>
-                          <div className="text-[11px] text-[#C3D5D8] mt-0.5">Full codebase indexing & AST</div>
+                          <div className="text-[11.5px] font-bold text-[#F7FAFA]">Unlimited repository scans</div>
+                          <div className="text-[10px] text-[#C3D5D8] mt-0.5">Full codebase indexing & AST</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 sm:p-3.5 rounded-xl bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
-                        <div className="w-9 h-9 rounded-lg bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
-                          <Sparkles className="w-4.5 h-4.5" />
+                      <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-[10px] bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
+                        <div className="w-7 h-7 rounded-[7px] bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                          <Sparkles className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <div className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Unlimited AI analysis</div>
-                          <div className="text-[11px] text-[#C3D5D8] mt-0.5">Advanced architecture insights</div>
+                          <div className="text-[11.5px] font-bold text-[#F7FAFA]">Unlimited AI analysis</div>
+                          <div className="text-[10px] text-[#C3D5D8] mt-0.5">Advanced architecture insights</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 sm:p-3.5 rounded-xl bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
-                        <div className="w-9 h-9 rounded-lg bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
-                          <Zap className="w-4.5 h-4.5" />
+                      <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-[10px] bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
+                        <div className="w-7 h-7 rounded-[7px] bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                          <Zap className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <div className="text-xs sm:text-[13px] font-bold text-[#F7FAFA]">Priority processing</div>
-                          <div className="text-[11px] text-[#C3D5D8] mt-0.5">Dedicated background queues</div>
+                          <div className="text-[11.5px] font-bold text-[#F7FAFA]">Priority processing</div>
+                          <div className="text-[10px] text-[#C3D5D8] mt-0.5">Dedicated background queues</div>
                         </div>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="flex items-center gap-3 p-3 sm:p-3.5 rounded-xl bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
-                        <div className="w-9 h-9 rounded-lg bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
+                      <div className="flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl bg-[rgba(5,48,58,0.60)] border border-[rgba(155,232,224,0.12)] backdrop-blur-md">
+                        <div className="w-8 h-8 rounded-lg bg-[rgba(22,199,161,0.12)] text-[#16C7A1] flex items-center justify-center shrink-0">
                           <Layers className="w-4.5 h-4.5" />
                         </div>
                         <div>
@@ -2152,11 +2260,11 @@ export default function Home() {
                 {/* ── Top Dashboard Header ── */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-1">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#20D6D8]">
                       Active Analysis
                     </p>
                     <h1 className="text-2xl sm:text-[34px] font-extrabold text-[#F7FAFA] tracking-tight leading-tight mt-0.5">
-                      Repository <span className="text-[#FF3344]">Intelligence</span>
+                      Repository <span className="text-[#FF3348]">Intelligence</span>
                     </h1>
                     <p className="text-xs sm:text-[13px] text-[#C3D5D8] mt-0.5">
                       Comprehensive analysis and metadata diagnostics for your codebase.
@@ -2165,7 +2273,7 @@ export default function Home() {
 
                   {/* Top-Right Action Controls */}
                   <div className="flex flex-col items-start lg:items-end gap-2">
-                    <div className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#9BE8E0]/70">
+                    <div className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#20D6D8]/80">
                       ANALYZE • UNDERSTAND • BUILD FASTER
                     </div>
 
@@ -2173,7 +2281,7 @@ export default function Home() {
                       {/* Search Bar with Shortcut & Live Autocomplete Dropdown */}
                       <div ref={searchContainerRef} className="relative w-full sm:w-[320px] md:w-[360px] z-50">
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9BE8E0]" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#20D6D8]" />
                           <input
                             ref={searchInputRef}
                             type="text"
@@ -2184,7 +2292,7 @@ export default function Home() {
                             }}
                             onFocus={() => setIsSearchFocused(true)}
                             placeholder="Search files, routes, dependencies..."
-                            className="w-full h-10 pl-9 pr-12 rounded-[10px] bg-[rgba(8,76,88,0.80)] border border-[rgba(155,232,224,0.15)] text-xs sm:text-sm text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#16C7A1] focus:ring-1 focus:ring-[#16C7A1]/40 transition-all"
+                            className="w-full h-10 pl-9 pr-12 rounded-[10px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.20)] text-xs sm:text-sm text-[#F7FAFA] placeholder:text-[#8EA9AE] focus:outline-none focus:border-[#20D6D8] focus:ring-1 focus:ring-[#20D6D8]/40 transition-all"
                           />
                           {globalSearchQuery ? (
                             <button
@@ -2203,7 +2311,7 @@ export default function Home() {
                                 searchInputRef.current?.focus();
                                 setIsSearchFocused(true);
                               }}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-[rgba(6,47,56,0.8)] border border-[rgba(155,232,224,0.2)] text-[10px] font-mono text-[#9BE8E0] hover:border-[#16C7A1] transition-colors"
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-[rgba(4,32,38,0.90)] border border-[rgba(32,214,216,0.25)] text-[10px] font-mono text-[#20D6D8] hover:border-[#20D6D8] transition-colors"
                             >
                               ⌘ K
                             </button>
@@ -2218,15 +2326,15 @@ export default function Home() {
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, y: -6, scale: 0.98 }}
                               transition={{ duration: 0.15 }}
-                              className="absolute left-0 right-0 top-full mt-2 bg-[#04343C]/95 border border-[rgba(155,232,224,0.20)] backdrop-blur-xl rounded-xl shadow-2xl p-2 max-h-[380px] overflow-y-auto space-y-2.5 z-50 text-left"
+                              className="absolute left-0 right-0 top-full mt-2 bg-[#04343C]/95 border border-[rgba(32,214,216,0.20)] backdrop-blur-xl rounded-xl shadow-2xl p-2 max-h-[380px] overflow-y-auto space-y-2.5 z-50 text-left"
                             >
                               {searchResults && searchResults.totalCount > 0 ? (
                                 <>
                                   {/* Routes Results */}
                                   {searchResults.routes.length > 0 && (
                                     <div>
-                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
-                                        <Network className="w-3 h-3 text-[#16C7A1]" /> Routes & Endpoints
+                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#20D6D8]/80 flex items-center gap-1.5">
+                                        <Network className="w-3 h-3 text-[#20D6D8]" /> Routes & Endpoints
                                       </div>
                                       <div className="space-y-1 mt-1">
                                         {searchResults.routes.map((r, idx) => (
@@ -2237,7 +2345,7 @@ export default function Home() {
                                               setIsSearchFocused(false);
                                               setGlobalSearchQuery("");
                                             }}
-                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#20D6D8]/15 text-left transition-colors group"
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
                                               <span
@@ -2253,7 +2361,7 @@ export default function Home() {
                                               >
                                                 {r.method}
                                               </span>
-                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#20D6D8]">
                                                 {r.path}
                                               </span>
                                             </div>
@@ -2269,8 +2377,8 @@ export default function Home() {
                                   {/* Files Results */}
                                   {searchResults.files.length > 0 && (
                                     <div>
-                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
-                                        <Layers className="w-3 h-3 text-[#16C7A1]" /> Files & Components
+                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#20D6D8]/80 flex items-center gap-1.5">
+                                        <Layers className="w-3 h-3 text-[#20D6D8]" /> Files & Components
                                       </div>
                                       <div className="space-y-1 mt-1">
                                         {searchResults.files.map((f, idx) => (
@@ -2281,13 +2389,13 @@ export default function Home() {
                                               setIsSearchFocused(false);
                                               setGlobalSearchQuery("");
                                             }}
-                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#20D6D8]/15 text-left transition-colors group"
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
                                               <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-zinc-700/50 text-[#C5F4EF] font-mono shrink-0">
                                                 FILE
                                               </span>
-                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#20D6D8]">
                                                 {f.path}
                                               </span>
                                             </div>
@@ -2303,8 +2411,8 @@ export default function Home() {
                                   {/* Environment Variables Results */}
                                   {searchResults.envVars.length > 0 && (
                                     <div>
-                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
-                                        <Settings className="w-3 h-3 text-[#16C7A1]" /> Environment Variables
+                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#20D6D8]/80 flex items-center gap-1.5">
+                                        <Settings className="w-3 h-3 text-[#20D6D8]" /> Environment Variables
                                       </div>
                                       <div className="space-y-1 mt-1">
                                         {searchResults.envVars.map((e, idx) => (
@@ -2315,13 +2423,13 @@ export default function Home() {
                                               setIsSearchFocused(false);
                                               setGlobalSearchQuery("");
                                             }}
-                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#20D6D8]/15 text-left transition-colors group"
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
                                               <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono shrink-0">
                                                 ENV
                                               </span>
-                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#20D6D8]">
                                                 {e.name}
                                               </span>
                                             </div>
@@ -2337,8 +2445,8 @@ export default function Home() {
                                   {/* Dependencies Results */}
                                   {searchResults.deps.length > 0 && (
                                     <div>
-                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9BE8E0]/70 flex items-center gap-1.5">
-                                        <Zap className="w-3 h-3 text-[#16C7A1]" /> Dependencies
+                                      <div className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#20D6D8]/80 flex items-center gap-1.5">
+                                        <Zap className="w-3 h-3 text-[#20D6D8]" /> Dependencies
                                       </div>
                                       <div className="space-y-1 mt-1">
                                         {searchResults.deps.map((d, idx) => (
@@ -2349,13 +2457,13 @@ export default function Home() {
                                               setIsSearchFocused(false);
                                               setGlobalSearchQuery("");
                                             }}
-                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#16C7A1]/15 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] hover:bg-[#20D6D8]/15 text-left transition-colors group"
                                           >
                                             <div className="flex items-center gap-2 min-w-0">
                                               <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono shrink-0">
                                                 DEP
                                               </span>
-                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#9BE8E0]">
+                                              <span className="text-[11.5px] font-mono text-[#F7FAFA] truncate group-hover:text-[#20D6D8]">
                                                 {d.target}
                                               </span>
                                             </div>
@@ -2381,7 +2489,7 @@ export default function Home() {
                       {/* Upload Repository Button */}
                       <button
                         onClick={() => reset()}
-                        className="h-10 px-4 rounded-[10px] bg-[#FF3344] hover:bg-[#e02636] text-white font-bold text-xs sm:text-sm shadow-sm flex items-center gap-2 shrink-0 transition-all"
+                        className="h-10 px-4 rounded-[10px] bg-[#FF3348] hover:bg-[#e02636] text-white font-bold text-xs sm:text-sm shadow-sm flex items-center gap-2 shrink-0 transition-all"
                       >
                         <Upload size={14} />
                         <span className="hidden sm:inline">Upload Repository</span>
@@ -2488,243 +2596,538 @@ export default function Home() {
             {activeResultTab === "db" && (
               <DatabaseExplorer
                 databaseInfo={result.metadata?.databaseInfo}
+                files={result.files}
+                dependencies={result.dependencies}
+                envVars={result.envVars}
               />
             )}
 
             {/* ─── HEALTH TAB ─── */}
             {activeResultTab === "health" && (
               <HealthDiagnostics
-                score={healthData?.score ?? 28}
+                score={healthData?.score ?? (result.files?.length ? Math.min(95, Math.max(40, 100 - ((healthData?.deadFiles?.length ?? 0) * 3 + (healthData?.cycles ?? 0) * 8))) : 100)}
                 cycleCount={healthData?.cycles ?? 0}
-                deadCount={staticAnalysisReport?.deadCode?.length ?? healthData?.deadFiles?.length ?? 50}
-                brokenCount={healthData?.brokenImports ?? (result?.metadata as any)?.brokenImportsCount ?? 86}
+                deadCount={staticAnalysisReport?.deadCode?.length ?? healthData?.deadFiles?.length ?? 0}
+                brokenCount={healthData?.brokenImports ?? (result?.metadata as any)?.brokenImportsCount ?? 0}
                 godServices={staticAnalysisReport?.godServices}
                 deadCode={staticAnalysisReport?.deadCode}
                 cycles={staticAnalysisReport?.cycles}
                 isLoading={isStaticLoading}
                 onSelectFile={(f) => {
                   setSelectedImpactFile(f);
-                  setActiveResultTab("arch");
+                  setActiveResultTab("impact");
                 }}
               />
             )}
 
             {/* ─── IMPACT TAB ─── */}
             {activeResultTab === "impact" && (
-              <div className="w-full max-w-[1450px] mx-auto space-y-6 text-left">
-                <div className="mb-6">
-                  <p className="dash-eyebrow text-emerald-400">
-                    Change Analysis
-                  </p>
-                  <h2 className="dash-title text-white mt-1">
-                    Impact Analysis
-                  </h2>
-                </div>
-                <div className="flex gap-3 mb-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <input
-                      className="w-full pl-8 py-2 dash-body bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
-                      placeholder="Search files to analyze impact..."
-                      value={impactSearch}
-                      onChange={(e) => setImpactSearch(e.target.value)}
-                    />
+              <div className="w-full max-w-[1450px] mx-auto space-y-6 text-left select-none font-sans">
+                {/* ── 1. HEADER (like Health Diagnostics & Database Explorer) ── */}
+                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
+                  {/* Left: 64x64 Gradient Icon Badge + Eyebrow + Title + Subtitle */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#F52F45] to-[#E02438] border border-[#FF5B6D]/40 text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#F52F45]/25">
+                      <Zap className="w-7 h-7 sm:w-8 sm:h-8 text-white stroke-[2.4]" />
+                    </div>
+
+                    <div>
+                      <p className="text-xs sm:text-[13px] font-bold uppercase tracking-[2px] text-[#20D6D8]">
+                        CHANGE ANALYSIS
+                      </p>
+                      <h1 className="text-2xl sm:text-[36px] font-extrabold text-white tracking-tight leading-tight mt-0.5">
+                        Impact Analysis
+                      </h1>
+                      <p className="text-xs sm:text-[14px] text-[#9BC9CE] mt-1 font-normal">
+                        Analyze blast radius, direct dependencies, and ripple risk across services.
+                      </p>
+                    </div>
                   </div>
-                </div>
-                {impactSearch && (
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                    {(result.files ?? [])
-                      .filter(
-                        (f: any) =>
-                          !f.path.startsWith("ROUTE:") &&
-                          !f.path.startsWith("ENV:") &&
-                          !f.path.startsWith("DB:") &&
-                          !f.path.startsWith("ENTITY:") &&
-                          f.path
-                            .toLowerCase()
-                            .includes(impactSearch.toLowerCase()),
-                      )
-                      .slice(0, 12)
-                      .map((f: any, i: number) => (
-                        <button
-                          key={i}
-                          onClick={() => setSelectedImpactFile(f.path)}
-                          className={`w-full text-left px-3 py-2 rounded-xl dash-filepath transition-all ${selectedImpactFile === f.path
-                            ? "bg-primary/10 border border-primary/30 text-primary"
-                            : "bg-zinc-900/60 border border-border/40 text-zinc-400 hover:border-zinc-600"
-                            }`}
-                        >
-                          {f.path}
-                        </button>
-                      ))}
-                  </div>
-                )}
-                {isImpactLoading && (
-                  <div className="flex items-center gap-2 text-zinc-500 dash-metadata">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Computing
-                    impact...
-                  </div>
-                )}
-                {impactData && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
-                          Direct Impact
-                        </div>
-                        <div className="dash-metric text-primary">
-                          {impactData.impact?.directDependents?.length ?? 0}
-                        </div>
+
+                  {/* Right: Active Target File Card */}
+                  {selectedImpactFile && (
+                    <div className="bg-[#084851] border border-[#20D6D8]/20 rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-sm self-start md:self-auto">
+                      <div className="w-8 h-8 rounded-lg bg-[#20D6D8]/15 border border-[#20D6D8]/30 text-[#20D6D8] flex items-center justify-center shrink-0">
+                        <FolderGit className="w-4 h-4" />
                       </div>
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
-                          Transitive Impact
-                        </div>
-                        <div className="dash-metric text-amber-400">
-                          {impactData.impact?.transitiveDependents?.length ?? 0}
-                        </div>
-                      </div>
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="dash-metadata text-zinc-500 uppercase tracking-widest mb-1">
-                          Risk Score
-                        </div>
-                        <div className="dash-metric text-red-400">
-                          {impactData.impact?.impactScore ?? 0}
-                        </div>
+                      <div>
+                        <span className="text-[10px] text-[#9BC9CE] font-semibold uppercase tracking-wider block leading-tight">
+                          Active Target
+                        </span>
+                        <span className="text-xs font-bold text-white font-mono block mt-0.5 max-w-[200px] truncate">
+                          {selectedImpactFile.split(/[/\\]/).pop()}
+                        </span>
                       </div>
                     </div>
-                    {impactData.impact?.directDependents &&
-                      impactData.impact.directDependents.length > 0 && (
-                        <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                          <div className="dash-section-heading text-zinc-400 uppercase tracking-[0.06em] mb-3">
-                            Directly Impacted Files
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                            {impactData.impact.directDependents
-                              .slice(0, 10)
-                              .map((f: string, i: number) => (
-                                <code
-                                  key={i}
-                                  className="dash-filepath text-zinc-300 truncate"
-                                >
-                                  {f}
-                                </code>
-                              ))}
-                          </div>
+                  )}
+                </header>
+
+                {/* ── 2. FOUR REDESIGNED METRIC CARDS ── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Card 1: DIRECT IMPACT (Teal Accent) */}
+                  <div className="rounded-2xl bg-[#084851] border border-[#27D4D8]/25 p-4 sm:p-5 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-[#27D4D8]/50 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-[#27D4D8]/15 border border-[#27D4D8]/35 text-[#27D4D8] flex items-center justify-center shrink-0">
+                        <Network className="w-4.5 h-4.5" />
+                      </div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#9BC9CE]">
+                        DIRECT IMPACT
+                      </span>
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl sm:text-[38px] font-extrabold font-mono text-[#27D4D8] leading-none">
+                          {computedImpact?.directDependents?.length ?? 0}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-[#053B43] mt-3 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[#27D4D8]"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                10,
+                                (computedImpact?.directDependents?.length ?? 0) * 20
+                              )
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: TRANSITIVE IMPACT (Yellow Accent) */}
+                  <div className="rounded-2xl bg-[#084851] border border-[#FFC42E]/25 p-4 sm:p-5 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-[#FFC42E]/50 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-[#FFC42E]/15 border border-[#FFC42E]/35 text-[#FFC42E] flex items-center justify-center shrink-0">
+                        <Layers className="w-4.5 h-4.5" />
+                      </div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#9BC9CE]">
+                        TRANSITIVE IMPACT
+                      </span>
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl sm:text-[38px] font-extrabold font-mono text-[#FFC42E] leading-none">
+                          {computedImpact?.transitiveDependents?.length ?? 0}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-[#053B43] mt-3 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[#FFC42E]"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                10,
+                                (computedImpact?.transitiveDependents?.length ?? 0) * 15
+                              )
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: RISK SCORE (Red Accent) */}
+                  <div className="rounded-2xl bg-[#084851] border border-[rgba(255,57,77,0.35)] p-4 sm:p-5 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-[rgba(255,57,77,0.6)] transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-[#FF394D]/15 border border-[#FF394D]/35 text-[#FF394D] flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-4.5 h-4.5" />
+                      </div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#9BC9CE]">
+                        RISK SCORE
+                      </span>
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="flex items-baseline gap-2">
+                        <span
+                          className={`text-3xl sm:text-[38px] font-extrabold font-mono leading-none ${
+                            (computedImpact?.impactScore ?? 0) > 40
+                              ? "text-[#FF394D]"
+                              : (computedImpact?.impactScore ?? 0) > 15
+                              ? "text-[#FFC42E]"
+                              : "text-[#27D4D8]"
+                          }`}
+                        >
+                          {computedImpact?.impactScore ?? 0}%
+                        </span>
+                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-[#FF394D]/15 text-[#FF394D] border border-[#FF394D]/30">
+                          {(computedImpact?.impactScore ?? 0) > 40
+                            ? "HIGH"
+                            : (computedImpact?.impactScore ?? 0) > 15
+                            ? "MED"
+                            : "LOW"}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-[#053B43] mt-3 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[#F52F45] to-[#FF394D]"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(10, computedImpact?.impactScore ?? 0)
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: TOTAL AFFECTED (Cyan/Teal Accent) */}
+                  <div className="rounded-2xl bg-[#084851] border border-[#20D6D8]/25 p-4 sm:p-5 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-[#20D6D8]/50 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-xl bg-[#20D6D8]/15 border border-[#20D6D8]/35 text-[#20D6D8] flex items-center justify-center shrink-0">
+                        <Activity className="w-4.5 h-4.5" />
+                      </div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#9BC9CE]">
+                        TOTAL AFFECTED
+                      </span>
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl sm:text-[38px] font-extrabold font-mono text-white leading-none">
+                          {(computedImpact?.directDependents?.length ?? 0) +
+                            (computedImpact?.transitiveDependents?.length ?? 0)}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-[#053B43] mt-3 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[#20D6D8]"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                10,
+                                ((computedImpact?.directDependents?.length ?? 0) +
+                                  (computedImpact?.transitiveDependents?.length ?? 0)) *
+                                  12
+                              )
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2-Column Impact Studio */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                  {/* Left Column: Searchable Project Files List */}
+                  <div className="lg:col-span-4 bg-[#084851] rounded-2xl p-4 border border-[#176873]/50 shadow-xl flex flex-col space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#9BC9CE] flex items-center gap-1.5">
+                        <FolderGit size={14} className="text-[#20D6D8]" />
+                        Project Files ({(result.files || []).filter((f: any) => !f.path.startsWith("ROUTE:") && !f.path.startsWith("ENV:") && !f.path.startsWith("DB:")).length})
+                      </span>
+                    </div>
+
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#82AEB5]" />
+                      <input
+                        type="text"
+                        className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-[#063038] border border-[#176873]/60 rounded-xl text-[#F7FAFA] placeholder-[#82AEB5] focus:outline-none focus:border-[#20D6D8] transition-colors"
+                        placeholder="Search files to analyze impact..."
+                        value={impactSearch}
+                        onChange={(e) => setImpactSearch(e.target.value)}
+                      />
+                    </div>
+
+                    {/* File List */}
+                    <div className="space-y-1.5 max-h-[520px] overflow-y-auto pr-1">
+                      {(result.files ?? [])
+                        .filter(
+                          (f: any) =>
+                            !f.path.startsWith("ROUTE:") &&
+                            !f.path.startsWith("ENV:") &&
+                            !f.path.startsWith("DB:") &&
+                            !f.path.startsWith("ENTITY:") &&
+                            (!impactSearch ||
+                              f.path.toLowerCase().includes(impactSearch.toLowerCase()))
+                        )
+                        .map((f: any, i: number) => {
+                          const isSelected = selectedImpactFile === f.path;
+                          const fileName = f.path.split(/[/\\]/).pop() || f.path;
+                          const dirPath = f.path.substring(0, f.path.lastIndexOf(/[/\\]/.test(f.path) ? f.path.match(/[/\\]/)![0] : "")) || "";
+                          const isService = f.path.toLowerCase().includes("service");
+                          const isController = f.path.toLowerCase().includes("controller") || f.path.toLowerCase().includes("route");
+                          const isModel = f.path.toLowerCase().includes("model") || f.path.toLowerCase().includes("schema");
+
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => setSelectedImpactFile(f.path)}
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-mono transition-all flex items-center justify-between gap-2 group ${
+                                isSelected
+                                  ? "bg-[#16C7A1]/20 border border-[#16C7A1]/60 text-white font-bold shadow-sm"
+                                  : "bg-[#063038]/70 hover:bg-[#0E4954] border border-[#176873]/30 text-[#A8C9CD] hover:text-white"
+                              }`}
+                            >
+                              <div className="min-w-0 truncate">
+                                <div className="truncate text-white font-medium text-[11px]">
+                                  {fileName}
+                                </div>
+                                <div className="truncate text-[10px] text-[#6E989E]">
+                                  {dirPath || f.path}
+                                </div>
+                              </div>
+                              <span
+                                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
+                                  isService
+                                    ? "bg-[#20D6D8]/20 text-[#20D6D8]"
+                                    : isController
+                                    ? "bg-[#FF5064]/20 text-[#FF5064]"
+                                    : isModel
+                                    ? "bg-[#FFC42E]/20 text-[#FFC42E]"
+                                    : "bg-white/10 text-[#82AEB5]"
+                                }`}
+                              >
+                                {isService ? "SVC" : isController ? "RTE" : isModel ? "MDL" : "FILE"}
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Dynamic Impact Dashboard */}
+                  <div className="lg:col-span-8 space-y-4">
+                    {/* Selected File Details Banner */}
+                    <div className="bg-[#084851] rounded-2xl p-4 border border-[rgba(32,214,216,0.2)] shadow-sm flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#82AEB5]">
+                          Target File Under Analysis
+                        </div>
+                        <div className="text-sm font-bold font-mono text-white truncate mt-0.5">
+                          {selectedImpactFile || "Select a file to calculate blast radius"}
+                        </div>
+                      </div>
+                      {isImpactLoading && (
+                        <div className="flex items-center gap-1.5 text-xs text-[#20D6D8] font-mono shrink-0">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Analyzing...</span>
                         </div>
                       )}
+                    </div>
+
+                    {/* Directly Impacted Files Panel */}
+                    <div className="bg-[#063038]/90 backdrop-blur-xl rounded-xl p-4 border border-[#176873]/50 shadow-xl space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-[#176873]/30">
+                        <span className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                          <Network size={14} className="text-[#20D6D8]" />
+                          Directly Dependent Files ({(computedImpact?.directDependents || []).length})
+                        </span>
+                        <span className="text-[10px] text-[#82AEB5]">
+                          Click any file to switch target
+                        </span>
+                      </div>
+
+                      {(computedImpact?.directDependents || []).length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                          {computedImpact!.directDependents.map((f: string, i: number) => (
+                            <button
+                              key={i}
+                              onClick={() => setSelectedImpactFile(f)}
+                              className="text-left px-3 py-2 rounded-lg bg-[#083E48] hover:bg-[#0E4954] border border-[#176873]/40 text-xs font-mono text-white transition-all flex items-center justify-between gap-2 group"
+                            >
+                              <span className="truncate text-zinc-200 group-hover:text-white">
+                                {f}
+                              </span>
+                              <ChevronRight size={14} className="text-[#82AEB5] group-hover:text-[#20D6D8] shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-5 text-center bg-[#073942]/50 rounded-lg border border-[#176873]/20">
+                          <CheckCircle2 size={20} className="text-[#16C7A1] mx-auto mb-1.5" />
+                          <p className="text-xs font-semibold text-white">
+                            Isolated or Leaf Node
+                          </p>
+                          <p className="text-[11px] text-[#82AEB5] mt-0.5">
+                            No other files directly depend on this module. Changes here have minimal blast radius.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Transitive & Outgoing Dependency Flow */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Outgoing Imports */}
+                      <div className="bg-[#063038]/90 backdrop-blur-xl rounded-xl p-3.5 border border-[#176873]/50 shadow-xl space-y-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#9BC9CE] flex items-center gap-1.5">
+                          <Split size={13} className="text-[#16C7A1]" />
+                          Outgoing Imports ({(computedImpact?.outgoingDependencies || []).length})
+                        </span>
+                        {(computedImpact?.outgoingDependencies || []).length > 0 ? (
+                          <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                            {computedImpact!.outgoingDependencies.map((dep: string, i: number) => (
+                              <div
+                                key={i}
+                                className="px-2.5 py-1.5 rounded bg-[#083E48]/80 text-[11px] font-mono text-[#C3D5D8] truncate"
+                              >
+                                {dep}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-[#82AEB5] py-2">No internal imports detected.</p>
+                        )}
+                      </div>
+
+                      {/* Transitive Ripple Impact */}
+                      <div className="bg-[#063038]/90 backdrop-blur-xl rounded-xl p-3.5 border border-[#176873]/50 shadow-xl space-y-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#9BC9CE] flex items-center gap-1.5">
+                          <Workflow size={13} className="text-[#FFC42E]" />
+                          Transitive Cascades ({(computedImpact?.transitiveDependents || []).length})
+                        </span>
+                        {(computedImpact?.transitiveDependents || []).length > 0 ? (
+                          <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                            {computedImpact!.transitiveDependents.map((dep: string, i: number) => (
+                              <div
+                                key={i}
+                                className="px-2.5 py-1.5 rounded bg-[#083E48]/80 text-[11px] font-mono text-[#C3D5D8] truncate"
+                              >
+                                {dep}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-[#82AEB5] py-2">No secondary ripple dependents.</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             )}
 
             {/* ─── COMPARE TAB ─── */}
             {activeResultTab === "compare" && (
-              <div className="w-full max-w-[1450px] mx-auto space-y-6 text-left">
-                <div className="mb-6">
-                  <p className="dash-eyebrow text-emerald-400">
-                    Version Diff
-                  </p>
-                  <h2 className="dash-title text-white mt-1">
-                    Architecture Comparison
-                  </h2>
-                </div>
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1">
-                    <label className="dash-metadata text-zinc-500 uppercase tracking-widest block mb-2">
-                      Compare with Job ID
-                    </label>
-                    <input
-                      className="w-full py-2 px-3 dash-body bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none focus:border-primary/40"
-                      placeholder="Enter job ID to compare..."
-                      value={compareJobId}
-                      onChange={(e) => setCompareJobId(e.target.value)}
-                    />
+              <div className="w-full max-w-[1450px] mx-auto space-y-4 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-[#176873]/30">
+                  <div>
+                    <p className="dash-eyebrow text-[#20D6D8] flex items-center gap-1.5">
+                      <GitCompare size={13} className="text-[#20D6D8]" />
+                      VERSION DIFF
+                    </p>
+                    <h2 className="dash-title text-white mt-0.5">
+                      Architecture & Version Comparison
+                    </h2>
+                    <p className="text-xs text-[#9BC9CE] mt-0.5">
+                      Compare architectural changes, added/removed files, and routes against previous scans or baseline versions.
+                    </p>
                   </div>
-                  {jobsListData?.jobs && jobsListData.jobs.length > 0 && (
-                    <select
-                      className="py-2 px-3 dash-body bg-zinc-900/80 border border-border/60 rounded-lg text-zinc-300 focus:outline-none"
-                      onChange={(e) => setCompareJobId(e.target.value)}
-                      value={compareJobId}
-                    >
-                      <option value="">Select job...</option>
-                      {jobsListData.jobs
-                        .filter((j: any) => j.jobId !== currentJobId)
-                        .map((j: any) => (
-                          <option key={j.jobId} value={j.jobId}>
-                            {j.jobId} ({j.status})
-                          </option>
-                        ))}
-                    </select>
+                </div>
+
+                {/* Job / Scan Selector Strip */}
+                <div className="bg-[#073C45] rounded-xl p-3.5 border border-[rgba(32,214,216,0.18)] shadow-sm flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#82AEB5] block mb-1">
+                      Compare Current Scan ({currentJobId || "Active"}) With:
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        className="w-full py-1.5 px-3 text-xs font-mono bg-[#093C45]/80 border border-[#176873]/60 rounded-lg text-white placeholder-[#82AEB5] focus:outline-none focus:border-[#16C7A1]"
+                        placeholder="Enter Job ID or select from previous scans..."
+                        value={compareJobId}
+                        onChange={(e) => setCompareJobId(e.target.value)}
+                      />
+                      {jobsListData?.jobs && jobsListData.jobs.length > 0 && (
+                        <select
+                          className="py-1.5 px-3 text-xs font-mono bg-[#093C45] border border-[#176873]/60 rounded-lg text-white focus:outline-none shrink-0"
+                          onChange={(e) => setCompareJobId(e.target.value)}
+                          value={compareJobId}
+                        >
+                          <option value="">Choose scan...</option>
+                          {jobsListData.jobs
+                            .filter((j) => j.jobId !== currentJobId)
+                            .map((j) => (
+                              <option key={j.jobId} value={j.jobId}>
+                                {j.jobId.substring(0, 12)} ({j.status})
+                              </option>
+                            ))}
+                        </select>
+                      )}
+                    </div>
+                  </div>
+                  {isCompareLoading && (
+                    <div className="flex items-center gap-1.5 text-xs text-[#20D6D8] font-mono shrink-0 self-end md:self-center">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Diffing versions...</span>
+                    </div>
                   )}
                 </div>
-                {isCompareLoading && (
-                  <div className="flex items-center gap-2 text-zinc-500 dash-metadata">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Running
-                    comparison...
-                  </div>
-                )}
-                {compareData && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-emerald-950/10 border border-emerald-900/30 rounded-xl p-4">
-                        <div className="dash-metadata text-emerald-500 uppercase tracking-widest mb-1">
+
+                {/* Compare Results or Baseline Snapshot */}
+                {compareData ? (
+                  <div className="space-y-4">
+                    {/* Diff KPI Cards */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-[#073C45] rounded-xl p-3 border border-emerald-500/30 shadow-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
                           Added Files
                         </div>
-                        <div className="dash-metric text-emerald-400">
-                          {compareData.summary?.addedFilesCount ?? 0}
+                        <div className="text-xl font-black font-mono text-emerald-400 mt-1">
+                          +{compareData.summary?.addedFilesCount ?? 0}
                         </div>
                       </div>
-                      <div className="bg-red-950/10 border border-red-900/30 rounded-xl p-4">
-                        <div className="dash-metadata text-red-500 uppercase tracking-widest mb-1">
+                      <div className="bg-[#073C45] rounded-xl p-3 border border-red-500/30 shadow-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-red-400">
                           Removed Files
                         </div>
-                        <div className="dash-metric text-red-400">
-                          {compareData.summary?.removedFilesCount ?? 0}
+                        <div className="text-xl font-black font-mono text-red-400 mt-1">
+                          -{compareData.summary?.removedFilesCount ?? 0}
                         </div>
                       </div>
-                      <div className="bg-amber-950/10 border border-amber-900/30 rounded-xl p-4">
-                        <div className="dash-metadata text-amber-500 uppercase tracking-widest mb-1">
+                      <div className="bg-[#073C45] rounded-xl p-3 border border-amber-500/30 shadow-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
                           Modified Files
                         </div>
-                        <div className="dash-metric text-amber-400">
-                          {compareData.summary?.modifiedFilesCount ?? 0}
+                        <div className="text-xl font-black font-mono text-amber-400 mt-1">
+                          ~{compareData.summary?.modifiedFilesCount ?? 0}
                         </div>
                       </div>
                     </div>
+
+                    {/* File Changes List */}
                     {compareData.files && compareData.files.length > 0 && (
-                      <div className="bg-zinc-900/60 border border-border/50 rounded-xl p-4">
-                        <div className="dash-section-heading text-zinc-400 uppercase tracking-[0.06em] mb-3">
-                          File Changes
+                      <div className="bg-[#063038]/90 backdrop-blur-xl rounded-xl p-4 border border-[#176873]/50 shadow-xl space-y-3">
+                        <div className="text-xs font-bold uppercase tracking-wider text-white pb-2 border-b border-[#176873]/30">
+                          File Level Architectural Changes ({compareData.files.length})
                         </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                           {compareData.files.map((file, idx) => (
                             <div
                               key={idx}
-                              className="flex items-center justify-between py-1 border-b border-zinc-800/60 last:border-0"
+                              className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#083E48] border border-[#176873]/30 text-xs font-mono"
                             >
-                              <span className="dash-filepath text-zinc-300 truncate max-w-[70%]">
+                              <span className="text-zinc-200 truncate max-w-[70%]">
                                 {file.path}
                               </span>
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`dash-badge px-1.5 py-0.5 rounded capitalize ${file.status === "added"
-                                    ? "bg-emerald-500/10 text-emerald-400"
-                                    : file.status === "removed"
-                                      ? "bg-red-500/10 text-red-400"
-                                      : "bg-amber-500/10 text-amber-400"
-                                    }`}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                    file.status === "added"
+                                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                      : file.status === "removed"
+                                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                      : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                  }`}
                                 >
                                   {file.status}
                                 </span>
                                 {file.linesDiff !== 0 && (
                                   <span
-                                    className={`dash-metadata font-mono ${file.linesDiff > 0 ? "text-emerald-400" : "text-red-400"}`}
+                                    className={`text-[11px] font-mono font-semibold ${
+                                      file.linesDiff > 0 ? "text-emerald-400" : "text-red-400"
+                                    }`}
                                   >
-                                    {file.linesDiff > 0
-                                      ? `+${file.linesDiff}`
-                                      : file.linesDiff}{" "}
-                                    lines
+                                    {file.linesDiff > 0 ? `+${file.linesDiff}` : file.linesDiff} lines
                                   </span>
                                 )}
                               </div>
@@ -2733,6 +3136,90 @@ export default function Home() {
                         </div>
                       </div>
                     )}
+                  </div>
+                ) : (
+                  /* Baseline Architecture Snapshot when no 2nd job is selected */
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="bg-[#073C45] rounded-xl p-3 border border-[rgba(32,214,216,0.18)] shadow-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#82AEB5]">
+                          Baseline Routes
+                        </div>
+                        <div className="text-xl font-black font-mono text-[#20D6D8] mt-1">
+                          {(result.routes || []).length}
+                        </div>
+                        <div className="text-[10px] text-[#6E989E] mt-0.5">
+                          Active API endpoints
+                        </div>
+                      </div>
+
+                      <div className="bg-[#073C45] rounded-xl p-3 border border-[rgba(32,214,216,0.18)] shadow-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#82AEB5]">
+                          Source Files
+                        </div>
+                        <div className="text-xl font-black font-mono text-[#16C7A1] mt-1">
+                          {(result.files || []).filter((f) => !f.path.startsWith("ROUTE:") && !f.path.startsWith("ENV:") && !f.path.startsWith("DB:")).length}
+                        </div>
+                        <div className="text-[10px] text-[#6E989E] mt-0.5">
+                          Analyzed modules
+                        </div>
+                      </div>
+
+                      <div className="bg-[#073C45] rounded-xl p-3 border border-[rgba(32,214,216,0.18)] shadow-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#82AEB5]">
+                          Dependency Links
+                        </div>
+                        <div className="text-xl font-black font-mono text-[#FFC42E] mt-1">
+                          {(result.dependencies || []).length}
+                        </div>
+                        <div className="text-[10px] text-[#6E989E] mt-0.5">
+                          Graph connections
+                        </div>
+                      </div>
+
+                      <div className="bg-[#073C45] rounded-xl p-3 border border-[rgba(32,214,216,0.18)] shadow-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#82AEB5]">
+                          Env Configurations
+                        </div>
+                        <div className="text-xl font-black font-mono text-white mt-1">
+                          {(result.envVars || []).length}
+                        </div>
+                        <div className="text-[10px] text-[#6E989E] mt-0.5">
+                          Discovered env keys
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#063038]/90 backdrop-blur-xl rounded-xl p-5 border border-[#176873]/50 shadow-xl flex flex-col items-center text-center space-y-3">
+                      <div className="w-12 h-12 rounded-xl bg-[#094752] border border-[#20D6D8]/30 text-[#20D6D8] flex items-center justify-center">
+                        <GitCompare size={22} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white">
+                          Ready for Architecture Version Comparison
+                        </h3>
+                        <p className="text-xs text-[#8AAEB3] max-w-lg mx-auto mt-1 leading-relaxed">
+                          Scan another branch, pull request, or commit ID to compute comprehensive architecture diffs, identify route additions/removals, and detect architectural drift.
+                        </p>
+                      </div>
+                      {scans.length > 1 && (
+                        <div className="pt-2 flex flex-wrap justify-center gap-2">
+                          {scans
+                            .filter((s) => s.id !== currentJobId)
+                            .slice(0, 4)
+                            .map((s) => (
+                              <button
+                                key={s.id}
+                                onClick={() => setCompareJobId(s.id)}
+                                className="px-3 py-1.5 rounded-lg bg-[#083E48] hover:bg-[#0E4954] border border-[#176873]/50 text-xs font-mono text-[#20D6D8] transition-all flex items-center gap-1.5"
+                              >
+                                <History size={12} />
+                                <span>Compare with {((s as any).repository || (s as any).repoName || "").split("/").pop() || s.id.substring(0, 8)}</span>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -3390,130 +3877,283 @@ export default function Home() {
         </AnimatePresence>
 
         {/* AI Chat Floating Widget */}
-        {result && activeResultTab !== "env" && (
-          <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+        {result && activeResultTab !== "env" && activeResultTab !== "arch" && activeResultTab !== "routes" && (
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
             <AnimatePresence>
               {isChatOpen && (
                 <motion.div
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                  className="w-80 md:w-96 h-[480px] bg-[#002D33] border border-[rgba(32,214,216,0.3)] rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4 backdrop-blur-xl"
+                  className="w-[360px] sm:w-[440px] md:w-[480px] h-[580px] sm:h-[620px] bg-[#032328] border border-[#176873]/60 rounded-2xl shadow-2xl shadow-black/70 flex flex-col overflow-hidden mb-4 backdrop-blur-2xl text-left select-none font-sans"
                 >
-                  {/* Header */}
-                  <div className="p-4 bg-[rgba(4,58,64,0.8)] border-b border-[rgba(32,214,216,0.2)] flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Bot className="w-4 h-4 text-[#20D6D8]" />
+                  {/* 1. Header matching Image 2 */}
+                  <div className="p-4 sm:p-5 bg-[#032328] border-b border-[#176873]/30 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#F52F45] to-[#E02438] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#F52F45]/30">
+                        <Bot className="w-6 h-6 text-white" />
+                      </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">
+                        <span className="text-sm sm:text-base font-extrabold text-white block leading-tight">
                           AI Architect Assistant
                         </span>
-                        <span className="text-[10px] text-[#9BC9CE]">
-                          Q&A on {result.tree?.name || "codebase"}
+                        <span className="text-xs text-[#20D6D8] block mt-0.5 font-mono">
+                          Q&A on {result.tree?.name || "helix.git"}
                         </span>
                       </div>
                     </div>
                     <button
                       onClick={() => setIsChatOpen(false)}
-                      className="p-1 rounded hover:bg-white/10 text-[#9BC9CE] hover:text-white transition cursor-pointer"
+                      className="w-8 h-8 rounded-lg bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-[#9BC9CE] hover:text-white flex items-center justify-center transition cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
-                  {/* Message list */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+                  {/* 2. Navigation Tabs (Ask | Explain Code | Find Issues) */}
+                  <div className="flex items-center px-5 pt-3 border-b border-[#176873]/30 bg-[#032328]/60 gap-6">
+                    <button
+                      onClick={() => setActiveChatTab("ask")}
+                      className={`flex items-center gap-2 pb-2.5 text-xs font-bold transition-all relative cursor-pointer ${
+                        activeChatTab === "ask"
+                          ? "text-white"
+                          : "text-[#82AEB5] hover:text-white"
+                      }`}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-[#F52F45]" />
+                      <span>Ask</span>
+                      {activeChatTab === "ask" && (
+                        <motion.div
+                          layoutId="chatTabIndicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F52F45] rounded-full"
+                        />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveChatTab("explain");
+                        setChatMessage("Explain the architecture and main workflows of this project");
+                      }}
+                      className={`flex items-center gap-2 pb-2.5 text-xs font-bold transition-all relative cursor-pointer ${
+                        activeChatTab === "explain"
+                          ? "text-white"
+                          : "text-[#82AEB5] hover:text-white"
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Explain Code</span>
+                      {activeChatTab === "explain" && (
+                        <motion.div
+                          layoutId="chatTabIndicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F52F45] rounded-full"
+                        />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveChatTab("issues");
+                        setChatMessage("Find potential architecture risks, circular dependencies, or security bottlenecks in this repository");
+                      }}
+                      className={`flex items-center gap-2 pb-2.5 text-xs font-bold transition-all relative cursor-pointer ${
+                        activeChatTab === "issues"
+                          ? "text-white"
+                          : "text-[#82AEB5] hover:text-white"
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Find Issues</span>
+                      {activeChatTab === "issues" && (
+                        <motion.div
+                          layoutId="chatTabIndicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F52F45] rounded-full"
+                        />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* 3. Message List or Empty State */}
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 flex flex-col justify-between">
                     {chatHistory.length === 0 ? (
-                      <div className="h-full flex flex-col items-center justify-center text-center p-6 my-auto">
-                        <Sparkles className="w-8 h-8 text-[#20D6D8]/60 mb-2 animate-pulse" />
-                        <p className="text-xs font-bold text-white mb-1">
+                      <div className="h-full flex flex-col items-center justify-center text-center my-auto w-full">
+                        {/* Vector Graphic Illustration */}
+                        <div className="relative w-40 h-28 mx-auto flex items-center justify-center mb-2">
+                          <div className="absolute inset-0 bg-[#20D6D8]/10 rounded-full blur-xl" />
+                          <svg viewBox="0 0 160 120" className="w-full h-full drop-shadow-md relative z-10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <ellipse cx="80" cy="108" rx="55" ry="8" fill="#021C21" opacity="0.6" />
+                            <rect x="54" y="44" width="76" height="50" rx="14" fill="#0C4C56" stroke="#176873" strokeWidth="1.5" />
+                            <path d="M72 94 L82 104 L84 94 Z" fill="#0C4C56" />
+                            <line x1="68" y1="60" x2="114" y2="60" stroke="#20D6D8" strokeWidth="3" strokeLinecap="round" />
+                            <line x1="68" y1="72" x2="102" y2="72" stroke="#20D6D8" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+                            
+                            <rect x="28" y="16" width="84" height="50" rx="14" fill="#FFEAE8" />
+                            <path d="M42 66 L34 76 L48 66 Z" fill="#FFEAE8" />
+                            <text x="38" y="47" fill="#F52F45" fontSize="16" fontWeight="bold" fontFamily="monospace">&lt;/&gt;</text>
+                            <line x1="72" y1="36" x2="98" y2="36" stroke="#F5A3AA" strokeWidth="3" strokeLinecap="round" />
+                            <line x1="72" y1="48" x2="92" y2="48" stroke="#F5A3AA" strokeWidth="3" strokeLinecap="round" />
+                            
+                            <path d="M125 18 L127 24 L133 26 L127 28 L125 34 L123 28 L117 26 L123 24 Z" fill="#20D6D8" />
+                            <path d="M138 32 L139 35 L142 36 L139 37 L138 40 L137 37 L134 36 L137 35 Z" fill="#20D6D8" opacity="0.7" />
+                            <path d="M142 46 L148 48" stroke="#20D6D8" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                        </div>
+
+                        <h4 className="text-base sm:text-lg font-extrabold text-white text-center">
                           Ask anything about this codebase
+                        </h4>
+                        <p className="text-xs text-[#9BC9CE] text-center max-w-[290px] mx-auto mt-1 leading-relaxed">
+                          Get code explanations, detect architectural patterns, or scan for vulnerabilities.
                         </p>
-                        <p className="text-[10px] text-[#9BC9CE] max-w-[200px]">
-                          Get code explanations, detect architectural patterns,
-                          or scan for vulnerabilities.
-                        </p>
+
+                        {/* 4 Quick Action Buttons (2x2 Grid) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-5 w-full">
+                          <button
+                            onClick={() => {
+                              const prompt = selectedImpactFile ? `Explain ${selectedImpactFile} and its role in the codebase` : "Explain the core services and their responsibilities";
+                              setChatMessage(prompt);
+                            }}
+                            className="px-3.5 py-2.5 rounded-xl bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-xs font-medium text-white flex items-center gap-2.5 transition-all text-left group hover:border-[#20D6D8]/40 cursor-pointer"
+                          >
+                            <Code2 className="w-4 h-4 text-[#F52F45] shrink-0" />
+                            <span className="truncate">Explain this file</span>
+                          </button>
+
+                          <button
+                            onClick={() => setChatMessage("Can you provide an architectural overview of this project and show major component connections?")}
+                            className="px-3.5 py-2.5 rounded-xl bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-xs font-medium text-white flex items-center gap-2.5 transition-all text-left group hover:border-[#20D6D8]/40 cursor-pointer"
+                          >
+                            <Network className="w-4 h-4 text-[#20D6D8] shrink-0" />
+                            <span className="truncate">Show architecture</span>
+                          </button>
+
+                          <button
+                            onClick={() => setChatMessage("Scan this codebase for potential architecture issues, bottlenecks, or circular dependencies.")}
+                            className="px-3.5 py-2.5 rounded-xl bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-xs font-medium text-white flex items-center gap-2.5 transition-all text-left group hover:border-[#20D6D8]/40 cursor-pointer"
+                          >
+                            <Search className="w-4 h-4 text-[#F52F45] shrink-0" />
+                            <span className="truncate">Find potential issues</span>
+                          </button>
+
+                          <button
+                            onClick={() => setChatMessage("Summarize the key data models, database schemas, and endpoints in this module.")}
+                            className="px-3.5 py-2.5 rounded-xl bg-[#063038] hover:bg-[#0A3F4A] border border-[#176873]/50 text-xs font-medium text-white flex items-center gap-2.5 transition-all text-left group hover:border-[#20D6D8]/40 cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4 text-[#20D6D8] shrink-0" />
+                            <span className="truncate">Summarize this module</span>
+                          </button>
+                        </div>
                       </div>
                     ) : (
-                      chatHistory.map((msg, i) => {
-                        const isUser = msg.role === "user";
-                        return (
-                          <div
-                            key={msg.id || i}
-                            className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
-                          >
+                      <div className="space-y-3">
+                        {chatHistory.map((msg, i) => {
+                          const isUser = msg.role === "user";
+                          return (
                             <div
-                              className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${isUser
-                                ? "bg-[#20D6D8] text-[#002D33] font-semibold rounded-tr-none"
-                                : "bg-[rgba(4,58,64,0.7)] text-[#F5FAFA] border border-[rgba(32,214,216,0.2)] rounded-tl-none"
-                                }`}
+                              key={msg.id || i}
+                              className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
                             >
-                              <p className="whitespace-pre-wrap">
-                                {msg.content}
-                              </p>
-                            </div>
+                              <div
+                                className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
+                                  isUser
+                                    ? "bg-[#20D6D8] text-[#002D33] font-semibold rounded-tr-none"
+                                    : "bg-[#063038] text-[#F5FAFA] border border-[#176873]/50 rounded-tl-none"
+                                }`}
+                              >
+                                <p className="whitespace-pre-wrap">
+                                  {msg.content}
+                                </p>
+                              </div>
 
-                            {/* Agent logs */}
-                            {!isUser &&
-                              msg.agentLogs &&
-                              msg.agentLogs.length > 0 && (
-                                <div className="mt-1 space-y-1 w-full pl-2">
-                                  {msg.agentLogs.map((log: string, lIdx: number) => (
-                                    <div
-                                      key={lIdx}
-                                      className="text-[10px] text-zinc-500 font-mono flex items-center gap-1.5"
-                                    >
-                                      <Terminal className="w-3 h-3 text-zinc-600" />
-                                      {log}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
+                              {/* Agent logs */}
+                              {!isUser &&
+                                msg.agentLogs &&
+                                msg.agentLogs.length > 0 && (
+                                  <div className="mt-1 space-y-1 w-full pl-2">
+                                    {msg.agentLogs.map((log: string, lIdx: number) => (
+                                      <div
+                                        key={lIdx}
+                                        className="text-[10px] text-[#82AEB5] font-mono flex items-center gap-1.5"
+                                      >
+                                        <Terminal className="w-3 h-3 text-[#20D6D8]" />
+                                        {log}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                            </div>
+                          );
+                        })}
+                        {chatMutation.isPending && (
+                          <div className="flex items-center gap-2 text-[#9BC9CE] text-[10px] font-mono pl-1">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#20D6D8]" />{" "}
+                            Thinking...
                           </div>
-                        );
-                      })
-                    )}
-                    {chatMutation.isPending && (
-                      <div className="flex items-center gap-2 text-[#9BC9CE] text-[10px] font-mono pl-1">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#20D6D8]" />{" "}
-                        Thinking...
+                        )}
                       </div>
                     )}
                   </div>
 
-                  {/* Input */}
-                  <div className="p-3 bg-zinc-850 border-t border-white/5 flex gap-2">
-                    <input
-                      value={chatMessage}
-                      onChange={(e) => setChatMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSendChatMessage();
-                      }}
-                      placeholder="Ask a question..."
-                      className="flex-1 px-3 py-1.5 bg-zinc-900 border border-white/5 rounded-xl text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-primary/40 transition"
-                    />
-                    <button
-                      onClick={handleSendChatMessage}
-                      disabled={chatMutation.isPending || !chatMessage.trim()}
-                      className="p-1.5 rounded-xl bg-primary text-neutral-950 hover:bg-primary-400 disabled:opacity-50 transition cursor-pointer"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </button>
+                  {/* 4. Input Container & Shortcuts Footer matching Image 2 */}
+                  <div className="p-3.5 bg-[#032328] border-t border-[#176873]/30 space-y-2">
+                    <div className="flex items-center gap-2.5 px-3.5 py-2 bg-[#062930] border border-[#176873]/60 rounded-xl focus-within:border-[#20D6D8] transition-all">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedImpactFile) {
+                            setChatMessage((prev) => `${prev ? prev + " " : ""}@${selectedImpactFile} `);
+                          }
+                        }}
+                        title="Attach context"
+                        className="text-[#82AEB5] hover:text-[#20D6D8] transition cursor-pointer"
+                      >
+                        <Paperclip className="w-4 h-4" />
+                      </button>
+                      <input
+                        value={chatMessage}
+                        onChange={(e) => setChatMessage(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && (e.ctrlKey || e.metaKey || !e.shiftKey)) {
+                            e.preventDefault();
+                            handleSendChatMessage();
+                          }
+                        }}
+                        placeholder="Ask a question..."
+                        className="flex-1 bg-transparent text-xs text-white placeholder-[#82AEB5] focus:outline-none"
+                      />
+                      <button
+                        onClick={handleSendChatMessage}
+                        disabled={chatMutation.isPending || !chatMessage.trim()}
+                        className="w-7 h-7 rounded-full bg-[#F52F45] hover:bg-[#FF4055] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#F52F45]/30 disabled:opacity-40 transition-all cursor-pointer"
+                      >
+                        <Send className="w-3 h-3 text-white fill-white" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] px-1 text-[#82AEB5]">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Lightbulb className="w-3.5 h-3.5 text-[#82AEB5] shrink-0" />
+                        <span className="truncate">
+                          Try &ldquo;Explain the analysis queue flow&rdquo;
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-[#6E989E] font-mono shrink-0 pl-2">
+                        Ctrl + ↵ to send
+                      </span>
+                    </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <button
-              onClick={() => setIsChatOpen(!isChatOpen)}
-              className="w-14 h-14 rounded-full bg-gradient-to-br from-[#20D6D8] to-[#12B5B7] hover:from-[#46E1E0] hover:to-[#20D6D8] text-white flex items-center justify-center shadow-[0_4px_22px_rgba(32,214,216,0.38)] hover:scale-105 transition-all duration-200 cursor-pointer"
-            >
-              {isChatOpen ? (
-                <X className="w-6 h-6 text-white stroke-[2.2]" />
-              ) : (
+            {!isChatOpen && (
+              <button
+                onClick={() => setIsChatOpen(true)}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-[#20D6D8] to-[#12B5B7] hover:from-[#46E1E0] hover:to-[#20D6D8] text-white flex items-center justify-center shadow-[0_4px_22px_rgba(32,214,216,0.38)] hover:scale-105 transition-all duration-200 cursor-pointer"
+              >
                 <MessageSquare className="w-6 h-6 text-white stroke-[2.2]" />
-              )}
-            </button>
+              </button>
+            )}
           </div>
         )}
 

@@ -263,8 +263,20 @@ function MetroMapInternal({
       currentY += 165;
     });
 
-    // Central Core Hub Node
-    const coreHubX = 940;
+    // Calculate the rightmost X coordinate among all flow groups so Core Hub & Infra nodes NEVER overlap
+    let maxFlowGroupEndX = 230;
+    activeFeatureClusters.forEach((feat) => {
+      const flowGroups = feat.flowGroups || [];
+      if (flowGroups.length > 0) {
+        const endX = 230 + (flowGroups.length - 1) * 165 + 155;
+        if (endX > maxFlowGroupEndX) {
+          maxFlowGroupEndX = endX;
+        }
+      }
+    });
+
+    // Central Core Hub Node positioned cleanly after all flow groups
+    const coreHubX = Math.max(940, maxFlowGroupEndX + 110);
     const coreHubY = Math.max(220, currentY / 2);
 
     nodes.push({
@@ -330,7 +342,12 @@ function MetroMapInternal({
       });
     });
 
-    return { nodes, edges, canvasWidth: coreHubX + 420, canvasHeight: currentY + 80 };
+    return {
+      nodes,
+      edges,
+      canvasWidth: coreHubX + 380,
+      canvasHeight: Math.max(currentY + 80, coreHubY + 220)
+    };
   }, [activeFeatureClusters, selectedFlowGroup, sortedFeatureClusters]);
 
   // Detailed ReactFlow Graph Layout Construction

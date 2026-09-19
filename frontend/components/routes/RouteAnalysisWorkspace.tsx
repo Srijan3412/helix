@@ -1106,57 +1106,6 @@ export default function RouteAnalysisWorkspace({
                 {selectedRoute.detailedDescription}
               </div>
 
-              {/* 4 Compact Metric Cards (Height ~90-100px, No huge sparklines, Image 3) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {/* 1. Success Rate */}
-                <div className="bg-[#073B43] border border-[rgba(100,210,220,0.12)] rounded-xl p-2.5 flex flex-col justify-between shadow-xs min-h-[88px]">
-                  <div className="flex items-center justify-between text-[#82AEB5]">
-                    <span className="text-[10px] font-semibold">Success Rate</span>
-                    <Zap size={12} className="text-amber-400" />
-                  </div>
-                  <span className="text-lg sm:text-[21px] font-bold font-mono text-white leading-tight">
-                    {selectedRoute.metrics.successRate}
-                  </span>
-                  <span className="text-[9px] text-[#82AEB5]">Last 7 days</span>
-                </div>
-
-                {/* 2. Avg. Response Time */}
-                <div className="bg-[#073B43] border border-[rgba(100,210,220,0.12)] rounded-xl p-2.5 flex flex-col justify-between shadow-xs min-h-[88px]">
-                  <div className="flex items-center justify-between text-[#82AEB5]">
-                    <span className="text-[10px] font-semibold">Avg. Response Time</span>
-                    <Clock size={12} className="text-[#20D6D8]" />
-                  </div>
-                  <span className="text-lg sm:text-[21px] font-bold font-mono text-white leading-tight">
-                    {selectedRoute.metrics.avgResponseTime}
-                  </span>
-                  <span className="text-[9px] text-emerald-400 font-medium">↓ 32% vs last run</span>
-                </div>
-
-                {/* 3. Database Activity */}
-                <div className="bg-[#073B43] border border-[rgba(100,210,220,0.12)] rounded-xl p-2.5 flex flex-col justify-between shadow-xs min-h-[88px]">
-                  <div className="flex items-center justify-between text-[#82AEB5]">
-                    <span className="text-[10px] font-semibold">Database Activity</span>
-                    <Database size={12} className="text-purple-400" />
-                  </div>
-                  <span className="text-[15px] sm:text-[17px] font-bold font-mono text-white leading-tight">
-                    {selectedRoute.metrics.dbActivity}
-                  </span>
-                  <span className="text-[9px] text-[#82AEB5]">0 queries</span>
-                </div>
-
-                {/* 4. Usage */}
-                <div className="bg-[#073B43] border border-[rgba(100,210,220,0.12)] rounded-xl p-2.5 flex flex-col justify-between shadow-xs min-h-[88px]">
-                  <div className="flex items-center justify-between text-[#82AEB5]">
-                    <span className="text-[10px] font-semibold">Usage</span>
-                    <BarChart3 size={12} className="text-emerald-400" />
-                  </div>
-                  <span className="text-lg sm:text-[21px] font-bold font-mono text-white leading-tight">
-                    {selectedRoute.metrics.usage}
-                  </span>
-                  <span className="text-[9px] text-[#82AEB5]">Last 30 days</span>
-                </div>
-              </div>
-
               {/* REQUEST ACCORDION PANEL (Compact Horizontal Meta + Denser Body, Image 3) */}
               <div className="bg-[#073B43] border border-[rgba(100,210,220,0.14)] rounded-xl overflow-hidden shadow-xs">
                 <div
@@ -1485,79 +1434,60 @@ export default function RouteAnalysisWorkspace({
         {/* ── COLUMN 3: ROUTE INFORMATION INSPECTOR (Right / 3 cols) ─────────── */}
         <aside className="lg:col-span-3 xl:col-span-3 bg-[#084851] border border-[rgba(100,210,220,0.18)] rounded-2xl p-3 flex flex-col gap-2.5 overflow-y-auto h-full min-h-0 custom-scrollbar text-left select-none shadow-sm">
           
-          {/* Header with Red Vertical Accent & [ ✎ Edit ] button */}
+          {/* Header */}
           <div className="flex items-center justify-between pb-2 border-b border-white/[0.08] shrink-0">
-            <div className="flex items-start gap-2">
-              <div className="w-1 h-7 rounded-full bg-[#FF3348] shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-xs font-bold text-white uppercase font-mono tracking-wider leading-tight">
-                  ROUTE INFORMATION
-                </h3>
-                <p className="text-[10px] text-[#82AEB5] mt-0.5">
-                  Details about this API endpoint
-                </p>
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 rounded-full bg-[#FF3348] shrink-0" />
+              <h3 className="text-xs font-bold text-white uppercase font-mono tracking-wider leading-none">
+                ROUTE INFORMATION
+              </h3>
             </div>
-
-            <button className="px-2.5 py-1 rounded-lg bg-[#073C44] hover:bg-[#0A4A54] border border-[rgba(100,210,220,0.2)] text-[11px] font-semibold text-white flex items-center gap-1.5 cursor-pointer transition shadow-xs">
-              <Pencil size={11} className="text-[#20D6D8]" />
-              <span>Edit</span>
-            </button>
           </div>
 
-          {/* 5 Standardized Structured Category Cards (Image 2) */}
+          {/* Streamlined Structured Category Cards without filler subtitles */}
           <div className="space-y-1.5">
             {/* 1. Controller */}
             <div className="p-2 rounded-xl bg-[#073941] border border-[rgba(80,200,210,0.16)] flex items-center justify-between gap-2 shadow-xs hover:border-[rgba(100,210,220,0.3)] transition">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-[#9BE7E5] text-[#063C42] flex items-center justify-center shrink-0 shadow-xs">
-                  <Code2 size={18} className="stroke-[2.5]" />
+                <div className="w-8 h-8 rounded-lg bg-[#9BE7E5] text-[#063C42] flex items-center justify-center shrink-0 shadow-xs">
+                  <Code2 size={15} className="stroke-[2.5]" />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[10px] text-[#82AEB5] block font-medium">Controller</span>
-                  <span className="text-[12px] font-mono font-bold text-white truncate block leading-tight">
+                  <span className="text-[11.5px] font-mono font-bold text-white truncate block leading-tight">
                     {selectedRoute.controller}
-                  </span>
-                  <span className="text-[10px] text-[#82AEB5] block truncate mt-0.5">
-                    Handles route logic
                   </span>
                 </div>
               </div>
-              <ExternalLink size={13} className="text-[#82AEB5] hover:text-white shrink-0 cursor-pointer" />
+              <ExternalLink size={12} className="text-[#82AEB5] hover:text-white shrink-0 cursor-pointer" />
             </div>
 
             {/* 2. Service */}
             <div className="p-2 rounded-xl bg-[#073941] border border-[rgba(80,200,210,0.16)] flex items-center justify-between gap-2 shadow-xs hover:border-[rgba(100,210,220,0.3)] transition">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-[#E34A5F] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Settings size={18} />
+                <div className="w-8 h-8 rounded-lg bg-[#E34A5F] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Settings size={15} />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[10px] text-[#82AEB5] block font-medium">Service</span>
-                  <span className="text-[12px] font-mono font-bold text-white truncate block leading-tight">
+                  <span className="text-[11.5px] font-mono font-bold text-white truncate block leading-tight">
                     {selectedRoute.service}
-                  </span>
-                  <span className="text-[10px] text-[#82AEB5] block truncate mt-0.5">
-                    Business logic layer
                   </span>
                 </div>
               </div>
-              <ExternalLink size={13} className="text-[#82AEB5] hover:text-white shrink-0 cursor-pointer" />
+              <ExternalLink size={12} className="text-[#82AEB5] hover:text-white shrink-0 cursor-pointer" />
             </div>
 
             {/* 3. File */}
             <div className="p-2 rounded-xl bg-[#073941] border border-[rgba(80,200,210,0.16)] flex items-center justify-between gap-2 shadow-xs hover:border-[rgba(100,210,220,0.3)] transition">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-[#5794E8] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <FileText size={18} />
+                <div className="w-8 h-8 rounded-lg bg-[#5794E8] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <FileText size={15} />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[10px] text-[#82AEB5] block font-medium">File</span>
-                  <span className="text-[12px] font-mono font-bold text-white truncate block leading-tight">
+                  <span className="text-[11.5px] font-mono font-bold text-white truncate block leading-tight">
                     {selectedRoute.file.split(/[\\/]/).pop()}
-                  </span>
-                  <span className="text-[9.5px] font-mono text-[#82AEB5] truncate block mt-0.5">
-                    {selectedRoute.file}
                   </span>
                 </div>
               </div>
@@ -1567,9 +1497,9 @@ export default function RouteAnalysisWorkspace({
                 title="Copy File Path"
               >
                 {copiedKey === "file-path" ? (
-                  <Check size={13} className="text-[#20D6D8]" />
+                  <Check size={12} className="text-[#20D6D8]" />
                 ) : (
-                  <Copy size={13} />
+                  <Copy size={12} />
                 )}
               </button>
             </div>
@@ -1577,16 +1507,13 @@ export default function RouteAnalysisWorkspace({
             {/* 4. Lines */}
             <div className="p-2 rounded-xl bg-[#073941] border border-[rgba(80,200,210,0.16)] flex items-center justify-between gap-2 shadow-xs hover:border-[rgba(100,210,220,0.3)] transition">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-[#F28BA5] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Layers size={18} />
+                <div className="w-8 h-8 rounded-lg bg-[#F28BA5] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Layers size={15} />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[10px] text-[#82AEB5] block font-medium">Lines</span>
-                  <span className="text-[12px] font-mono font-bold text-white block leading-tight">
+                  <span className="text-[11.5px] font-mono font-bold text-white block leading-tight">
                     {selectedRoute.lines}
-                  </span>
-                  <span className="text-[10px] text-[#82AEB5] block truncate mt-0.5">
-                    View source in repository
                   </span>
                 </div>
               </div>
@@ -1596,9 +1523,9 @@ export default function RouteAnalysisWorkspace({
                 title="Copy Lines"
               >
                 {copiedKey === "lines-copy" ? (
-                  <Check size={13} className="text-[#20D6D8]" />
+                  <Check size={12} className="text-[#20D6D8]" />
                 ) : (
-                  <Copy size={13} />
+                  <Copy size={12} />
                 )}
               </button>
             </div>
@@ -1606,20 +1533,17 @@ export default function RouteAnalysisWorkspace({
             {/* 5. Module */}
             <div className="p-2 rounded-xl bg-[#073941] border border-[rgba(80,200,210,0.16)] flex items-center justify-between gap-2 shadow-xs hover:border-[rgba(100,210,220,0.3)] transition">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-[#9B6AFF] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Folder size={18} />
+                <div className="w-8 h-8 rounded-lg bg-[#9B6AFF] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Folder size={15} />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[10px] text-[#82AEB5] block font-medium">Module</span>
-                  <span className="text-[12px] font-mono font-bold text-white truncate block leading-tight">
+                  <span className="text-[11.5px] font-mono font-bold text-white truncate block leading-tight">
                     {selectedRoute.module}
-                  </span>
-                  <span className="text-[10px] text-[#82AEB5] block truncate mt-0.5">
-                    Part of backend jobs module
                   </span>
                 </div>
               </div>
-              <ExternalLink size={13} className="text-[#82AEB5] hover:text-white shrink-0 cursor-pointer" />
+              <ExternalLink size={12} className="text-[#82AEB5] hover:text-white shrink-0 cursor-pointer" />
             </div>
           </div>
 
