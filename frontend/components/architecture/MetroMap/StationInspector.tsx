@@ -63,6 +63,15 @@ export function StationInspector({
 }: StationInspectorProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'stations' | 'code' | 'metrics'>('overview');
   const [copied, setCopied] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    fileInfo: true,
+    dependencies: false,
+    codeMetrics: false,
+  });
+
+  const toggleSection = (key: string) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // If nothing is selected
   if (!station && !flowGroup && !feature) {
@@ -114,186 +123,191 @@ export function StationInspector({
             { name: 'Application Core', type: 'Internal', color: '#16C7A3' }
           ]);
 
-    const content = (
-      <div className="w-full h-full bg-[#0B171B] border border-[#64BEC7]/15 rounded-2xl flex flex-col text-left overflow-hidden">
+    return (
+      <div className="w-full h-full bg-[#08171C] border-l border-[rgba(80,180,200,0.14)] flex flex-col text-left overflow-hidden select-none">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[#64BEC7]/15 flex items-center justify-between shrink-0 bg-[#071113]">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-            <h2 className="text-sm font-bold text-[#F4F7F7] font-mono truncate max-w-[220px]">
-              {station.lineName || 'Feature Station'}
+        <div className="px-4 py-3 border-b border-[rgba(80,180,200,0.12)] flex items-center justify-between shrink-0 bg-[#071219]">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            <h2 className="text-xs font-bold text-[#F4F7F7] font-mono uppercase tracking-wider truncate">
+              {station.lineName || 'Station Details'}
             </h2>
           </div>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] text-[#9FB0B4] hover:text-[#F4F7F7] transition"
+              className="p-1 rounded-md bg-[#0A171C] hover:bg-[#0E1B20] text-[#718287] hover:text-[#F4F7F7] border border-[rgba(80,180,200,0.15)] transition cursor-pointer"
+              title="Close Details Panel (Esc)"
             >
-              <X size={16} />
+              <X size={14} />
             </button>
           )}
         </div>
 
         {/* Station Hero Card */}
-        <div className="p-5 border-b border-[#64BEC7]/15 bg-[#0E1B20]/60 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
+        <div className="p-4 border-b border-[rgba(80,180,200,0.12)] bg-[#0A171C]/70 space-y-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
               <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-[#64BEC7]/20"
-                style={{ backgroundColor: `${color}20` }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-[rgba(80,180,200,0.2)]"
+                style={{ backgroundColor: `${color}18` }}
               >
-                <Icon size={20} style={{ color }} />
+                <Icon size={16} style={{ color }} />
               </div>
-              <div>
-                <h3 className="text-base font-bold text-[#F4F7F7] font-mono truncate max-w-[180px]">
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-[#F4F7F7] font-mono truncate" title={stationTitle}>
                   {stationTitle}
                 </h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-[#16C7A3]/15 text-[#16C7A3] border border-[#16C7A3]/30">
-                    {station.httpMethod || station.type || 'GET'}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="px-1.5 py-0.2 rounded text-[9.5px] font-mono font-bold uppercase bg-[#16C7A3]/15 text-[#16C7A3] border border-[#16C7A3]/30">
+                    {station.httpMethod || station.type?.toUpperCase() || 'SERVICE'}
                   </span>
-                  <span className="text-[11px] font-mono text-[#9FB0B4]">
-                    {station.stationNumber || 'ST-01'}
+                  <span className="text-[10px] font-mono text-[#718287]">
+                    {rawFileName}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Circular Health Meter */}
-            <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle cx="28" cy="28" r="22" stroke="rgba(100,190,205,0.15)" strokeWidth="4" fill="transparent" />
-                <circle
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  stroke={healthScore >= 90 ? '#16C7A3' : healthScore >= 70 ? '#F5A623' : '#FF3B4E'}
-                  strokeWidth="4"
-                  strokeDasharray={2 * Math.PI * 22}
-                  strokeDashoffset={2 * Math.PI * 22 * (1 - healthScore / 100)}
-                  strokeLinecap="round"
-                  fill="transparent"
-                />
-              </svg>
-              <span className="absolute text-xs font-bold font-mono text-[#F4F7F7]">{healthScore}%</span>
+            {/* Health Badge */}
+            <div className="px-2 py-0.5 rounded-md bg-[#16C7A3]/10 border border-[#16C7A3]/30 text-[#16C7A3] font-mono font-bold text-[10.5px] shrink-0">
+              {healthScore}%
             </div>
           </div>
 
-          <p className="text-xs text-[#9FB0B4] leading-relaxed line-clamp-2">
+          <p className="text-[11px] text-[#9FB0B4] leading-relaxed line-clamp-2">
             {getFeatureDescription(station.lineName || station.name)}
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="px-5 border-b border-[#64BEC7]/15 flex items-center gap-4 text-xs font-mono font-semibold bg-[#071113]">
-          {(['overview', 'stations', 'code', 'metrics'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`py-2.5 capitalize border-b-2 transition ${
-                activeTab === tab
-                  ? 'border-[#16C7A3] text-[#16C7A3]'
-                  : 'border-transparent text-[#718287] hover:text-[#9FB0B4]'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Body Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 font-sans text-xs scrollbar-thin">
-          {activeTab === 'overview' && (
-            <>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-[#0E1B20] border border-[#64BEC7]/15 rounded-xl p-2.5">
-                  <span className="text-[10px] text-[#718287] uppercase font-mono block mb-1">Health</span>
-                  <span className="font-mono font-bold text-[#16C7A3]">{healthStatusText}</span>
-                </div>
-                <div className="bg-[#0E1B20] border border-[#64BEC7]/15 rounded-xl p-2.5">
-                  <span className="text-[10px] text-[#718287] uppercase font-mono block mb-1">Complexity</span>
-                  <span className="font-mono font-bold text-[#F4F7F7]">{station.complexity || 36}</span>
-                </div>
-                <div className="bg-[#0E1B20] border border-[#64BEC7]/15 rounded-xl p-2.5">
-                  <span className="text-[10px] text-[#718287] uppercase font-mono block mb-1">Used By</span>
-                  <span className="font-mono font-bold text-[#F4F7F7]">{station.metrics?.dependentsCount || 3}</span>
-                </div>
+        {/* Body Content with Accordion Sections */}
+        <div className="flex-1 overflow-y-auto p-3.5 space-y-3 font-sans text-xs scrollbar-thin min-h-0">
+          {/* Key Metrics Row */}
+          <div>
+            <span className="text-[10px] font-mono font-bold text-[#718287] uppercase tracking-wider block mb-1.5">
+              Overview
+            </span>
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              <div className="bg-[#0A171C] border border-[rgba(80,180,200,0.12)] rounded-lg p-2">
+                <span className="text-[9px] text-[#718287] uppercase font-mono block mb-0.5">Health</span>
+                <span className="font-mono font-bold text-[#16C7A3] text-xs">{healthStatusText}</span>
               </div>
+              <div className="bg-[#0A171C] border border-[rgba(80,180,200,0.12)] rounded-lg p-2">
+                <span className="text-[9px] text-[#718287] uppercase font-mono block mb-0.5">Complexity</span>
+                <span className="font-mono font-bold text-[#F4F7F7] text-xs">{station.complexity || 25}</span>
+              </div>
+              <div className="bg-[#0A171C] border border-[rgba(80,180,200,0.12)] rounded-lg p-2">
+                <span className="text-[9px] text-[#718287] uppercase font-mono block mb-0.5">Used By</span>
+                <span className="font-mono font-bold text-[#F4F7F7] text-xs">{station.metrics?.dependentsCount || 3}</span>
+              </div>
+            </div>
+          </div>
 
-              {/* File Location */}
-              <div className="bg-[#0E1B20] border border-[#64BEC7]/15 rounded-xl p-3">
-                <div className="flex items-center justify-between text-[10px] text-[#718287] uppercase font-mono mb-1.5">
-                  <span>File Location</span>
-                  <button onClick={handleCopy} className="text-[#16C7A3] hover:underline flex items-center gap-1">
+          {/* Section 1: File Information (Collapsible) */}
+          <div className="border border-[rgba(80,180,200,0.12)] rounded-xl overflow-hidden bg-[#0A171C]">
+            <button
+              onClick={() => toggleSection('fileInfo')}
+              className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-bold text-[#F4F7F7] hover:bg-white/5 transition cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5">
+                <FileText size={12} className="text-[#16C7A3]" />
+                <span>File Information</span>
+              </div>
+              <ChevronRight
+                size={12}
+                className={`text-[#718287] transition-transform duration-150 ${
+                  openSections.fileInfo ? 'rotate-90' : ''
+                }`}
+              />
+            </button>
+            {openSections.fileInfo && (
+              <div className="px-3 pb-2.5 pt-0 text-[10.5px]">
+                <div className="flex items-center justify-between text-[9.5px] text-[#718287] uppercase font-mono mb-1">
+                  <span>Location</span>
+                  <button onClick={handleCopy} className="text-[#16C7A3] hover:underline flex items-center gap-1 cursor-pointer">
                     {copied ? <Check size={10} /> : <Copy size={10} />}
                     {copied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
-                <div className="font-mono text-[11px] text-[#F4F7F7] bg-[#061318] p-2 rounded border border-[#64BEC7]/10 break-all select-all">
+                <div className="font-mono text-[10px] text-[#C3D5D8] bg-[#061318] p-2 rounded border border-[rgba(80,180,200,0.1)] break-all select-all leading-relaxed">
                   {station.rawPath || station.name}
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Dependencies */}
-              <div>
-                <span className="text-[10px] font-mono text-[#718287] uppercase tracking-wider block mb-2">Dependencies</span>
-                <div className="flex flex-wrap gap-2">
+          {/* Section 2: Dependencies (Collapsible) */}
+          <div className="border border-[rgba(80,180,200,0.12)] rounded-xl overflow-hidden bg-[#0A171C]">
+            <button
+              onClick={() => toggleSection('dependencies')}
+              className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-bold text-[#F4F7F7] hover:bg-white/5 transition cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5">
+                <Layers size={12} className="text-[#2F80ED]" />
+                <span>Dependencies ({keyDependencies.length})</span>
+              </div>
+              <ChevronRight
+                size={12}
+                className={`text-[#718287] transition-transform duration-150 ${
+                  openSections.dependencies ? 'rotate-90' : ''
+                }`}
+              />
+            </button>
+            {openSections.dependencies && (
+              <div className="px-3 pb-2.5 pt-0">
+                <div className="flex flex-wrap gap-1.5">
                   {keyDependencies.map((dep: any, i: number) => (
                     <span
                       key={i}
-                      className="px-2.5 py-1 rounded-lg bg-[#0E1B20] border border-[#64BEC7]/15 font-mono text-[11px] text-[#F4F7F7] flex items-center gap-1.5"
+                      className="px-2 py-0.5 rounded-md bg-[#061318] border border-[rgba(80,180,200,0.12)] font-mono text-[10px] text-[#F4F7F7] flex items-center gap-1.5"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: dep.color }} />
-                      {dep.name}
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dep.color }} />
+                      <span className="truncate max-w-[120px]">{dep.name}</span>
                     </span>
                   ))}
                 </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
 
-          {activeTab === 'stations' && (
-            <div className="space-y-2">
-              <div className="p-3 rounded-xl bg-[#0E1B20] border border-[#64BEC7]/15 flex items-center justify-between">
-                <span className="font-mono text-[#F4F7F7] font-bold">{stationTitle}</span>
-                <span className="text-[10px] font-mono text-[#16C7A3]">Active Station</span>
+          {/* Section 3: Code Metrics (Collapsible) */}
+          <div className="border border-[rgba(80,180,200,0.12)] rounded-xl overflow-hidden bg-[#0A171C]">
+            <button
+              onClick={() => toggleSection('codeMetrics')}
+              className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-mono font-bold text-[#F4F7F7] hover:bg-white/5 transition cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5">
+                <Code size={12} className="text-[#8B5CF6]" />
+                <span>Code Metrics</span>
               </div>
-            </div>
-          )}
-
-          {activeTab === 'code' && (
-            <div className="p-3 bg-[#0E1B20] border border-[#64BEC7]/15 rounded-xl font-mono space-y-2 text-[11px]">
-              <div className="flex justify-between border-b border-[#64BEC7]/10 pb-1.5">
-                <span className="text-[#718287]">Source File</span>
-                <span className="text-[#F4F7F7] truncate max-w-[160px]">{rawFileName}</span>
+              <ChevronRight
+                size={12}
+                className={`text-[#718287] transition-transform duration-150 ${
+                  openSections.codeMetrics ? 'rotate-90' : ''
+                }`}
+              />
+            </button>
+            {openSections.codeMetrics && (
+              <div className="px-3 pb-2.5 pt-0 font-mono text-[10.5px] space-y-1.5">
+                <div className="flex justify-between border-b border-white/5 pb-1">
+                  <span className="text-[#718287]">Lines of Code</span>
+                  <span className="text-[#16C7A3] font-bold">{station.lineCount || 240}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-1">
+                  <span className="text-[#718287]">Auth Guard</span>
+                  <span className="text-[#F4F7F7] font-bold">{station.isAuthRequired ? 'Required' : 'Public'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#718287]">Station Type</span>
+                  <span className="text-[#C3D5D8] uppercase">{station.type || 'route'}</span>
+                </div>
               </div>
-              <div className="flex justify-between border-b border-[#64BEC7]/10 pb-1.5">
-                <span className="text-[#718287]">Lines of Code</span>
-                <span className="text-[#16C7A3] font-bold">{station.lineCount || 240}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#718287]">Auth Guard</span>
-                <span className="text-[#F4F7F7] font-bold">{station.isAuthRequired ? 'Required' : 'Public'}</span>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'metrics' && (
-            <div className="space-y-2 font-mono text-[11px]">
-              <div className="p-2.5 bg-[#0E1B20] border border-[#64BEC7]/15 rounded-xl flex justify-between">
-                <span className="text-[#718287]">Health Score</span>
-                <span className="text-[#16C7A3] font-bold">{healthScore}%</span>
-              </div>
-              <div className="p-2.5 bg-[#0E1B20] border border-[#64BEC7]/15 rounded-xl flex justify-between">
-                <span className="text-[#718287]">Complexity Index</span>
-                <span className="text-[#F4F7F7] font-bold">{station.complexity || 36}</span>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-[#64BEC7]/15 bg-[#071113] shrink-0">
+        {/* Footer Action Button */}
+        <div className="p-3 border-t border-[rgba(80,180,200,0.12)] bg-[#071219] shrink-0">
           <button
             onClick={() => {
               if (onSetImpactFile && onSwitchTab) {
@@ -301,16 +315,14 @@ export function StationInspector({
                 onSwitchTab('layer');
               }
             }}
-            className="w-full py-2.5 rounded-xl bg-[#16C7A3] hover:bg-[#13b592] text-[#061318] font-bold font-mono text-xs flex items-center justify-center gap-2 transition"
+            className="w-full py-2 rounded-xl bg-[#16C7A3] hover:bg-[#13b592] text-[#061318] font-bold font-mono text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm"
           >
-            <Code size={14} />
+            <Code size={13} />
             <span>Open in Editor &rarr;</span>
           </button>
         </div>
       </div>
     );
-
-    return content;
   }
 
   // 2. Flow Group Level

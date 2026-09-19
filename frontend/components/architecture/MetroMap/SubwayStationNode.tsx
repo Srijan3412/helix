@@ -215,25 +215,29 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
     >
       {handles}
 
-      {/* Station ID Tag sitting clean above or next to station */}
+      {/* Station ID Tag / Method Badge sitting cleanly above station */}
       <div className="flex items-center justify-between w-full px-0.5 mb-1 leading-none">
-        <span className="text-[9px] font-extrabold font-mono tracking-wide" style={{ color: color || '#38BDF8' }}>
-          {stationID}
-        </span>
         {methodBadge ? (
-          <span className={`px-1 py-0.5 rounded text-[8px] font-bold border ${methodBadge.bg}`}>
+          <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold border ${methodBadge.bg}`}>
             {methodUpper}
           </span>
         ) : typeBadge ? (
-          <span className={`px-1 py-0.5 rounded text-[8px] font-bold border ${typeBadge.bg}`}>
+          <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold border ${typeBadge.bg}`}>
             {typeBadge.label}
           </span>
-        ) : null}
+        ) : (
+          <span className="text-[8.5px] font-bold font-mono tracking-wide" style={{ color: color || '#38BDF8' }}>
+            {type?.toUpperCase() || 'NODE'}
+          </span>
+        )}
+        {isAuthRequired && (
+          <span className="w-1.5 h-1.5 rounded-full bg-[#16C7A1]" title="Auth Guard" />
+        )}
       </div>
 
-      {/* Main Compact Station Card (~102px wide x 48px high) */}
+      {/* Main Compact Station Card (~105px wide x 48px high) */}
       <div
-        className={`relative bg-[#0B1526]/95 hover:bg-[#0F1E36] rounded-lg p-2 text-left w-[102px] h-[48px] flex flex-col justify-between border ${borderColor} backdrop-blur-md transition-all duration-200 shadow-md`}
+        className={`relative bg-[#0B1526]/95 hover:bg-[#0F1E36] rounded-lg p-2 text-left w-[105px] h-[48px] flex flex-col justify-between border ${borderColor} backdrop-blur-md transition-all duration-200 shadow-md`}
         style={{
           borderLeftWidth: '3px',
           borderLeftColor: color || '#2F80ED'
@@ -241,23 +245,18 @@ const SubwayStationNodeComponent = ({ data, selected }: SubwayStationNodeProps) 
       >
         <div className="w-full">
           <span
-            className="text-[11px] font-semibold text-[#F7FAFA] truncate font-mono block leading-snug"
+            className="text-[11px] font-bold text-[#F7FAFA] truncate font-mono block leading-snug"
             title={mainTitle}
           >
             {mainTitle}
           </span>
         </div>
 
-        {/* Bottom indicator row */}
-        <div className="flex items-center justify-between text-[8.5px] text-[#A5B0BA]">
-          <span className="truncate max-w-[70px] font-sans text-[8.5px] opacity-80" title={rawPath || name}>
+        {/* Bottom secondary path */}
+        <div className="flex items-center justify-between text-[8.5px] text-[#8EA9AE] opacity-80">
+          <span className="truncate max-w-[90px] font-sans text-[8.5px]" title={rawPath || name}>
             {(rawPath || name || '').split(/[\\/]/).pop()}
           </span>
-          {isAuthRequired ? (
-            <span className="w-1.5 h-1.5 rounded-full bg-[#16C7A1]" title="Auth Protected" />
-          ) : (
-            <span className="w-1.5 h-1.5 rounded-full bg-[#F5B800]/70" title="Public" />
-          )}
         </div>
       </div>
     </motion.div>

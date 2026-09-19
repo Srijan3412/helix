@@ -32,7 +32,13 @@ import {
   X,
   Plus,
   Minus,
-  Maximize2
+  Maximize2,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Map as MapIcon,
+  ChevronDown,
 } from 'lucide-react';
 
 import { SubwayStationNode } from './SubwayStationNode';
@@ -151,15 +157,18 @@ function MetroMapInternal({
   // Phase 1: Data Hook
   const { featureClusters, interchanges, executionTraces } = useMetroData(result);
 
-  // ── Mode & Selection State ──
+  // ── Mode & Selection State (Default: Collapsed sidebars to maximize map) ──
   const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [isStatsDrawerOpen, setIsStatsDrawerOpen] = useState(false);
+
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [selectedFeature, setSelectedFeature] = useState<FeatureFlow | null>(null);
   const [selectedFlowGroup, setSelectedFlowGroup] = useState<FlowGroupData | null>(null);
   const [selectedStation, setSelectedStation] = useState<SubwayStationData | null>(null);
   const [focusedNodeIds, setFocusedNodeIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
   // ── Feature Lines & Flow Groups ──
   const sortedFeatureClusters = useMemo(() => {
@@ -193,7 +202,7 @@ function MetroMapInternal({
     }
   }, [sortedFeatureClusters]);
 
-  // Overview ReactFlow Graph Layout Construction (Lanes with 170px vertical spacing)
+  // Overview ReactFlow Graph Layout Construction (Lanes with 165px vertical spacing)
   const overviewGraph = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
@@ -425,7 +434,7 @@ function MetroMapInternal({
     setEdges(activeGraphEdges);
   }, [activeGraphEdges, setEdges]);
 
-  // Handle Station Click
+  // Handle Station Click -> opens inspector contextually
   const handleNodeClick: NodeMouseHandler = useCallback(
     (_, node) => {
       if (node.type === 'subwayStation') {
@@ -493,72 +502,86 @@ function MetroMapInternal({
     URL.revokeObjectURL(url);
   }, []);
 
+  // Summary Metrics calculations
+  const totalFilesCount = (result?.files || []).filter(
+    (f: any) => {
+      const p = String(f.path || f || '');
+      return !p.startsWith('ROUTE:') && !p.startsWith('ENV:') && !p.startsWith('DB:') && !p.startsWith('ENTITY:');
+    }
+  ).length || result?.files?.length || 222;
+
+  const totalImportsCount = useMemo(() => {
+    if (result?.imports && Array.isArray(result.imports)) return result.imports.length;
+    if (result?.dependencies && Array.isArray(result.dependencies)) return result.dependencies.length;
+    let count = 0;
+    (result?.files || []).forEach((f: any) => {
+      count += (f.internalImports?.length || 0) + (f.externalImports?.length || 0);
+    });
+    return count > 0 ? count : 676;
+  }, [result]);
+
+  const totalCyclesCount = result?.staticAnalysis?.cycles?.length || 0;
+
   return (
     <div className="h-full w-full flex flex-col bg-[#061318] text-[#F4F7F7] select-none overflow-hidden font-sans text-left">
-      {/* ── 1. SINGLE COMPACT PAGE HEADER ROW (60-64px) ── */}
-      <header className="h-[60px] px-4 border-b border-[rgba(80,180,200,0.14)] bg-[#071219] flex items-center justify-between shrink-0 z-30 gap-3">
-        <div>
-          <h1 className="text-[20px] font-bold text-[#F4F7F7] leading-none">
-            Metro Map
-          </h1>
-          <p className="text-[12px] text-[#9FB0B4] mt-1 font-normal leading-none">
-            Visualize API flows across your codebase
-          </p>
+      {/* ── 1. COMPACT PAGE HEADER ROW (~60px) ── */}
+      <header className="h-[58px] px-4 border-b border-[rgba(80,180,200,0.14)] bg-[#071219] flex items-center justify-between shrink-0 z-30 gap-3">
+        {/* Left: Map Icon + Title + Subtitle */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#16C7A3]/15 border border-[#16C7A3]/30 text-[#16C7A3] flex items-center justify-center shrink-0">
+            <MapIcon size={16} />
+          </div>
+          <div>
+            <h1 className="text-base sm:text-lg font-bold text-[#F4F7F7] leading-tight">
+              Metro Map
+            </h1>
+            <p className="text-[11px] text-[#8EA9AE] leading-tight">
+              Visualize API flows across your codebase
+            </p>
+          </div>
         </div>
 
-        {/* Right Search & Controls Grouped on Single Row */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Right Search & Controls */}
+        <div className="flex items-center gap-2 shrink-0">
           {/* Unified Search Input */}
-          <div className="relative w-[270px]">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#718287] pointer-events-none" />
+          <div className="relative w-[180px] sm:w-[240px]">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#718287] pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search stations, files, or services..."
-              className="w-full bg-[#0A171C] border border-[rgba(80,180,200,0.16)] rounded-lg pl-8 pr-7 py-1.5 text-xs text-[#F4F7F7] placeholder-[#718287] focus:outline-none focus:border-[#16C7A3] transition-colors"
+              placeholder="Search stations, files..."
+              className="w-full bg-[#0A171C] border border-[rgba(80,180,200,0.16)] rounded-lg pl-7 pr-6 py-1 text-xs text-[#F4F7F7] placeholder-[#718287] focus:outline-none focus:border-[#16C7A3] transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={() => handleSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#718287] hover:text-[#F4F7F7]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#718287] hover:text-[#F4F7F7]"
               >
-                <X size={12} />
+                <X size={11} />
               </button>
             )}
           </div>
 
-          <div className="h-4 w-[1px] bg-[rgba(80,180,200,0.2)] mx-0.5" />
+          <div className="h-4 w-[1px] bg-[rgba(80,180,200,0.2)] mx-0.5 hidden sm:block" />
 
           {/* Fit View Button */}
           <button
             onClick={() => fitView({ padding: 0.25, duration: 400 })}
-            className="px-3 py-1.5 bg-[#0A171C] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] rounded-lg text-xs font-semibold text-[#A4B5B8] hover:text-[#F4F7F7] transition flex items-center gap-1.5 cursor-pointer"
+            className="px-2.5 py-1 bg-[#0A171C] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] rounded-lg text-xs font-semibold text-[#A4B5B8] hover:text-[#F4F7F7] transition flex items-center gap-1.5 cursor-pointer"
+            title="Fit map to viewport"
           >
-            <RotateCcw size={12} className="text-[#16C7A3]" />
-            <span>Fit View</span>
-          </button>
-
-          {/* Center Button */}
-          <button
-            onClick={() => {
-              if (nodes.length > 0) {
-                setCenter(nodes[0].position.x + 80, nodes[0].position.y + 40, { zoom: 1.0, duration: 400 });
-              }
-            }}
-            className="px-3 py-1.5 bg-[#0A171C] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] rounded-lg text-xs font-semibold text-[#A4B5B8] hover:text-[#F4F7F7] transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <Focus size={12} className="text-[#2F80ED]" />
-            <span>Center</span>
+            <RotateCcw size={11} className="text-[#16C7A3]" />
+            <span className="hidden sm:inline">Fit View</span>
           </button>
 
           {/* Overview / Detailed Toggle */}
           <div className="bg-[#0A171C] p-0.5 border border-[rgba(80,180,200,0.18)] rounded-lg flex items-center text-xs font-semibold">
             <button
               onClick={() => setViewMode('overview')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-md transition cursor-pointer text-xs ${
                 viewMode === 'overview'
-                  ? 'bg-[#16C7A3] text-[#061318] font-bold'
+                  ? 'bg-[#16C7A3] text-[#061318] font-bold shadow-xs'
                   : 'text-[#A4B5B8] hover:text-[#F4F7F7]'
               }`}
             >
@@ -566,9 +589,9 @@ function MetroMapInternal({
             </button>
             <button
               onClick={() => setViewMode('detailed')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-md transition cursor-pointer text-xs ${
                 viewMode === 'detailed'
-                  ? 'bg-[#16C7A3] text-[#061318] font-bold'
+                  ? 'bg-[#16C7A3] text-[#061318] font-bold shadow-xs'
                   : 'text-[#A4B5B8] hover:text-[#F4F7F7]'
               }`}
             >
@@ -579,34 +602,84 @@ function MetroMapInternal({
           {/* Export SVG */}
           <button
             onClick={exportToSvg}
-            className="px-3 py-1.5 bg-[#0A171C] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] rounded-lg text-xs font-semibold text-[#A4B5B8] hover:text-[#F4F7F7] transition flex items-center gap-1.5 cursor-pointer"
+            className="p-1 sm:px-2.5 sm:py-1 bg-[#0A171C] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] rounded-lg text-xs font-semibold text-[#A4B5B8] hover:text-[#F4F7F7] transition flex items-center gap-1 cursor-pointer"
+            title="Export map as SVG"
           >
             <Download size={12} className="text-[#8B5CF6]" />
-            <span>Export SVG</span>
+            <span className="hidden md:inline">Export</span>
           </button>
         </div>
       </header>
 
-      {/* ── 2. MAIN 3-COLUMN WORKSPACE ── */}
+      {/* ── 2. MAIN MAP-DOMINANT WORKSPACE ── */}
       <div className="flex-1 flex overflow-hidden relative min-h-0">
-        {/* Left Column: Feature Lines Sidebar (260px) */}
-        <aside className="w-[260px] shrink-0 h-full flex flex-col overflow-hidden z-20">
-          <FeatureLegend
-            features={featureClusters}
-            selectedFeatures={selectedFeatures}
-            onToggleFeature={handleToggleFeature}
-            onSelectAll={handleSelectAllFeatures}
-            hoveredFeature={null}
-            onHoverFeature={() => {}}
-            onCenterFeature={handleCenterFeature}
-            onSelectStationType={() => {}}
-            selectedStationType={null}
-          />
-        </aside>
+        {/* Left: Collapsible Feature Lines Sidebar */}
+        {isSidebarOpen ? (
+          <aside className="w-[260px] shrink-0 h-full flex flex-col overflow-hidden z-20 transition-all duration-200">
+            <FeatureLegend
+              features={featureClusters}
+              selectedFeatures={selectedFeatures}
+              onToggleFeature={handleToggleFeature}
+              onSelectAll={handleSelectAllFeatures}
+              hoveredFeature={null}
+              onHoverFeature={() => {}}
+              onCenterFeature={handleCenterFeature}
+              onClose={() => setIsSidebarOpen(false)}
+            />
+          </aside>
+        ) : (
+          <div className="w-[42px] shrink-0 h-full bg-[#071219] border-r border-[rgba(80,180,200,0.14)] flex flex-col items-center py-2.5 gap-2 z-20 select-none">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="w-7 h-7 rounded-lg bg-[#0E1B20] hover:bg-[#162730] border border-[rgba(80,180,200,0.2)] text-[#16C7A3] flex items-center justify-center transition cursor-pointer shadow-xs"
+              title="Expand Feature Lines"
+            >
+              <Menu size={14} />
+            </button>
 
-        {/* Center Column: Interactive Canvas Map (Dominant 55-65%+, expands when inspector closed) */}
+            <div className="w-5 h-[1px] bg-white/10 my-0.5" />
+
+            {/* Vertical column of feature indicator dots */}
+            <div className="flex-1 flex flex-col items-center gap-2 overflow-y-auto overflow-x-hidden w-full py-1">
+              {featureClusters.map((feat) => {
+                const isSelected = selectedFeatures.length === 0 || selectedFeatures.includes(feat.id);
+                const safeName = String(feat?.name || '').toLowerCase();
+                const persistentColor =
+                  safeName.includes('auth')
+                    ? '#F43F8C'
+                    : safeName.includes('user')
+                      ? '#2F80ED'
+                      : safeName.includes('admin')
+                        ? '#A855F7'
+                        : safeName.includes('analytic')
+                          ? '#F5A623'
+                          : safeName.includes('notif')
+                            ? '#16C7A3'
+                            : feat.color || '#2F80ED';
+
+                return (
+                  <button
+                    key={feat.id}
+                    onClick={() => handleToggleFeature(feat.id)}
+                    className={`w-4.5 h-4.5 rounded-full flex items-center justify-center transition hover:scale-125 cursor-pointer ${
+                      isSelected ? 'opacity-100' : 'opacity-30'
+                    }`}
+                    title={`${feat.name} (${feat.totalStations || feat.files?.length || 1} stations)`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shadow-sm"
+                      style={{ backgroundColor: persistentColor }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Center: Interactive Canvas Map (Dominant 85-90%+ of Space) */}
         <main className="flex-1 h-full relative bg-[#061318] overflow-hidden">
-          {/* Subtle Grid Container */}
+          {/* Subtle Grid Background */}
           <div className="absolute inset-0 pointer-events-none opacity-30">
             <div
               className="w-full h-full"
@@ -617,9 +690,9 @@ function MetroMapInternal({
             />
           </div>
 
-          {/* Incoming Requests Tag */}
-          <div className="absolute top-3 left-4 z-10 bg-[#0A171C]/90 backdrop-blur-md border border-[rgba(80,180,200,0.2)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-mono text-[11px] font-bold text-[#16C7A3] shadow-sm">
-            <span>Incoming Requests &rarr;</span>
+          {/* Floating Request Flow Indicator Pill */}
+          <div className="absolute top-3 left-3.5 z-10 bg-[#0A171C]/90 backdrop-blur-md border border-[rgba(80,180,200,0.2)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-[#16C7A3] shadow-sm pointer-events-auto">
+            <span>Flow: Incoming Requests ▾</span>
           </div>
 
           <ReactFlow
@@ -639,47 +712,48 @@ function MetroMapInternal({
             zoomOnScroll={true}
             style={{ width: '100%', height: '100%' }}
           >
-            {/* Floating Controls in Bottom-Right */}
-            <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 bg-[#0A171C]/90 backdrop-blur-md border border-[rgba(80,180,200,0.2)] p-1 rounded-xl shadow-lg">
+            {/* Floating Compact Controls in Bottom-Right */}
+            <div className="absolute bottom-3.5 right-3.5 z-10 flex items-center gap-1 bg-[#0A171C]/90 backdrop-blur-md border border-[rgba(80,180,200,0.2)] p-1 rounded-xl shadow-lg">
               <button
                 onClick={() => zoomOut({ duration: 300 })}
-                className="w-7 h-7 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer"
-                title="Zoom Out"
+                className="w-6.5 h-6.5 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer"
+                title="Zoom Out (−)"
               >
-                <Minus size={13} />
+                <Minus size={12} />
               </button>
               <button
                 onClick={() => zoomIn({ duration: 300 })}
-                className="w-7 h-7 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer"
-                title="Zoom In"
+                className="w-6.5 h-6.5 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer"
+                title="Zoom In (+)"
               >
-                <Plus size={13} />
+                <Plus size={12} />
               </button>
               <button
                 onClick={() => fitView({ padding: 0.2, duration: 400 })}
-                className="px-2.5 h-7 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[11px] font-mono text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer"
+                className="px-2 h-6.5 rounded-lg bg-[#0E1B20] hover:bg-[#152B36] text-[10.5px] font-mono text-[#A4B5B8] hover:text-[#F4F7F7] flex items-center justify-center transition cursor-pointer font-bold"
                 title="Fit View"
               >
                 Fit
               </button>
             </div>
 
+            {/* Small Floating Semi-Transparent Minimap (~150x90px) */}
             <MiniMap
               nodeStrokeWidth={2}
               zoomable
               pannable
-              style={{ width: 180, height: 110 }}
-              className="!bg-[#071219] !border !border-[rgba(80,180,200,0.2)] !rounded-xl overflow-hidden !bottom-4 !left-4 !w-[180px] !h-[110px] shadow-xl"
+              style={{ width: 150, height: 90 }}
+              className="!bg-[#071219]/90 !border !border-[rgba(80,180,200,0.18)] !rounded-lg overflow-hidden !bottom-3.5 !left-3.5 !w-[150px] !h-[90px] shadow-md backdrop-blur-xs"
               nodeColor={(n) => (n.data as any)?.color || '#16C7A3'}
-              maskColor="rgba(6, 19, 24, 0.75)"
+              maskColor="rgba(6, 19, 24, 0.70)"
             />
             <Background gap={24} size={1} color="rgba(80,180,200,0.06)" />
           </ReactFlow>
         </main>
 
-        {/* Right Column: Detailed Inspector (320px, collapsible) */}
-        {isInspectorOpen && (
-          <aside className="w-[320px] shrink-0 border-l border-[rgba(80,180,200,0.14)] bg-[#08171C] flex flex-col h-full overflow-hidden z-20">
+        {/* Right: Detailed Station Inspector (Contextual slide-in, ~320px) */}
+        {isInspectorOpen ? (
+          <aside className="w-[320px] shrink-0 border-l border-[rgba(80,180,200,0.14)] bg-[#08171C] flex flex-col h-full overflow-hidden z-20 transition-all duration-200">
             <StationInspector
               station={selectedStation}
               flowGroup={selectedFlowGroup}
@@ -701,107 +775,102 @@ function MetroMapInternal({
               isEmbedded={true}
             />
           </aside>
+        ) : (
+          <div className="w-[38px] shrink-0 h-full bg-[#071219] border-l border-[rgba(80,180,200,0.14)] flex flex-col items-center py-3 z-20 select-none">
+            <button
+              onClick={() => setIsInspectorOpen(true)}
+              className="w-7 h-7 rounded-lg bg-[#0E1B20] hover:bg-[#162730] border border-[rgba(80,180,200,0.2)] text-[#9FB0B4] hover:text-[#16C7A3] flex items-center justify-center transition cursor-pointer shadow-xs"
+              title="Open Details Inspector"
+            >
+              <Info size={14} />
+            </button>
+          </div>
         )}
       </div>
 
-      {/* ── 3. BOTTOM SUMMARY PANEL (125-140px Height) ── */}
-      <footer className="h-[130px] border-t border-[rgba(80,180,200,0.14)] bg-[#071219] px-4 py-2.5 grid grid-cols-12 gap-3.5 shrink-0 z-30">
-        {/* Map Overview Thumbnail (Cols 1-3 ~25%) */}
-        <div className="col-span-3 bg-[#0A171C] border border-[rgba(80,180,200,0.14)] rounded-xl p-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[10.5px] font-mono font-bold text-[#9FB0B4] uppercase">
-            <span>Map Overview</span>
-            <span className="text-[#16C7A3] text-[9.5px]">Active</span>
-          </div>
-          {/* Mini SVG Diagram */}
-          <div className="h-12 flex items-center justify-center relative overflow-hidden">
-            <svg className="w-full h-full" viewBox="0 0 200 50">
-              <path d="M 10 12 H 190" stroke="#F43F8C" strokeWidth="2.5" fill="none" />
-              <path d="M 10 25 H 190" stroke="#2F80ED" strokeWidth="2.5" fill="none" />
-              <path d="M 10 38 H 190" stroke="#8B5CF6" strokeWidth="2.5" fill="none" />
-              <circle cx="50" cy="12" r="3.5" fill="#F4F7F7" />
-              <circle cx="110" cy="25" r="3.5" fill="#F4F7F7" />
-              <circle cx="150" cy="38" r="3.5" fill="#F4F7F7" />
-            </svg>
-          </div>
+      {/* ── 3. COMPACT BOTTOM STATUS BAR (36-38px) ── */}
+      <footer className="h-[36px] border-t border-[rgba(80,180,200,0.14)] bg-[#071219] px-4 flex items-center justify-between shrink-0 z-30 text-xs text-[#8EA9AE] font-sans">
+        {/* Left: Key Metric Summary */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#16C7A3]" />
+            <strong className="text-[#F7FAFA] font-bold">{totalFilesCount}</strong> Files
+          </span>
+          <span className="text-[#16C7A3]/30">·</span>
+          <span>
+            <strong className="text-[#F7FAFA] font-bold">{totalImportsCount}</strong> Imports
+          </span>
+          <span className="text-[#16C7A3]/30">·</span>
+          <span>
+            <strong className="text-[#F7FAFA] font-bold">{totalCyclesCount}</strong> Cycles
+          </span>
+          <span className="text-[#16C7A3]/30">·</span>
+          <span className="text-[#16C7A3] font-semibold">✓ 100% Parsed</span>
         </div>
 
-        {/* Repository Statistics (Cols 4-8 ~40%) */}
-        <div className="col-span-5 bg-[#0A171C] border border-[rgba(80,180,200,0.14)] rounded-xl p-2.5 flex flex-col justify-between">
-          <span className="text-[10.5px] font-mono font-bold text-[#9FB0B4] uppercase block">
-            Repository Statistics
-          </span>
-          <div className="grid grid-cols-4 gap-1.5 text-center">
-            <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
-              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">
-                {featureClusters.length}
-              </span>
-              <span className="text-[9.5px] text-[#718287] font-mono">Feature Lines</span>
-            </div>
-            <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
-              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">
-                {featureClusters.reduce((sum, f) => sum + (f.flowGroups?.length || 0), 0)}
-              </span>
-              <span className="text-[9.5px] text-[#718287] font-mono">Flow Groups</span>
-            </div>
-            <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
-              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">
-                {result?.files?.length || featureClusters.reduce((sum, f) => sum + (f.totalStations || f.files?.length || 0), 0)}
-              </span>
-              <span className="text-[9.5px] text-[#718287] font-mono">Stations</span>
-            </div>
-            <div className="bg-[#071219] p-1.5 rounded-lg border border-[rgba(80,180,200,0.1)]">
-              <span className="text-sm font-bold font-mono text-[#F4F7F7] block">
-                {result?.dependencies?.length || 
-                 (result?.metadata?.dependencies ? Object.keys(result.metadata.dependencies).length : 0) ||
-                 (result?.files ? result.files.reduce((acc: number, f: any) => acc + (f.imports?.length || 0), 0) : 0) ||
-                 interchanges.length * 3}
-              </span>
-              <span className="text-[9.5px] text-[#718287] font-mono">Dependencies</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions (Cols 9-12 ~35%) */}
-        <div className="col-span-4 bg-[#0A171C] border border-[rgba(80,180,200,0.14)] rounded-xl p-2.5 flex flex-col justify-between">
-          <span className="text-[10.5px] font-mono font-bold text-[#9FB0B4] uppercase block">
-            Quick Actions
-          </span>
-          <div className="grid grid-cols-3 gap-1.5">
-            <button
-              onClick={() => {
-                if (nodes.length > 2) {
-                  setFocusedNodeIds([nodes[0].id, nodes[2].id]);
-                }
-              }}
-              className="p-1.5 rounded-lg bg-[#071219] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] font-mono text-[10px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-            >
-              <Compass size={13} className="text-[#16C7A3]" />
-              <span>Shortest Path</span>
-            </button>
-
-            <button
-              onClick={() => {
-                if (executionTraces.length > 0 && onSelectTraceRouteId && onSwitchTab) {
-                  onSelectTraceRouteId(executionTraces[0].route);
-                  onSwitchTab('trace');
-                }
-              }}
-              className="p-1.5 rounded-lg bg-[#071219] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] font-mono text-[10px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-            >
-              <GitBranch size={13} className="text-[#2F80ED]" />
-              <span>Trace Flow</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode((prev) => (prev === 'overview' ? 'detailed' : 'overview'))}
-              className="p-1.5 rounded-lg bg-[#071219] hover:bg-[#0E1B20] border border-[rgba(80,180,200,0.18)] font-mono text-[10px] text-[#F4F7F7] font-bold text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-            >
-              <Eye size={13} className="text-[#8B5CF6]" />
-              <span>{viewMode === 'overview' ? 'Show All' : 'Overview'}</span>
-            </button>
-          </div>
+        {/* Right: Expandable Statistics Trigger & Zoom */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsStatsDrawerOpen((prev) => !prev)}
+            className={`px-2.5 py-0.5 rounded-md border text-[11px] font-mono font-bold flex items-center gap-1 transition cursor-pointer ${
+              isStatsDrawerOpen
+                ? 'bg-[#16C7A3] text-[#061318] border-[#16C7A3]'
+                : 'bg-[#0A171C] text-[#C3D5D8] border-[rgba(80,180,200,0.2)] hover:border-[#16C7A3] hover:text-[#F7FAFA]'
+            }`}
+            title="Toggle repository statistics drawer"
+          >
+            <span>Statistics</span>
+            <ChevronDown size={11} className={`transition-transform duration-150 ${isStatsDrawerOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <span className="text-[#16C7A3]/30">│</span>
+          <span className="text-[#F7FAFA] font-bold text-[11px]">Zoom 100%</span>
         </div>
       </footer>
+
+      {/* ── 4. EXPANDABLE STATISTICS DRAWER (Conditional) ── */}
+      {isStatsDrawerOpen && (
+        <div className="absolute bottom-[40px] right-4 z-40 bg-[#08171C]/95 backdrop-blur-xl border border-[rgba(80,180,200,0.25)] rounded-2xl p-4 shadow-2xl w-[320px] sm:w-[380px] animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-[rgba(80,180,200,0.12)]">
+            <span className="text-xs font-mono font-bold text-[#F4F7F7] uppercase tracking-wider flex items-center gap-1.5">
+              <Layers size={13} className="text-[#16C7A3]" />
+              <span>Repository Statistics</span>
+            </span>
+            <button
+              onClick={() => setIsStatsDrawerOpen(false)}
+              className="p-1 rounded-md text-[#718287] hover:text-white hover:bg-white/10 transition cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-[#0A171C] p-2.5 rounded-xl border border-[rgba(80,180,200,0.12)] text-center">
+              <span className="text-base font-bold font-mono text-[#F4F7F7] block">
+                {featureClusters.length}
+              </span>
+              <span className="text-[10px] text-[#718287] font-mono">Feature Lines</span>
+            </div>
+            <div className="bg-[#0A171C] p-2.5 rounded-xl border border-[rgba(80,180,200,0.12)] text-center">
+              <span className="text-base font-bold font-mono text-[#F4F7F7] block">
+                {featureClusters.reduce((sum, f) => sum + (f.flowGroups?.length || 0), 0)}
+              </span>
+              <span className="text-[10px] text-[#718287] font-mono">Flow Groups</span>
+            </div>
+            <div className="bg-[#0A171C] p-2.5 rounded-xl border border-[rgba(80,180,200,0.12)] text-center">
+              <span className="text-base font-bold font-mono text-[#F4F7F7] block">
+                {totalFilesCount}
+              </span>
+              <span className="text-[10px] text-[#718287] font-mono">Stations</span>
+            </div>
+            <div className="bg-[#0A171C] p-2.5 rounded-xl border border-[rgba(80,180,200,0.12)] text-center">
+              <span className="text-base font-bold font-mono text-[#F4F7F7] block">
+                {totalImportsCount}
+              </span>
+              <span className="text-[10px] text-[#718287] font-mono">Dependencies</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

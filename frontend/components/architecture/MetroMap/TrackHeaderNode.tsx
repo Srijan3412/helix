@@ -39,7 +39,7 @@ const TrackHeaderNodeComponent = ({ data }: TrackHeaderNodeProps) => {
       {/* Metadata Row */}
       <div className="mt-1.5 pl-5 flex items-center gap-2">
         <span className="text-[11px] font-mono text-zinc-400 tracking-wide font-medium">
-          {stationText} · LINE {lineNumber}
+          {stationText}
         </span>
       </div>
     </div>
