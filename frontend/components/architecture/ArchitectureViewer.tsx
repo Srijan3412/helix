@@ -369,8 +369,8 @@ export default function ArchitectureViewer({
     <>
       {/* ── Standard Embedded Architecture Workspace ─────────────────────── */}
       <div className="flex flex-col h-full w-full bg-[#061318] rounded-xl overflow-hidden border border-[rgba(80,180,195,0.14)] relative text-left">
-        {/* Top Navigation Bar (50-54px) */}
-        <div className="flex items-center justify-between px-3.5 h-[50px] border-b border-[rgba(80,180,195,0.12)] bg-[#07151A] shrink-0 z-10 gap-2">
+        {/* Top Navigation Bar (48px) */}
+        <div className="flex items-center justify-between px-3.5 h-[48px] border-b border-[rgba(100,220,215,0.12)] bg-[#07151A] shrink-0 z-10 gap-2">
           <div className="flex items-center gap-1 overflow-x-auto">
             {TABS.map((tab) => {
               const isActive = activeMode === tab.id;
@@ -380,8 +380,8 @@ export default function ArchitectureViewer({
                   onClick={() => setActiveMode(tab.id)}
                   className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ${
                     isActive
-                      ? "bg-[#16C7A3] text-[#061015] font-bold shadow-sm shadow-[#16C7A3]/20"
-                      : "text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#0E202B]/70 font-medium"
+                      ? "bg-[#18C7B5] text-[#061C21] font-bold shadow-sm shadow-[#18C7B5]/25"
+                      : "text-[#9BB8BB] hover:text-[#F2F7F7] hover:bg-white/5 font-medium"
                   }`}
                 >
                   {tab.icon}
@@ -394,61 +394,61 @@ export default function ArchitectureViewer({
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setIsFullScreen(true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[#C3D5D8] hover:text-[#F7FAFA] text-xs font-semibold transition-all cursor-pointer shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-transparent hover:bg-white/5 border border-[rgba(100,220,215,0.18)] text-[#9BB8BB] hover:text-[#F2F7F7] text-xs font-medium transition-all cursor-pointer shrink-0"
               title="Expand to Full-Screen Architecture Workspace"
             >
-              <Maximize2 size={12} className="text-[#16C7A3]" />
+              <Maximize2 size={12} className="text-[#18C7B5]" />
               <span>Full-Screen</span>
             </button>
           </div>
         </div>
 
         {/* Canvas Body */}
-        <div className="flex-1 relative overflow-hidden bg-[#061318]">
+        <div className="flex-1 relative overflow-hidden bg-[#061C21]">
           {renderCanvasContent()}
         </div>
 
         {/* Bottom Status Bar */}
-        <div className="h-8 px-4 bg-[#0A171F] border-t border-[#16C7A3]/15 flex items-center justify-between text-xs text-[#8EA9AE] shrink-0 font-sans">
+        <div className="h-[38px] px-4 bg-[#07151A] border-t border-[rgba(100,220,215,0.12)] flex items-center justify-between text-xs text-[#9BB8BB] shrink-0 font-sans">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#16C7A3]" />
-              <strong className="text-[#F7FAFA] font-bold">{fileCount}</strong> Files
+              <span className="w-2 h-2 rounded-full bg-[#18C7B5]" />
+              <strong className="text-[#F2F7F7] font-bold">{fileCount}</strong> Files
             </span>
-            <span className="text-[#16C7A3]/30">·</span>
+            <span className="text-[#18C7B5]/30">·</span>
             <span>
-              <strong className="text-[#F7FAFA] font-bold">{importCount}</strong> Imports
+              <strong className="text-[#F2F7F7] font-bold">{importCount}</strong> Imports
             </span>
-            <span className="text-[#16C7A3]/30">·</span>
+            <span className="text-[#18C7B5]/30">·</span>
             <span>
-              <strong className="text-[#F7FAFA] font-bold">{cyclesCount}</strong> Cycles
+              <strong className="text-[#F2F7F7] font-bold">{cyclesCount}</strong> Cycles
             </span>
-            <span className="text-[#16C7A3]/30">·</span>
-            <span className="text-[#16C7A3] font-semibold">✓ 100% Parsed</span>
+            <span className="text-[#18C7B5]/30">·</span>
+            <span className="text-[#18C7B5] font-semibold">100% Parsed</span>
           </div>
 
           <div className="flex items-center gap-3 text-[11px]">
             <span>{coreModulesCount} Core Modules</span>
-            <span className="text-[#16C7A3]/30">·</span>
+            <span className="text-[#18C7B5]/30">·</span>
             <span>{servicesCount} Services</span>
-            <span className="text-[#16C7A3]/30">│</span>
-            <span className="text-[#F7FAFA] font-bold">Zoom 100%</span>
+            <span className="text-[#18C7B5]/30">│</span>
+            <span className="text-[#F2F7F7] font-bold">Zoom 100%</span>
           </div>
         </div>
       </div>
 
       {/* ── True Full-Screen Architecture Workspace (100vw x 100vh) ──────── */}
       {isFullScreen && mounted && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-[#061015] flex flex-col overflow-hidden select-none font-sans text-left">
+        <div className="fixed inset-0 z-[9999] bg-[#061C21] flex flex-col overflow-hidden select-none font-sans text-left">
           {/* Top Architecture Navigation */}
           {!isPresentationMode && (
-            <div className="flex items-center justify-between px-3.5 h-[50px] bg-[#0A171F] border-b border-[#16C7A3]/20 shrink-0 z-30">
+            <div className="flex items-center justify-between px-3.5 h-[48px] bg-[#07151A] border-b border-[rgba(100,220,215,0.14)] shrink-0 z-30">
               <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-1.5 pr-2.5 border-r border-[#16C7A3]/20 shrink-0">
-                  <div className="p-1 rounded bg-[#16C7A3]/15 text-[#16C7A3]">
+                <div className="flex items-center gap-1.5 pr-2.5 border-r border-[rgba(100,220,215,0.14)] shrink-0">
+                  <div className="p-1 rounded bg-[#18C7B5]/15 text-[#18C7B5]">
                     <Sparkles size={14} />
                   </div>
-                  <span className="text-xs font-bold text-[#F7FAFA] font-mono uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[#F2F7F7] font-mono uppercase tracking-wider">
                     HELIX WORKSPACE
                   </span>
                 </div>
@@ -462,8 +462,8 @@ export default function ArchitectureViewer({
                         onClick={() => setActiveMode(tab.id)}
                         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                           isActive
-                            ? "bg-[#16C7A3] text-[#061015] font-bold shadow-sm shadow-[#16C7A3]/20"
-                            : "text-[#8EA9AE] hover:text-[#F7FAFA] hover:bg-[#0E202B]/70 font-medium"
+                            ? "bg-[#18C7B5] text-[#061C21] font-bold shadow-sm shadow-[#18C7B5]/25"
+                            : "text-[#9BB8BB] hover:text-[#F2F7F7] hover:bg-white/5 font-medium"
                         }`}
                       >
                         {tab.icon}
@@ -477,16 +477,16 @@ export default function ArchitectureViewer({
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setIsPresentationMode(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0E1B20] hover:bg-[#14262E] border border-[#16C7A3]/20 text-[#F7FAFA] text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-transparent hover:bg-white/5 border border-[rgba(100,220,215,0.18)] text-[#F2F7F7] text-xs font-medium transition-colors cursor-pointer shrink-0"
                   title="Presentation Mode"
                 >
-                  <Eye size={12} className="text-[#16C7A3]" />
+                  <Eye size={12} className="text-[#18C7B5]" />
                   <span>Presentation</span>
                 </button>
 
                 <button
                   onClick={() => setIsFullScreen(false)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-transparent hover:bg-[#E83E5B]/15 border border-[#E83E5B]/50 text-[#FF7A84] text-xs font-bold transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-transparent hover:bg-[#FF4054]/10 border border-[#FF4054]/30 text-[#FF4054] text-xs font-medium transition-colors cursor-pointer shrink-0"
                   title="Exit Full-Screen (Esc)"
                 >
                   <Minimize2 size={12} />

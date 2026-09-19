@@ -157,9 +157,10 @@ function MetroMapInternal({
   // Phase 1: Data Hook
   const { featureClusters, interchanges, executionTraces } = useMetroData(result);
 
-  // ── Mode & Selection State (Default: Collapsed sidebars to maximize map) ──
+  // ── Mode & Selection State (Auto-collapsible on map click unless locked) ──
   const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarLocked, setIsSidebarLocked] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isStatsDrawerOpen, setIsStatsDrawerOpen] = useState(false);
 
@@ -454,7 +455,11 @@ function MetroMapInternal({
     setSelectedFlowGroup(null);
     setSelectedFeature(null);
     setFocusedNodeIds([]);
-  }, []);
+    // Auto-collapse sidebar when touching/clicking the map unless pinned/locked
+    if (!isSidebarLocked) {
+      setIsSidebarOpen(false);
+    }
+  }, [isSidebarLocked]);
 
   // Search Engine
   const handleSearch = useCallback(
@@ -625,6 +630,8 @@ function MetroMapInternal({
               onHoverFeature={() => {}}
               onCenterFeature={handleCenterFeature}
               onClose={() => setIsSidebarOpen(false)}
+              isLocked={isSidebarLocked}
+              onToggleLock={() => setIsSidebarLocked((prev) => !prev)}
             />
           </aside>
         ) : (

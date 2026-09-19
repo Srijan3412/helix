@@ -13,6 +13,8 @@ import {
   Cog,
   Database,
   Globe,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { FeatureCluster, SubwayStationData } from './types';
 import { getFeatureDescription } from './useMetroLayout';
@@ -28,6 +30,8 @@ interface FeatureLegendProps {
   onSelectStationType?: (type: string | null) => void;
   selectedStationType?: string | null;
   onClose?: () => void;
+  isLocked?: boolean;
+  onToggleLock?: () => void;
 }
 
 export const STATION_TYPES_CONFIG = [
@@ -47,6 +51,8 @@ export function FeatureLegend({
   onHoverFeature,
   onCenterFeature,
   onClose,
+  isLocked = false,
+  onToggleLock,
 }: FeatureLegendProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'active'>('all');
@@ -77,7 +83,7 @@ export function FeatureLegend({
 
   return (
     <div className="flex flex-col h-full text-left select-none bg-[#08171C] w-full shrink-0 border-r border-[rgba(80,180,200,0.14)] overflow-hidden">
-      {/* ── 1. Header: FEATURE LINES + Close button ── */}
+      {/* ── 1. Header: FEATURE LINES + Lock & Close buttons ── */}
       <div className="p-3 pb-2.5 border-b border-[rgba(80,180,200,0.12)] shrink-0 bg-[#071219]">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -88,15 +94,30 @@ export function FeatureLegend({
               {features.length}
             </span>
           </div>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="p-1 rounded-md bg-[#0A171C] hover:bg-[#0E1B20] text-[#718287] hover:text-[#F4F7F7] border border-[rgba(80,180,200,0.15)] transition cursor-pointer"
-              title="Collapse Feature Lines (←)"
-            >
-              <ChevronLeft size={13} />
-            </button>
-          )}
+          <div className="flex items-center gap-1.5">
+            {onToggleLock && (
+              <button
+                onClick={onToggleLock}
+                className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${
+                  isLocked
+                    ? 'bg-[#16C7A3] text-[#061318] font-bold shadow-xs'
+                    : 'bg-[#0A171C] hover:bg-[#0E1B20] text-[#718287] hover:text-[#F4F7F7] border border-[rgba(80,180,200,0.15)]'
+                }`}
+                title={isLocked ? 'Locked Open (Click to unlock)' : 'Lock Panel Open (Prevent auto-collapse)'}
+              >
+                {isLocked ? <Lock size={12} /> : <Unlock size={12} />}
+              </button>
+            )}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-1 rounded-md bg-[#0A171C] hover:bg-[#0E1B20] text-[#718287] hover:text-[#F4F7F7] border border-[rgba(80,180,200,0.15)] transition cursor-pointer"
+                title="Collapse Feature Lines (←)"
+              >
+                <ChevronLeft size={13} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── Search Input ── */}
