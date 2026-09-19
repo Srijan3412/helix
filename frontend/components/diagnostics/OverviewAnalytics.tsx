@@ -234,164 +234,170 @@ export default function OverviewAnalytics({
       {/* ── ROW 2: DETECTED TECH STACK (1.35fr) + PROJECT STRUCTURE (1fr) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4 items-start h-auto min-h-0">
         
-        {/* Left Panel: Detected Technology Stack */}
+        {/* Left Panel: Detected Technology Stack (Red Left Accent) */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[rgba(7,60,69,0.85)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(32,214,216,0.18)] shadow-sm flex flex-col justify-between h-auto min-h-0"
+          className="bg-[#084B52] rounded-[14px] p-4 sm:p-4.5 border border-[#20C7CF]/20 border-l-4 border-l-[#FF3045] shadow-md flex flex-col justify-between h-auto min-h-0"
         >
           <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-[8px] bg-[#094752] text-[#20D6D8] flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-[8px] bg-[#06363D] text-[#20C7CF] flex items-center justify-center shrink-0">
                   <Layers size={15} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[#F7FAFA] leading-snug">
+                  <h3 className="text-sm font-bold text-[#F4EDE5] leading-snug">
                     Detected Technology Stack
                   </h3>
-                  <p className="text-[11px] text-[#C3D5D8] leading-tight">
+                  <p className="text-[11px] text-[#8EDBD5] leading-tight">
                     Automatically identified technologies and tools in your repository.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* 6 Technology Items in 3-col grid */}
+            {/* 6 Technology Items in 3-col grid (Dark Teal cards with dedicated semantic icon squares) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {/* Language Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
-                <div className="w-7 h-7 rounded-[6px] bg-[#007acc] text-white font-black text-[11px] flex items-center justify-center shrink-0 shadow-xs">
+              {/* Language Card: TypeScript (Blue #1689E8) */}
+              <div className="p-2 rounded-[8px] bg-[#06363D] border border-[rgba(32,199,207,0.12)] hover:border-[rgba(32,199,207,0.30)] flex items-center gap-2 transition-all">
+                <div className="w-7 h-7 rounded-[6px] bg-[#1689E8] text-white font-black text-[11px] flex items-center justify-center shrink-0 shadow-sm">
                   TS
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">
+                  <div className="text-xs font-bold text-[#F4EDE5] truncate">
                     {frameworkMetadata?.language || "TypeScript"}
                   </div>
-                  <div className="text-[10px] text-[#8EA9AE]">Language</div>
+                  <div className="text-[10px] text-[#8EDBD5]">Language</div>
                 </div>
               </div>
 
-              {/* Runtime Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
-                <div className="w-7 h-7 rounded-[6px] bg-[#539e43] text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
+              {/* Runtime Card: Node.js (Green #63B746) */}
+              <div className="p-2 rounded-[8px] bg-[#06363D] border border-[rgba(32,199,207,0.12)] hover:border-[rgba(32,199,207,0.30)] flex items-center gap-2 transition-all">
+                <div className="w-7 h-7 rounded-[6px] bg-[#63B746] text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-sm">
                   node
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">
+                  <div className="text-xs font-bold text-[#F4EDE5] truncate">
                     {frameworkMetadata?.runtime || "Node.js"}
                   </div>
-                  <div className="text-[10px] text-[#8EA9AE]">Runtime</div>
+                  <div className="text-[10px] text-[#8EDBD5]">Runtime</div>
                 </div>
               </div>
 
-              {/* Package Manager Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
-                <div className="w-7 h-7 rounded-[6px] bg-[#cb3837] text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
+              {/* Package Manager Card: npm (Red #E83B45) */}
+              <div className="p-2 rounded-[8px] bg-[#06363D] border border-[rgba(32,199,207,0.12)] hover:border-[rgba(32,199,207,0.30)] flex items-center gap-2 transition-all">
+                <div className="w-7 h-7 rounded-[6px] bg-[#E83B45] text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-sm">
                   npm
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">
+                  <div className="text-xs font-bold text-[#F4EDE5] truncate">
                     {frameworkMetadata?.packageManager || "npm"}
                   </div>
-                  <div className="text-[10px] text-[#8EA9AE]">Package Manager</div>
+                  <div className="text-[10px] text-[#8EDBD5]">Package Manager</div>
                 </div>
               </div>
 
-              {/* Framework Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
-                <div className="w-7 h-7 rounded-[6px] bg-neutral-900 border border-white/20 text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
+              {/* Framework Card: Fastify (Near-black #151C20) */}
+              <div className="p-2 rounded-[8px] bg-[#06363D] border border-[rgba(32,199,207,0.12)] hover:border-[rgba(32,199,207,0.30)] flex items-center gap-2 transition-all">
+                <div className="w-7 h-7 rounded-[6px] bg-[#151C20] border border-white/20 text-[#20C7CF] font-bold text-[11px] flex items-center justify-center shrink-0 shadow-sm">
                   <Code2 size={13} />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">
+                  <div className="text-xs font-bold text-[#F4EDE5] truncate">
                     {frameworkMetadata?.frameworks?.[0]?.name || "Fastify"}
                   </div>
-                  <div className="text-[10px] text-[#8EA9AE]">Framework</div>
+                  <div className="text-[10px] text-[#8EDBD5]">Framework</div>
                 </div>
               </div>
 
-              {/* Database Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
-                <div className="w-7 h-7 rounded-[6px] bg-[#3ecf8e] text-slate-950 font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
-                  <Zap size={13} className="fill-slate-950" />
+              {/* Database Card: Supabase (Mint #40D3A2) */}
+              <div className="p-2 rounded-[8px] bg-[#06363D] border border-[rgba(32,199,207,0.12)] hover:border-[rgba(32,199,207,0.30)] flex items-center gap-2 transition-all">
+                <div className="w-7 h-7 rounded-[6px] bg-[#40D3A2] text-[#06363D] font-bold text-[11px] flex items-center justify-center shrink-0 shadow-sm">
+                  <Zap size={13} className="fill-[#06363D]" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">
+                  <div className="text-xs font-bold text-[#F4EDE5] truncate">
                     Supabase
                   </div>
-                  <div className="text-[10px] text-[#8EA9AE]">Database</div>
+                  <div className="text-[10px] text-[#8EDBD5]">Database</div>
                 </div>
               </div>
 
-              {/* DevOps Card */}
-              <div className="p-2 rounded-[8px] bg-[rgba(5,42,49,0.85)] border border-[rgba(32,214,216,0.10)] flex items-center gap-2">
-                <div className="w-7 h-7 rounded-[6px] bg-[#0db7ed] text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-xs">
+              {/* DevOps Card: Docker (Blue #19AEE5) */}
+              <div className="p-2 rounded-[8px] bg-[#06363D] border border-[rgba(32,199,207,0.12)] hover:border-[rgba(32,199,207,0.30)] flex items-center gap-2 transition-all">
+                <div className="w-7 h-7 rounded-[6px] bg-[#19AEE5] text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-sm">
                   <Boxes size={13} />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">
+                  <div className="text-xs font-bold text-[#F4EDE5] truncate">
                     Docker
                   </div>
-                  <div className="text-[10px] text-[#8EA9AE]">DevOps</div>
+                  <div className="text-[10px] text-[#8EDBD5]">DevOps</div>
                 </div>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Right Panel: Project Structure */}
+        {/* Right Panel: Project Structure (Mint Left Accent & Meaningful Progression Colors) */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.14 }}
-          className="bg-[rgba(7,60,69,0.85)] backdrop-blur-md rounded-[14px] p-4 sm:p-4.5 border border-[rgba(32,214,216,0.18)] shadow-sm flex flex-col justify-between h-auto min-h-0"
+          className="bg-[#084B52] rounded-[14px] p-4 sm:p-4.5 border border-[#65D7CF]/20 border-l-4 border-l-[#65D7CF] shadow-md flex flex-col justify-between h-auto min-h-0"
         >
           <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-[8px] bg-[#094752] text-[#20D6D8] flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-[8px] bg-[#06363D] text-[#65D7CF] flex items-center justify-center shrink-0">
                   <FolderTree size={15} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[#F7FAFA] leading-snug">
+                  <h3 className="text-sm font-bold text-[#F4EDE5] leading-snug">
                     Project Structure
                   </h3>
-                  <p className="text-[11px] text-[#C3D5D8] leading-tight">
+                  <p className="text-[11px] text-[#8EDBD5] leading-tight">
                     High-level directory analysis.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Structure Progress Bars */}
+            {/* Structure Progress Bars with Meaningful Multicolor Progression */}
             <div className="space-y-2">
-              {directoryBreakdown.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2.5">
-                  <div className="flex items-center gap-1.5 w-16 text-[11px] font-mono text-[#C3D5D8]">
-                    <Folder size={11} className="text-[#20D6D8] shrink-0" />
-                    <span className="truncate">{item.name}</span>
-                  </div>
+              {directoryBreakdown.map((item, idx) => {
+                // Meaningful Color Progression: 1: Red #FF3045, 2: Mint #65D7CF, 3: Cream #F3E8DF, 4: Cyan #27C7D0, 5: Aqua #62D9D5, 6: Blue #3197C8
+                const colors = ["#FF3045", "#65D7CF", "#F3E8DF", "#27C7D0", "#62D9D5", "#3197C8"];
+                const itemColor = colors[idx % colors.length];
 
-                  {/* Horizontal Bar */}
-                  <div className="flex-1 h-2 rounded-full bg-[rgba(5,42,49,0.85)] overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${item.percentage}%`,
-                        backgroundColor: item.color
-                      }}
-                    />
-                  </div>
+                return (
+                  <div key={idx} className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-1.5 w-16 text-[11px] font-mono text-[#F4EDE5]">
+                      <Folder size={11} style={{ color: itemColor }} className="shrink-0" />
+                      <span className="truncate">{item.name}</span>
+                    </div>
 
-                  <div className="w-8 text-right text-[11px] font-bold text-[#F7FAFA] font-mono">
-                    {item.percentage}%
+                    {/* Horizontal Bar with Solid Dark Track (#07343B) */}
+                    <div className="flex-1 h-2 rounded-full bg-[#07343B] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${item.percentage}%`,
+                          backgroundColor: itemColor
+                        }}
+                      />
+                    </div>
+
+                    <div className="w-8 text-right text-[11px] font-bold text-[#F4EDE5] font-mono">
+                      {item.percentage}%
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </motion.div>

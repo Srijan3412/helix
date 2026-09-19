@@ -890,7 +890,7 @@ export default function RouteAnalysisWorkspace({
                     </div>
                   </button>
 
-                  {/* Route Items List (Selected route has red border, subtle red tint, and red dot) */}
+                  {/* Route Items List (Selected route has matching theme cyan border and glowing cyan indicator) */}
                   {isOpen && (
                     <div className="space-y-1 pl-1">
                       {routes.map((route) => {
@@ -902,28 +902,28 @@ export default function RouteAnalysisWorkspace({
                             onClick={() => setSelectedRouteId(route.id)}
                             className={`p-2 rounded-xl border transition-all duration-150 cursor-pointer flex items-center justify-between gap-2 ${
                               isSelected
-                                ? "bg-[#F2384B]/10 border-[#F2384B] shadow-[0_0_10px_rgba(242,56,75,0.15)]"
-                                : "bg-[#071F26] border-white/[0.04] hover:border-white/[0.15] hover:bg-[#0A2E38]"
+                                ? "bg-[#0A4B53] border-[#20C7CF] shadow-[0_0_12px_rgba(32,199,207,0.20)]"
+                                : "bg-[#06363D]/70 border-white/[0.05] hover:border-[rgba(32,199,207,0.30)] hover:bg-[#06363D]"
                             }`}
                           >
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               {/* Light Cyan GET badge */}
-                              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black font-mono tracking-wider bg-[#91DDD7] text-[#073C42] shrink-0 leading-tight">
+                              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-black font-mono tracking-wider bg-[#8EDBD5] text-[#063C42] shrink-0 leading-tight font-bold">
                                 {route.method}
                               </span>
                               <div className="min-w-0 flex-1">
-                                <span className="text-[11.5px] font-mono font-bold text-white truncate block leading-tight">
+                                <span className={`text-[11.5px] font-mono font-bold truncate block leading-tight ${isSelected ? "text-white" : "text-[#F4EDE5]"}`}>
                                   {route.path}
                                 </span>
-                                <span className="text-[9.5px] text-[#82AEB5] truncate block mt-0.5">
+                                <span className={`text-[9.5px] truncate block mt-0.5 ${isSelected ? "text-[#8EDBD5]" : "text-[#82AEB5]"}`}>
                                   {route.description}
                                 </span>
                               </div>
                             </div>
 
-                            {/* Active Red Status Dot indicator */}
+                            {/* Active Glowing Cyan Status Dot indicator */}
                             {isSelected && (
-                              <div className="w-2 h-2 rounded-full bg-[#F2384B] shadow-[0_0_6px_#F2384B] shrink-0" />
+                              <div className="w-2 h-2 rounded-full bg-[#20C7CF] shadow-[0_0_8px_#20C7CF] shrink-0" />
                             )}
                           </div>
                         );

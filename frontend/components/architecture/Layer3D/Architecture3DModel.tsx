@@ -39,69 +39,69 @@ export const LAYER_NODE_MAP: Record<
   }
 > = {
   routes: {
-    nodeName: '01_ROUTES',
+    nodeName: 'Layer_01_Routes',
     index: 0,
     num: '01',
     name: 'Routes',
     tag: 'API LAYER',
     color: '#19D8E8',
     glowColor: '#00F0FF',
-    defaultY: 4.0,
+    defaultY: 5.625,
     icon: Zap,
   },
   controllers: {
-    nodeName: '02_CONTROLLERS',
+    nodeName: 'Layer_02_Controllers',
     index: 1,
     num: '02',
     name: 'Controllers',
     tag: 'LOGIC LAYER',
     color: '#9B7CFF',
     glowColor: '#C084FC',
-    defaultY: 2.4,
+    defaultY: 3.375,
     icon: Terminal,
   },
   services: {
-    nodeName: '03_SERVICES',
+    nodeName: 'Layer_03_Services',
     index: 2,
     num: '03',
     name: 'Services',
     tag: 'BUSINESS LAYER',
     color: '#F5B83D',
     glowColor: '#FCD34D',
-    defaultY: 0.8,
+    defaultY: 1.125,
     icon: Layers,
   },
   repositories: {
-    nodeName: '04_REPOSITORIES',
+    nodeName: 'Layer_04_Repositories',
     index: 3,
     num: '04',
     name: 'Repositories',
     tag: 'DATA LAYER',
     color: '#E875C8',
     glowColor: '#F472B6',
-    defaultY: -0.8,
+    defaultY: -1.125,
     icon: Database,
   },
   middleware: {
-    nodeName: '05_MIDDLEWARE',
+    nodeName: 'Layer_05_Middleware',
     index: 4,
     num: '05',
     name: 'Middleware',
     tag: 'PIPELINE LAYER',
     color: '#3ED6A0',
     glowColor: '#34D399',
-    defaultY: -2.4,
+    defaultY: -3.375,
     icon: Shield,
   },
   external: {
-    nodeName: '06_EXTERNAL_SERVICES',
+    nodeName: 'Layer_06_ExternalServices',
     index: 5,
     num: '06',
     name: 'External Services',
     tag: 'INTEGRATION LAYER',
     color: '#4F9DFF',
     glowColor: '#93C5FD',
-    defaultY: -4.0,
+    defaultY: -5.625,
     icon: Cloud,
   },
 };
@@ -271,8 +271,8 @@ function CentralArchitectureSpine({
   return (
     <group position={[0, 0, 0]}>
       {/* Thin luminous vertical spine bar */}
-      <mesh position={[0, 0.2, 0]}>
-        <cylinderGeometry args={[0.025, 0.025, 10.8, 16]} />
+      <mesh position={[0, 0, 0]}>
+        <cylinderGeometry args={[0.025, 0.025, 13.5, 16]} />
         <meshStandardMaterial
           color="#00E5FF"
           emissive="#00D2FF"
@@ -394,7 +394,7 @@ export function Architecture3DModel({
       )}
 
       {/* Dark Reflective Studio Floor Plinth */}
-      <mesh position={[0, -5.3, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh position={[0, -6.6, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[48, 48]} />
         <meshStandardMaterial
           color="#02080D"
@@ -407,7 +407,7 @@ export function Architecture3DModel({
       {/* Subtle Ground Grid Outline */}
       <gridHelper
         args={[36, 36, '#00D2FF', '#062837']}
-        position={[0, -5.29, 0]}
+        position={[0, -6.59, 0]}
         material-transparent
         material-opacity={0.12}
       />
