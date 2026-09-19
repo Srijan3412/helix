@@ -44,6 +44,9 @@ interface DatabaseInfo {
 
 interface DatabaseExplorerProps {
   databaseInfo?: DatabaseInfo;
+  files?: any[];
+  dependencies?: any[];
+  envVars?: any[];
   onAnalyze?: () => void;
 }
 
