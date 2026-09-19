@@ -24,86 +24,84 @@ export const LAYER_ORDER = [
   'external',
 ] as const;
 
+export type LayerId = (typeof LAYER_ORDER)[number];
+
 export const LAYER_NODE_MAP: Record<
   string,
   {
     nodeName: string;
-    index: number;
     num: string;
     name: string;
     tag: string;
     color: string;
     glowColor: string;
-    defaultY: number;
     icon: React.ComponentType<{ size?: number; className?: string }>;
   }
 > = {
   routes: {
     nodeName: '01_ROUTES',
-    index: 0,
     num: '01',
     name: 'Routes',
     tag: 'API LAYER',
     color: '#19D8E8',
     glowColor: '#00F0FF',
-    defaultY: 4.0,
     icon: Zap,
   },
   controllers: {
     nodeName: '02_CONTROLLERS',
-    index: 1,
     num: '02',
     name: 'Controllers',
     tag: 'LOGIC LAYER',
     color: '#9B7CFF',
     glowColor: '#C084FC',
-    defaultY: 2.4,
     icon: Terminal,
   },
   services: {
     nodeName: '03_SERVICES',
-    index: 2,
     num: '03',
     name: 'Services',
     tag: 'BUSINESS LAYER',
     color: '#F5B83D',
     glowColor: '#FCD34D',
-    defaultY: 0.8,
     icon: Layers,
   },
   repositories: {
     nodeName: '04_REPOSITORIES',
-    index: 3,
     num: '04',
     name: 'Repositories',
     tag: 'DATA LAYER',
     color: '#E875C8',
     glowColor: '#F472B6',
-    defaultY: -0.8,
     icon: Database,
   },
   middleware: {
     nodeName: '05_MIDDLEWARE',
-    index: 4,
     num: '05',
     name: 'Middleware',
     tag: 'PIPELINE LAYER',
     color: '#3ED6A0',
     glowColor: '#34D399',
-    defaultY: -2.4,
     icon: Shield,
   },
   external: {
     nodeName: '06_EXTERNAL_SERVICES',
-    index: 5,
     num: '06',
     name: 'External Services',
     tag: 'INTEGRATION LAYER',
     color: '#4F9DFF',
     glowColor: '#93C5FD',
-    defaultY: -4.0,
     icon: Cloud,
   },
+};
+
+// Blender original export height offsets (to normalize local origin)
+const ORIGINAL_BLENDER_Y: Record<string, number> = {
+  routes: 4.0,
+  controllers: 2.4,
+  services: 0.8,
+  repositories: -0.8,
+  middleware: -2.4,
+  external: -4.0,
 };
 
 const isOversizedOrDistractingProp = (name: string) => {
@@ -123,6 +121,7 @@ function InteractiveLayerNode({
   layerId,
   originalNode,
   config,
+  baseY,
   layerIndex,
   selectedIndex,
   isSelected,
@@ -133,6 +132,7 @@ function InteractiveLayerNode({
   layerId: string;
   originalNode: THREE.Object3D;
   config: (typeof LAYER_NODE_MAP)[string];
+  baseY: number;
   layerIndex: number;
   selectedIndex: number; // -1 if none selected
   isSelected: boolean;
@@ -144,7 +144,7 @@ function InteractiveLayerNode({
   const [hovered, setHovered] = useState(false);
   const clonedObject = useMemo(() => originalNode.clone(true), [originalNode]);
 
-  // Apply refined studio PBR materials, tone down harsh emissives, and keep dark navy chassis rich
+  // Apply refined studio PBR materials and shadow properties
   useEffect(() => {
     clonedObject.traverse((child) => {
       if (isOversizedOrDistractingProp(child.name)) {
@@ -181,29 +181,26 @@ function InteractiveLayerNode({
   }, [clonedObject, isSelected, hovered]);
 
   // Accordion Focus Reveal Animation Calculations:
-  // - If no layer selected (selectedIndex === -1): targetY = config.defaultY
-  // - If layer is ABOVE the selected layer (layerIndex < selectedIndex): targetY = config.defaultY + 2.0
-  // - If layer IS the selected layer (layerIndex === selectedIndex): targetY = config.defaultY + 0.3, targetZ = 0.35, scale = 1.04
-  // - If layer is BELOW the selected layer (layerIndex > selectedIndex): targetY = config.defaultY
-  let targetY = config.defaultY;
+  // - If no layer selected (selectedIndex === -1): targetY = baseY
+  // - If layer is ABOVE the selected layer (layerIndex < selectedIndex): targetY = baseY + 2.0
+  // - If layer IS the selected layer (layerIndex === selectedIndex): targetY = baseY + 0.3, targetZ = 0.35, scale = 1.04
+  // - If layer is BELOW the selected layer (layerIndex > selectedIndex): targetY = baseY
+  let targetY = baseY;
   let targetZ = 0;
   let targetScale = 1.0;
 
   if (selectedIndex !== -1) {
     if (layerIndex < selectedIndex) {
-      // Elevate upper layers upward to open focus inspection gap
-      targetY = config.defaultY + 2.0;
+      targetY = baseY + 2.0;
     } else if (layerIndex === selectedIndex) {
-      // Selected layer lifts slightly into gap, moves forward toward camera, and scales up
-      targetY = config.defaultY + 0.3;
+      targetY = baseY + 0.3;
       targetZ = 0.35;
       targetScale = 1.04;
     } else {
-      // Lower layers remain in standard resting position
-      targetY = config.defaultY;
+      targetY = baseY;
     }
   } else if (hovered) {
-    targetY = config.defaultY + 0.15;
+    targetY = baseY + 0.15;
     targetScale = 1.015;
   }
 
@@ -227,10 +224,12 @@ function InteractiveLayerNode({
     groupRef.current.scale.set(nextScale, nextScale, nextScale);
   });
 
+  const origBlenderY = ORIGINAL_BLENDER_Y[layerId] || 0;
+
   return (
     <group
       ref={groupRef}
-      position={[0, config.defaultY, 0]}
+      position={[0, baseY, 0]}
       onClick={(e) => {
         e.stopPropagation();
         onSelect();
@@ -245,8 +244,8 @@ function InteractiveLayerNode({
         document.body.style.cursor = 'auto';
       }}
     >
-      {/* 3D Blender Sub-Hierarchy */}
-      <primitive object={clonedObject} position={[0, -config.defaultY, 0]} />
+      {/* 3D Blender Sub-Hierarchy normalized to local origin */}
+      <primitive object={clonedObject} position={[0, -origBlenderY, 0]} />
 
       {/* Subtle Underglow for Selected Slab */}
       {isSelected && (
@@ -262,17 +261,27 @@ function InteractiveLayerNode({
   );
 }
 
-// Vertical Cyber Spine Component
+// Vertical Cyber Spine Component dynamically scaled to active layers
 function CentralArchitectureSpine({
+  activeLayerConfigs,
   selectedIndex,
 }: {
+  activeLayerConfigs: { id: string; config: (typeof LAYER_NODE_MAP)[string]; baseY: number }[];
   selectedIndex: number;
 }) {
+  const count = activeLayerConfigs.length;
+  if (count === 0) return null;
+
+  const topY = activeLayerConfigs[0].baseY;
+  const botY = activeLayerConfigs[count - 1].baseY;
+  const spineHeight = Math.max(3.0, topY - botY + 2.0);
+  const spineCenterY = (topY + botY) / 2;
+
   return (
     <group position={[0, 0, 0]}>
       {/* Thin luminous vertical spine bar */}
-      <mesh position={[0, 0.2, 0]}>
-        <cylinderGeometry args={[0.025, 0.025, 10.8, 16]} />
+      <mesh position={[0, spineCenterY, 0]}>
+        <cylinderGeometry args={[0.025, 0.025, spineHeight, 16]} />
         <meshStandardMaterial
           color="#00E5FF"
           emissive="#00D2FF"
@@ -282,16 +291,15 @@ function CentralArchitectureSpine({
         />
       </mesh>
 
-      {/* Connection Node Spheres at each layer anchor */}
-      {LAYER_ORDER.map((layerId, idx) => {
-        const conf = LAYER_NODE_MAP[layerId];
+      {/* Connection Node Spheres at active layer anchors */}
+      {activeLayerConfigs.map((item, idx) => {
         const isCurrentSelected = idx === selectedIndex;
         return (
-          <mesh key={layerId} position={[0, conf.defaultY, 0]}>
+          <mesh key={item.id} position={[0, item.baseY, 0]}>
             <sphereGeometry args={[isCurrentSelected ? 0.08 : 0.045, 16, 16]} />
             <meshStandardMaterial
-              color={isCurrentSelected ? conf.glowColor : '#00E5FF'}
-              emissive={isCurrentSelected ? conf.color : '#007A99'}
+              color={isCurrentSelected ? item.config.glowColor : '#00E5FF'}
+              emissive={isCurrentSelected ? item.config.color : '#007A99'}
               emissiveIntensity={isCurrentSelected ? 2.5 : 0.8}
               roughness={0.3}
               metalness={0.7}
@@ -312,7 +320,7 @@ export function Architecture3DModel({
   // Load master Blender stack model
   const { scene } = useGLTF('/models/architecture_stack_master.glb');
 
-  // Extract layers and other nodes from scene
+  // Extract layer nodes from GLTF scene
   const { layerNodes } = useMemo(() => {
     const layerMap: Record<string, THREE.Object3D> = {};
 
@@ -327,9 +335,44 @@ export function Architecture3DModel({
     return { layerNodes: layerMap };
   }, [scene]);
 
-  // Selected layer index (-1 if none selected)
-  const selectedIndex = LAYER_ORDER.indexOf(selectedLayerId as any);
-  const selectedConfig = LAYER_NODE_MAP[selectedLayerId];
+  // Check if any detected files exist from the backend scan
+  const hasDetectedFiles = useMemo(() => {
+    return Object.values(layers).some((files) => Array.isArray(files) && files.length > 0);
+  }, [layers]);
+
+  // Dynamically filter layers: if a layer has NO files in the scanned project, hide it!
+  const activeLayerIds = useMemo(() => {
+    if (!hasDetectedFiles) {
+      // Preview mode / initial empty scan: display full default 6-layer stack
+      return LAYER_ORDER;
+    }
+
+    // Only include layers that actually exist in the project (file count > 0)
+    const filtered = LAYER_ORDER.filter((layerId) => {
+      const fileList = layers[layerId];
+      return Array.isArray(fileList) && fileList.length > 0;
+    });
+
+    return filtered.length > 0 ? filtered : LAYER_ORDER;
+  }, [layers, hasDetectedFiles]);
+
+  // Dynamically calculate evenly centered vertical positions for active layers
+  const activeLayerConfigs = useMemo(() => {
+    const count = activeLayerIds.length;
+    const spacing = 1.6; // Uniform gap between slabs
+    const topY = ((count - 1) * spacing) / 2;
+
+    return activeLayerIds.map((layerId, idx) => ({
+      id: layerId,
+      config: LAYER_NODE_MAP[layerId],
+      baseY: topY - idx * spacing,
+      fileCount: (layers[layerId] || []).length,
+    }));
+  }, [activeLayerIds, layers]);
+
+  // Selected layer index in the active stack (-1 if none selected)
+  const selectedIndex = activeLayerIds.indexOf(selectedLayerId as any);
+  const selectedItem = activeLayerConfigs.find((item) => item.id === selectedLayerId);
 
   const handleToggleLayer = (layerId: string) => {
     if (selectedLayerId === layerId) {
@@ -350,44 +393,47 @@ export function Architecture3DModel({
         }
       }}
     >
-      {/* Central Architecture Spine with connection points */}
-      <CentralArchitectureSpine selectedIndex={selectedIndex} />
+      {/* Central Architecture Spine with connection points for active layers */}
+      <CentralArchitectureSpine
+        activeLayerConfigs={activeLayerConfigs}
+        selectedIndex={selectedIndex}
+      />
 
-      {/* 6 Individual Interactive Architecture Layers */}
-      {LAYER_ORDER.map((layerId, idx) => {
-        const conf = LAYER_NODE_MAP[layerId];
-        const originalNode = layerNodes[layerId];
+      {/* Dynamic Interactive Architecture Layer Slabs */}
+      {activeLayerConfigs.map((item, idx) => {
+        const originalNode = layerNodes[item.id];
         if (!originalNode) return null;
 
-        const fileList = layers[layerId] || [];
-        const isSelected = selectedLayerId === layerId;
+        const isSelected = selectedLayerId === item.id;
+        const fileList = layers[item.id] || [];
         const searchMatch = searchQuery
-          ? conf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          ? item.config.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             fileList.some((f) => String(f).toLowerCase().includes(searchQuery.toLowerCase()))
           : true;
 
         return (
           <InteractiveLayerNode
-            key={layerId}
-            layerId={layerId}
+            key={item.id}
+            layerId={item.id}
             originalNode={originalNode}
-            config={conf}
+            config={item.config}
+            baseY={item.baseY}
             layerIndex={idx}
             selectedIndex={selectedIndex}
             isSelected={isSelected}
-            onSelect={() => handleToggleLayer(layerId)}
-            fileCount={fileList.length}
+            onSelect={() => handleToggleLayer(item.id)}
+            fileCount={item.fileCount}
             searchMatch={searchMatch}
           />
         );
       })}
 
       {/* Dynamic Key Focus Spot / Point Light when a layer is inspected */}
-      {selectedConfig && (
+      {selectedItem && (
         <pointLight
-          position={[0, selectedConfig.defaultY + 1.2, 3.5]}
+          position={[0, selectedItem.baseY + 1.2, 3.5]}
           intensity={2.8}
-          color={selectedConfig.glowColor}
+          color={selectedItem.config.glowColor}
           distance={8.0}
           decay={1.8}
         />
