@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Code2,
@@ -208,7 +208,16 @@ export default function LanguageBreakdown({
   const radius = 50;
   const circumference = 2 * Math.PI * radius;
 
-  const donutSegments = useMemo(() => {
+  interface DonutSegment {
+    lang: string;
+    lines: number;
+    rawPercent: number;
+    strokeDasharray: string;
+    strokeDashoffset: number;
+    color: string;
+  }
+
+  const donutSegments: DonutSegment[] = useMemo(() => {
     const percentages = displayLanguages.map(([_, lines]) =>
       Math.max((lines / totalLines) * 100, 1.2)
     );
